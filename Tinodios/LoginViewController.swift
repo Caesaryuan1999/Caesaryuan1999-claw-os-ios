@@ -38,6 +38,11 @@ class LoginViewController: UIViewController {
         // Listen to text change events
         userNameTextEdit.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
         passwordTextEdit.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
+        userNameTextEdit.placeholder = NSLocalizedString("账号名", comment: "Login account name placeholder")
+        userNameTextEdit.autocapitalizationType = .none
+        userNameTextEdit.autocorrectionType = .no
+        userNameTextEdit.textContentType = .username
+        passwordTextEdit.placeholder = NSLocalizedString("密码", comment: "Login password placeholder")
         passwordTextEdit.showSecureEntrySwitch()
 
         UiUtils.dismissKeyboardForTaps(onView: self.view)
@@ -140,10 +145,18 @@ class LoginViewController: UIViewController {
     }
 
     @IBAction func loginClicked(_ sender: Any) {
-        let userName = UiUtils.ensureDataInTextField(userNameTextEdit)
-        let password = UiUtils.ensureDataInTextField(passwordTextEdit)
+        let userName = ClawAuthInput.accountNameForSubmit(userNameTextEdit.text)
+        let password = ClawAuthInput.passwordForSubmit(passwordTextEdit.text)
 
-        guard !userName.isEmpty && !password.isEmpty else { return }
+        guard ClawAuthInput.isAccountNameValid(userName) else {
+            userNameTextEdit.markAsError()
+            UiUtils.showToast(message: NSLocalizedString("账号名只能包含数字和字母", comment: "Invalid account name"))
+            return
+        }
+        guard !password.isEmpty else {
+            passwordTextEdit.markAsError()
+            return
+        }
 
         let tinode = Cache.tinode
         UiUtils.toggleProgressOverlay(in: self, visible: true, title: NSLocalizedString("Logging in...", comment: "Login progress text"))

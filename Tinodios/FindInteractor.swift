@@ -74,7 +74,10 @@ class FindInteractor: FindBusinessLogic {
     func updateAndPresentRemoteContacts() {
         if let subs = fndTopic?.getSubscriptions(), !(searchQuery?.isEmpty ?? true) {
             self.remoteContacts = subs.map { sub in
-                let contact = RemoteContactHolder(pub: sub.pub, uniqueId: sub.uniqueId, subtitle: sub.priv?.joined(separator: ", "))
+                let accountName = AccountNames.fromTags(sub.priv)
+                let contact = RemoteContactHolder(pub: sub.pub, uniqueId: sub.uniqueId,
+                                                  accountName: accountName,
+                                                  subtitle: AccountNames.contactListSecondary(accountName: accountName))
                 contact.sub = sub
                 return contact
             }
@@ -103,34 +106,35 @@ class FindInteractor: FindBusinessLogic {
             let contacts: [ContactHolder] =
                 self.searchQuery != nil ?
                     self.localContacts!.filter { u in
-                        guard let displayName = u.pub?.fn else { return false }
-                        guard let r = displayName.range(of: self.searchQuery!, options: .caseInsensitive) else {return false}
-                        return r.contains(displayName.startIndex)
+                        let query = self.searchQuery!
+                        let displayName = AccountNames.contactDisplayName(displayName: u.pub?.fn,
+                                                                           accountName: u.accountName,
+                                                                           userId: u.uniqueId)
+                        if let r = displayName.range(of: query, options: .caseInsensitive),
+                           r.contains(displayName.startIndex) {
+                            return true
+                        }
+                        guard let accountName = u.accountName,
+                              let r = accountName.range(of: query, options: .caseInsensitive) else {
+                            return false
+                        }
+                        return r.contains(accountName.startIndex)
                     } :
                     self.localContacts!
             if changed {
-                var searchStr: String? = searchQuery
-                if let query = searchQuery, !query.isEmpty {
-                    if FindInteractor.kSingleTagTest.firstMatch(in: query, range: NSRange(location: 0, length: query.count)) == nil {
-                        // No colons, spaces or commas. Try as email, phone, or alias.
-                        if let email = Utils.asEmail(query) {
-                            searchStr = "\(Tinode.kTagEmail)\(email)"
-                        } else if let tel = Utils.asPhone(query) {
-                            searchStr = "\(Tinode.kTagPhone)\(tel)"
-                        } else {
-                            if query.first == "@" {
-                                searchStr = String(query.suffix(from: query.index(query.startIndex, offsetBy: 1)))
-                            }
-                            // Convert 'alice' -> 'alias:alice,alice'
-                            searchStr = "\(Tinode.kTagAlias)\(searchStr!),\(searchStr!)"
-                        }
-                    }
+                var searchStr: String? = nil
+                if let query = searchQuery, !query.isEmpty,
+                   FindInteractor.kSingleTagTest.firstMatch(in: query, range: NSRange(location: 0, length: query.count)) == nil {
+                    let cleanQuery = query.first == "@" ? String(query.dropFirst()) : query
+                    searchStr = AccountNames.directorySearchQuery(cleanQuery)
                 }
                 _ = self.fndTopic?.setMeta(desc: MetaSetDesc(pub: searchStr ?? Tinode.kNullValue, priv: nil))
             }
 
             self.remoteContacts?.removeAll()
-            if let searchQuery = searchQuery, searchQuery.count >= UiUtils.kMinTagLength {
+            if let searchQuery = searchQuery,
+               searchQuery.count >= UiUtils.kMinTagLength,
+               AccountNames.directorySearchQuery(searchQuery) != nil {
                 self.fndTopic?.getMeta(query: MsgGetMeta.sub())
             } else {
                 // Clear remoteContacts.

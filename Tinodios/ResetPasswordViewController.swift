@@ -25,43 +25,36 @@ class ResetPasswordViewController: UITableViewController {
     @IBOutlet weak var newPasswordTextField: UITextField!
 
     private var passwordVisible = false
-    private var passwordChangeSectionVisible = false
-    private var codeRequested = false
-    private var haveCode = false
-    // Required credential methods.
-    private var credMethods: [String]?
+    private var passwordChangeSectionVisible = true
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        _ = try? Cache.tinode.connectDefault(inBackground: false)?.then(
-            onSuccess: { _ in
-                if let creds = Cache.tinode.getRequiredCredMethods(forAuthLevel: "auth") {
-                    self.credMethods = creds
-                }
-                if self.credMethods?.isEmpty ?? true {
-                    self.credMethods = [Credential.kMethEmail]
-                }
-                self.configurePageHeader()
-                return nil
-            },
-            onFailure: { err in
-                Cache.log.error("Error connecting to tinode %@", err.localizedDescription)
-                DispatchQueue.main.async { UiUtils.showToast(message: NSLocalizedString("Service unavailable at this time. Please try again later.", comment: "Service unavailable")) }
-                return nil
-            }).thenFinally {
-                DispatchQueue.main.async { self.tableView.reloadData() }
-            }
 
         // Listen to text change events to clear the possible error from earlier attempt.
         emailTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
         telTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
         confirmationCodeTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
+        newPasswordTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
 
-        telTextField.withFlag = true
-        telTextField.withPrefix = true
-        telTextField.withExamplePlaceholder = true
-        telTextField.withDefaultPickerUI = true
+        promptLabel.text = NSLocalizedString("输入账号名和账户设置页中的 ID，设置新密码。ID 仅本人可见。", comment: "ID reset password prompt")
+        emailTextField.placeholder = NSLocalizedString("账号名", comment: "Password reset account name placeholder")
+        emailTextField.autocapitalizationType = .none
+        emailTextField.autocorrectionType = .no
+        emailTextField.textContentType = .username
+        telTextField.placeholder = NSLocalizedString("ID", comment: "Password reset private user id placeholder")
+        telTextField.keyboardType = .asciiCapable
+        telTextField.autocapitalizationType = .none
+        telTextField.autocorrectionType = .no
+        telTextField.withFlag = false
+        telTextField.withPrefix = false
+        telTextField.withExamplePlaceholder = false
+        telTextField.withDefaultPickerUI = false
+        confirmationCodeTextField.placeholder = NSLocalizedString("再次输入新密码", comment: "Confirm new password placeholder")
+        confirmationCodeTextField.isSecureTextEntry = true
+        confirmationCodeTextField.keyboardType = .default
+        confirmationCodeTextField.textContentType = .newPassword
+        newPasswordTextField.placeholder = NSLocalizedString("新密码", comment: "New password placeholder")
+        newPasswordTextField.textContentType = .newPassword
 
         newPasswordTextField.showSecureEntrySwitch()
 
@@ -98,12 +91,8 @@ class ResetPasswordViewController: UITableViewController {
         // Show only required credential fields.
         switch indexPath.section {
         case ResetPasswordViewController.kSectionCredentials:
-            let method = self.credMethods?.first
-            if method == nil ||
-                (indexPath.row == ResetPasswordViewController.kMethodEmail && method! != Credential.kMethEmail) ||
-                (indexPath.row == ResetPasswordViewController.kMethodTel && method! != Credential.kMethPhone) ||
-                (indexPath.row == ResetPasswordViewController.kRequestCodeButton && (self.codeRequested || self.haveCode)) ||
-                (indexPath.row == ResetPasswordViewController.kIHaveCodeButton && self.passwordChangeSectionVisible) {
+            if indexPath.row == ResetPasswordViewController.kRequestCodeButton ||
+                indexPath.row == ResetPasswordViewController.kIHaveCodeButton {
                 return CGFloat.leastNonzeroMagnitude
             }
         case ResetPasswordViewController.kSectionNewPassword:
@@ -118,18 +107,7 @@ class ResetPasswordViewController: UITableViewController {
 
     private func configurePageHeader() {
         DispatchQueue.main.async {
-            if self.haveCode {
-                self.promptLabel.text = NSLocalizedString("Current credential", comment: "Label for email or phone number entering")
-                return
-            }
-            switch self.credMethods!.first {
-            case Credential.kMethEmail:
-                self.promptLabel.text = NSLocalizedString("We will send an email with confirmation code to the address below", comment: "Email password reset prompt")
-            case Credential.kMethPhone:
-                self.promptLabel.text = NSLocalizedString("We will send a SMS with confirmation code to the number below", comment: "Telephone password reset prompt")
-            default:
-                break
-            }
+            self.promptLabel.text = NSLocalizedString("输入账号名和账户设置页中的 ID，设置新密码。ID 仅本人可见。", comment: "ID reset password prompt")
         }
     }
 
@@ -138,94 +116,78 @@ class ResetPasswordViewController: UITableViewController {
     }
 
     @IBAction func haveCodeClicked(_ sender: Any) {
-        if !self.passwordChangeSectionVisible {
-            self.haveCode = true
-            self.passwordChangeSectionVisible = true
-            self.configurePageHeader()
-            self.tableView.reloadData()
-        }
+        self.tableView.reloadData()
     }
 
     private func validateCredential(forMethod method: String) -> String? {
-        switch method {
-        case Credential.kMethEmail:
-            let credential = UiUtils.ensureDataInTextField(emailTextField)
-            guard !credential.isEmpty, case let .email(cred) = ValidatedCredential.parse(from: credential) else {
-                emailTextField.markAsError()
-                return nil
-            }
-            return cred
-        case Credential.kMethPhone:
-            guard telTextField.isValidNumber else {
-                telTextField.markAsError()
-                return nil
-            }
-            return telTextField.utility.format(telTextField.phoneNumber!, toType: .e164)
-        default:
-            Cache.log.error("Unknown cred method: %@", method)
-            return nil
-        }
+        return nil
     }
 
     @IBAction func requestCodeClicked(_ sender: Any) {
-        guard let method = self.credMethods?.first, let value = validateCredential(forMethod: method) else {
-            return
-        }
-        self.showRequestProgressOverlay()
-        Cache.tinode.requestResetPassword(method: method, newValue: value).then(onSuccess: { msg in
-            self.passwordChangeSectionVisible = true
-            DispatchQueue.main.async {
-                self.telTextField.isEnabled = false
-                UiUtils.showToast(message: NSLocalizedString("Confirmation code sent", comment: "Confirmation code sent"), level: .info)
-            }
-            self.codeRequested = true
-            self.configurePageHeader()
-            return nil
-        }, onFailure : { err in
-            Cache.log.error("Password reset error: %@", err.localizedDescription)
-            self.passwordChangeSectionVisible = false
-            DispatchQueue.main.async { UiUtils.showToast(message: NSLocalizedString("Invalid or unknown address", comment: "Password reset error")) }
-            return nil
-        }).thenFinally {
-            DispatchQueue.main.async {
-                self.dismissProgressOverlay()
-                self.tableView.reloadData()
-            }
-        }
+        confirmCodeClicked(sender)
     }
 
     @IBAction func confirmCodeClicked(_ sender: Any) {
-        guard let method = self.credMethods?.first, let value = validateCredential(forMethod: method) else {
+        let accountName = ClawAuthInput.accountNameForSubmit(emailTextField.text)
+        let userId = (telTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let pwd = ClawAuthInput.passwordForSubmit(newPasswordTextField.text)
+        let confirmPwd = ClawAuthInput.passwordForSubmit(confirmationCodeTextField.text)
+
+        guard ClawAuthInput.isAccountNameValid(accountName) else {
+            emailTextField.markAsError()
+            UiUtils.showToast(message: NSLocalizedString("账号名只能包含数字和字母", comment: "Invalid account name"))
             return
         }
-        let code = UiUtils.ensureDataInTextField(confirmationCodeTextField)
-        let pwd = UiUtils.ensureDataInTextField(newPasswordTextField)
+        guard AccountNames.isUserIdLike(userId) else {
+            telTextField.markAsError()
+            UiUtils.showToast(message: NSLocalizedString("请输入账户设置页中的 ID", comment: "Invalid user id"))
+            return
+        }
+        guard ClawAuthInput.isPasswordValid(pwd) else {
+            newPasswordTextField.markAsError()
+            UiUtils.showToast(message: NSLocalizedString("密码至少需要 6 位", comment: "Invalid password"))
+            return
+        }
+        guard pwd == confirmPwd else {
+            confirmationCodeTextField.markAsError()
+            UiUtils.showToast(message: NSLocalizedString("两次输入的新密码不一致", comment: "Password mismatch"))
+            return
+        }
 
-        guard let auth = try? AuthScheme.codeInstance(code: code, method: method, value: value) else {
+        guard let auth = try? AuthScheme.idResetInstance(accountName: accountName, userId: userId) else {
             UiUtils.showToast(message: "Invalid params")
             return
         }
 
         UiUtils.toggleProgressOverlay(in: self, visible: true, title: NSLocalizedString("Updating password...", comment: "Progress overlay"))
-        Cache.tinode.updateAccountBasic(usingAuthScheme: auth, username: "", password: pwd).then(onSuccess: { msg in
-            if let ctrl = msg?.ctrl, 200 <= ctrl.code && ctrl.code < 300 {
-                DispatchQueue.main.async {
-                    UiUtils.showToast(message: "Password successfully updated", level: .info)
+        do {
+            try Cache.tinode.connectDefault(inBackground: false)?
+                .thenApply { _ in
+                    return Cache.tinode.updateAccountBasic(usingAuthScheme: auth, username: nil, password: pwd)
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
-                    self.navigationController?.popViewController(animated: true)
+                .then(onSuccess: { msg in
+                    if let ctrl = msg?.ctrl, 200 <= ctrl.code && ctrl.code < 300 {
+                        DispatchQueue.main.async {
+                            UiUtils.showToast(message: NSLocalizedString("Password successfully updated", comment: "Password reset success"), level: .info)
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
+                            self.navigationController?.popViewController(animated: true)
+                        }
+                    } else {
+                        DispatchQueue.main.async { UiUtils.showToast(message: NSLocalizedString("账号名或 ID 不正确", comment: "Password reset failed")) }
+                    }
+                    return nil
+                }, onFailure: { err in
+                    DispatchQueue.main.async { UiUtils.showToast(message: NSLocalizedString("账号名或 ID 不正确", comment: "Password reset failed")) }
+                    return nil
+                }).thenFinally {
+                    DispatchQueue.main.async {
+                        UiUtils.toggleProgressOverlay(in: self, visible: false)
+                    }
                 }
-            } else {
-                DispatchQueue.main.async { UiUtils.showToast(message: "Invalid or incorrect code") }
-            }
-            return nil
-        }, onFailure: { err in
-            DispatchQueue.main.async { UiUtils.showToast(message: "Invalid or incorrect code") }
-            return nil
-        }).thenFinally {
-            DispatchQueue.main.async {
-                UiUtils.toggleProgressOverlay(in: self, visible: false)
-            }
+        } catch {
+            UiUtils.toggleProgressOverlay(in: self, visible: false)
+            UiUtils.showToast(message: error.localizedDescription)
         }
     }
 }

@@ -47,10 +47,10 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         let placeholderText: String
         let placeholderFontSize: CGFloat
         if authStatus == .authorized {
-            placeholderText = NSLocalizedString("Search by tags", comment: "Placeholder prompt")
+            placeholderText = NSLocalizedString("搜索联系人、用户名或账号名", comment: "Placeholder prompt")
             placeholderFontSize = 17
         } else {
-            placeholderText = NSLocalizedString("Search functionality limited. Grant Contacts permission.", comment: "Error message when permissions are missing")
+            placeholderText = NSLocalizedString("搜索联系人、用户名或账号名", comment: "Error message when permissions are missing")
             placeholderFontSize = 10
         }
         searchController.searchBar.textField?.attributedPlaceholder =
@@ -151,8 +151,8 @@ class FindViewController: UITableViewController, FindDisplayLogic {
     }
 
     @IBAction func inviteActionClicked(_ sender: Any) {
-        let inviteSubject = NSLocalizedString("Check out Tinode Messenger", comment: "Invitation subject")
-        let inviteBody = NSLocalizedString("Check out Tinode Messenger: https://tinode.co/", comment: "Invitation body")
+        let inviteSubject = NSLocalizedString("CLAW OS", comment: "Invitation subject")
+        let inviteBody = NSLocalizedString("下载 CLAW OS： https://veilping.app/", comment: "Invitation body")
         let attrs = [ NSAttributedString.Key.font: UIFont.systemFont(ofSize: 20.0) ]
         let dialogTitle = NSAttributedString(string: NSLocalizedString("Invite", comment: "Dialog title: call to action"), attributes: attrs)
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
@@ -209,9 +209,9 @@ class FindViewController: UITableViewController, FindDisplayLogic {
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch section {
         case FindViewController.kLocalContactsSection:
-            return NSLocalizedString("Local Contacts", comment: "Section title")
+            return NSLocalizedString("联系人", comment: "Section title")
         case FindViewController.kRemoteContactsSection:
-            return NSLocalizedString("Directory", comment: "Section title")
+            return NSLocalizedString("查找", comment: "Section title")
         default:
             // Saved Messages has no section title.
             return nil
@@ -238,12 +238,17 @@ class FindViewController: UITableViewController, FindDisplayLogic {
                 cell.avatar.set(pub: nil, id: Tinode.kTopicSlf, deleted: false)
                 cell.title.text = NSLocalizedString("Saved messages", comment: "Title of the slf topic")
                 cell.subtitle.text = NSLocalizedString("Notes, messages, links, files saved for posterity", comment: "Explanation for Saved messages topic")
+                cell.subtitle.isHidden = false
             } else {
                 let contact = indexPath.section == FindViewController.kLocalContactsSection ? localContacts[indexPath.row] : remoteContacts[indexPath.row]
 
                 cell.avatar.set(pub: contact.pub, id: contact.uniqueId, deleted: false)
-                cell.title.text = contact.pub?.fn
-                cell.subtitle.text = contact.subtitle ?? contact.uniqueId
+                cell.title.text = AccountNames.contactDisplayName(displayName: contact.pub?.fn,
+                                                                   accountName: contact.accountName,
+                                                                   userId: contact.uniqueId)
+                let subtitle = contact.subtitle ?? AccountNames.contactListSecondary(accountName: contact.accountName)
+                cell.subtitle.text = subtitle ?? ""
+                cell.subtitle.isHidden = subtitle == nil
             }
             cell.title.sizeToFit()
             cell.subtitle.sizeToFit()

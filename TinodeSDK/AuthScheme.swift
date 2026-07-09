@@ -15,6 +15,7 @@ public struct AuthScheme {
     static let kLoginToken = "token"
     static let kLoginReset = "reset"
     static let kLoginCode  = "code"
+    static let kLoginIdReset = "idreset"
 
     let scheme: String
     let secret: String
@@ -59,12 +60,17 @@ public struct AuthScheme {
                 "Failed to decode auth token from base64: \(token)")
         }
 
-        let parts = basicToken.split(separator: ":")
-        if parts.count != 2 || parts[0].isEmpty {
+        guard let separator = basicToken.firstIndex(of: ":") else {
             throw AuthSchemeError.invalidParams(
                 "Invalid basic token string: \(basicToken)")
         }
-        return [String(parts[0]), String(parts[1])]
+        let login = basicToken[..<separator]
+        let password = basicToken[basicToken.index(after: separator)...]
+        if login.isEmpty {
+            throw AuthSchemeError.invalidParams(
+                "Invalid basic token string: \(basicToken)")
+        }
+        return [String(login), String(password)]
     }
 
     static func basicInstance(login: String, password: String) throws -> AuthScheme {
@@ -79,6 +85,13 @@ public struct AuthScheme {
     public static func codeInstance(code: String, method: String, value: String) throws -> AuthScheme {
         // The secret is structured as <code>:<cred_method>:<cred_value>, "123456:email:alice@example.com".
         return AuthScheme(scheme: AuthScheme.kLoginCode, secret: try encodeResetToken(scheme: code, method: method, value: value))
+    }
+
+    public static func idResetInstance(accountName: String, userId: String) throws -> AuthScheme {
+        guard !accountName.contains(":") && !userId.contains(":") else {
+            throw AuthSchemeError.invalidParams("invalid parameter")
+        }
+        return AuthScheme(scheme: AuthScheme.kLoginIdReset, secret: "\(accountName):\(userId)".toBase64()!)
     }
 }
 

@@ -476,7 +476,9 @@ class MessageViewController: UIViewController {
             if data.count > maxInbandSize {
                 self.interactor?.uploadImage(UploadDef(caption: content.caption, filename: content.fileName, mimeType: content.contentType, image: image, data: data, width: image.size.width * image.scale, height: image.size.height * image.scale))
             } else {
-                let drafty = Drafty(plainText: " ").insertImage(at: 0, mime: content.contentType, bits: data, width: content.width!, height: content.height!, fname: content.fileName)
+                let imageWidth = max(content.width ?? Int(image.size.width * image.scale), 1)
+                let imageHeight = max(content.height ?? Int(image.size.height * image.scale), 1)
+                let drafty = Drafty(plainText: " ").insertImage(at: 0, mime: content.contentType, bits: data, width: imageWidth, height: imageHeight, fname: content.fileName)
                 if let caption = content.caption {
                     _ = drafty.appendLineBreak().append(Drafty(plainText: caption))
                 }
@@ -494,6 +496,12 @@ class MessageViewController: UIViewController {
         let previewMime = "image/png"
         let preview = poster?.pixelData(forMimeType: previewMime)
         let maxInbandSize = self.maxInbandSize
+        let posterScale = poster?.scale ?? 1
+        let posterWidth = poster.map { Int($0.size.width * posterScale) } ?? 0
+        let posterHeight = poster.map { Int($0.size.height * posterScale) } ?? 0
+        let videoWidth = max(content.width ?? posterWidth, 1)
+        let videoHeight = max(content.height ?? posterHeight, 1)
+        let duration = max(content.duration, 0)
 
         let data: Data
         do {
@@ -514,12 +522,12 @@ class MessageViewController: UIViewController {
         if data.count + previewSize > maxInbandSize {
             self.interactor?.uploadVideo(UploadDef(caption: content.caption, filename: content.fileName,
                                                    mimeType: mime, data: data,
-                                                   width: content.width != nil ? CGFloat(content.width!) : nil,
-                                                   height: content.height != nil ? CGFloat(content.height!) : nil,
-                                                   duration: content.duration, preview: preview, previewMime: previewMime,
+                                                   width: CGFloat(videoWidth),
+                                                   height: CGFloat(videoHeight),
+                                                   duration: duration, preview: preview, previewMime: previewMime,
                                                    previewOutOfBand: previewSize > Constants.kMaxPosterSize))
         } else {
-            if let drafty = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: data, refurl: nil, duration: content.duration, width: content.width!, height: content.height!, fname: content.fileName, size: data.count, preMime: previewMime, preview: preview, previewRef: nil) {
+            if let drafty = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: data, refurl: nil, duration: duration, width: videoWidth, height: videoHeight, fname: content.fileName, size: data.count, preMime: previewMime, preview: preview, previewRef: nil) {
                 if let caption = content.caption {
                     _ = drafty.appendLineBreak().append(Drafty(plainText: caption))
                 }

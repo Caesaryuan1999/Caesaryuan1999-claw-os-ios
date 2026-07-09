@@ -360,6 +360,9 @@ extension VideoPreviewController: SendImageBarDelegate {
               let mimeType = originalContent.contentType else { return }
 
         let size = player.videoSize
+        let width = Int(size.width) > 0 ? Int(size.width) : max(originalContent.width ?? 0, 1)
+        let height = Int(size.height) > 0 ? Int(size.height) : max(originalContent.height ?? 0, 1)
+        let duration = max(Int(truncating: media.length.value ?? 0), 0)
         thumbnailer.getThumbmail { thumbnail in
             var preview: UIImage?
             if let th = thumbnail {
@@ -367,12 +370,12 @@ extension VideoPreviewController: SendImageBarDelegate {
             }
             let content2 = VideoPreviewContent(
                 videoSrc: .local(url, preview),
-                duration: Int(truncating: media.length.value ?? 0),
+                duration: duration,
                 fileName: originalContent.fileName,
                 contentType: mimeType,
                 size: 0,
-                width: Int(size.width),
-                height: Int(size.height),
+                width: width,
+                height: height,
                 caption: caption,
                 pendingMessagePreview: nil
             )

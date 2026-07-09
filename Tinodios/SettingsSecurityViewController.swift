@@ -154,19 +154,13 @@ class SettingsSecurityViewController: UITableViewController {
     }
 
     private func updatePassword(with newPassword: String) {
-        guard newPassword.count >= 4 else {
+        guard newPassword.count >= ClawAuthInput.minPasswordLength else {
             DispatchQueue.main.async {
                 UiUtils.showToast(message: NSLocalizedString("Password too short", comment: "Error message"))
             }
             return
         }
-        guard let userName = SharedUtils.getSavedLoginUserName() else {
-            DispatchQueue.main.async {
-                UiUtils.showToast(message: NSLocalizedString("Login info missing...", comment: "Error message"))
-            }
-            return
-        }
-        tinode.updateAccountBasic(uid: nil, username: userName, password: newPassword)
+        tinode.updateAccountBasic(uid: nil, username: nil, password: newPassword)
             .then(onSuccess: { msg in
                 DispatchQueue.main.async {
                     if let ctrl = msg?.ctrl, 200 <= ctrl.code && ctrl.code < 300 {

@@ -11,7 +11,11 @@ import TinodeSDK
 
 public class StoredUser: Payload {
     let id: Int64?
-    init(id: Int64) { self.id = id }
+    public let accountName: String?
+    init(id: Int64, accountName: String? = nil) {
+        self.id = id
+        self.accountName = accountName
+    }
 }
 
 public class UserDb {
@@ -29,6 +33,7 @@ public class UserDb {
     public let updated: SQLite.Expression<Date?>
     // public let deleted: Expression<Int?>
     public let pub: SQLite.Expression<String?>
+    public let accountName: SQLite.Expression<String?>
 
     private let baseDb: BaseDb!
 
@@ -41,6 +46,7 @@ public class UserDb {
         self.uid = Expression<String?>("uid")
         self.updated = Expression<Date?>("updated")
         self.pub = Expression<String?>("pub")
+        self.accountName = Expression<String?>("account_name")
     }
     func destroyTable() {
         try! self.db.run(self.table.dropIndex(accountId, uid, ifExists: true))
@@ -55,6 +61,7 @@ public class UserDb {
             t.column(uid)
             t.column(updated)
             t.column(pub)
+            t.column(accountName)
         })
         try! self.db.run(self.table.createIndex(accountId, uid, ifNotExists: true))
     }
@@ -66,7 +73,7 @@ public class UserDb {
 
     public func insert(user: UserProto?) -> Int64 {
         guard let user = user else { return 0 }
-        let id = self.insert(uid: user.uid, updated: user.updated, serializedPub: user.serializePub())
+        let id = self.insert(uid: user.uid, updated: user.updated, serializedPub: user.serializePub(), accountName: nil)
         if id > 0 {
             let su = StoredUser(id: id)
             user.payload = su
@@ -77,10 +84,13 @@ public class UserDb {
     @discardableResult
     public func insert(sub: SubscriptionProto?) -> Int64 {
         guard let sub = sub else { return -1 }
-        return self.insert(uid: sub.user ?? sub.topic, updated: sub.updated, serializedPub: sub.serializePub())
+        return self.insert(uid: sub.user ?? sub.topic,
+                           updated: sub.updated,
+                           serializedPub: sub.serializePub(),
+                           accountName: UserDb.accountName(from: sub))
     }
 
-    func insert(uid: String?, updated: Date?, serializedPub: String?) -> Int64 {
+    func insert(uid: String?, updated: Date?, serializedPub: String?, accountName: String? = nil) -> Int64 {
         let uid = (uid ?? "").isEmpty ? UserDb.kNoUser : uid!
         do {
             let rowid = try db.run(
@@ -88,7 +98,8 @@ public class UserDb {
                     self.accountId <- baseDb.account?.id,
                     self.uid <- uid,
                     self.updated <- updated ?? Date(),
-                    self.pub <- serializedPub
+                    self.pub <- serializedPub,
+                    self.accountName <- accountName
             ))
             return rowid
         } catch SQLite.Result.error(message: let errMsg, code: let code, statement: _) {
@@ -103,23 +114,29 @@ public class UserDb {
     @discardableResult
     public func update(user: UserProto?) -> Bool {
         guard let user = user, let su = user.payload as? StoredUser, let userId = su.id, userId > 0 else { return false }
-        return self.update(userId: userId, updated: user.updated, serializedPub: user.serializePub())
+        return self.update(userId: userId, updated: user.updated, serializedPub: user.serializePub(), accountName: nil)
     }
 
     @discardableResult
     public func update(sub: SubscriptionProto?) -> Bool {
         guard let st = sub?.payload as? StoredSubscription, let userId = st.userId else { return false }
-        return self.update(userId: userId, updated: sub?.updated, serializedPub: sub?.serializePub())
+        return self.update(userId: userId,
+                           updated: sub?.updated,
+                           serializedPub: sub?.serializePub(),
+                           accountName: UserDb.accountName(from: sub))
     }
 
     @discardableResult
-    public func update(userId: Int64, updated: Date?, serializedPub: String?) -> Bool {
+    public func update(userId: Int64, updated: Date?, serializedPub: String?, accountName: String? = nil) -> Bool {
         var setters = [Setter]()
         if let u = updated {
             setters.append(self.updated <- u)
         }
         if let s = serializedPub {
             setters.append(self.pub <- s)
+        }
+        if let accountName = accountName {
+            setters.append(self.accountName <- accountName)
         }
         guard setters.count > 0 else { return false }
         let record = self.table.filter(self.id == userId)
@@ -168,9 +185,25 @@ public class UserDb {
         let updated = r[self.updated]
         let pub = r[self.pub]
         guard let user = DefaultUser.createFromPublicData(uid: r[self.uid], updated: updated, data: pub) else { return nil }
-        let storedUser = StoredUser(id: id)
+        let storedUser = StoredUser(id: id, accountName: r[self.accountName])
         user.payload = storedUser
         return user
+    }
+
+    private static func accountName(from sub: SubscriptionProto?) -> String? {
+        guard let tags = (sub as? FndSubscription)?.priv else { return nil }
+        let prefix = "basic:"
+        return tags.compactMap { tag in
+            let normalized = tag.lowercased()
+            guard normalized.hasPrefix(prefix) else { return nil }
+            let value = String(normalized.dropFirst(prefix.count))
+            guard !value.isEmpty,
+                  value.range(of: #"^[a-z0-9]+$"#, options: .regularExpression) != nil,
+                  !(value.hasPrefix("usr") && value.count > 8) else {
+                return nil
+            }
+            return value
+        }.first
     }
 
     public func readOne(uid: String?) -> UserProto? {

@@ -473,10 +473,12 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             return
         }
         var seqIds: [Int] = []
+        var changedLocalDraft = false
         if let replSeq = message.replacesSeq, let versionSeqIds = topic.store?.getAllMsgVersions(fromTopic: topic, forSeq: replSeq, limit: nil) {
             for seq in versionSeqIds {
                 if TopicDb.isUnsentSeq(seq: seq) {
                     store.msgDiscard(topic: topic, seqId: seq)
+                    changedLocalDraft = true
                 } else {
                     seqIds.append(seq)
                 }
@@ -486,13 +488,26 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             seqIds.append(message.seqId)
         } else {
             store.msgDiscard(topic: topic, dbMessageId: message.msgId)
+            changedLocalDraft = true
+        }
+        guard !seqIds.isEmpty else {
+            if changedLocalDraft {
+                self.loadMessagesFromCache()
+            }
+            return
         }
         topic.delMessages(ids: seqIds, hard: hard).then(
             onSuccess: { [weak self] _ in
                 self?.loadMessagesFromCache()
                 return nil
             },
-            onFailure: UiUtils.ToastFailureHandler)
+            onFailure: { [weak self] err in
+                self?.loadMessagesFromCache()
+                DispatchQueue.main.async {
+                    UiUtils.showToast(message: String(format: NSLocalizedString("删除失败：%@", comment: "Message deletion failure"), err.localizedDescription))
+                }
+                return nil
+            })
         self.loadMessagesFromCache()
     }
 
@@ -797,7 +812,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         } else {
             ref = nil
         }
-        let content = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: nil, refurl: ref, duration: duration, width: width, height: height, fname: fname, size: size, preMime: "image/png", preview: preview, previewRef: previewUrl)
+        let content = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: nil, refurl: ref, duration: duration, width: width, height: height, fname: fname, size: size, preMime: preMime, preview: preview, previewRef: previewUrl)
         if let caption = caption, !caption.isEmpty {
             _ = content?.appendLineBreak().append(Drafty(plainText: caption))
         }

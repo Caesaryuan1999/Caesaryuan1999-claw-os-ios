@@ -30,9 +30,10 @@ class AddByIDViewController: UIViewController {
         UiUtils.dismissKeyboardForTaps(onView: self.view)
 
         showCodeButton.tintColor = UIColor.label.inverted
-        if let myUid = tinode.myUid {
-            qrcodeImageView.image = Utils.generateQRCode(from: Utils.kTopicUriPrefix + myUid)
-        }
+        idTextField.placeholder = NSLocalizedString("用户名或账号名", comment: "Placeholder for contact lookup")
+        idTextField.autocorrectionType = .no
+        idTextField.autocapitalizationType = .none
+        qrcodeImageView.image = Utils.generateQRCode(from: "https://veilping.app/")
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -65,13 +66,10 @@ class AddByIDViewController: UIViewController {
     }
 
     @IBAction func okayClicked(_ sender: Any) {
-        let id = UiUtils.ensureDataInTextField(idTextField)
-        guard !id.isEmpty else { return }
+        let query = UiUtils.ensureDataInTextField(idTextField)
+        guard !query.isEmpty else { return }
         okayButton.isEnabled = false
-        // FIXME: this generates an unnecessary network call which fetches topic description.
-        // The description is discarded and re-requested as a part of the subsequent {sub} call.
-        // Either get rid of the {get} call or save the returned description.
-        handleCodeEntered(id)
+        handleCodeEntered(query)
     }
 
     @IBAction func showCodePressed(_ sender: Any) {
@@ -83,7 +81,7 @@ class AddByIDViewController: UIViewController {
         cameraPreviewView.isHidden = true
         qrcodeImageView.isHidden = false
 
-        titleLabel.text = NSLocalizedString("My Code", comment: "Title for displaying a QR Code")
+        titleLabel.text = NSLocalizedString("CLAW OS", comment: "Title for displaying app QR Code")
 
 
         showCodeButton.tintColor = UIColor.label.inverted
@@ -106,29 +104,100 @@ class AddByIDViewController: UIViewController {
         scanCodeButton.backgroundColor = UIColor.link
     }
 
-    func handleCodeEntered(_ id: String) {
-        let getMeta = MsgGetMeta(desc: MetaGetDesc(), sub: nil, data: nil, del: nil, tags: false, cred: false)
-        tinode.getMeta(topic: id, query: getMeta).then(
+    private func normalizeLookupInput(_ value: String) -> String {
+        var query = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if query.first == "@" {
+            query = String(query.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return query
+    }
+
+    private func isPrivateUserId(_ value: String?) -> Bool {
+        guard let value = value else { return false }
+        return AccountNames.isUserIdLike(value) || Tinode.topicTypeByName(name: value) == .p2p
+    }
+
+    private func findMatchingUserId(in subs: [FndSubscription]?, query: String) -> String? {
+        guard let subs = subs else { return nil }
+        for sub in subs {
+            let candidate = sub.user ?? sub.topic
+            guard Tinode.topicTypeByName(name: candidate) == .p2p,
+                  AccountNames.matchesPublicSearchName(tags: sub.priv, query: query) else {
+                continue
+            }
+            return candidate
+        }
+        return nil
+    }
+
+    private func findMatchingUserId(response: ServerMessage?, fnd: DefaultFndTopic, query: String) -> String? {
+        if let subs = response?.meta?.sub?.compactMap({ $0 as? FndSubscription }),
+           let match = findMatchingUserId(in: subs, query: query) {
+            return match
+        }
+        return findMatchingUserId(in: fnd.getSubscriptions(), query: query)
+    }
+
+    func handleCodeEntered(_ value: String) {
+        let query = normalizeLookupInput(value)
+        guard !query.isEmpty else {
+            okayButton.isEnabled = true
+            return
+        }
+        guard !isPrivateUserId(query) else {
+            UiUtils.showToast(message: NSLocalizedString("不能通过 ID 搜索，请输入用户名或账号名", comment: "Private ID search is disabled"))
+            okayButton.isEnabled = true
+            return
+        }
+        guard let searchQuery = AccountNames.directorySearchQuery(query) else {
+            UiUtils.showToast(message: NSLocalizedString("请输入有效的用户名或账号名", comment: "Invalid contact lookup query"))
+            okayButton.isEnabled = true
+            return
+        }
+        guard tinode.isConnectionAuthenticated else {
+            UiUtils.showToast(message: NSLocalizedString("服务暂不可用", comment: "Unable to use service"))
+            okayButton.isEnabled = true
+            return
+        }
+        UiUtils.attachToFndTopic(fndListener: nil)?.then(
             onSuccess: { [weak self] msg in
-                // Valid topic id.
-                if let desc = msg?.meta?.desc as? Description<TheCard, PrivateType> {
-                    ContactsManager.default.processDescription(uid: id, desc: desc)
-                }
-                self?.presentChatReplacingCurrentVC(with: id)
-                return nil
+                guard let self = self else { return nil }
+                let fnd = self.tinode.getOrCreateFndTopic()
+                return fnd.setMeta(desc: MetaSetDesc(pub: searchQuery, priv: nil)).thenApply { _ in
+                    return fnd.getMeta(query: MsgGetMeta.sub())
+                }.then(
+                    onSuccess: { [weak self] response in
+                        guard let self = self else { return nil }
+                        guard let userId = self.findMatchingUserId(response: response, fnd: fnd, query: query) else {
+                            DispatchQueue.main.async {
+                                UiUtils.showToast(message: NSLocalizedString("未找到该用户", comment: "Contact lookup no match"))
+                            }
+                            return nil
+                        }
+                        if let sub = response?.meta?.sub?.compactMap({ $0 as? FndSubscription }).first(where: { $0.uniqueId == userId }) ??
+                            fnd.getSubscriptions()?.first(where: { $0.uniqueId == userId }) {
+                            ContactsManager.default.processSubscription(sub: sub)
+                        }
+                        self.presentChatReplacingCurrentVC(with: userId)
+                        return nil
+                    },
+                    onFailure: { err in
+                        DispatchQueue.main.async {
+                            UiUtils.showToast(message: String(format: NSLocalizedString("查找失败：%@", comment: "Contact lookup failure"), err.localizedDescription))
+                        }
+                        return nil
+                    })
             },
             onFailure: { err in
-                if let e = err as? TinodeError {
-                    if case TinodeError.serverResponseError(let code, let text, _) = e {
-                        DispatchQueue.main.async {
-                            UiUtils.showToast(message: String(format: NSLocalizedString("Invalid group ID: %d (%@)", comment: "Error message"), code, text))
-                        }
-                    }
+                DispatchQueue.main.async {
+                    UiUtils.showToast(message: String(format: NSLocalizedString("查找失败：%@", comment: "Contact lookup failure"), err.localizedDescription))
                 }
                 return nil
             }).thenFinally({ [weak self] in
                 DispatchQueue.main.async {
-                    self?.okayButton.isEnabled = true
+                    if self?.okayButton.isEnabled == false {
+                        self?.okayButton.isEnabled = true
+                    }
                 }
             })
     }
@@ -143,10 +212,10 @@ class AddByIDViewController: UIViewController {
 
 extension AddByIDViewController: QRScannerDelegate {
     func qrScanner(didScanCode codeValue: String?) {
-        guard let code = codeValue else {
-            Cache.log.error("Invalid Tinode topic QR code")
+        guard codeValue != nil else {
+            Cache.log.error("Invalid CLAW OS QR code")
             DispatchQueue.main.async {
-                UiUtils.showToast(message: "Invalid Tinode topic QR code")
+                UiUtils.showToast(message: NSLocalizedString("无效的 CLAW OS 二维码", comment: "Invalid QR code"))
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) { [weak self] in
                 // Restart QR scanner.
@@ -154,6 +223,9 @@ extension AddByIDViewController: QRScannerDelegate {
             }
             return
         }
-        handleCodeEntered(code)
+        UiUtils.showToast(message: NSLocalizedString("不能通过 ID 搜索，请输入用户名或账号名", comment: "Private ID search is disabled"))
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) { [weak self] in
+            self?.qrScanner?.start()
+        }
     }
 }

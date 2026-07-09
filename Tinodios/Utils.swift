@@ -459,3 +459,122 @@ extension Array where Element: Comparable {
         return self.count == other.count && self.sorted() == other.sorted()
     }
 }
+
+enum ClawAuthInput {
+    static let minPasswordLength = 6
+    static let inviteCredentialMethod = "invite"
+
+    static func accountNameForSubmit(_ value: String?) -> String {
+        return (value ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    static func isAccountNameValid(_ value: String?) -> Bool {
+        guard let value = value, !value.isEmpty else { return false }
+        return value.range(of: #"^[A-Za-z0-9]+$"#, options: .regularExpression) != nil
+    }
+
+    static func passwordForSubmit(_ value: String?) -> String {
+        return value ?? ""
+    }
+
+    static func isPasswordValid(_ value: String?) -> Bool {
+        return passwordForSubmit(value).count >= minPasswordLength
+    }
+
+    static func inviteCodeForSubmit(_ value: String?) -> String {
+        let raw = value ?? ""
+        let payload = raw.filter { !$0.isWhitespace && $0 != "-" }.uppercased()
+        let stripped = payload.hasPrefix("CLAW") ? String(payload.dropFirst(4)) : payload
+        guard !stripped.isEmpty else { return "" }
+
+        var out = "CLAW"
+        for (idx, ch) in stripped.enumerated() {
+            if idx % 4 == 0 {
+                out.append("-")
+            }
+            out.append(ch)
+        }
+        return out
+    }
+}
+
+enum AccountNames {
+    static let basicTagPrefix = "basic:"
+
+    static func normalize(_ value: String?) -> String {
+        return (value ?? "").lowercased()
+    }
+
+    static func fromTags(_ tags: [String]?) -> String? {
+        return tags?.compactMap { fromBasicTag($0) }.first
+    }
+
+    static func fromBasicTag(_ tag: String?) -> String? {
+        guard let tag = tag,
+              tag.lowercased().hasPrefix(basicTagPrefix) else { return nil }
+        let accountName = normalize(String(tag.dropFirst(basicTagPrefix.count)))
+        return isPublicAccountName(accountName) ? accountName : nil
+    }
+
+    static func matchesPublicSearchName(tags: [String]?, query: String?) -> Bool {
+        let normalized = normalize(query)
+        guard !normalized.isEmpty, !isUserIdLike(normalized), let tags = tags else {
+            return false
+        }
+        let expectedBasic = basicTagPrefix + normalized
+        let expectedAlias = Tinode.kTagAlias + normalized
+        return tags.contains { tag in
+            let normalizedTag = normalize(tag)
+            return normalized == normalizedTag ||
+                expectedBasic == normalizedTag ||
+                expectedAlias == normalizedTag
+        }
+    }
+
+    static func exactLookupQuery(_ accountName: String) -> String {
+        return basicTagPrefix + normalize(accountName)
+    }
+
+    static func directorySearchQuery(_ query: String) -> String? {
+        let normalized = normalize(query.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard !normalized.isEmpty, !isUserIdLike(normalized) else { return nil }
+        if ClawAuthInput.isAccountNameValid(normalized) {
+            return "\(exactLookupQuery(normalized)),\(Tinode.kTagAlias)\(query),\(query)"
+        }
+        return "\(Tinode.kTagAlias)\(query),\(query)"
+    }
+
+    static func isUserIdLike(_ value: String?) -> Bool {
+        let normalized = normalize(value)
+        return normalized.hasPrefix("usr") && normalized.count > 8
+    }
+
+    static func contactListSecondary(accountName: String?) -> String? {
+        let normalized = normalize(accountName)
+        return isPublicAccountName(normalized) ? normalized : nil
+    }
+
+    static func contactDisplayName(displayName: String?, accountName: String?, userId: String?, genericDefaultName: String = "CLAW OS") -> String {
+        let normalizedDisplayName = (displayName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !normalizedDisplayName.isEmpty && !isGeneratedIdDisplayName(normalizedDisplayName, userId: userId) {
+            return normalizedDisplayName
+        }
+        let normalizedAccountName = normalize(accountName)
+        if isPublicAccountName(normalizedAccountName) {
+            return normalizedAccountName
+        }
+        let fallback = genericDefaultName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return fallback.isEmpty ? "CLAW OS" : fallback
+    }
+
+    private static func isGeneratedIdDisplayName(_ displayName: String, userId: String?) -> Bool {
+        guard let userId = userId, !userId.isEmpty else { return false }
+        return displayName == "CLAW OS用户\(userId)" ||
+            displayName == "CLAW OS用户 \(userId)" ||
+            displayName.lowercased() == "claw os user \(userId)".lowercased()
+    }
+
+    private static func isPublicAccountName(_ value: String?) -> Bool {
+        return ClawAuthInput.isAccountNameValid(value) && !isUserIdLike(value)
+    }
+}

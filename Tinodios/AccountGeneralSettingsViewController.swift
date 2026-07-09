@@ -18,6 +18,7 @@ class AccountGeneralSettingsViewController: UITableViewController {
     private static let kSectionPersonal = 0
     // Avatar = 0
     private static let kPersonalName = 1
+    // Legacy alias is hidden. CLAW OS account names are immutable and managed by backend tags.
     private static let kPersonalAlias = 2
     private static let kPersonalDescription = 3
 
@@ -58,6 +59,7 @@ class AccountGeneralSettingsViewController: UITableViewController {
         aliasTextField.delegate = self
         aliasTextField.tag = AccountGeneralSettingsViewController.kPersonalAlias
         aliasTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        aliasTextField.isHidden = true
 
         descriptionTextView.delegate = self
         descriptionTextView.tag = AccountGeneralSettingsViewController.kPersonalDescription
@@ -69,10 +71,8 @@ class AccountGeneralSettingsViewController: UITableViewController {
         // Title.
         self.nameTextField.text = me.pub?.fn
 
-        // Alias
-        aliasTextField.leftView = UIImageView(image: UIImage(systemName: "at"))
-        aliasTextField.leftViewMode = .always
-        aliasTextField.text = me.alias
+        // Keep legacy alias hidden: account name is immutable and stored as a backend basic tag.
+        aliasTextField.text = nil
 
         // Description (note)
         if let note = me.pub?.note {
@@ -159,23 +159,13 @@ class AccountGeneralSettingsViewController: UITableViewController {
                 pub!.note = desc
             }
         }
-        var tags: [String]? = nil
-        if let alias = self.aliasTextField.text, !alias.isEmpty {
-            tags = Tinode.setUniqueTag(tags: self.me.tags, uniqueTag: "\(Tinode.kTagAlias)\(alias)")
-        } else {
-            tags = Tinode.clearTagPrefix(tags: self.me.tags, prefix: Tinode.kTagAlias)
-        }
-        if tags != nil && tags!.equals(me.tags) {
-            tags = nil
-        }
-
-        if pub == nil && tags == nil {
+        if pub == nil {
             // Unchanged
             _ = self.navigationController?.popViewController(animated: true)
             return
         }
 
-        self.me.setMeta(meta: MsgSetMeta(desc: pub != nil ? MetaSetDesc(pub: pub, priv: nil) : nil, tags: tags))
+        self.me.setMeta(meta: MsgSetMeta(desc: pub != nil ? MetaSetDesc(pub: pub, priv: nil) : nil, tags: nil))
             .then(onSuccess: { _ in
                 DispatchQueue.main.async {
                     _ = self.navigationController?.popViewController(animated: true)
@@ -247,6 +237,10 @@ extension AccountGeneralSettingsViewController {
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         if indexPath.section == AccountGeneralSettingsViewController.kSectionContacts {
             return tableView.rowHeight
+        }
+        if indexPath.section == AccountGeneralSettingsViewController.kSectionPersonal &&
+            indexPath.row == AccountGeneralSettingsViewController.kPersonalAlias {
+            return 0
         }
 
         return super.tableView(tableView, heightForRowAt: indexPath)

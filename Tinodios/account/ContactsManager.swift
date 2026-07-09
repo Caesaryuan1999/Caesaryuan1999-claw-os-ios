@@ -11,12 +11,14 @@ import TinodiosDB
 public class ContactHolder {
     var pub: TheCard?
     var uniqueId: String?
+    var accountName: String?
     // This is used when the contact was found in search: what was matched.
     var subtitle: String?
 
-    init(pub: TheCard?, uniqueId: String?, subtitle: String? = nil) {
+    init(pub: TheCard?, uniqueId: String?, accountName: String? = nil, subtitle: String? = nil) {
         self.pub = pub
         self.uniqueId = uniqueId
+        self.accountName = accountName
         self.subtitle = subtitle
     }
 }
@@ -36,6 +38,7 @@ class ContactsManager {
     }
     private func processSubsciptionInternal(sub: SubscriptionProto) {
         guard let subId = sub.uniqueId else { return }
+        sanitizeDisplayName(sub: sub)
         let userId = userDb.getId(for: subId)
         if (sub.deleted) != nil {
             // Subscription deleted. Delete the user.
@@ -45,7 +48,8 @@ class ContactsManager {
         } else {
             if userId >= 0 {
                 // Existing contact.
-                if !userDb.update(userId: userId, updated: sub.updated, serializedPub: sub.serializePub()) {
+                let accountName = (sub as? FndSubscription).flatMap { AccountNames.fromTags($0.priv) }
+                if !userDb.update(userId: userId, updated: sub.updated, serializedPub: sub.serializePub(), accountName: accountName) {
                     Cache.log.error("Could not update user db for userId [%d], subId [%@]", userId, subId)
                 }
             } else {
@@ -86,7 +90,15 @@ class ContactsManager {
         // Turn users into contacts.
         return users?.map { user in
             let q = user as! DefaultUser
-            return ContactHolder(pub: q.pub, uniqueId: q.uid)
+            return ContactHolder(pub: q.pub, uniqueId: q.uid, accountName: (q.payload as? StoredUser)?.accountName)
         }
+    }
+
+    private func sanitizeDisplayName(sub: SubscriptionProto) {
+        guard let sub = sub as? FndSubscription else { return }
+        let accountName = AccountNames.fromTags(sub.priv)
+        sub.pub?.fn = AccountNames.contactDisplayName(displayName: sub.pub?.fn,
+                                                      accountName: accountName,
+                                                      userId: sub.uniqueId)
     }
 }

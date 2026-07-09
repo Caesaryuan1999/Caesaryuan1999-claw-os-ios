@@ -45,35 +45,50 @@ class AccountSettingsViewController: UITableViewController {
     }
 
     private func reloadData() {
+        let accountName = AccountNames.fromTags(me.tags)
         // Title.
-        self.userNameLabel.text = me.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing user name")
+        self.userNameLabel.text = AccountNames.contactDisplayName(displayName: me.pub?.fn,
+                                                                  accountName: accountName,
+                                                                  userId: self.tinode.myUid)
 
         // Avatar.
         self.avatarImageView.set(pub: me.pub, id: self.tinode.myUid, deleted: false)
         self.avatarImageView.letterTileFont = self.avatarImageView.letterTileFont.withSize(CGFloat(50))
 
-        self.descriptionLabel.text = me.pub?.note ?? me.tags?.joined(separator: ", ")
+        self.descriptionLabel.text = me.creds?.first(where: { $0.meth == ClawAuthInput.inviteCredentialMethod })?.val ??
+            NSLocalizedString("邀请码不可用", comment: "Placeholder for missing invite code")
 
-        // My UID/Address label.
+        // Private ID: only shown on the owner's account settings page.
         self.myUIDLabel.text = self.tinode.myUid
         self.myUIDLabel.sizeToFit()
 
-        self.aliasLabel.text = "@\(me.alias ?? "")"
+        self.aliasLabel.text = accountName ?? NSLocalizedString("未设置", comment: "Placeholder for missing account name")
         self.aliasLabel.sizeToFit()
     }
 
     @IBAction func copyTopicValue(_ sender: UIButton) {
-        UIPasteboard.general.string = sender.tag == 0 ? self.tinode.myUid : me.alias
-        UiUtils.showToast(message: sender.tag == 0 ?
-                            NSLocalizedString("Address copied", comment: "Toast notification") :
-                            NSLocalizedString("Alias copied", comment: "Toast notification"),
-                          level: .info)
+        let accountName = AccountNames.fromTags(me.tags)
+        let value: String?
+        let message: String
+        switch sender.tag {
+        case 0:
+            value = self.tinode.myUid
+            message = NSLocalizedString("ID 已复制", comment: "Toast notification")
+        case 1:
+            value = accountName
+            message = NSLocalizedString("账号名已复制", comment: "Toast notification")
+        default:
+            value = self.descriptionLabel.text
+            message = NSLocalizedString("邀请码已复制", comment: "Toast notification")
+        }
+        guard let value = value, !value.isEmpty else { return }
+        UIPasteboard.general.string = value
+        UiUtils.showToast(message: message, level: .info)
     }
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         if indexPath.section == AccountSettingsViewController.kSectionPersonal {
-            if (indexPath.row == AccountSettingsViewController.kPersonalAlias && (me.alias ?? "").isEmpty) ||
-                (indexPath.row == AccountSettingsViewController.kPersonalVerified && !me.isVerified) ||
+            if (indexPath.row == AccountSettingsViewController.kPersonalVerified && !me.isVerified) ||
                 (indexPath.row == AccountSettingsViewController.kPersonalStaff && !me.isStaffManaged) ||
                 (indexPath.row == AccountSettingsViewController.kPersonalDanger && !me.isDangerous) {
                 return CGFloat.leastNonzeroMagnitude

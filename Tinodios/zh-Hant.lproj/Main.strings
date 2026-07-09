@@ -11,7 +11,7 @@
 "3lo-iH-I5e.text" = "檔案名稱預留位置";
 
 /* Class = "UILabel"; text = "Address"; ObjectID = "3M8-Rp-TYP"; */
-"3M8-Rp-TYP.text" = "地址";
+"3M8-Rp-TYP.text" = "ID";
 
 /* Class = "UIBarButtonItem"; title = "Invite"; ObjectID = "3zN-CC-6bS"; */
 "3zN-CC-6bS.title" = "邀请";
@@ -92,7 +92,7 @@
 "71p-KF-hSv.text" = "1.0.0 (222)";
 
 /* Class = "UILabel"; text = "Description"; ObjectID = "73A-kJ-aFf"; */
-"73A-kJ-aFf.text" = "描述";
+"73A-kJ-aFf.text" = "註冊邀請碼";
 
 /* Class = "UITextField"; placeholder = "Enter Confirmation Code"; ObjectID = "82W-36-na3"; */
 "82W-36-na3.placeholder" = "輸入確認程式";
@@ -155,7 +155,7 @@
 "bfU-AG-oM0.text" = "我們將傳送一條帶有確認程式的訊息，以解決上述地址";
 
 /* Class = "UILabel"; text = "Alias"; ObjectID = "BjO-YX-L6x"; */
-"BjO-YX-L6x.text" = "別名";
+"BjO-YX-L6x.text" = "帳號名";
 
 /* Class = "UILabel"; text = "Configuration Code"; ObjectID = "BJV-dk-s3m"; */
 "BJV-dk-s3m.text" = "配置程式";
@@ -269,7 +269,7 @@
 "goO-Va-Eyu.title" = "轉寄導覽";
 
 /* Class = "UITextField"; placeholder = "Your name"; ObjectID = "gQG-WO-eaD"; */
-"gQG-WO-eaD.placeholder" = "您的姓名";
+"gQG-WO-eaD.placeholder" = "使用者名稱";
 
 /* Class = "UITableViewSection"; headerTitle = "Default Permissions"; ObjectID = "H78-sG-L0j"; */
 "H78-sG-L0j.headerTitle" = "預設權限";
@@ -485,7 +485,7 @@
 "s7j-0b-iei.text" = "@aliassss";
 
 /* Class = "UILabel"; text = "Alias"; ObjectID = "sH2-lo-2DQ"; */
-"sH2-lo-2DQ.text" = "別名";
+"sH2-lo-2DQ.text" = "帳號名（不可修改）";
 
 /* Class = "UILabel"; text = "This is a channel"; ObjectID = "skU-B7-Zed"; Note = "Label for channel switch"; */
 "skU-B7-Zed.text" = "這是一個頻道";
@@ -497,7 +497,7 @@
 "syF-Vp-vRc.text" = "王小明";
 
 /* Class = "UITabBarItem"; title = "By ID"; ObjectID = "T7l-iC-Rs6"; */
-"T7l-iC-Rs6.title" = "以 ID";
+"T7l-iC-Rs6.title" = "查找";
 
 /* Class = "UIView"; accessibilityLabel = "Footer"; ObjectID = "te7-Jx-ztq"; */
 "te7-Jx-ztq.accessibilityLabel" = "Footer";

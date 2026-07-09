@@ -1009,20 +1009,20 @@ public class Tinode {
         return account(uid: uid, tmpscheme: tmpscheme, tmpsecret: tmpsecret, scheme: scheme, secret: secret, loginNow: false, tags: nil, desc: nil as MetaSetDesc<Int, Int>?, creds: nil)
     }
     @discardableResult
-    public func updateAccountBasic(uid: String?, username: String, password: String) -> PromisedReply<ServerMessage> {
+    public func updateAccountBasic(uid: String?, username: String?, password: String) -> PromisedReply<ServerMessage> {
         do {
             return try updateAccountSecret(uid: uid, scheme: AuthScheme.kLoginBasic,
-                secret: AuthScheme.encodeBasicToken(uname: username, password: password))
+                secret: AuthScheme.encodeBasicToken(uname: username ?? "", password: password))
         } catch {
             return PromisedReply(error: error)
         }
     }
 
     @discardableResult
-    public func updateAccountBasic(usingAuthScheme auth: AuthScheme, username: String, password: String) -> PromisedReply<ServerMessage> {
+    public func updateAccountBasic(usingAuthScheme auth: AuthScheme, username: String?, password: String) -> PromisedReply<ServerMessage> {
         do {
             return try updateAccountSecret(uid: nil, tmpscheme: auth.scheme, tmpsecret: auth.secret, scheme: AuthScheme.kLoginBasic,
-                secret: AuthScheme.encodeBasicToken(uname: username, password: password))
+                secret: AuthScheme.encodeBasicToken(uname: username ?? "", password: password))
         } catch {
             return PromisedReply(error: error)
         }

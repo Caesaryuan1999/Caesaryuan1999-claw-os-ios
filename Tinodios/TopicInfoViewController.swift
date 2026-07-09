@@ -90,7 +90,11 @@ class TopicInfoViewController: UITableViewController {
             editButton.tintColor = UIColor.clear
         }
 
-        topicTitleLabel.text = isSlf ? NSLocalizedString("Saved messages", comment: "Title for slf topic") : topic.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing user name")
+        topicTitleLabel.text = isSlf ?
+            NSLocalizedString("Saved messages", comment: "Title for slf topic") :
+            (topic.isP2PType ?
+                AccountNames.contactDisplayName(displayName: topic.pub?.fn, accountName: topic.alias, userId: topic.name) :
+                topic.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing user name"))
         topicTitleLabel.textAlignment = .center
 
         let descPlaceholder: String? = topic.isOwner ? NSLocalizedString("Optional description", comment: "Placeholder for missing topic description") : nil
@@ -114,11 +118,11 @@ class TopicInfoViewController: UITableViewController {
             topicPrivateTextView.sizeToFit()
         }
 
-        topicIDLabel.text = topic.name
+        topicIDLabel.text = topic.isGrpType ? topic.name : ""
         topicIDLabel.sizeToFit()
 
         if let alias = topic.alias {
-            aliasLabel.text = "@\(alias)"
+            aliasLabel.text = topic.isGrpType ? "@\(alias)" : alias
             aliasLabel.sizeToFit()
         }
 
@@ -184,8 +188,8 @@ class TopicInfoViewController: UITableViewController {
     @IBAction func copyTopicValue(_ sender: UIButton) {
         UIPasteboard.general.string = sender.tag == 0 ? topic.name : topic.alias
         UiUtils.showToast(message: sender.tag == 0 ?
-                            NSLocalizedString("Address copied", comment: "Toast notification") :
-                            NSLocalizedString("Alias copied", comment: "Toast notification"),
+                            NSLocalizedString("ID 已复制", comment: "Toast notification") :
+                            NSLocalizedString("账号名已复制", comment: "Toast notification"),
                           level: .info)
     }
 
@@ -250,7 +254,7 @@ extension TopicInfoViewController {
         } else if indexPath.section == TopicInfoViewController.kSectionExtended {
             if (indexPath.row == TopicInfoViewController.kSectionExtendedPrivate && (topic.comment ?? "").isEmpty) ||
                 (indexPath.row == TopicInfoViewController.kSectionExtendedDescription && (topic.pub?.note?.isEmpty ?? true)) ||
-                (indexPath.row == TopicInfoViewController.kSectionExtendedAddress && topic.isSlfType) ||
+                (indexPath.row == TopicInfoViewController.kSectionExtendedAddress && !topic.isGrpType) ||
                 (indexPath.row == TopicInfoViewController.kSectionExtendedAlias && (topic.alias ?? "").isEmpty) ||
                 (indexPath.row == TopicInfoViewController.kSectionExtendedVerified && !(topic?.isVerified ?? false)) ||
                 (indexPath.row == TopicInfoViewController.kSectionExtendedStaff && !(topic?.isStaffManaged ?? false)) ||
