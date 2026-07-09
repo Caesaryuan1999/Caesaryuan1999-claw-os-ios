@@ -9,7 +9,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Tinode</string>
+	<string>CLAW OS</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -17,7 +17,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(APP_NAME)</string>
+	<string>CLAW OS</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -31,15 +31,15 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Tinode takes photos with the camera to use as avatar or to send them to your contacts</string>
+	<string>CLAW OS uses the camera to take profile photos and send images to your contacts.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Tinode uses microphone to record audio messages you send to your contacts</string>
+	<string>CLAW OS uses the microphone to record voice messages you send to your contacts.</string>
 	<key>NSContactsUsageDescription</key>
-	<string>Tinode sends only emails and phone numbers to the Tinode server to help you connect with other users</string>
+	<string>CLAW OS uses contacts to help you find and connect with other users.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Images and pictures from Tinode can be saved in the photo library</string>
+	<string>CLAW OS can save images and videos to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Tinode needs access to your photos to let you you send them to your contacts</string>
+	<string>CLAW OS needs access to your photos so you can send media to your contacts.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
