@@ -30,10 +30,10 @@ class NotificationService: UNNotificationServiceExtension {
         //
         // Subscription notification (sub):
         // - P2P
-        //   Title: 'New chat'
+        //   Title: 'CLAW OS'
         //   Body: <sender name> || 'Unknown'
         // - GRP
-        //   Title: 'New chat'
+        //   Title: 'CLAW OS'
         //   Body: <group name> || 'Unknown'
         // Deleted subscription:
         //   Always invisible.
@@ -87,7 +87,7 @@ class NotificationService: UNNotificationServiceExtension {
                     bestAttemptContent.body = senderName + ": " + bestAttemptContent.body
                 }
             } else if action == "sub" {
-                bestAttemptContent.title = NSLocalizedString("New chat", comment: "Push notification title")
+                bestAttemptContent.title = NSLocalizedString("CLAW OS", comment: "Push notification title")
                 bestAttemptContent.body = senderName
             }
         } else {
