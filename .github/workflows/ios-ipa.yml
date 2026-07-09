@@ -52,16 +52,31 @@ jobs:
           xcodebuild -showsdks
 
       - name: Install CocoaPods dependencies
+        env:
+          COCOAPODS_DISABLE_STATS: "true"
         run: |
           if ! command -v pod >/dev/null 2>&1; then
             gem install cocoapods --no-document
           fi
+
           if command -v bundle >/dev/null 2>&1 && [ -f Gemfile ]; then
             bundle install
-            bundle exec pod install
+            POD_INSTALL_CMD="bundle exec pod install"
           else
-            pod install
+            POD_INSTALL_CMD="pod install"
           fi
+
+          for attempt in 1 2 3 4 5; do
+            echo "Running CocoaPods install, attempt ${attempt}/5"
+            if ${POD_INSTALL_CMD}; then
+              exit 0
+            fi
+            if [ "${attempt}" -eq 5 ]; then
+              echo "::error::CocoaPods install failed after 5 attempts."
+              exit 1
+            fi
+            sleep $((attempt * 30))
+          done
 
       - name: Install signing assets
         run: bash Scripts/ci/install_ios_signing_assets.sh
