@@ -1,0 +1,140 @@
+name: iOS Smoke Test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ios-smoke.yml"
+      - "Tinodios/**"
+      - "TinodiosDB/**"
+      - "TinodiosUITests/**"
+      - "TinodeSDK/**"
+      - "Tinodios.xcodeproj/**"
+      - "Tinodios.xcworkspace/**"
+      - "Podfile"
+      - "Podfile.lock"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Build and launch CLAW OS
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore script execute permissions
+        run: |
+          chmod +x Scripts/*.sh || true
+          chmod +x Scripts/ci/*.sh || true
+
+      - name: Show Xcode and simulator versions
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks
+          xcrun simctl list devices available
+
+      - name: Install CocoaPods dependencies
+        env:
+          COCOAPODS_DISABLE_STATS: "true"
+        run: |
+          if ! command -v pod >/dev/null 2>&1; then
+            gem install cocoapods --no-document
+          fi
+
+          if command -v bundle >/dev/null 2>&1 && [ -f Gemfile ]; then
+            bundle install
+            POD_INSTALL_CMD="bundle exec pod install"
+          else
+            POD_INSTALL_CMD="pod install"
+          fi
+
+          for attempt in 1 2 3 4 5; do
+            echo "Running CocoaPods install, attempt ${attempt}/5"
+            if ${POD_INSTALL_CMD}; then
+              exit 0
+            fi
+            if [ "${attempt}" -eq 5 ]; then
+              echo "::error::CocoaPods install failed after 5 attempts."
+              exit 1
+            fi
+            sleep $((attempt * 30))
+          done
+
+      - name: Prepare Firebase placeholder
+        run: |
+          if [ ! -f GoogleService-Info.plist ]; then
+            cat > GoogleService-Info.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CLIENT_ID</key>
+            <string>0-placeholder.apps.googleusercontent.com</string>
+            <key>REVERSED_CLIENT_ID</key>
+            <string>com.googleusercontent.apps.0-placeholder</string>
+            <key>API_KEY</key>
+            <string>placeholder-api-key</string>
+            <key>GCM_SENDER_ID</key>
+            <string>000000000000</string>
+            <key>PLIST_VERSION</key>
+            <string>1</string>
+            <key>BUNDLE_ID</key>
+            <string>app.veilping.clawoschat</string>
+            <key>PROJECT_ID</key>
+            <string>claw-os-placeholder</string>
+            <key>STORAGE_BUCKET</key>
+            <string>claw-os-placeholder.appspot.com</string>
+            <key>GOOGLE_APP_ID</key>
+            <string>1:000000000000:ios:0000000000000000000000</string>
+            <key>IS_ADS_ENABLED</key>
+            <false/>
+            <key>IS_ANALYTICS_ENABLED</key>
+            <false/>
+            <key>IS_APPINVITE_ENABLED</key>
+            <false/>
+            <key>IS_GCM_ENABLED</key>
+            <false/>
+            <key>IS_SIGNIN_ENABLED</key>
+            <false/>
+          </dict>
+          </plist>
+          PLIST
+          fi
+          plutil -lint GoogleService-Info.plist
+
+      - name: Run launch smoke test
+        run: |
+          set -o pipefail
+          DEVICE_NAME="$(xcrun simctl list devices available | sed -n 's/^[[:space:]]*\(iPhone [^(]*\) (.*$/\1/p' | head -n 1 | xargs)"
+          if [ -z "${DEVICE_NAME}" ]; then
+            echo "::error::No available iPhone simulator found."
+            exit 1
+          fi
+          echo "Using simulator: ${DEVICE_NAME}"
+
+          xcodebuild test \
+            -workspace Tinodios.xcworkspace \
+            -scheme Tinodios \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,name=${DEVICE_NAME}" \
+            -only-testing:TinodiosUITests/TinodiosUITestsLaunchTests/testLaunch \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | tee build-ios-smoke.log
+
+      - name: Upload smoke logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-smoke-logs
+          path: |
+            build-ios-smoke.log
+            $HOME/Library/Logs/DiagnosticReports/*.crash
+          if-no-files-found: ignore
+          retention-days: 7
