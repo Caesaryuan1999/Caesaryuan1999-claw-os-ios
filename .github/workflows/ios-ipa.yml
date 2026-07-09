@@ -1,0 +1,156 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_bundle_id:
+        description: Main app bundle identifier
+        required: true
+        default: app.veilping.clawoschat
+      extension_bundle_id:
+        description: Notification extension bundle identifier
+        required: true
+        default: app.veilping.clawoschat.TinodiosNSExtension
+      export_method:
+        description: Xcode export method
+        required: true
+        default: release-testing
+        type: choice
+        options:
+          - release-testing
+          - app-store-connect
+          - enterprise
+      build_number:
+        description: Optional CFBundleVersion override
+        required: false
+
+jobs:
+  build:
+    name: Build CLAW OS IPA
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    env:
+      APP_BUNDLE_ID: ${{ inputs.app_bundle_id }}
+      EXTENSION_BUNDLE_ID: ${{ inputs.extension_bundle_id }}
+      EXPORT_METHOD: ${{ inputs.export_method }}
+      BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+      IOS_APP_PROFILE_BASE64: ${{ secrets.IOS_APP_PROFILE_BASE64 }}
+      IOS_EXTENSION_PROFILE_BASE64: ${{ secrets.IOS_EXTENSION_PROFILE_BASE64 }}
+      IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Install CocoaPods dependencies
+        run: |
+          if ! command -v pod >/dev/null 2>&1; then
+            gem install cocoapods --no-document
+          fi
+          if command -v bundle >/dev/null 2>&1 && [ -f Gemfile ]; then
+            bundle install
+            bundle exec pod install
+          else
+            pod install
+          fi
+
+      - name: Install signing assets
+        run: bash Scripts/ci/install_ios_signing_assets.sh
+
+      - name: Configure project signing
+        run: |
+          gem install xcodeproj --no-document
+          ruby Scripts/ci/configure_ios_signing.rb
+
+      - name: Create export options
+        run: |
+          mkdir -p build
+          cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>compileBitcode</key>
+            <false/>
+            <key>destination</key>
+            <string>export</string>
+            <key>method</key>
+            <string>${EXPORT_METHOD}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${APP_BUNDLE_ID}</key>
+              <string>${APP_PROFILE_NAME}</string>
+              <key>${EXTENSION_BUNDLE_ID}</key>
+              <string>${EXTENSION_PROFILE_NAME}</string>
+            </dict>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>teamID</key>
+            <string>${APPLE_TEAM_ID}</string>
+            <key>thinning</key>
+            <string>&lt;none&gt;</string>
+          </dict>
+          </plist>
+          PLIST
+          plutil -lint build/ExportOptions.plist
+
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -workspace Tinodios.xcworkspace \
+            -scheme Tinodios \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination generic/platform=iOS \
+            -archivePath build/CLAWOS.xcarchive \
+            CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
+            MARKETING_VERSION="1.0.0"
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/CLAWOS.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist build/ExportOptions.plist
+
+      - name: Validate IPA for third-party signing platform
+        run: |
+          IPA_PATH="$(find build/export -name '*.ipa' -type f | head -n 1)"
+          if [ -z "$IPA_PATH" ]; then
+            echo "::error::IPA was not generated."
+            exit 1
+          fi
+          echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
+          unzip -l "$IPA_PATH" | tee build/ipa-files.txt
+          if ! grep -q 'Payload/.*\.app/embedded.mobileprovision' build/ipa-files.txt; then
+            echo "::error::IPA does not contain embedded.mobileprovision."
+            exit 1
+          fi
+          if ! grep -q 'Payload/.*\.app/Info.plist' build/ipa-files.txt; then
+            echo "::error::IPA does not contain app Info.plist."
+            exit 1
+          fi
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: claw-os-ios-ipa
+          path: |
+            build/export/*.ipa
+            build/ExportOptions.plist
+            build/ipa-files.txt
+          if-no-files-found: error
+          retention-days: 7

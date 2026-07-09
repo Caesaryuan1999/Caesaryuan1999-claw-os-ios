@@ -1,0 +1,15 @@
+/* Privacy - Camera Usage Description */
+"NSCameraUsageDescription" = "CLAW OS用相機拍照，用作頭像或傳送給您的聯絡人";
+
+/* Privacy - Contacts Usage Description */
+"NSContactsUsageDescription" = "CLAW OS只向CLAW OS伺服器傳送電子郵件和電話號碼，以幫助您與其他使用者聯絡";
+
+/* Privacy - Microphone Usage Description */
+"NSMicrophoneUsageDescription" = "CLAW OS使用麥克風錄製您傳送給聯絡人的音訊訊息";
+
+/* Privacy - Photo Library Additions Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "CLAW OS的影象和圖片可以儲存在照片庫中";
+
+/* Privacy - Photo Library Usage Description */
+"NSPhotoLibraryUsageDescription" = "CLAW OS需要訪問您的照片，以便您將它們傳送給您的聯絡人";
+

@@ -1,0 +1,14 @@
+//
+// Development .xcconfig
+//
+
+// Include Pods config.
+#include "Pods/Target Support Files/Pods-Tinodios/Pods-Tinodios.debug.xcconfig"
+
+// Server URL
+HOST_NAME = veilping.app
+// Use TLS (https, wss)
+USE_TLS = YES
+
+// App Settings
+APP_NAME = CLAW OS (test)

@@ -1,0 +1,15 @@
+/* Privacy - Camera Usage Description */
+"NSCameraUsageDescription" = "CLAW OS использует камеру для того, чтобы создать аватар или для того, чтобы отправить фото вашим контактам";
+
+/* Privacy - Contacts Usage Description */
+"NSContactsUsageDescription" = "CLAW OS сохраняет емейлы и номера телефонов на сервере для того, чтобы найти по ним ваших знакомых";
+
+/* Privacy - Microphone Usage Description */
+"NSMicrophoneUsageDescription" = "CLAW OS использует микрофон для записи аудио, которое вы отправляете в своих сообщениях";
+
+/* Privacy - Photo Library Additions Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "Фото и картинки из CLAW OS могут быть сохранены в фото-библиотеке";
+
+/* Privacy - Photo Library Usage Description */
+"NSPhotoLibraryUsageDescription" = "CLAW OS-у нужно получить доступ к вашим фото для того, чтобы вы могли прикреплять их к сообщениям";
+
