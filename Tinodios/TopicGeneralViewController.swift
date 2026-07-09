@@ -32,7 +32,7 @@ class TopicGeneralViewController: UITableViewController {
 
     private var aliasTesterTimer: Timer?
 
-    private static let kDescriptionPlaceholder = NSLocalizedString("Optional description", comment: "Placeholder for missing topic description")
+    private static let kDescriptionPlaceholder = NSLocalizedString("说明（可选）", comment: "Placeholder for missing topic description")
 
     @IBOutlet weak var actionManageTags: UITableViewCell!
 
@@ -102,7 +102,7 @@ class TopicGeneralViewController: UITableViewController {
     private func reloadData() {
         // Title
         if topic.isSlfType {
-            topicTitleTextField.text = NSLocalizedString("Saved messages", comment: "Title of slf topic")
+            topicTitleTextField.text = NSLocalizedString("已保存消息", comment: "Title of slf topic")
         } else {
             topicTitleTextField.text = topic.pub!.fn
         }
@@ -114,7 +114,7 @@ class TopicGeneralViewController: UITableViewController {
 
         // Description
         if topic.isSlfType {
-            topicDescriptTextView.text = NSLocalizedString("Notes, messages, links, files saved for posterity", comment: "Explanation for Saved messages topic")
+            topicDescriptTextView.text = NSLocalizedString("为以后保存的注释、消息、链接、文件", comment: "Explanation for Saved messages topic")
         } else if (topic.pub?.note ?? "").isEmpty {
             if topic.isOwner {
                 topicDescriptTextView.textColor = .placeholderText

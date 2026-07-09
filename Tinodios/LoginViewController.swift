@@ -159,7 +159,7 @@ class LoginViewController: UIViewController {
         }
 
         let tinode = Cache.tinode
-        UiUtils.toggleProgressOverlay(in: self, visible: true, title: NSLocalizedString("Logging in...", comment: "Login progress text"))
+        UiUtils.toggleProgressOverlay(in: self, visible: true, title: NSLocalizedString("正在登录...", comment: "Login progress text"))
         do {
             try tinode.connectDefault(inBackground: false)?
                 .thenApply({ _ in
@@ -185,10 +185,10 @@ class LoginViewController: UIViewController {
                         Cache.log.error("LoginVC - login failed: %@", err.localizedDescription)
                         var toastMsg: String
                         if let tinodeErr = err as? TinodeError {
-                            toastMsg = "Tinode: \(tinodeErr.description)"
+                            toastMsg = "CLAW OS: \(tinodeErr.description)"
                         } else {
                             let (hostName, _) = Tinode.getConnectionParams()
-                            toastMsg = String(format: NSLocalizedString("Couldn't connect to server at %@: %@", comment: "Error message"), hostName, err.localizedDescription)
+                            toastMsg = String(format: NSLocalizedString("无法连接到服务器 %@：%@", comment: "Error message"), hostName, err.localizedDescription)
                         }
                         DispatchQueue.main.async {
                             UiUtils.showToast(message: toastMsg)

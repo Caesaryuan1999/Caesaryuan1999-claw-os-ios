@@ -236,8 +236,8 @@ class FindViewController: UITableViewController, FindDisplayLogic {
             // Configure the cell...
             if indexPath.section == FindViewController.kLocalSavedMessagesSection {
                 cell.avatar.set(pub: nil, id: Tinode.kTopicSlf, deleted: false)
-                cell.title.text = NSLocalizedString("Saved messages", comment: "Title of the slf topic")
-                cell.subtitle.text = NSLocalizedString("Notes, messages, links, files saved for posterity", comment: "Explanation for Saved messages topic")
+                cell.title.text = NSLocalizedString("已保存消息", comment: "Title of the slf topic")
+                cell.subtitle.text = NSLocalizedString("为以后保存的注释、消息、链接、文件", comment: "Explanation for Saved messages topic")
                 cell.subtitle.isHidden = false
             } else {
                 let contact = indexPath.section == FindViewController.kLocalContactsSection ? localContacts[indexPath.row] : remoteContacts[indexPath.row]

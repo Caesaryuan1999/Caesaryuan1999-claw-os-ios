@@ -138,10 +138,11 @@ open class ImagePicker: NSObject {
         // TODO: switch to PHPickerViewController.
         let videoUrl = info[.mediaURL] as? NSURL
         let result = ImagePicker.extractFileNameAndMimeType(fromURL: videoUrl)
-        let fname = result.0
-        let mimeType = result.1
+        let swiftUrl = videoUrl as URL?
+        let fname = result.0 as String? ?? swiftUrl?.lastPathComponent ?? "claw_os_video.mov"
+        let mimeType = result.1 ?? Utils.mimeForUrl(url: swiftUrl ?? URL(fileURLWithPath: fname), ifMissing: "video/quicktime")
 
-        self.pickerController(picker, didSelect: .video(videoUrl as URL?, mimeType, fname as String?))
+        self.pickerController(picker, didSelect: .video(swiftUrl, mimeType, fname))
     }
 }
 

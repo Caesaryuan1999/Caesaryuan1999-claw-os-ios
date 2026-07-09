@@ -24,7 +24,7 @@ class AccountGeneralSettingsViewController: UITableViewController {
 
     private static let kSectionContacts = 1
 
-    private static let kDescriptionPlaceholder = NSLocalizedString("Optional description", comment: "Placeholder for missing user self-description")
+    private static let kDescriptionPlaceholder = NSLocalizedString("说明（可选）", comment: "Placeholder for missing user self-description")
     
     @IBOutlet weak var nameTextField: UITextField!
     @IBOutlet weak var aliasTextField: UITextField!
@@ -181,7 +181,7 @@ extension AccountGeneralSettingsViewController: ImagePickerDelegate {
         UiUtils.updateAvatar(forTopic: self.me, image: image)
             .thenApply { _ in
                 DispatchQueue.main.async {
-                    UiUtils.showToast(message: "Avatar successfully updated", level: .info)
+                    UiUtils.showToast(message: NSLocalizedString("头像已更新", comment: "Avatar update success"), level: .info)
                     self.reloadData()
                 }
                 return nil
@@ -220,7 +220,7 @@ extension AccountGeneralSettingsViewController {
         cell.textLabel?.sizeToFit()
 
         if !cred.isDone {
-            cell.detailTextLabel?.text = NSLocalizedString("confirm", comment: "Button text")
+            cell.detailTextLabel?.text = NSLocalizedString("确定", comment: "Button text")
         } else {
             cell.detailTextLabel?.text = ""
         }

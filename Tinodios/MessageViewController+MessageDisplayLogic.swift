@@ -14,24 +14,24 @@ extension MessageViewController: MessageDisplayLogic {
     private func showInvitationDialog() {
         guard self.presentedViewController == nil else { return }
         let attrs = [ NSAttributedString.Key.font: UIFont.systemFont(ofSize: 20.0) ]
-        let title = NSAttributedString(string: NSLocalizedString("New Chat", comment: "View title"), attributes: attrs)
+        let title = NSAttributedString(string: NSLocalizedString("通讯录", comment: "View title"), attributes: attrs)
         let alert = UIAlertController(
             title: nil,
-            message: NSLocalizedString("You are invited to start a new chat. What would you like?", comment: "Call to action"),
+            message: NSLocalizedString("你收到一个聊天邀请，要如何处理？", comment: "Call to action"),
             preferredStyle: .actionSheet)
         alert.setValue(title, forKey: "attributedTitle")
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Accept", comment: "Invite reaction button"), style: .default,
+            title: NSLocalizedString("接受", comment: "Invite reaction button"), style: .default,
             handler: { _ in
                 self.interactor?.acceptInvitation()
         }))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Ignore", comment: "Invite reaction button"), style: .default,
+            title: NSLocalizedString("忽略", comment: "Invite reaction button"), style: .default,
             handler: { _ in
                 self.interactor?.ignoreInvitation()
         }))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Block", comment: "Invite reaction button"), style: .default,
+            title: NSLocalizedString("屏蔽", comment: "Invite reaction button"), style: .default,
             handler: { _ in
                 self.interactor?.blockTopic()
         }))
@@ -46,8 +46,8 @@ extension MessageViewController: MessageDisplayLogic {
         assert(Thread.isMainThread)
         let isSlf = self.topic?.isSlfType ?? false
         self.navigationItem.title = isSlf ?
-            NSLocalizedString("Saved messages", comment: "Title of the slf topic") :
-            pub?.fn ?? NSLocalizedString("Undefined", comment: "Undefined chat name")
+            NSLocalizedString("已保存消息", comment: "Title of the slf topic") :
+            pub?.fn ?? NSLocalizedString("未命名", comment: "Undefined chat name")
         navBarAvatarView.set(pub: pub, id: topicName, online: isSlf ? nil : online, deleted: deleted)
         navBarAvatarView.bounds = CGRect(x: 0, y: 0, width: Constants.kNavBarAvatarSmallState, height: Constants.kNavBarAvatarSmallState)
 

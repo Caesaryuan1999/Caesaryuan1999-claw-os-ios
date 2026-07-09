@@ -91,19 +91,19 @@ class TopicInfoViewController: UITableViewController {
         }
 
         topicTitleLabel.text = isSlf ?
-            NSLocalizedString("Saved messages", comment: "Title for slf topic") :
+            NSLocalizedString("已保存消息", comment: "Title for slf topic") :
             (topic.isP2PType ?
                 AccountNames.contactDisplayName(displayName: topic.pub?.fn, accountName: topic.alias, userId: topic.name) :
                 topic.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing user name"))
         topicTitleLabel.textAlignment = .center
 
-        let descPlaceholder: String? = topic.isOwner ? NSLocalizedString("Optional description", comment: "Placeholder for missing topic description") : nil
+        let descPlaceholder: String? = topic.isOwner ? NSLocalizedString("说明（可选）", comment: "Placeholder for missing topic description") : nil
         let isEmpty = (topic.pub?.note?.isEmpty ?? true) && !isSlf
         topicDescriptionTextView.textColor = isEmpty ? .placeholderText : .secondaryLabel
         topicDescriptionTextView.text = isEmpty ?
             descPlaceholder :
                 isSlf ?
-                NSLocalizedString("Notes, messages, links, files saved for posterity", comment: "Explanation for Saved messages topic") :
+                NSLocalizedString("为以后保存的注释、消息、链接、文件", comment: "Explanation for Saved messages topic") :
                 topic.pub?.note
         topicDescriptionTextView.textContainer.maximumNumberOfLines = 2
         topicDescriptionTextView.textContainer.lineBreakMode = .byTruncatingTail

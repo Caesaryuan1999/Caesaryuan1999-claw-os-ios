@@ -114,6 +114,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
     // The new value for the variables below will be updated to info.seq.
     private var lastSeenRecv: Int?
     private var lastSeenRead: Int?
+    private var deleteSeqIdsInFlight = Set<Int>()
 
     // Maximum seq id of the currently scheduled read notifications.
     // -1 stands for no notifications in flight.
@@ -496,19 +497,31 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             }
             return
         }
-        topic.delMessages(ids: seqIds, hard: hard).then(
+        let uniqueSeqIds = Array(Set(seqIds)).sorted()
+        if uniqueSeqIds.contains(where: { deleteSeqIdsInFlight.contains($0) }) {
+            DispatchQueue.main.async {
+                UiUtils.showToast(message: NSLocalizedString("正在删除，请稍候", comment: "Message delete in progress"))
+            }
+            return
+        }
+        deleteSeqIdsInFlight.formUnion(uniqueSeqIds)
+
+        topic.delMessages(ids: uniqueSeqIds, hard: hard).then(
             onSuccess: { [weak self] _ in
-                self?.loadMessagesFromCache()
+                DispatchQueue.main.async {
+                    self?.deleteSeqIdsInFlight.subtract(uniqueSeqIds)
+                    self?.loadMessagesFromCache()
+                }
                 return nil
             },
             onFailure: { [weak self] err in
-                self?.loadMessagesFromCache()
                 DispatchQueue.main.async {
+                    self?.deleteSeqIdsInFlight.subtract(uniqueSeqIds)
+                    self?.loadMessagesFromCache()
                     UiUtils.showToast(message: String(format: NSLocalizedString("删除失败：%@", comment: "Message deletion failure"), err.localizedDescription))
                 }
                 return nil
             })
-        self.loadMessagesFromCache()
     }
 
     func deleteFailedMessages() {
@@ -608,14 +621,22 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
     }
 
     private func uploadMessageAttachment(type: AttachmentType, _ def: UploadDef) {
-        guard let mimeType = def.mimeType, let topic = topic else { return }
+        guard let topic = topic else { return }
+        let mimeType = def.mimeType ?? {
+            switch type {
+            case .video:
+                return "video/mp4"
+            default:
+                return "application/octet-stream"
+            }
+        }()
 
         let filename = def.filename ?? ""
 
         // Check if the attachment is too big even for out-of-band uploads.
         if def.data.count > Cache.tinode.getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: MessageViewController.kMaxAttachmentSize) {
             DispatchQueue.main.async {
-                UiUtils.showToast(message: NSLocalizedString("Attachment exceeds maximum size", comment: "Error message: attachment too large"))
+                UiUtils.showToast(message: NSLocalizedString("附件超过最大限制", comment: "Error message: attachment too large"))
             }
             return
         }
@@ -628,7 +649,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         // Giving fake URL to Drafty instead of Data which is not needed in DB anyway.
         guard let urlStr = "mid:uploading/\(filename)".addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) else {
             DispatchQueue.main.async {
-                UiUtils.showToast(message: String(format: NSLocalizedString("Failed to create URL string for file: %@", comment: "Error message: malformed URL string"), filename))
+                UiUtils.showToast(message: String(format: NSLocalizedString("无法生成文件链接：%@", comment: "Error message: malformed URL string"), filename))
             }
             return
         }

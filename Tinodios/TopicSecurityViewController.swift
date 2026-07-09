@@ -225,81 +225,93 @@ class TopicSecurityViewController: UITableViewController {
 
     @objc func deleteGroupClicked(sender: UITapGestureRecognizer) {
         guard topic.isOwner else {
-            UiUtils.showToast(message: NSLocalizedString("Only Owner can delete group", comment: "Toast notification"))
+            UiUtils.showToast(message: NSLocalizedString("只有群主可以删除群组", comment: "Toast notification"))
             return
         }
-        let alert = UIAlertController(title: sender.name ?? "" == "deleteGroup" ? NSLocalizedString("Delete the group?", comment: "Alert title") : NSLocalizedString("Delete Saved messages?", comment: "Alert title"), message: nil, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Alert action"), style: .cancel, handler: nil))
+        let isDeleteGroup = (sender.name ?? "") == "deleteGroup"
+        let title = isDeleteGroup ? NSLocalizedString("删除群组？", comment: "Alert title") : NSLocalizedString("删除已保存消息？", comment: "Alert title")
+        let alert = UIAlertController(title: title, message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Delete", comment: "Alert action"), style: .destructive,
+            title: NSLocalizedString("删除", comment: "Alert action"), style: .destructive,
             handler: { _ in self.deleteTopic() }))
         present(alert, animated: true)
     }
 
     @objc func deleteMessagesClicked(sender: UITapGestureRecognizer) {
         let handler: (Bool) -> Void = { (hard: Bool) -> Void in
-            self.topic?.delMessages(hard: hard).thenCatch(UiUtils.ToastFailureHandler)
+            self.topic?.delMessages(hard: hard).then(onSuccess: { _ in
+                DispatchQueue.main.async {
+                    UiUtils.showToast(message: NSLocalizedString("消息已删除", comment: "Toast notification"), level: .info)
+                }
+                return nil
+            }, onFailure: { err in
+                DispatchQueue.main.async {
+                    UiUtils.showToast(message: String(format: NSLocalizedString("删除失败：%@", comment: "Toast notification"), err.localizedDescription))
+                }
+                return nil
+            })
         }
 
-        let alert = UIAlertController(title: NSLocalizedString("Clear all messages?", comment: "Alert title"), message: nil, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Alert action"), style: .cancel, handler: nil))
+        let alert = UIAlertController(title: NSLocalizedString("删除所有消息？", comment: "Alert title"), message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
         if topic.isDeleter {
             alert.addAction(UIAlertAction(
-                title: NSLocalizedString("For all", comment: "Alert action qualifier as in 'Delete for all'"), style: .destructive,
+                title: NSLocalizedString("从双方删除", comment: "Alert action qualifier as in 'Delete for all'"), style: .destructive,
                 handler: { _ in handler(true) }))
         }
         alert.addAction(UIAlertAction(
-            title: topic.isDeleter ? NSLocalizedString("For me", comment: "Alert action 'Delete for me'") : NSLocalizedString("OK", comment: "Alert action"), style: .destructive,
+            title: topic.isDeleter ? NSLocalizedString("仅从我这里删除", comment: "Alert action 'Delete for me'") : NSLocalizedString("确定", comment: "Alert action"), style: .destructive,
             handler: { _ in handler(false) }))
         present(alert, animated: true)
     }
 
     @objc func leaveConversationClicked(sender: UITapGestureRecognizer) {
-        let alert = UIAlertController(title: NSLocalizedString("Leave the conversation?", comment: "Alert title"), message: nil, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Alert action"), style: .cancel, handler: nil))
+        let alert = UIAlertController(title: NSLocalizedString("离开会话？", comment: "Alert title"), message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Leave", comment: "Alert action"), style: .destructive,
+            title: NSLocalizedString("离开", comment: "Alert action"), style: .destructive,
             handler: { _ in self.deleteTopic() }))
         present(alert, animated: true)
     }
 
     @objc func leaveGroupClicked(sender: UITapGestureRecognizer) {
         guard !topic.isOwner else {
-            UiUtils.showToast(message: NSLocalizedString("Owner cannot leave the group", comment: "Toast notification"))
+            UiUtils.showToast(message: NSLocalizedString("群主不能离开群组", comment: "Toast notification"))
             return
         }
 
-        let alert = UIAlertController(title: NSLocalizedString("Leave the group?", comment: "Alert title"), message: nil, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Alert action"), style: .cancel, handler: nil))
+        let alert = UIAlertController(title: NSLocalizedString("离开群组？", comment: "Alert title"), message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Leave", comment: "Alert action"), style: .destructive,
+            title: NSLocalizedString("离开", comment: "Alert action"), style: .destructive,
             handler: { _ in self.deleteTopic() }))
         present(alert, animated: true)
     }
 
     @objc func blockContactClicked(sender: UITapGestureRecognizer) {
-        let alert = UIAlertController(title: NSLocalizedString("Block contact?", comment: "Alert action"), message: nil, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Alert action"), style: .cancel, handler: nil))
+        let alert = UIAlertController(title: NSLocalizedString("屏蔽联系人？", comment: "Alert action"), message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Block", comment: "Alert action"), style: .destructive,
+            title: NSLocalizedString("屏蔽", comment: "Alert action"), style: .destructive,
             handler: { _ in self.blockContact() }))
         present(alert, animated: true)
     }
 
     @objc func reportContactClicked(sender: UITapGestureRecognizer) {
-        let alert = UIAlertController(title: NSLocalizedString("Report contact?", comment: "Alert title"), message: NSLocalizedString("Also block and remove all messages", comment: "Alert explanation"), preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Alert action"), style: .cancel, handler: nil))
+        let alert = UIAlertController(title: NSLocalizedString("举报联系人？", comment: "Alert title"), message: NSLocalizedString("同时屏蔽并删除所有消息", comment: "Alert explanation"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Report", comment: "Alert action"), style: .destructive,
+            title: NSLocalizedString("举报", comment: "Alert action"), style: .destructive,
             handler: { _ in self.reportTopic(reason: "TODO") }))
         present(alert, animated: true)
     }
 
     @objc func reportGroupClicked(sender: UITapGestureRecognizer) {
-        let alert = UIAlertController(title: NSLocalizedString("Report Group?", comment: "Alert title"), message: NSLocalizedString("Also block and remove all messages", comment: "Alert explanation"), preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        let alert = UIAlertController(title: NSLocalizedString("举报群组？", comment: "Alert title"), message: NSLocalizedString("同时屏蔽并删除所有消息", comment: "Alert explanation"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Report", comment: "Alert action"), style: .destructive,
+            title: NSLocalizedString("举报", comment: "Alert action"), style: .destructive,
             handler: { _ in self.reportTopic(reason: "TODO") }))
         present(alert, animated: true)
     }

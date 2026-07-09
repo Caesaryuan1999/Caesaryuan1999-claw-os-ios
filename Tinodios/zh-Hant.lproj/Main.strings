@@ -38,7 +38,7 @@
 "6rW-B5-NCp.text" = "placeholder_file_name";
 
 /* Class = "UILabel"; text = "MyUID"; ObjectID = "6V8-mQ-RXX"; */
-"6V8-mQ-RXX.text" = "我的UID";
+"6V8-mQ-RXX.text" = "私密ID";
 
 /* Class = "UIButton"; normalTitle = "Configure Connection"; ObjectID = "6zX-Sq-TK6"; */
 "6zX-Sq-TK6.normalTitle" = "配置連線";
@@ -167,7 +167,7 @@
 "BS4-zj-4bf.text" = "CLAW OS";
 
 /* Class = "UITableViewSection"; headerTitle = "Contacts"; ObjectID = "bvE-OV-sy1"; */
-"bvE-OV-sy1.headerTitle" = "聯絡人";
+"bvE-OV-sy1.headerTitle" = "邀請碼";
 
 /* Class = "UILabel"; text = "No results"; ObjectID = "bYc-bz-7iK"; */
 "bYc-bz-7iK.text" = "無結果";
@@ -398,7 +398,7 @@
 "nho-5Y-Mt8.placeholder" = "登入";
 
 /* Class = "UITextField"; placeholder = "New Email Address"; ObjectID = "NNn-m0-IQE"; */
-"NNn-m0-IQE.placeholder" = "新電子郵件地址";
+"NNn-m0-IQE.placeholder" = "邀請碼";
 
 /* Class = "UILabel"; text = "No results"; ObjectID = "ntt-8z-Ay2"; */
 "ntt-8z-Ay2.text" = "無結果";
@@ -503,7 +503,7 @@
 "te7-Jx-ztq.accessibilityLabel" = "Footer";
 
 /* Class = "UITableViewSection"; headerTitle = "Contacts"; ObjectID = "TQV-dP-vL9"; */
-"TQV-dP-vL9.headerTitle" = "聯絡人";
+"TQV-dP-vL9.headerTitle" = "聯絡方式";
 
 /* Class = "UIButton"; normalTitle = "Sign In"; ObjectID = "TvF-F9-blO"; */
 "TvF-F9-blO.normalTitle" = "登入";

@@ -180,7 +180,7 @@ class VideoPreviewController: UIViewController {
         let view = SendImageBar()
         view.autoresizingMask = .flexibleHeight
         view.togglePreviewBar(with: nil)
-        view.inputField.placeholderText = "Video caption"
+        view.inputField.placeholderText = NSLocalizedString("视频说明", comment: "Video caption placeholder")
         return view
     }()
 
@@ -356,13 +356,14 @@ extension VideoPreviewController: SendImageBarDelegate {
     func sendImageBar(caption: String?) {
         guard let originalContent = self.previewContent,
               case .local(let url, _) = originalContent.videoSrc,
-              let media = player.media,
-              let mimeType = originalContent.contentType else { return }
+              let media = player.media else { return }
 
         let size = player.videoSize
         let width = Int(size.width) > 0 ? Int(size.width) : max(originalContent.width ?? 0, 1)
         let height = Int(size.height) > 0 ? Int(size.height) : max(originalContent.height ?? 0, 1)
         let duration = max(Int(truncating: media.length.value ?? 0), 0)
+        let mimeType = originalContent.contentType ?? Utils.mimeForUrl(url: url, ifMissing: "video/mp4")
+        let fileName = originalContent.fileName ?? url.lastPathComponent
         thumbnailer.getThumbmail { thumbnail in
             var preview: UIImage?
             if let th = thumbnail {
@@ -371,7 +372,7 @@ extension VideoPreviewController: SendImageBarDelegate {
             let content2 = VideoPreviewContent(
                 videoSrc: .local(url, preview),
                 duration: duration,
-                fileName: originalContent.fileName,
+                fileName: fileName.isEmpty ? Utils.uniqueFilename(forMime: mimeType) : fileName,
                 contentType: mimeType,
                 size: 0,
                 width: width,

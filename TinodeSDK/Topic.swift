@@ -1431,7 +1431,6 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
     }
 
     private func delMessages(from fromId: Int, to toId: Int, hard: Bool) -> PromisedReply<ServerMessage> {
-        store?.msgMarkToDelete(topic: self, from: fromId, to: toId, markAsHard: hard)
         if attached {
             return tinode!.delMessage(topicName: self.name, fromId: fromId, toId: toId, hard: hard).then(
                 onSuccess: { [weak self] msg in
@@ -1450,7 +1449,6 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
     }
 
     private func delMessages(inRanges ranges: [MsgRange], hard: Bool) -> PromisedReply<ServerMessage> {
-        store?.msgMarkToDelete(topic: self, ranges: ranges, markAsHard: hard)
         if attached {
             return tinode!.delMessage(topicName: self.name, ranges: ranges, hard: hard).then(
                 onSuccess: { [weak self] msg in

@@ -114,7 +114,7 @@ class SignupViewController: UITableViewController {
             let desc = MetaSetDesc<TheCard, String>(pub: pub, priv: nil)
             desc.attachments = pub.photoRefs
 
-            UiUtils.toggleProgressOverlay(in: self, visible: true, title: NSLocalizedString("Registering...", comment: "Progress overlay"))
+            UiUtils.toggleProgressOverlay(in: self, visible: true, title: NSLocalizedString("正在注册...", comment: "Progress overlay"))
 
             do {
                 try Cache.tinode.connectDefault(inBackground: false)?
@@ -154,7 +154,7 @@ class SignupViewController: UITableViewController {
             } catch {
                 Cache.tinode.disconnect()
                 DispatchQueue.main.async {
-                    UiUtils.showToast(message: String(format: NSLocalizedString("Failed to create account: %@", comment: "Error message"), error.localizedDescription))
+                    UiUtils.showToast(message: String(format: NSLocalizedString("注册失败：%@", comment: "Error message"), error.localizedDescription))
                     self.signUpButton.isUserInteractionEnabled = true
                     UiUtils.toggleProgressOverlay(in: self, visible: false)
                 }
@@ -197,7 +197,7 @@ class SignupViewController: UITableViewController {
                 return NSLocalizedString("邀请码无效", comment: "Invalid invite code")
             }
         }
-        return String(format: NSLocalizedString("Failed to create account: %@", comment: "Error message"), err.localizedDescription)
+        return String(format: NSLocalizedString("注册失败：%@", comment: "Error message"), err.localizedDescription)
     }
 }
 

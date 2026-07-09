@@ -38,7 +38,7 @@
 "6rW-B5-NCp.text" = "占位_文件_名称";
 
 /* Class = "UILabel"; text = "MyUID"; ObjectID = "6V8-mQ-RXX"; */
-"6V8-mQ-RXX.text" = "我的UID";
+"6V8-mQ-RXX.text" = "私密ID";
 
 /* Class = "UIButton"; normalTitle = "Configure Connection"; ObjectID = "6zX-Sq-TK6"; */
 "6zX-Sq-TK6.normalTitle" = "配置连接";
@@ -167,7 +167,7 @@
 "BS4-zj-4bf.text" = "CLAW OS";
 
 /* Class = "UITableViewSection"; headerTitle = "Contacts"; ObjectID = "bvE-OV-sy1"; */
-"bvE-OV-sy1.headerTitle" = "联系人";
+"bvE-OV-sy1.headerTitle" = "邀请码";
 
 /* Class = "UILabel"; text = "No results"; ObjectID = "bYc-bz-7iK"; */
 "bYc-bz-7iK.text" = "没有结果";
@@ -215,7 +215,7 @@
 "Do2-Ue-UdA.placeholder" = "附加信息（私人）";
 
 /* Class = "UILabel"; text = "Address"; ObjectID = "Drz-OH-b0d"; */
-"Drz-OH-b0d.text" = "地址";
+"Drz-OH-b0d.text" = "ID";
 
 /* Class = "UILabel"; text = "Delete Group"; ObjectID = "dT7-dW-WFv"; */
 "dT7-dW-WFv.text" = "删除群组";
@@ -296,7 +296,7 @@
 "hUo-8f-ZiA.title" = "关于我";
 
 /* Class = "UINavigationItem"; title = "New Chat"; ObjectID = "hZA-k4-xku"; */
-"hZA-k4-xku.title" = "新会话";
+"hZA-k4-xku.title" = "通讯录";
 
 /* Class = "UIButton"; configuration.title = "Scan Code"; ObjectID = "ImI-af-TFh"; */
 "ImI-af-TFh.configuration.title" = "扫描代码";
@@ -374,7 +374,7 @@
 "LRu-ae-drd.title" = "编辑成员";
 
 /* Class = "UIBarButtonItem"; title = "New Chat"; ObjectID = "LVG-dB-flA"; */
-"LVG-dB-flA.title" = "新会话";
+"LVG-dB-flA.title" = "通讯录";
 
 /* Class = "UILabel"; text = "Untrusworthy"; ObjectID = "LVW-qL-KG8"; */
 "LVW-qL-KG8.text" = "可疑的";
@@ -398,7 +398,7 @@
 "nho-5Y-Mt8.placeholder" = "登录";
 
 /* Class = "UITextField"; placeholder = "New Email Address"; ObjectID = "NNn-m0-IQE"; */
-"NNn-m0-IQE.placeholder" = "新电子邮件地址";
+"NNn-m0-IQE.placeholder" = "邀请码";
 
 /* Class = "UILabel"; text = "No results"; ObjectID = "ntt-8z-Ay2"; */
 "ntt-8z-Ay2.text" = "没有结果";
@@ -431,7 +431,7 @@
 "q6T-TC-n42.normalTitle" = "忘记密码?";
 
 /* Class = "UITabBarController"; title = "New chat"; ObjectID = "qBo-ye-avT"; */
-"qBo-ye-avT.title" = "新会话";
+"qBo-ye-avT.title" = "通讯录";
 
 /* Class = "UINavigationItem"; title = "Administrative and Security"; ObjectID = "qeU-hX-VEM"; */
 "qeU-hX-VEM.title" = "行政和安全";
@@ -452,7 +452,7 @@
 "r8j-wT-BLF.text" = "管理标签";
 
 /* Class = "UILabel"; text = "Group or user ID"; ObjectID = "RA0-dx-dSp"; */
-"RA0-dx-dSp.text" = "主题或用户ID";
+"RA0-dx-dSp.text" = "联系人、用户名或账号名";
 
 /* Class = "UITableViewSection"; headerTitle = "Actions"; ObjectID = "raq-d6-2nI"; */
 "raq-d6-2nI.headerTitle" = "动作";
@@ -503,7 +503,7 @@
 "te7-Jx-ztq.accessibilityLabel" = "Footer";
 
 /* Class = "UITableViewSection"; headerTitle = "Contacts"; ObjectID = "TQV-dP-vL9"; */
-"TQV-dP-vL9.headerTitle" = "联系人";
+"TQV-dP-vL9.headerTitle" = "联系方式";
 
 /* Class = "UIButton"; normalTitle = "Sign In"; ObjectID = "TvF-F9-blO"; */
 "TvF-F9-blO.normalTitle" = "登录";

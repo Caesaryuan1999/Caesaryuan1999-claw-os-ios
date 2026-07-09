@@ -114,28 +114,35 @@ class SettingsSecurityViewController: UITableViewController {
     }
 
     @objc func changePasswordClicked(sender: UITapGestureRecognizer) {
-        let alert = UIAlertController(title: NSLocalizedString("Change Password", comment: "Alert title"), message: nil, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel, handler: nil))
+        let alert = UIAlertController(title: NSLocalizedString("修改密码", comment: "Alert title"),
+                                      message: NSLocalizedString("请输入两遍新密码。", comment: "Alert prompt"),
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: ""), style: .cancel, handler: nil))
         alert.addTextField(configurationHandler: { textField in
-            textField.placeholder = NSLocalizedString("Enter new password", comment: "Alert prompt")
+            textField.placeholder = NSLocalizedString("新密码", comment: "Alert prompt")
+            textField.textContentType = .newPassword
+            textField.showSecureEntrySwitch()
+        })
+        alert.addTextField(configurationHandler: { textField in
+            textField.placeholder = NSLocalizedString("再次输入新密码", comment: "Alert prompt")
             textField.textContentType = .newPassword
             textField.showSecureEntrySwitch()
         })
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("OK", comment: ""), style: .default,
+            title: NSLocalizedString("确定", comment: ""), style: .default,
             handler: { _ in
-                if let newPassword = alert.textFields?.first?.text {
-                    self.updatePassword(with: newPassword)
-                }
+                let newPassword = alert.textFields?.first?.text ?? ""
+                let repeatedPassword = alert.textFields?.dropFirst().first?.text ?? ""
+                self.updatePassword(with: newPassword, repeatedPassword: repeatedPassword)
             }))
         self.present(alert, animated: true)
     }
 
     @objc func logoutClicked(sender: UITapGestureRecognizer) {
-        let alert = UIAlertController(title: nil, message: NSLocalizedString("Are you sure you want to log out?", comment: "Warning in logout alert"), preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel, handler: nil))
+        let alert = UIAlertController(title: nil, message: NSLocalizedString("确定要登出？", comment: "Warning in logout alert"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: ""), style: .cancel, handler: nil))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("OK", comment: ""), style: .default,
+            title: NSLocalizedString("确定", comment: ""), style: .default,
             handler: { _ in
                 self.logout()
             }))
@@ -143,36 +150,55 @@ class SettingsSecurityViewController: UITableViewController {
     }
 
     @objc func deleteAccountClicked(sender: UITapGestureRecognizer) {
-        let alert = UIAlertController(title: nil, message: NSLocalizedString("Are you sure you want to delete your account? It cannot be undone.", comment: "Warning in delete account alert"), preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel, handler: nil))
+        let alert = UIAlertController(title: nil, message: NSLocalizedString("确定要删除账号？此操作无法撤销。", comment: "Warning in delete account alert"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: ""), style: .cancel, handler: nil))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("Delete", comment: "Alert action"), style: .default,
+            title: NSLocalizedString("删除", comment: "Alert action"), style: .default,
             handler: { _ in
                 self.deleteAccount()
             }))
         self.present(alert, animated: true)
     }
 
-    private func updatePassword(with newPassword: String) {
+    private func currentAccountName() -> String? {
+        if let accountName = AccountNames.fromTags(me.tags), ClawAuthInput.isAccountNameValid(accountName) {
+            return accountName
+        }
+        return nil
+    }
+
+    private func updatePassword(with newPassword: String, repeatedPassword: String) {
         guard newPassword.count >= ClawAuthInput.minPasswordLength else {
             DispatchQueue.main.async {
-                UiUtils.showToast(message: NSLocalizedString("Password too short", comment: "Error message"))
+                UiUtils.showToast(message: NSLocalizedString("密码太短", comment: "Error message"))
             }
             return
         }
-        tinode.updateAccountBasic(uid: nil, username: nil, password: newPassword)
+        guard newPassword == repeatedPassword else {
+            DispatchQueue.main.async {
+                UiUtils.showToast(message: NSLocalizedString("两次输入的密码不一致", comment: "Error message"))
+            }
+            return
+        }
+        guard let accountName = currentAccountName() else {
+            DispatchQueue.main.async {
+                UiUtils.showToast(message: NSLocalizedString("无法读取账号名，请重新登录后再试", comment: "Error message"))
+            }
+            return
+        }
+        tinode.updateAccountBasic(uid: nil, username: accountName, password: newPassword)
             .then(onSuccess: { msg in
                 DispatchQueue.main.async {
                     if let ctrl = msg?.ctrl, 200 <= ctrl.code && ctrl.code < 300 {
-                        UiUtils.showToast(message: NSLocalizedString("Password updated", comment: "Success message"), level: .info)
+                        UiUtils.showToast(message: NSLocalizedString("密码已更新", comment: "Success message"), level: .info)
                     } else {
-                        UiUtils.showToast(message: "Server error")
+                        UiUtils.showToast(message: NSLocalizedString("服务端未确认密码修改", comment: "Error message"))
                     }
                 }
                 return nil
             }, onFailure: { err in
                 DispatchQueue.main.async {
-                    UiUtils.showToast(message: String(format: NSLocalizedString("Could not change password: %@", comment: "Error message"), err.localizedDescription))
+                    UiUtils.showToast(message: String(format: NSLocalizedString("修改密码失败：%@", comment: "Error message"), err.localizedDescription))
                 }
                 return nil
             })

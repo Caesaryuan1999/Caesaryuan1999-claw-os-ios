@@ -507,7 +507,7 @@ class MessageViewController: UIViewController {
         do {
             data = try Data(contentsOf: url)
         } catch {
-            Cache.log.error("MessageVC - failed to read audio record: %@", error.localizedDescription)
+            Cache.log.error("MessageVC - failed to read video file: %@", error.localizedDescription)
             return
         }
 
@@ -518,16 +518,17 @@ class MessageViewController: UIViewController {
             return
         }
 
-        let mime = content.contentType ?? Utils.mimeForUrl(url: url)
+        let mime = content.contentType ?? Utils.mimeForUrl(url: url, ifMissing: "video/mp4")
+        let fileName = content.fileName ?? (url.lastPathComponent.isEmpty ? Utils.uniqueFilename(forMime: mime) : url.lastPathComponent)
         if data.count + previewSize > maxInbandSize {
-            self.interactor?.uploadVideo(UploadDef(caption: content.caption, filename: content.fileName,
+            self.interactor?.uploadVideo(UploadDef(caption: content.caption, filename: fileName,
                                                    mimeType: mime, data: data,
                                                    width: CGFloat(videoWidth),
                                                    height: CGFloat(videoHeight),
                                                    duration: duration, preview: preview, previewMime: previewMime,
                                                    previewOutOfBand: previewSize > Constants.kMaxPosterSize))
         } else {
-            if let drafty = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: data, refurl: nil, duration: duration, width: videoWidth, height: videoHeight, fname: content.fileName, size: data.count, preMime: previewMime, preview: preview, previewRef: nil) {
+            if let drafty = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: data, refurl: nil, duration: duration, width: videoWidth, height: videoHeight, fname: fileName, size: data.count, preMime: previewMime, preview: preview, previewRef: nil) {
                 if let caption = content.caption {
                     _ = drafty.appendLineBreak().append(Drafty(plainText: caption))
                 }
@@ -795,7 +796,7 @@ extension MessageViewController: UICollectionViewDataSource {
         if let sub = topic?.getSubscription(for: message.from), let pub = sub.pub {
             senderName = pub.fn
         }
-        senderName = senderName ?? String(format: NSLocalizedString("Unknown %@", comment: "Sender with missing name"), message.from ?? "none")
+        senderName = senderName ?? String(format: NSLocalizedString("未知 %@", comment: "Sender with missing name"), message.from ?? "none")
 
         return NSAttributedString(string: senderName!, attributes: [
             NSAttributedString.Key.font: Constants.kSenderNameFont,

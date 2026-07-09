@@ -155,11 +155,11 @@ class ResetPasswordViewController: UITableViewController {
         }
 
         guard let auth = try? AuthScheme.idResetInstance(accountName: accountName, userId: userId) else {
-            UiUtils.showToast(message: "Invalid params")
+            UiUtils.showToast(message: NSLocalizedString("账号名或 ID 不正确", comment: "Invalid password reset params"))
             return
         }
 
-        UiUtils.toggleProgressOverlay(in: self, visible: true, title: NSLocalizedString("Updating password...", comment: "Progress overlay"))
+        UiUtils.toggleProgressOverlay(in: self, visible: true, title: NSLocalizedString("正在更新密码...", comment: "Progress overlay"))
         do {
             try Cache.tinode.connectDefault(inBackground: false)?
                 .thenApply { _ in
@@ -168,7 +168,7 @@ class ResetPasswordViewController: UITableViewController {
                 .then(onSuccess: { msg in
                     if let ctrl = msg?.ctrl, 200 <= ctrl.code && ctrl.code < 300 {
                         DispatchQueue.main.async {
-                            UiUtils.showToast(message: NSLocalizedString("Password successfully updated", comment: "Password reset success"), level: .info)
+                            UiUtils.showToast(message: NSLocalizedString("密码已更新", comment: "Password reset success"), level: .info)
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
                             self.navigationController?.popViewController(animated: true)

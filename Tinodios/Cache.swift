@@ -18,7 +18,7 @@ class Cache {
     private var timer = RepeatingTimer(timeInterval: 60 * 60 * 4) // Once every 4 hours.
     private var largeFileHelper: LargeFileHelper?
     private var queue = DispatchQueue(label: "co.tinode.cache")
-    internal static let log = TinodeSDK.Log(subsystem: "co.tinode.tinodios")
+    internal static let log = TinodeSDK.Log(subsystem: "app.veilping.clawoschat")
 
     // Video call handling.
     public static var callManager = CallManager()

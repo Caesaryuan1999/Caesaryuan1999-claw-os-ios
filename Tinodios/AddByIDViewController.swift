@@ -96,7 +96,7 @@ class AddByIDViewController: UIViewController {
 
         scanQRCode()
 
-        titleLabel.text = NSLocalizedString("Scan Code", comment: "Title for camera preview when scanning a QR code")
+        titleLabel.text = NSLocalizedString("扫描二维码", comment: "Title for camera preview when scanning a QR code")
 
         showCodeButton.tintColor = UIColor.link
         showCodeButton.backgroundColor = UIColor.systemBackground

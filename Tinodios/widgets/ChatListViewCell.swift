@@ -49,7 +49,7 @@ class ChatListViewCell: UITableViewCell {
     }
 
     public func fillFromTopic(topic: DefaultComTopic) {
-        title.text = topic.isSlfType ? NSLocalizedString("Saved messages", comment: "Title of the slf topic") :
+        title.text = topic.isSlfType ? NSLocalizedString("已保存消息", comment: "Title of the slf topic") :
             topic.pub?.fn ?? NSLocalizedString("Unknown or unnamed", comment: "Topic title when it has no name")
         title.sizeToFit()
         if let msg = topic.latestMessage as? StoredMessage {
@@ -65,7 +65,7 @@ class ChatListViewCell: UITableViewCell {
             }
         } else {
             subtitle.text = topic.isSlfType ?
-                NSLocalizedString("Notes, messages, links, files saved for posterity", comment: "Explanation for Saved messages topic") :
+                NSLocalizedString("为以后保存的注释、消息、链接、文件", comment: "Explanation for Saved messages topic") :
                 topic.comment
             setMessageStatusVisibility(hidden: true)
         }

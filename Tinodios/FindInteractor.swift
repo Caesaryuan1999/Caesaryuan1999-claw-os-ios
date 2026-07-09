@@ -34,7 +34,7 @@ class FindInteractor: FindBusinessLogic {
         }
     }
 
-    static let kTinodeImProtocol = "Tinode"
+    static let kTinodeImProtocol = "CLAW OS"
     var presenter: FindPresentationLogic?
     private var queue = DispatchQueue(label: "co.tinode.contacts")
     // All known contacts from BaseDb's Users table.

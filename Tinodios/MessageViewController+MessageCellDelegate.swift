@@ -98,37 +98,44 @@ extension MessageViewController: MessageCellDelegate {
         guard !cell.isDeleted else { return }
         guard let topic = topic else { return }
 
-        // Make cell the first responder otherwise menu will show wrong items.
-        if sendMessageBar.inputField.isFirstResponder {
-            sendMessageBar.inputField.nextResponderOverride = cell
-        } else {
-            cell.becomeFirstResponder()
-        }
-
-        // Set up the shared UIMenuController
-        var menuItems: [MessageMenuItem] = []
-        menuItems.append(MessageMenuItem(title: NSLocalizedString("Copy", comment: "Menu item"), action: #selector(copyMessageContent(sender:)), seqId: cell.seqId))
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("复制", comment: "Menu item"), style: .default) { [weak self] _ in
+            self?.copyMessageContent(seqId: cell.seqId)
+        })
         if topic.isSlfType {
             // Self-type: always hard-delete.
-            menuItems.append(MessageMenuItem(title: NSLocalizedString("Delete", comment: "Menu item"), action: #selector(deleteMessageHard(sender:)), seqId: cell.seqId))
+            alert.addAction(UIAlertAction(title: NSLocalizedString("删除该消息", comment: "Menu item"), style: .destructive) { [weak self] _ in
+                self?.deleteMessage(seqId: cell.seqId, hard: true)
+            })
         } else if !topic.isChannel {
             // Channel users cannot delete messages at all.
             // Non-channel can delete at least for self.
-            menuItems.append(MessageMenuItem(title: NSLocalizedString("Delete for me", comment: "Menu item"), action: #selector(deleteMessageSoft(sender:)), seqId: cell.seqId))
+            alert.addAction(UIAlertAction(title: NSLocalizedString("删除该消息", comment: "Menu item"), style: .destructive) { [weak self] _ in
+                self?.deleteMessage(seqId: cell.seqId, hard: false)
+            })
 
             if topic.isDeleter {
                 let maxDelAge = Cache.tinode.getServerLimit(for: Tinode.kMessageDeleteAge, withDefault: 0)
                 let canDelete = topic.isOwner || maxDelAge == 0 || (maxDelAge > 0 && (cell.timeStamp?.timeIntervalSince1970 ?? -1) > (Date().timeIntervalSince1970 - Double(maxDelAge)))
                 if canDelete {
-                    menuItems.append(MessageMenuItem(title: NSLocalizedString("Delete for all", comment: "Menu item"), action: #selector(deleteMessageHard(sender:)), seqId: cell.seqId))
+                    alert.addAction(UIAlertAction(title: NSLocalizedString("双方删除该消息", comment: "Menu item"), style: .destructive) { [weak self] _ in
+                        self?.deleteMessage(seqId: cell.seqId, hard: true)
+                    })
                 }
             }
         }
 
         if !cell.isDeleted, let msgIndex = messageSeqIdIndex[cell.seqId], messages[msgIndex].isSynced {
             let msg = messages[msgIndex]
-            menuItems.append(MessageMenuItem(title: NSLocalizedString("Reply", comment: "Menu item"), action: #selector(showReplyPreview(sender:)), seqId: cell.seqId))
-            menuItems.append(MessageMenuItem(title: NSLocalizedString("Forward", comment: "Menu item"), action: #selector(showForwardSelector(sender:)), seqId: cell.seqId))
+            alert.addAction(UIAlertAction(title: NSLocalizedString("回复", comment: "Menu item"), style: .default) { [weak self] _ in
+                self?.showQuotedPreview(seqId: cell.seqId, isReply: true) {
+                    guard let value = $0, case let .replyTo(quote, _) = value else { return }
+                    self?.showInPreviewBar(content: quote, forwarded: false, onAction: .reply)
+                }
+            })
+            alert.addAction(UIAlertAction(title: NSLocalizedString("转发", comment: "Menu item"), style: .default) { [weak self] _ in
+                self?.showForwardSelector(seqId: cell.seqId)
+            })
             if isFromCurrentSender(message: msg), let content = msg.content {
                 // Only allow editing messages which don't contain certain entity types.
                 var canEdit = true
@@ -149,26 +156,36 @@ extension MessageViewController: MessageCellDelegate {
                     }
                 }
                 if canEdit {
-                    menuItems.append(MessageMenuItem(title: NSLocalizedString("Edit", comment: "Menu item"), action: #selector(showEditPreview(sender:)), seqId: cell.seqId))
+                    alert.addAction(UIAlertAction(title: NSLocalizedString("编辑", comment: "Menu item"), style: .default) { [weak self] _ in
+                        self?.showQuotedPreview(seqId: cell.seqId, isReply: false) {
+                            guard let value = $0, case let .edit(quote, original, _) = value else { return }
+                            self?.sendMessageBar.inputField.becomeFirstResponder()
+                            self?.sendMessageBar.inputField.text = original
+                            self?.showInPreviewBar(content: quote, forwarded: false, onAction: .edit)
+                        }
+                    })
                 }
             }
 
             if topic.isAdmin {
                 if self.topic!.pinned.contains(where: { $0 == cell.seqId }) {
-                    menuItems.append(MessageMenuItem(title: NSLocalizedString("Unpin", comment: "Menu item for un-pinning message"), action: #selector(unpinMessage(sender:)), seqId: cell.seqId))
+                    alert.addAction(UIAlertAction(title: NSLocalizedString("取消置顶", comment: "Menu item for un-pinning message"), style: .default) { [weak self] _ in
+                        self?.pinMessage(seqId: cell.seqId, pin: false)
+                    })
                 } else {
-                    menuItems.append(MessageMenuItem(title: NSLocalizedString("Pin", comment: "Menu item for pinning message"), action: #selector(pinMessage(sender:)), seqId: cell.seqId))
+                    alert.addAction(UIAlertAction(title: NSLocalizedString("置顶", comment: "Menu item for pinning message"), style: .default) { [weak self] _ in
+                        self?.pinMessage(seqId: cell.seqId, pin: true)
+                    })
                 }
             }
         }
 
-        UIMenuController.shared.menuItems = menuItems
-
-        // Show the menu.
-        UIMenuController.shared.showMenu(from: cell.containerView, rect: cell.content.frame)
-
-        // Capture menu dismissal
-        NotificationCenter.default.addObserver(self, selector: #selector(willHidePopupMenu), name: UIMenuController.willHideMenuNotification, object: nil)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Menu item"), style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = cell.containerView
+            popover.sourceRect = cell.content.frame
+        }
+        present(alert, animated: true)
     }
 
     @objc func willHidePopupMenu() {
@@ -181,16 +198,29 @@ extension MessageViewController: MessageCellDelegate {
         NotificationCenter.default.removeObserver(self, name: UIMenuController.willHideMenuNotification, object: nil)
     }
 
-    @objc func copyMessageContent(sender: UIMenuController) {
-        guard let menuItem = sender.menuItems?.first as? MessageMenuItem, menuItem.seqId > 0, let msgIndex = messageSeqIdIndex[menuItem.seqId] else { return }
+    private func selectedMenuSeqId(sender: UIMenuController) -> Int? {
+        let seqId = (sender.menuItems?.first as? MessageMenuItem)?.seqId
+        return (seqId ?? 0) > 0 ? seqId : nil
+    }
 
-        let msg = messages[msgIndex]
+    private func message(atSeqId seqId: Int) -> Message? {
+        guard let msgIndex = messageSeqIdIndex[seqId] else { return nil }
+        return messages[msgIndex]
+    }
+
+    @objc func copyMessageContent(sender: UIMenuController) {
+        guard let seqId = selectedMenuSeqId(sender: sender) else { return }
+        copyMessageContent(seqId: seqId)
+    }
+
+    private func copyMessageContent(seqId: Int) {
+        guard let msg = message(atSeqId: seqId) else { return }
 
         var senderName: String?
         if let sub = topic?.getSubscription(for: msg.from), let pub = sub.pub {
             senderName = pub.fn
         }
-        senderName = senderName ?? String(format: NSLocalizedString("Unknown %@", comment: ""), msg.from ?? "none")
+        senderName = senderName ?? String(format: NSLocalizedString("未知 %@", comment: ""), msg.from ?? "none")
         UIPasteboard.general.string = "[\(senderName!)]: \(msg.content?.string ?? ""); \(RelativeDateFormatter.shared.shortDate(from: msg.ts))"
     }
 
@@ -220,18 +250,26 @@ extension MessageViewController: MessageCellDelegate {
     }
 
     @objc func pinMessage(sender: UIMenuController) {
-        guard let menuItem = sender.menuItems?.first as? MessageMenuItem, menuItem.seqId > 0 else { return }
-        _ = self.topic?.pinMessage(seq: menuItem.seqId , pin: true)
+        guard let seqId = selectedMenuSeqId(sender: sender) else { return }
+        pinMessage(seqId: seqId, pin: true)
     }
 
     @objc func unpinMessage(sender: UIMenuController) {
-        guard let menuItem = sender.menuItems?.first as? MessageMenuItem, menuItem.seqId > 0 else { return }
-        _ = self.topic?.pinMessage(seq: menuItem.seqId , pin: false)
+        guard let seqId = selectedMenuSeqId(sender: sender) else { return }
+        pinMessage(seqId: seqId, pin: false)
+    }
+
+    private func pinMessage(seqId: Int, pin: Bool) {
+        interactor?.pinMessage(seqId: seqId, pin: pin)
     }
 
     private func showQuotedPreview(sender: UIMenuController, isReply: Bool, completion: @escaping (PendingMessage?) -> Void) {
-        guard let menuItem = sender.menuItems?.first as? MessageMenuItem, menuItem.seqId > 0, let msgIndex = messageSeqIdIndex[menuItem.seqId] else { return }
-        let msg = messages[msgIndex]
+        guard let seqId = selectedMenuSeqId(sender: sender) else { return }
+        showQuotedPreview(seqId: seqId, isReply: isReply, completion: completion)
+    }
+
+    private func showQuotedPreview(seqId: Int, isReply: Bool, completion: @escaping (PendingMessage?) -> Void) {
+        guard let msg = message(atSeqId: seqId) else { return }
         if let reply = interactor?.prepareQuoted(to: msg, isReply: isReply) {
             reply.then(onSuccess: { value in
                 DispatchQueue.main.async {
@@ -249,12 +287,17 @@ extension MessageViewController: MessageCellDelegate {
     }
 
     @objc func showForwardSelector(sender: UIMenuController) {
-        guard let menuItem = sender.menuItems?.first as? MessageMenuItem, menuItem.seqId > 0, let msgIndex = messageSeqIdIndex[menuItem.seqId] else { return }
+        guard let seqId = selectedMenuSeqId(sender: sender) else { return }
+        showForwardSelector(seqId: seqId)
+    }
 
-        guard let msg = interactor?.createForwardedMessage(from: messages[msgIndex]) else {
+    private func showForwardSelector(seqId: Int) {
+        guard let sourceMessage = message(atSeqId: seqId) else { return }
+
+        guard let pending = interactor?.createForwardedMessage(from: sourceMessage) else {
             return
         }
-        guard case let .forwarded(forwardedMsg, forwardedFrom, forwardedPreview) = msg else {
+        guard case let .forwarded(forwardedMsg, forwardedFrom, forwardedPreview) = pending else {
             return
         }
         DispatchQueue.main.async {
@@ -279,8 +322,12 @@ extension MessageViewController: MessageCellDelegate {
     }
 
     private func deleteMessage(sender: UIMenuController, hard: Bool) {
-        guard let menuItem = sender.menuItems?.first as? MessageMenuItem, menuItem.seqId > 0, let index = messageSeqIdIndex[menuItem.seqId] else { return }
-        let msg = messages[index]
+        guard let seqId = selectedMenuSeqId(sender: sender) else { return }
+        deleteMessage(seqId: seqId, hard: hard)
+    }
+
+    private func deleteMessage(seqId: Int, hard: Bool) {
+        guard let msg = message(atSeqId: seqId) else { return }
         interactor?.deleteMessage(msg, hard: hard)
     }
 
