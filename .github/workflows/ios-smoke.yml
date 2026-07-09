@@ -8,6 +8,7 @@ on:
       - ".github/workflows/ios-smoke.yml"
       - "Tinodios/**"
       - "TinodiosDB/**"
+      - "TinodiosNSExtension/**"
       - "TinodiosUITests/**"
       - "TinodeSDK/**"
       - "Tinodios.xcodeproj/**"
