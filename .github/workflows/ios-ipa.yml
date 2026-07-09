@@ -41,6 +41,7 @@ jobs:
       IOS_APP_PROFILE_BASE64: ${{ secrets.IOS_APP_PROFILE_BASE64 }}
       IOS_EXTENSION_PROFILE_BASE64: ${{ secrets.IOS_EXTENSION_PROFILE_BASE64 }}
       IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+      IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
 
     steps:
       - name: Checkout
@@ -126,6 +127,52 @@ jobs:
           </plist>
           PLIST
           plutil -lint build/ExportOptions.plist
+
+      - name: Prepare Firebase config
+        run: |
+          if [ -n "${IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64:-}" ]; then
+            echo "$IOS_GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > GoogleService-Info.plist
+            echo "Using GoogleService-Info.plist from GitHub secret."
+          elif [ ! -f GoogleService-Info.plist ]; then
+            echo "::warning::GoogleService-Info.plist is missing. Creating a placeholder config for IPA build only. Push notifications will not work until a real Firebase config is supplied."
+            cat > GoogleService-Info.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CLIENT_ID</key>
+            <string>0-placeholder.apps.googleusercontent.com</string>
+            <key>REVERSED_CLIENT_ID</key>
+            <string>com.googleusercontent.apps.0-placeholder</string>
+            <key>API_KEY</key>
+            <string>placeholder-api-key</string>
+            <key>GCM_SENDER_ID</key>
+            <string>000000000000</string>
+            <key>PLIST_VERSION</key>
+            <string>1</string>
+            <key>BUNDLE_ID</key>
+            <string>${APP_BUNDLE_ID}</string>
+            <key>PROJECT_ID</key>
+            <string>claw-os-placeholder</string>
+            <key>STORAGE_BUCKET</key>
+            <string>claw-os-placeholder.appspot.com</string>
+            <key>GOOGLE_APP_ID</key>
+            <string>1:000000000000:ios:0000000000000000000000</string>
+            <key>IS_ADS_ENABLED</key>
+            <false/>
+            <key>IS_ANALYTICS_ENABLED</key>
+            <false/>
+            <key>IS_APPINVITE_ENABLED</key>
+            <false/>
+            <key>IS_GCM_ENABLED</key>
+            <false/>
+            <key>IS_SIGNIN_ENABLED</key>
+            <false/>
+          </dict>
+          </plist>
+          PLIST
+          fi
+          plutil -lint GoogleService-Info.plist
 
       - name: Archive
         run: |
