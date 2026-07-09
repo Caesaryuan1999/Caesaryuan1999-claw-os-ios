@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>ApplicationGroupContainerIdentifier</key>
-	<string>group.co.tinode.tinodios.db</string>
+	<string>group.app.veilping.clawoschat.db</string>
 	<key>StringsTable</key>
 	<string>Root</string>
 	<key>PreferenceSpecifiers</key>

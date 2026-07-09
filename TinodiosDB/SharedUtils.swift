@@ -33,8 +33,8 @@ public class SharedUtils {
     // App Tinode api key.
     private static let kApiKey = "AQEAAAABAAD_rAp4DJh05a1HAwFT3A6K"
 
-    static public let kAppDefaults = UserDefaults(suiteName: BaseDb.kAppGroupId)!
-    static let kAppKeychain = KeychainWrapper(serviceName: "co.tinode.tinodios", accessGroup: BaseDb.kAppGroupId)
+    static public let kAppDefaults = UserDefaults(suiteName: BaseDb.kAppGroupId) ?? UserDefaults.standard
+    static let kAppKeychain = KeychainWrapper(serviceName: "app.veilping.clawoschat")
 
     // Keys we store in keychain.
     static let kTokenKey = "co.tinode.token"
