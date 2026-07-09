@@ -1,6 +1,9 @@
 name: Build iOS IPA
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       app_bundle_id:
@@ -31,11 +34,11 @@ jobs:
     timeout-minutes: 60
 
     env:
-      APP_BUNDLE_ID: ${{ inputs.app_bundle_id }}
-      EXTENSION_BUNDLE_ID: ${{ inputs.extension_bundle_id }}
-      EXPORT_METHOD: ${{ inputs.export_method }}
-      BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APP_BUNDLE_ID: ${{ github.event.inputs.app_bundle_id || 'app.veilping.clawoschat' }}
+      EXTENSION_BUNDLE_ID: ${{ github.event.inputs.extension_bundle_id || 'app.veilping.clawoschat.TinodiosNSExtension' }}
+      EXPORT_METHOD: ${{ github.event.inputs.export_method || 'release-testing' }}
+      BUILD_NUMBER: ${{ github.event.inputs.build_number || github.run_number }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID || 'NBR9Y9N42C' }}
       IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
       IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
       IOS_APP_PROFILE_BASE64: ${{ secrets.IOS_APP_PROFILE_BASE64 }}
