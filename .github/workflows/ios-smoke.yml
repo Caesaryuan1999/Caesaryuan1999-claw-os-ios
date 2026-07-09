@@ -11,6 +11,7 @@ on:
       - "TinodiosNSExtension/**"
       - "TinodiosUITests/**"
       - "TinodeSDK/**"
+      - "*.lproj/**"
       - "Tinodios.xcodeproj/**"
       - "Tinodios.xcworkspace/**"
       - "Podfile"
