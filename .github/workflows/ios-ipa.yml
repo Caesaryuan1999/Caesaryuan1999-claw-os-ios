@@ -46,6 +46,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Restore script execute permissions
+        run: |
+          chmod +x Scripts/*.sh
+          chmod +x Scripts/ci/*.sh
+
       - name: Show Xcode version
         run: |
           xcodebuild -version
