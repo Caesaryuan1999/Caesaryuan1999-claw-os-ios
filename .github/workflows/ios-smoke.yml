@@ -145,12 +145,16 @@ jobs:
           xcrun simctl boot "${DEVICE_ID}" || true
           xcrun simctl bootstatus "${DEVICE_ID}" -b
           xcrun simctl install "${DEVICE_ID}" "${APP_PATH}"
-          xcrun simctl launch "${DEVICE_ID}" app.veilping.clawoschat | tee sim-launch.log
+          LAUNCH_OUTPUT="$(xcrun simctl launch "${DEVICE_ID}" app.veilping.clawoschat | tee sim-launch.log)"
+          APP_PID="$(echo "${LAUNCH_OUTPUT}" | sed -nE 's/^app\.veilping\.clawoschat: ([0-9]+)$/\1/p' | head -n 1)"
+          if [ -z "${APP_PID}" ]; then
+            echo "::error::CLAW OS launch did not return an app process id."
+            exit 1
+          fi
           sleep 12
 
-          xcrun simctl spawn "${DEVICE_ID}" ps -A | tee sim-processes.txt
-          if ! grep -E 'Tinodios|CLAW OS|clawos' sim-processes.txt >/dev/null; then
-            echo "::error::CLAW OS process is not running after launch; possible startup crash."
+          if ! ps -p "${APP_PID}" -o pid=,comm= | tee sim-processes.txt; then
+            echo "::error::CLAW OS process ${APP_PID} is not running after launch; possible startup crash."
             exit 1
           fi
 
