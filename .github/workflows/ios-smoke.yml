@@ -16,6 +16,10 @@ on:
       - "Podfile.lock"
   workflow_dispatch:
 
+concurrency:
+  group: ios-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke:
     name: Build and launch CLAW OS
@@ -106,27 +110,56 @@ jobs:
           fi
           plutil -lint GoogleService-Info.plist
 
-      - name: Run launch smoke test
+      - name: Build and launch simulator app
         run: |
-          set -o pipefail
-          DEVICE_NAME="$(xcrun simctl list devices available | sed -n 's/^[[:space:]]*\(iPhone [^(]*\) (.*$/\1/p' | head -n 1 | xargs)"
-          if [ -z "${DEVICE_NAME}" ]; then
+          set -euo pipefail
+
+          DEVICE_ID="$(xcrun simctl list devices available | sed -n 's/^[[:space:]]*iPhone [^(]*(\([A-Fa-f0-9-]*\)) .*$/\1/p' | head -n 1 | xargs)"
+          if [ -z "${DEVICE_ID}" ]; then
             echo "::error::No available iPhone simulator found."
             exit 1
           fi
-          echo "Using simulator: ${DEVICE_NAME}"
+          DEVICE_NAME="$(xcrun simctl list devices available | grep "${DEVICE_ID}" | sed -E 's/^[[:space:]]*([^()]*) .*/\1/' | xargs)"
+          DERIVED_DATA_PATH="${PWD}/build/DerivedData"
+          echo "Using simulator: ${DEVICE_NAME} (${DEVICE_ID})"
 
-          xcodebuild test \
+          xcodebuild build \
             -workspace Tinodios.xcworkspace \
             -scheme Tinodios \
             -configuration Debug \
             -sdk iphonesimulator \
-            -destination "platform=iOS Simulator,name=${DEVICE_NAME}" \
-            -only-testing:TinodiosUITests/TinodiosUITestsLaunchTests/testLaunch \
+            -destination "platform=iOS Simulator,id=${DEVICE_ID}" \
+            -derivedDataPath "${DERIVED_DATA_PATH}" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             | tee build-ios-smoke.log
+
+          APP_PATH="$(find "${DERIVED_DATA_PATH}/Build/Products/Debug-iphonesimulator" -maxdepth 1 -name '*.app' -type d | head -n 1)"
+          if [ -z "${APP_PATH}" ]; then
+            echo "::error::Simulator app was not generated."
+            exit 1
+          fi
+          echo "Installing ${APP_PATH}"
+
+          xcrun simctl boot "${DEVICE_ID}" || true
+          xcrun simctl bootstatus "${DEVICE_ID}" -b
+          xcrun simctl install "${DEVICE_ID}" "${APP_PATH}"
+          xcrun simctl launch "${DEVICE_ID}" app.veilping.clawoschat | tee sim-launch.log
+          sleep 12
+
+          xcrun simctl spawn "${DEVICE_ID}" ps -A | tee sim-processes.txt
+          if ! grep -E 'Tinodios|CLAW OS|clawos' sim-processes.txt >/dev/null; then
+            echo "::error::CLAW OS process is not running after launch; possible startup crash."
+            exit 1
+          fi
+
+          RECENT_CRASHES="$(find "$HOME/Library/Logs/DiagnosticReports" -name '*.crash' -mmin -2 2>/dev/null | grep -E 'Tinodios|CLAW|clawos|Tinode' || true)"
+          if [ -n "${RECENT_CRASHES}" ]; then
+            echo "::error::Recent CLAW OS crash log detected."
+            echo "${RECENT_CRASHES}"
+            exit 1
+          fi
 
       - name: Upload smoke logs
         if: always()
@@ -135,6 +168,8 @@ jobs:
           name: ios-smoke-logs
           path: |
             build-ios-smoke.log
+            sim-launch.log
+            sim-processes.txt
             $HOME/Library/Logs/DiagnosticReports/*.crash
           if-no-files-found: ignore
           retention-days: 7
