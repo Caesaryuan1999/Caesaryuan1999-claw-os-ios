@@ -11,7 +11,7 @@
 "Additional info (private)" = "Дополнительно (только для себя)";
 
 /* Toast notification */
-"Address copied" = "Адрес скопирован";
+"Address copied" = "ID скопирован";
 
 /* Toast notification */
 "Alias copied" = "Псевдоним скопирован";
@@ -209,7 +209,7 @@
 "Forward" = "Переслать";
 
 /* User name prompt */
-"Full name, e.g. John Doe" = "Полное имя, напр. Иван Петров";
+"Full name, e.g. John Doe" = "Имя пользователя";
 
 /* Invite reaction button */
 "Ignore" = "Игнорировать";
@@ -284,7 +284,7 @@
 "Never ??:??" = "Никогда ??:??";
 
 /* View title */
-"New Chat" = "Новый чат";
+"New Chat" = "Контакты";
 
 /* Error message */
 "No access to email" = "Нет доступа к емейлу";

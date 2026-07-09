@@ -11,7 +11,7 @@
 "Additional info (private)" = "Información adicional (sólo visible para tí)";
 
 /* Toast notification */
-"Address copied" = "Dirección copiada";
+"Address copied" = "ID copiado";
 
 /* Toast notification */
 "Alias copied" = "Alias copiado";
@@ -209,7 +209,7 @@
 "Forward" = "Reenviar";
 
 /* User name prompt */
-"Full name, e.g. John Doe" = "Nombre completo, p.ej. Juan González Hernández";
+"Full name, e.g. John Doe" = "Nombre de usuario";
 
 /* Invite reaction button */
 "Ignore" = "Ignorar";
@@ -284,7 +284,7 @@
 "Never ??:??" = "Nunca ??:??";
 
 /* View title */
-"New Chat" = "Nuevo chat";
+"New Chat" = "Contactos";
 
 /* Error message */
 "No access to email" = "No hay acceso al correo electrónico";

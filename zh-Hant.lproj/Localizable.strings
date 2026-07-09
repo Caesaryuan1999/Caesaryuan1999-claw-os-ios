@@ -11,7 +11,7 @@
 "Additional info (private)" = "額外資訊 (私人)";
 
 /* Toast notification */
-"Address copied" = "地址已複製";
+"Address copied" = "ID 已複製";
 
 /* Toast notification */
 "Alias copied" = "別名已複製";
@@ -209,7 +209,7 @@
 "Forward" = "重定向";
 
 /* User name prompt */
-"Full name, e.g. John Doe" = "全名，例如：王小明";
+"Full name, e.g. John Doe" = "使用者名稱";
 
 /* Invite reaction button */
 "Ignore" = "忽略";
@@ -284,7 +284,7 @@
 "Never ??:??" = "永不 ??:??";
 
 /* View title */
-"New Chat" = "新對話";
+"New Chat" = "通訊錄";
 
 /* Error message */
 "No access to email" = "無存取電子郵件地址的權限";

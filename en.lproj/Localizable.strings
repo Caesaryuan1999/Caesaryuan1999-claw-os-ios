@@ -146,7 +146,7 @@
 "For me" = "For me";
 
 /* User name prompt */
-"Full name, e.g. John Doe" = "Full name, e.g. John Doe";
+"Full name, e.g. John Doe" = "Username";
 
 /* Invite reaction button */
 "Ignore" = "Ignore";
@@ -197,7 +197,7 @@
 "Never ??:??" = "Never ??:??";
 
 /* View title */
-"New Chat" = "New Chat";
+"New Chat" = "Contacts";
 
 /* Error message */
 "No access to email" = "No access to email";

@@ -11,7 +11,7 @@
 "Additional info (private)" = "附加信息（私人）";
 
 /* Toast notification */
-"Address copied" = "地址已复制";
+"Address copied" = "ID已复制";
 
 /* Toast notification */
 "Alias copied" = "别名已复制";
@@ -209,7 +209,7 @@
 "Forward" = "转发";
 
 /* User name prompt */
-"Full name, e.g. John Doe" = "全名，例如张伟";
+"Full name, e.g. John Doe" = "用户名";
 
 /* Invite reaction button */
 "Ignore" = "忽略";
@@ -284,7 +284,7 @@
 "Never ??:??" = "没有时间戳记";
 
 /* View title */
-"New Chat" = "新聊天";
+"New Chat" = "通讯录";
 
 /* Error message */
 "No access to email" = "无法访问电子邮件";
