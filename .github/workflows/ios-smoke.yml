@@ -167,6 +167,30 @@ jobs:
             exit 1
           fi
 
+      - name: Run login-to-chat regression test
+        run: |
+          set -euo pipefail
+
+          DEVICE_ID="$(xcrun simctl list devices available | sed -n 's/^[[:space:]]*iPhone [^(]*(\([A-Fa-f0-9-]*\)) .*$/\1/p' | head -n 1 | xargs)"
+          if [ -z "${DEVICE_ID}" ]; then
+            echo "::error::No available iPhone simulator found for login regression test."
+            exit 1
+          fi
+
+          xcodebuild test \
+            -workspace Tinodios.xcworkspace \
+            -scheme Tinodios \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=${DEVICE_ID}" \
+            -derivedDataPath "${PWD}/build/LoginRegressionDerivedData" \
+            -only-testing:TinodiosUITests/TinodiosUITests/testLoginBasic \
+            HOST_NAME="127.0.0.1:6060" \
+            USE_TLS="false" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | tee login-regression.log
+
       - name: Upload smoke logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -174,6 +198,7 @@ jobs:
           name: ios-smoke-logs
           path: |
             build-ios-smoke.log
+            login-regression.log
             sim-launch.log
             sim-processes.txt
             $HOME/Library/Logs/DiagnosticReports/*.crash
