@@ -183,9 +183,10 @@ jobs:
             -configuration Debug \
             -destination "platform=iOS Simulator,id=${DEVICE_ID}" \
             -derivedDataPath "${PWD}/build/LoginRegressionDerivedData" \
+            -resultBundlePath "${PWD}/build/LoginRegression.xcresult" \
             -only-testing:TinodiosUITests/TinodiosUITests/testLoginBasic \
-            HOST_NAME="127.0.0.1:6060" \
-            USE_TLS="false" \
+            HOST_NAME=127.0.0.1:6060 \
+            USE_TLS=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
@@ -199,6 +200,7 @@ jobs:
           path: |
             build-ios-smoke.log
             login-regression.log
+            build/LoginRegression.xcresult
             sim-launch.log
             sim-processes.txt
             $HOME/Library/Logs/DiagnosticReports/*.crash
