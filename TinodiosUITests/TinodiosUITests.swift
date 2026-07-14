@@ -187,6 +187,13 @@ final class TinodiosUITests: XCTestCase {
         tinodeServer.startServer()
         XCTAssertTrue(tinodeServer.waitUntilReady(), "Fake Tinode server did not become ready")
 
+        // The CLAW OS development configuration points at the production host.
+        // Override the standard defaults before launch so SharedUtils copies the
+        // test endpoint into the app-group defaults used by the Tinode client.
+        app.launchArguments += [
+            "-host_name_preference", "127.0.0.1:6060",
+            "-use_tls_preference", "false"
+        ]
         app.launch()
     }
 
@@ -341,8 +348,8 @@ final class TinodiosUITests: XCTestCase {
         passwordText.tap()
         passwordText.typeText("alice123")
 
-        let signInButton = elementsQuery.staticTexts["Sign In"]
-        XCTAssertTrue(signInButton.exists)
+        let signInButton = app.buttons["Sign In"]
+        XCTAssertTrue(signInButton.waitForExistence(timeout: 5))
         signInButton.tap()
 
         if shouldSucceed {
