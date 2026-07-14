@@ -180,7 +180,7 @@ jobs:
           fi
 
           xcodebuild test \
-            -project TinodeSDK.xcodeproj \
+            -workspace Tinodios.xcworkspace \
             -scheme TinodeSDK \
             -configuration Debug \
             -destination "platform=iOS Simulator,id=${DEVICE_ID}" \
