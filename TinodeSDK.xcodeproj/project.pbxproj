@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C10A00022F00000100000001 /* PushConfigurationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10A00012F00000100000001 /* PushConfigurationPolicy.swift */; };
 		0A03AFD322759566003F6248 /* DraftyTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A03AFD222759566003F6248 /* DraftyTest.swift */; };
 		0A431BE12244A0BE00A837F7 /* TinodeSDK.h in Headers */ = {isa = PBXBuildFile; fileRef = 0A431BDF2244A0BE00A837F7 /* TinodeSDK.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		0A431BFA2244A14D00A837F7 /* PromisedReply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A431BF22244A14C00A837F7 /* PromisedReply.swift */; };
@@ -50,6 +51,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C10A00012F00000100000001 /* PushConfigurationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushConfigurationPolicy.swift; sourceTree = "<group>"; };
 		0A03AFD222759566003F6248 /* DraftyTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftyTest.swift; sourceTree = "<group>"; };
 		0A431BDC2244A0BE00A837F7 /* TinodeSDK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TinodeSDK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A431BDF2244A0BE00A837F7 /* TinodeSDK.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TinodeSDK.h; sourceTree = "<group>"; };
@@ -133,6 +135,7 @@
 		0A431BDE2244A0BE00A837F7 /* TinodeSDK */ = {
 			isa = PBXGroup;
 			children = (
+				C10A00012F00000100000001 /* PushConfigurationPolicy.swift */,
 				0A44B00F2244AB0F00A98866 /* model */,
 				0A431BF52244A14C00A837F7 /* AuthScheme.swift */,
 				B0876013243F1E4000B464D1 /* ComTopic.swift */,
@@ -339,6 +342,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C10A00022F00000100000001 /* PushConfigurationPolicy.swift in Sources */,
 				0A431BFD2244A14D00A837F7 /* User.swift in Sources */,
 				0A44B00C2244AAC500A98866 /* JSONValue.swift in Sources */,
 				0A610453227563E200C6A9D2 /* Log.swift in Sources */,

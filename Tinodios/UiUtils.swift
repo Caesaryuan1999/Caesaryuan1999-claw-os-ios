@@ -171,7 +171,18 @@ class UiUtils {
 
     private static func setUpPushNotifications() {
         let application = UIApplication.shared
-        let appDelegate = application.delegate as! AppDelegate
+        guard let appDelegate = application.delegate as? AppDelegate else {
+            Cache.log.error("setUpPushNotifications - app delegate is unavailable")
+            return
+        }
+
+        guard let configuration = bundledPushConfiguration(),
+              PushConfigurationPolicy.isUsable(configuration),
+              let options = FirebaseOptions.defaultOptions() else {
+            Cache.log.info("setUpPushNotifications - Firebase is disabled or not configured; continuing without push notifications")
+            return
+        }
+
         guard !appDelegate.pushNotificationsConfigured else {
             Messaging.messaging().token { (token, error) in
                 if let error = error {
@@ -185,7 +196,9 @@ class UiUtils {
         }
 
         // Configure FCM.
-        FirebaseApp.configure()
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure(options: options)
+        }
         Messaging.messaging().delegate = appDelegate
         UNUserNotificationCenter.current().delegate = appDelegate
 
@@ -196,6 +209,16 @@ class UiUtils {
 
         application.registerForRemoteNotifications()
         appDelegate.pushNotificationsConfigured = true
+    }
+
+    private static func bundledPushConfiguration() -> [String: Any]? {
+        guard let url = Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist"),
+              let data = try? Data(contentsOf: url),
+              let values = try? PropertyListSerialization.propertyList(from: data, format: nil),
+              let configuration = values as? [String: Any] else {
+            return nil
+        }
+        return configuration
     }
 
     public static func attachToMeTopic(meListener: DefaultMeTopic.Listener?) -> PromisedReply<ServerMessage>? {

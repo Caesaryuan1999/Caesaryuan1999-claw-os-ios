@@ -167,7 +167,15 @@ class LoginViewController: UIViewController {
                     })
                 .then(
                     onSuccess: { [weak self] pkt in
-                        Cache.log.info("LoginVC - login successful for %@", tinode.myUid!)
+                        guard let uid = tinode.myUid, !uid.isEmpty else {
+                            Cache.log.error("LoginVC - login response did not include a user ID")
+                            DispatchQueue.main.async {
+                                UiUtils.showToast(message: NSLocalizedString("登录响应缺少账户 ID，请重试", comment: "Missing account ID after login"))
+                            }
+                            Cache.invalidate()
+                            return nil
+                        }
+                        Cache.log.info("LoginVC - login successful for %@", uid)
                         SharedUtils.saveAuthToken(for: userName, token: tinode.authToken, expires: tinode.authTokenExpires)
                         if let token = tinode.authToken {
                             tinode.setAutoLoginWithToken(token: token)

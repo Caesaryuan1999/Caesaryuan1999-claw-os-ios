@@ -13,6 +13,8 @@ import Network
 class FakeTinodeServer {
     var listener: NWListener
     var connectedClients: [NWConnection] = []
+    private let startupSemaphore = DispatchSemaphore(value: 0)
+    private var startupSucceeded = false
 
     // Request types.
     enum RequestType {
@@ -81,14 +83,22 @@ class FakeTinodeServer {
             switch state {
             case .ready:
                 print("Server Ready")
+                self.startupSucceeded = true
+                self.startupSemaphore.signal()
             case .failed(let error):
                 print("Server failed with \(error.localizedDescription)")
+                self.startupSucceeded = false
+                self.startupSemaphore.signal()
             default:
                 break
             }
         }
 
         listener.start(queue: serverQueue)
+    }
+
+    func waitUntilReady(timeout: TimeInterval = 5) -> Bool {
+        startupSemaphore.wait(timeout: .now() + timeout) == .success && startupSucceeded
     }
 
     func stopServer() {
@@ -153,7 +163,8 @@ final class TinodiosUITests: XCTestCase {
     // Delete installed Tinode app.
     private func deleteTinode() {
         app.terminate()
-        let icon = springboard.icons["Tinode"]
+        let clawIcon = springboard.icons["CLAW OS"]
+        let icon = clawIcon.exists ? clawIcon : springboard.icons["Tinode"]
         if icon.exists {
             let iconFrame = icon.frame
             let springboardFrame = springboard.frame
@@ -169,13 +180,14 @@ final class TinodiosUITests: XCTestCase {
     }
 
     override func setUpWithError() throws {
+        continueAfterFailure = false
         app = XCUIApplication()
-        app.launch()
         // Tinode will connect to localhost:6060 by default.
         tinodeServer = FakeTinodeServer(port: 6060)
         tinodeServer.startServer()
+        XCTAssertTrue(tinodeServer.waitUntilReady(), "Fake Tinode server did not become ready")
 
-        continueAfterFailure = false
+        app.launch()
     }
 
     override func tearDownWithError() throws {
@@ -320,7 +332,7 @@ final class TinodiosUITests: XCTestCase {
         // Log in as "alice".
         let elementsQuery = app.scrollViews.otherElements
         let loginText = elementsQuery.textFields["usernameText"]
-        XCTAssertTrue(loginText.exists)
+        XCTAssertTrue(loginText.waitForExistence(timeout: 5))
         loginText.tap()
         loginText.typeText("alice")
 
@@ -333,8 +345,11 @@ final class TinodiosUITests: XCTestCase {
         XCTAssertTrue(signInButton.exists)
         signInButton.tap()
 
-        // Check if user name field is still available. If so login has failed.
-        XCTAssertNotEqual(loginText.exists, shouldSucceed)
+        if shouldSucceed {
+            XCTAssertTrue(loginText.waitForNonExistence(timeout: 10), "Login screen did not transition to the chat list")
+        } else {
+            XCTAssertTrue(loginText.waitForExistence(timeout: 5), "Login screen unexpectedly disappeared")
+        }
     }
 
     func testLoginFailure() throws {
@@ -359,7 +374,7 @@ final class TinodiosUITests: XCTestCase {
         app.tap()
 
         let table = app.tables.element
-        XCTAssertTrue(table.exists)
+        XCTAssertTrue(table.waitForExistence(timeout: 10))
 
         table.cells.waitForCount(2)
         XCTAssertTrue(table.staticTexts["Bob"].exists)

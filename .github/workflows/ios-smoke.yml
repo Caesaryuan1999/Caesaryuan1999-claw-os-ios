@@ -11,6 +11,8 @@ on:
       - "TinodiosNSExtension/**"
       - "TinodiosUITests/**"
       - "TinodeSDK/**"
+      - "TinodeSDKTests/**"
+      - "TinodeSDK.xcodeproj/**"
       - "*.lproj/**"
       - "Tinodios.xcodeproj/**"
       - "Tinodios.xcworkspace/**"
@@ -167,6 +169,29 @@ jobs:
             exit 1
           fi
 
+      - name: Run push configuration policy tests
+        run: |
+          set -euo pipefail
+
+          DEVICE_ID="$(xcrun simctl list devices available | sed -n 's/^[[:space:]]*iPhone [^(]*(\([A-Fa-f0-9-]*\)) .*$/\1/p' | head -n 1 | xargs)"
+          if [ -z "${DEVICE_ID}" ]; then
+            echo "::error::No available iPhone simulator found for unit tests."
+            exit 1
+          fi
+
+          xcodebuild test \
+            -project TinodeSDK.xcodeproj \
+            -scheme TinodeSDK \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=${DEVICE_ID}" \
+            -derivedDataPath "${PWD}/build/PolicyTestsDerivedData" \
+            -resultBundlePath "${PWD}/build/PolicyTests.xcresult" \
+            -only-testing:TinodeSDKTests/TinodeSDKTests \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | tee policy-tests.log
+
       - name: Run login-to-chat regression test
         run: |
           set -euo pipefail
@@ -199,6 +224,8 @@ jobs:
           name: ios-smoke-logs
           path: |
             build-ios-smoke.log
+            policy-tests.log
+            build/PolicyTests.xcresult
             login-regression.log
             build/LoginRegression.xcresult
             sim-launch.log
