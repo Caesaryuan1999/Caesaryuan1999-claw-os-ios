@@ -108,7 +108,6 @@ class SignupViewController: UITableViewController {
         }
 
         let creds = [Credential(meth: ClawAuthInput.inviteCredentialMethod, val: inviteCode)]
-        let tags = [AccountNames.exactLookupQuery(login), "\(Tinode.kTagAlias)\(login)"]
 
         func doSignUp(withPublicCard pub: TheCard, withCredentials creds: [Credential]) {
             let desc = MetaSetDesc<TheCard, String>(pub: pub, priv: nil)
@@ -119,7 +118,7 @@ class SignupViewController: UITableViewController {
             do {
                 try Cache.tinode.connectDefault(inBackground: false)?
                     .thenApply { _ in
-                        return Cache.tinode.createAccountBasic(uname: login, pwd: pwd, login: true, tags: tags, desc: desc, creds: creds)
+                        return Cache.tinode.createAccountBasic(uname: login, pwd: pwd, login: true, tags: nil, desc: desc, creds: creds)
                     }
                     .thenApply { [weak self] msg in
                         let tinode = Cache.tinode

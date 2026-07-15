@@ -16,6 +16,7 @@ on:
       - "*.lproj/**"
       - "Tinodios.xcodeproj/**"
       - "Tinodios.xcworkspace/**"
+      - "Scripts/ci/**"
       - "Podfile"
       - "Podfile.lock"
   workflow_dispatch:
@@ -113,6 +114,9 @@ jobs:
           PLIST
           fi
           plutil -lint GoogleService-Info.plist
+
+      - name: Verify signup registration policy
+        run: python3 Scripts/ci/test_signup_registration_policy.py
 
       - name: Build and launch simulator app
         run: |
