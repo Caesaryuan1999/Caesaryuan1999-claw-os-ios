@@ -26,6 +26,10 @@ on:
       build_number:
         description: Optional CFBundleVersion override
         required: false
+      marketing_version:
+        description: CFBundleShortVersionString
+        required: true
+        default: 1.0.1
 
 jobs:
   build:
@@ -38,6 +42,7 @@ jobs:
       EXTENSION_BUNDLE_ID: ${{ github.event.inputs.extension_bundle_id || 'app.veilping.clawoschat.TinodiosNSExtension' }}
       EXPORT_METHOD: ${{ github.event.inputs.export_method || 'release-testing' }}
       BUILD_NUMBER: ${{ github.event.inputs.build_number || github.run_number }}
+      MARKETING_VERSION: ${{ github.event.inputs.marketing_version || '1.0.1' }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID || 'NBR9Y9N42C' }}
       IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
       IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
@@ -187,7 +192,7 @@ jobs:
             -destination generic/platform=iOS \
             -archivePath build/CLAWOS.xcarchive \
             CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
-            MARKETING_VERSION="1.0.0"
+            MARKETING_VERSION="${MARKETING_VERSION}"
 
       - name: Export IPA
         run: |
@@ -198,6 +203,7 @@ jobs:
 
       - name: Validate IPA for third-party signing platform
         run: |
+          set -euo pipefail
           IPA_PATH="$(find build/export -name '*.ipa' -type f | head -n 1)"
           if [ -z "$IPA_PATH" ]; then
             echo "::error::IPA was not generated."
@@ -214,13 +220,38 @@ jobs:
             exit 1
           fi
 
+          rm -rf build/ipa-inspect
+          mkdir -p build/ipa-inspect
+          unzip -q "$IPA_PATH" -d build/ipa-inspect
+          APP_PATH="$(find build/ipa-inspect/Payload -maxdepth 1 -name '*.app' -type d | head -n 1)"
+          INFO_PLIST="$APP_PATH/Info.plist"
+          DISPLAY_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$INFO_PLIST")"
+          BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$INFO_PLIST")"
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST")"
+          VERSION_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$INFO_PLIST")"
+
+          test "$DISPLAY_NAME" = "CLAW OS" || { echo "::error::Unexpected CFBundleDisplayName: $DISPLAY_NAME"; exit 1; }
+          test "$BUNDLE_ID" = "${APP_BUNDLE_ID}" || { echo "::error::Unexpected CFBundleIdentifier: $BUNDLE_ID"; exit 1; }
+          test "$VERSION" = "${MARKETING_VERSION}" || { echo "::error::Unexpected CFBundleShortVersionString: $VERSION"; exit 1; }
+          test "$VERSION_BUILD" = "${BUILD_NUMBER}" || { echo "::error::Unexpected CFBundleVersion: $VERSION_BUILD"; exit 1; }
+
+          cat > build/BUILD-IDENTITY.txt <<IDENTITY
+          Product: CLAW OS
+          Bundle ID: ${BUNDLE_ID}
+          Version: ${VERSION}
+          Build: ${VERSION_BUILD}
+          Git commit: ${GITHUB_SHA}
+          IDENTITY
+          cat build/BUILD-IDENTITY.txt
+
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: claw-os-ios-ipa
+          name: claw-os-ios-v${{ env.MARKETING_VERSION }}-build-${{ env.BUILD_NUMBER }}
           path: |
             build/export/*.ipa
             build/ExportOptions.plist
             build/ipa-files.txt
+            build/BUILD-IDENTITY.txt
           if-no-files-found: error
           retention-days: 7
