@@ -56,6 +56,38 @@ class TinodeSDKTests: XCTestCase {
         XCTAssertFalse(PushConfigurationPolicy.isUsable(configuration))
     }
 
+    func testSubscriptionIndexDeduplicatesUsersAndKeepsNewestRecord() {
+        let older = DefaultSubscription()
+        older.user = "usrDuplicate"
+        older.updated = Date(timeIntervalSince1970: 100)
+        older.read = 1
+
+        let newer = DefaultSubscription()
+        newer.user = "usrDuplicate"
+        newer.updated = Date(timeIntervalSince1970: 200)
+        newer.read = 4
+
+        let indexed = DefaultTopic.indexSubscriptions([older, newer])
+
+        XCTAssertEqual(indexed.count, 1)
+        XCTAssertTrue(indexed["usrDuplicate"] === newer)
+        XCTAssertEqual(indexed["usrDuplicate"]?.getRead, 4)
+    }
+
+    func testSubscriptionIndexSkipsMalformedCachedRows() {
+        let missingUser = DefaultSubscription()
+        let incompatibleType = FndSubscription()
+        incompatibleType.user = "usrWrongType"
+
+        let valid = DefaultSubscription()
+        valid.user = "usrValid"
+
+        let indexed = DefaultTopic.indexSubscriptions([missingUser, incompatibleType, valid])
+
+        XCTAssertEqual(Array(indexed.keys), ["usrValid"])
+        XCTAssertTrue(indexed["usrValid"] === valid)
+    }
+
     private func validPushConfiguration() -> [String: Any] {
         [
             "API_KEY": "test-api-key",

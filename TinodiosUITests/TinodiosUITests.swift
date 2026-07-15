@@ -394,6 +394,17 @@ final class TinodiosUITests: XCTestCase {
         table.cells.waitForCount(2)
         XCTAssertTrue(table.staticTexts["Bob"].exists)
         XCTAssertTrue(table.staticTexts["Test group"].exists)
+
+        // Cached subscriptions are loaded before the background session refresh.
+        // Relaunch to verify persisted chat data cannot crash the app at startup.
+        app.terminate()
+        app.launch()
+
+        let relaunchedTable = app.tables.element
+        XCTAssertTrue(relaunchedTable.waitForExistence(timeout: 10), "Chat list did not survive a cold relaunch")
+        relaunchedTable.cells.waitForCount(2)
+        XCTAssertTrue(relaunchedTable.staticTexts["Bob"].exists)
+        XCTAssertTrue(relaunchedTable.staticTexts["Test group"].exists)
     }
 
     private func sendMessage(withContent content: String) {

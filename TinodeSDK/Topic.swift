@@ -661,13 +661,41 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
         listener?.onSubsUpdated()
     }
 
+    internal static func indexSubscriptions(_ loaded: [SubscriptionProto]) -> [String: Subscription<SP, SR>] {
+        var indexed = [String: Subscription<SP, SR>]()
+
+        for candidate in loaded {
+            guard let user = candidate.user, !user.isEmpty else {
+                Tinode.log.error("Skipping cached subscription without a user ID")
+                continue
+            }
+            guard let typed = candidate as? Subscription<SP, SR> else {
+                Tinode.log.error("Skipping cached subscription with an incompatible type for user %@", user)
+                continue
+            }
+
+            if let existing = indexed[user] {
+                let existingUpdated = existing.updated ?? Date.distantPast
+                let candidateUpdated = typed.updated ?? Date.distantPast
+                if candidateUpdated >= existingUpdated {
+                    indexed[user] = typed
+                }
+                Tinode.log.error("Duplicate cached subscription ignored for user %@", user)
+            } else {
+                indexed[user] = typed
+            }
+        }
+        return indexed
+    }
+
     @discardableResult internal func loadSubs() -> Int {
         guard let loaded = store?.getSubscriptions(topic: self) else { return 0 }
-        subsLastUpdated = loaded.max(by: {(s1, s2) -> Bool in
+        let indexed = Self.indexSubscriptions(loaded)
+        subsLastUpdated = indexed.values.max(by: {(s1, s2) -> Bool in
             ((s1.updated ?? Date.distantPast) < (s2.updated ?? Date.distantPast))
         })?.updated
-        subs = (Dictionary(uniqueKeysWithValues: loaded.map { ($0.user, $0) }) as! [String: Subscription<SP, SR>])
-        return subs!.count
+        subs = indexed
+        return indexed.count
     }
 
     public func getSubscription(for key: String?) -> Subscription<SP, SR>? {

@@ -87,6 +87,7 @@ public class SubscriberDb {
             t.column(subscriptionClass)
         })
         try! self.db.run(self.table.createIndex(topicId, ifNotExists: true))
+        try! self.db.run(self.table.createIndex(topicId, userId, unique: true, ifNotExists: true))
     }
 
     // Deletes all records from `subscribers` table.
@@ -116,8 +117,6 @@ public class SubscriberDb {
                 setters.append(self.userId <- ss.userId)
                 setters.append(self.mode <- sub.acs?.serialize())
                 setters.append(self.updated <- sub.updated ?? Date())
-                setters.append(self.status <- status.rawValue)
-                ss.status = status
                 setters.append(self.read <- sub.getRead)
                 setters.append(self.recv <- sub.getRecv)
                 setters.append(self.clear <- sub.getClear)
@@ -127,7 +126,20 @@ public class SubscriberDb {
                     setters.append(self.userAgent <- seen.ua)
                 }
                 setters.append(self.subscriptionClass <- String(describing: type(of: sub as Any)))
-                rowId = try db.run(self.table.insert(setters))
+
+                let existingRecord = self.table.filter(self.topicId == topicId && self.userId == ss.userId)
+                if let existing = try db.pluck(existingRecord.select(self.id, self.status)) {
+                    let existingStatus = BaseDb.Status(rawValue: existing[self.status] ?? 0) ?? .undefined
+                    let effectiveStatus: BaseDb.Status = existingStatus == .synced || status == .synced ? .synced : status
+                    setters.append(self.status <- effectiveStatus.rawValue)
+                    ss.status = effectiveStatus
+                    rowId = existing[self.id]
+                    _ = try db.run(existingRecord.update(setters))
+                } else {
+                    setters.append(self.status <- status.rawValue)
+                    ss.status = status
+                    rowId = try db.run(self.table.insert(setters))
+                }
                 ss.id = rowId
                 sub.payload = ss
             }
@@ -246,6 +258,7 @@ public class SubscriberDb {
             .join(.leftOuter, userDb.table, on: self.table[self.userId] == userDb.table[userDb.id])
             .join(.leftOuter, topicDb.table, on: self.table[self.topicId] == topicDb.table[topicDb.id])
             .filter(self.topicId == topicId)
+            .order(self.table[self.id].asc)
 
         do {
             var subscriptions = [SubscriptionProto]()

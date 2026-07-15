@@ -118,6 +118,9 @@ jobs:
       - name: Verify signup registration policy
         run: python3 Scripts/ci/test_signup_registration_policy.py
 
+      - name: Verify subscription cache policy
+        run: python3 Scripts/ci/test_subscription_cache_policy.py
+
       - name: Verify release identity policy
         run: python3 Scripts/ci/test_ios_release_identity.py
 
