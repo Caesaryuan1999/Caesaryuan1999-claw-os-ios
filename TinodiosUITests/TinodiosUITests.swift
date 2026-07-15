@@ -173,9 +173,17 @@ final class TinodiosUITests: XCTestCase {
             // Tap the little "-" button at approximately where it is. The "-" is not exposed directly
             springboard.coordinate(withNormalizedOffset: CGVector(dx: (iconFrame.minX + 3) / springboardFrame.maxX, dy: (iconFrame.minY + 3) / springboardFrame.maxY)).tap()
 
-            springboard.alerts.buttons["Delete App"].tap()
-            // Confirm the choice once again.
-            springboard.alerts.buttons["Delete"].tap()
+            let deleteAppButton = springboard.alerts.buttons["Delete App"]
+            guard deleteAppButton.waitForExistence(timeout: 2) else {
+                return
+            }
+            deleteAppButton.tap()
+
+            // Confirm the choice once again when SpringBoard presents it.
+            let confirmDeleteButton = springboard.alerts.buttons["Delete"]
+            if confirmDeleteButton.waitForExistence(timeout: 2) {
+                confirmDeleteButton.tap()
+            }
         }
     }
 
