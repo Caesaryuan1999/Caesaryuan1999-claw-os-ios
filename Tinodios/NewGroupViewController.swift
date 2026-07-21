@@ -320,9 +320,10 @@ extension NewGroupViewController: EditMembersDelegate {
             return
         }
 
-        let removedPaths = selectedContacts.enumerated().compactMap { index, contact in
-            guard let uid = contact.uniqueId, removedIds.contains(uid) else { return nil }
-            return IndexPath(row: index + 1, section: 1)
+        var removedPaths: [IndexPath] = []
+        for (index, contact) in selectedContacts.enumerated() {
+            guard let uid = contact.uniqueId, removedIds.contains(uid) else { continue }
+            removedPaths.append(IndexPath(row: index + 1, section: 1))
         }
         let addedPaths = orderedAdditions.indices.map {
             IndexPath(row: retainedContacts.count + $0 + 1, section: 1)
