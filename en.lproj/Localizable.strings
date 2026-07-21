@@ -325,3 +325,27 @@
 
 /* Placeholder when no chats found */
 "You have no chats\n\n¯\\_(ツ)_/¯" = "You have no chats\n\n¯\\_(ツ)_/¯";
+
+/* CLAW OS contact and group workflows */
+"Done" = "Done";
+"Create group" = "Create group";
+"Create group (%d)" = "Create group (%d)";
+"Selected members (%d)" = "Selected members (%d)";
+"Done (%d)" = "Done (%d)";
+"Saving changes" = "Saving changes";
+"Group created. Some members could not be added; retry from Group settings." = "Group created. Some members could not be added; retry from Group settings.";
+"Invalid member selection. Try again." = "Invalid member selection. Try again.";
+"Added to contacts" = "Added to contacts";
+
+/* CLAW OS attachment workflow */
+"Attachment" = "Attachment";
+"Photo or video" = "Photo or video";
+"File" = "File";
+"Take photo or video" = "Take photo or video";
+"Take photo" = "Take photo";
+"Choose photo or video" = "Choose photo or video";
+"Choose photo" = "Choose photo";
+"Video caption" = "Video caption";
+"Invalid video" = "Invalid video";
+"Video playback error" = "Video playback error";
+"Unable to read video" = "Unable to read video";

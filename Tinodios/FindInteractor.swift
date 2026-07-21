@@ -72,19 +72,26 @@ class FindInteractor: FindBusinessLogic {
 
     }
     func updateAndPresentRemoteContacts() {
-        if let subs = fndTopic?.getSubscriptions(), !(searchQuery?.isEmpty ?? true) {
-            self.remoteContacts = subs.map { sub in
-                let accountName = AccountNames.fromTags(sub.priv)
-                let contact = RemoteContactHolder(pub: sub.pub, uniqueId: sub.uniqueId,
-                                                  accountName: accountName,
-                                                  subtitle: AccountNames.contactListSecondary(accountName: accountName))
-                contact.sub = sub
-                return contact
+        queue.async {
+            self.localContacts = self.fetchLocalContacts()
+            let localIds = Set(self.localContacts?.compactMap { $0.uniqueId } ?? [])
+            if let subs = self.fndTopic?.getSubscriptions(), !(self.searchQuery?.isEmpty ?? true) {
+                self.remoteContacts = subs.compactMap { sub in
+                    guard let uniqueId = sub.uniqueId, !localIds.contains(uniqueId) else {
+                        return nil
+                    }
+                    let accountName = AccountNames.fromTags(sub.priv)
+                    let contact = RemoteContactHolder(pub: sub.pub, uniqueId: uniqueId,
+                                                      accountName: accountName,
+                                                      subtitle: AccountNames.contactListSecondary(accountName: accountName))
+                    contact.sub = sub
+                    return contact
+                }
+            } else {
+                self.remoteContacts?.removeAll()
             }
-        } else {
-            self.remoteContacts?.removeAll()
+            self.presenter?.presentRemoteContacts(contacts: self.remoteContacts ?? [])
         }
-        self.presenter?.presentRemoteContacts(contacts: self.remoteContacts ?? [])
     }
 
     func fetchLocalContacts() -> [ContactHolder] {
@@ -92,35 +99,34 @@ class FindInteractor: FindBusinessLogic {
     }
 
     static let kSingleTagTest = try! NSRegularExpression(pattern: #"[\s,:]"#)
+
+    private func matchingLocalContacts(searchQuery: String?) -> [ContactHolder] {
+        guard let query = searchQuery?.trimmingCharacters(in: .whitespacesAndNewlines), !query.isEmpty else {
+            return localContacts ?? []
+        }
+        let cleanQuery = query.first == "@" ? String(query.dropFirst()) : query
+        return (localContacts ?? []).filter { contact in
+            let displayName = AccountNames.contactDisplayName(displayName: contact.pub?.fn,
+                                                               accountName: contact.accountName,
+                                                               userId: contact.uniqueId)
+            if displayName.range(of: cleanQuery, options: .caseInsensitive) != nil {
+                return true
+            }
+            return contact.accountName?.range(of: cleanQuery, options: .caseInsensitive) != nil
+        }
+    }
+
     func loadAndPresentContacts(searchQuery: String? = nil) {
         let changed = self.searchQuery != searchQuery
         self.searchQuery = searchQuery
         queue.async {
-            if self.localContacts == nil {
-                self.localContacts = self.fetchLocalContacts()
-            }
+            // Always refresh after a directory result is saved as a contact.
+            self.localContacts = self.fetchLocalContacts()
             if self.remoteContacts == nil {
                self.remoteContacts = []
             }
 
-            let contacts: [ContactHolder] =
-                self.searchQuery != nil ?
-                    self.localContacts!.filter { u in
-                        let query = self.searchQuery!
-                        let displayName = AccountNames.contactDisplayName(displayName: u.pub?.fn,
-                                                                           accountName: u.accountName,
-                                                                           userId: u.uniqueId)
-                        if let r = displayName.range(of: query, options: .caseInsensitive),
-                           r.contains(displayName.startIndex) {
-                            return true
-                        }
-                        guard let accountName = u.accountName,
-                              let r = accountName.range(of: query, options: .caseInsensitive) else {
-                            return false
-                        }
-                        return r.contains(accountName.startIndex)
-                    } :
-                    self.localContacts!
+            let contacts = self.matchingLocalContacts(searchQuery: self.searchQuery)
             if changed {
                 var searchStr: String? = nil
                 if let query = searchQuery, !query.isEmpty,
@@ -160,6 +166,13 @@ class FindInteractor: FindBusinessLogic {
         guard let topicUnwrapped = topic else { return false }
         if topicUnwrapped.isP2PType {
             contactsManager.processSubscription(sub: sub)
+            queue.async {
+                self.localContacts = self.fetchLocalContacts()
+                self.remoteContacts?.removeAll { $0.uniqueId == topicName }
+                self.presenter?.presentLocalContacts(
+                    contacts: self.matchingLocalContacts(searchQuery: self.searchQuery))
+                self.presenter?.presentRemoteContacts(contacts: self.remoteContacts ?? [])
+            }
         }
         return true
     }

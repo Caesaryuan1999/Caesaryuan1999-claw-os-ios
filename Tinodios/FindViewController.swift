@@ -352,6 +352,7 @@ extension FindViewController: ContactViewCellDelegate {
                 UiUtils.showToast(message: NSLocalizedString("Failed to save group and contact info.", comment: "Error message"))
                 return
             }
+            UiUtils.showToast(message: NSLocalizedString("Added to contacts", comment: "Directory search result saved"))
         }
 
         // Make sure there are no pending search requests.

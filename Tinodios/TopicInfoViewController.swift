@@ -465,13 +465,39 @@ extension TopicInfoViewController: EditMembersDelegate {
         } ?? []
     }
 
-    func editMembersDidEndEditing(_: UIView, added: [String], removed: [String]) {
-         for uid in added {
-            topic.invite(user: uid, in: nil).thenCatch(UiUtils.ToastFailureHandler)
-         }
-         for uid in removed {
-            topic.eject(user: uid, ban: false).thenCatch(UiUtils.ToastFailureHandler)
-         }
+    func editMembersDidEndEditing(_: UIView, added: [String], removed: [String], completion: @escaping (Error?) -> Void) {
+        enum MemberChange {
+            case add(String)
+            case remove(String)
+        }
+
+        let changes = added.map { MemberChange.add($0) } + removed.map { MemberChange.remove($0) }
+        func applyChange(at index: Int) {
+            guard index < changes.count else {
+                completion(nil)
+                return
+            }
+
+            let promise: PromisedReply<ServerMessage>
+            switch changes[index] {
+            case .add(let uid):
+                promise = topic.invite(user: uid, in: nil)
+            case .remove(let uid):
+                promise = topic.eject(user: uid, ban: false)
+            }
+
+            promise.then(
+                onSuccess: { _ in
+                    applyChange(at: index + 1)
+                    return nil
+                },
+                onFailure: { error in
+                    completion(error)
+                    return nil
+                })
+        }
+
+        applyChange(at: 0)
     }
 
     func editMembersWillChangeState(_: UIView, uid: String, added: Bool, initiallySelected: Bool) -> Bool {

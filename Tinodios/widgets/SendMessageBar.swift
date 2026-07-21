@@ -140,14 +140,16 @@ class SendMessageBar: UIView {
     @IBAction func attach(_ sender: UIButton) {
         inputField.resignFirstResponder()
 
-        let alert = UIAlertController(title: "Attachment", message: nil, preferredStyle: .actionSheet)
-        alert.addAction(UIAlertAction(title: "Image / Video", style: .default, handler: { _ in
+        let alert = UIAlertController(title: NSLocalizedString("Attachment", comment: "Attachment menu title"),
+                                      message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("Photo or video", comment: "Photo and video picker action"),
+                                      style: .default, handler: { _ in
             self.delegate?.sendMessageBar(attachment: false)
         }))
-        alert.addAction(UIAlertAction(title: "File", style: .default, handler: { _ in
+        alert.addAction(UIAlertAction(title: NSLocalizedString("File", comment: "File picker action"), style: .default, handler: { _ in
             self.delegate?.sendMessageBar(attachment: true)
         }))
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel action"), style: .cancel, handler: nil))
         self.window?.rootViewController?.present(alert, animated: true, completion: nil)
     }
 

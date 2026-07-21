@@ -499,3 +499,26 @@ Menu item: video call */
 /* Placeholder when no chats found */
 "You have no chats\n\n¯\\_(ツ)_/¯" = "您没有聊天记录\n\n¯\\_(ツ)_/¯";
 
+/* CLAW OS 联系人与建群流程 */
+"Done" = "确定";
+"Create group" = "创建群聊";
+"Create group (%d)" = "创建群聊（%d）";
+"Selected members (%d)" = "已选择 %d 人";
+"Done (%d)" = "确定（%d）";
+"Saving changes" = "正在保存";
+"Group created. Some members could not be added; retry from Group settings." = "群聊已创建，部分成员添加失败，可在群设置中重试。";
+"Invalid member selection. Try again." = "成员选择无效，请重试。";
+"Added to contacts" = "已添加到联系人";
+
+/* CLAW OS 附件流程 */
+"Photo or video" = "照片或视频";
+"File" = "文件";
+"Take photo or video" = "拍摄照片或视频";
+"Take photo" = "拍照";
+"Choose photo or video" = "从相册选择照片或视频";
+"Choose photo" = "从相册选择照片";
+"Video caption" = "添加视频说明";
+"Invalid video" = "视频无效";
+"Video playback error" = "视频播放失败";
+"Unable to read video" = "无法读取视频";
+

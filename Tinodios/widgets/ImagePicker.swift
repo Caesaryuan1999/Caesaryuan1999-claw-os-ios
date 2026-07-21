@@ -20,12 +20,14 @@ public protocol ImagePickerDelegate: AnyObject {
 open class ImagePicker: NSObject {
 
     private let pickerController: UIImagePickerController
+    private let allowVideo: Bool
     private weak var presentationController: UIViewController?
     private weak var delegate: ImagePickerDelegate?
 
     public init(presentationController: UIViewController, delegate: ImagePickerDelegate, editable: Bool,
                 allowVideo: Bool = false) {
         self.pickerController = UIImagePickerController()
+        self.allowVideo = allowVideo
 
         super.init()
 
@@ -55,17 +57,18 @@ open class ImagePicker: NSObject {
 
         let alertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
 
-        if let action = self.action(for: .camera, title: "Take photo") {
+        let cameraTitle = allowVideo ? NSLocalizedString("Take photo or video", comment: "Camera action") :
+            NSLocalizedString("Take photo", comment: "Camera action")
+        if let action = self.action(for: .camera, title: cameraTitle) {
             alertController.addAction(action)
         }
-        if let action = self.action(for: .savedPhotosAlbum, title: "Camera roll") {
-            alertController.addAction(action)
-        }
-        if let action = self.action(for: .photoLibrary, title: "Photo library") {
+        let libraryTitle = allowVideo ? NSLocalizedString("Choose photo or video", comment: "Media library action") :
+            NSLocalizedString("Choose photo", comment: "Photo library action")
+        if let action = self.action(for: .photoLibrary, title: libraryTitle) {
             alertController.addAction(action)
         }
 
-        alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        alertController.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel action"), style: .cancel, handler: nil))
 
         if UIDevice.current.userInterfaceIdiom == .pad {
             alertController.popoverPresentationController?.sourceView = sourceView
@@ -136,11 +139,13 @@ open class ImagePicker: NSObject {
         // Sometimes it may break some of these params, e.g. dimensions.
         // To be able to access the original video file, we need to use PHPickerViewController.
         // TODO: switch to PHPickerViewController.
-        let videoUrl = info[.mediaURL] as? NSURL
+        guard let videoUrl = info[.mediaURL] as? NSURL else {
+            return self.pickerController(picker, didSelect: nil)
+        }
         let result = ImagePicker.extractFileNameAndMimeType(fromURL: videoUrl)
-        let swiftUrl = videoUrl as URL?
-        let fname = result.0 as String? ?? swiftUrl?.lastPathComponent ?? "claw_os_video.mov"
-        let mimeType = result.1 ?? Utils.mimeForUrl(url: swiftUrl ?? URL(fileURLWithPath: fname), ifMissing: "video/quicktime")
+        let swiftUrl = videoUrl as URL
+        let fname = result.0 as String? ?? (swiftUrl.lastPathComponent.isEmpty ? "claw_os_video.mov" : swiftUrl.lastPathComponent)
+        let mimeType = result.1 ?? Utils.mimeForUrl(url: swiftUrl, ifMissing: "video/quicktime")
 
         self.pickerController(picker, didSelect: .video(swiftUrl, mimeType, fname))
     }

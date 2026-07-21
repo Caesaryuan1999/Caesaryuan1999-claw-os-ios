@@ -508,6 +508,7 @@ class MessageViewController: UIViewController {
             data = try Data(contentsOf: url)
         } catch {
             Cache.log.error("MessageVC - failed to read video file: %@", error.localizedDescription)
+            UiUtils.showToast(message: NSLocalizedString("Unable to read video", comment: "Video attachment read error"))
             return
         }
 

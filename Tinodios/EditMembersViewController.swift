@@ -11,7 +11,7 @@ public protocol EditMembersDelegate: AnyObject {
     // Asks for the UIDs and contact info of initially selected members
     func editMembersInitialSelection(_: UIView) -> [ContactHolder]
     // Called when the editor completes selection.
-    func editMembersDidEndEditing(_: UIView, added: [String], removed: [String])
+    func editMembersDidEndEditing(_: UIView, added: [String], removed: [String], completion: @escaping (Error?) -> Void)
     // Called when member is added or removed. Return 'true' to continue, 'false' to reject the change.
     func editMembersWillChangeState(_: UIView, uid: String, added: Bool, initiallySelected: Bool) -> Bool
 }
@@ -22,8 +22,20 @@ class EditMembersViewController: UIViewController, UITableViewDataSource {
     private var selectedContacts = [IndexPath]()
     private var initialIds = Set<String>()
     private var selectedIds = Set<String>()
+    private var isSaving = false
 
     weak var delegate: EditMembersDelegate?
+
+    private lazy var doneButtonItem = UIBarButtonItem(
+        title: NSLocalizedString("Done", comment: "Button title"),
+        style: .done,
+        target: self,
+        action: #selector(saveClicked(_:)))
+    private lazy var cancelButtonItem = UIBarButtonItem(
+        title: NSLocalizedString("Cancel", comment: "Button title"),
+        style: .plain,
+        target: self,
+        action: #selector(cancelClicked(_:)))
 
     @IBOutlet var editMembersView: UIView!
     @IBOutlet weak var membersTableView: UITableView!
@@ -39,6 +51,9 @@ class EditMembersViewController: UIViewController, UITableViewDataSource {
 
         self.selectedCollectionView.dataSource = self
         self.selectedCollectionView.register(UINib(nibName: "SelectedMemberViewCell", bundle: nil), forCellWithReuseIdentifier: "SelectedMemberViewCell")
+
+        self.navigationItem.leftBarButtonItem = cancelButtonItem
+        self.navigationItem.rightBarButtonItem = doneButtonItem
 
         setup()
     }
@@ -72,7 +87,17 @@ class EditMembersViewController: UIViewController, UITableViewDataSource {
                 selectedContacts.append(IndexPath(row: contacts.count - 1, section: 0))
             }
         }
-        self.navigationItem.title = NSLocalizedString("Manage members", comment: "View title")
+        updateSelectionSummary()
+    }
+
+    private func updateSelectionSummary() {
+        let selectedCount = selectedIds.filter { !Cache.tinode.isMe(uid: $0) }.count
+        navigationItem.title = String(
+            format: NSLocalizedString("Selected members (%d)", comment: "View title with selected member count"),
+            selectedCount)
+        doneButtonItem.title = String(
+            format: NSLocalizedString("Done (%d)", comment: "Button title with selected member count"),
+            selectedCount)
     }
     func addUser(with uniqueId: String) {
         self.selectedIds.insert(uniqueId)
@@ -109,20 +134,52 @@ class EditMembersViewController: UIViewController, UITableViewDataSource {
         return cell
     }
     @IBAction func saveClicked(_ sender: Any) {
-        navigationController?.popViewController(animated: true)
+        guard !isSaving else { return }
 
         let deltas = getDeltas()
         let additions = deltas.0
         let deletions = deltas.1
+        isSaving = true
+        doneButtonItem.isEnabled = false
+        cancelButtonItem.isEnabled = false
+        navigationItem.title = NSLocalizedString("Saving changes", comment: "View title while group member changes are being saved")
 
-        delegate?.editMembersDidEndEditing(editMembersView, added: additions, removed: deletions)
-
-        dismiss(animated: true, completion: nil)
+        guard let delegate = delegate else {
+            finishSaving(error: nil)
+            return
+        }
+        delegate.editMembersDidEndEditing(editMembersView, added: additions, removed: deletions) { [weak self] error in
+            DispatchQueue.main.async {
+                self?.finishSaving(error: error)
+            }
+        }
     }
 
     @IBAction func cancelClicked(_ sender: Any) {
-        self.navigationController?.popViewController(animated: true)
-        self.dismiss(animated: true, completion: nil)
+        guard !isSaving else { return }
+        closeEditor()
+    }
+
+    private func closeEditor() {
+        if navigationController?.presentingViewController != nil {
+            navigationController?.dismiss(animated: true)
+        } else if presentingViewController != nil {
+            dismiss(animated: true)
+        } else {
+            navigationController?.popViewController(animated: true)
+        }
+    }
+
+    private func finishSaving(error: Error?) {
+        if let error = error {
+            isSaving = false
+            doneButtonItem.isEnabled = true
+            cancelButtonItem.isEnabled = true
+            updateSelectionSummary()
+            UiUtils.ToastFailureHandler(err: error)
+            return
+        }
+        closeEditor()
     }
 
     private func getDeltas() -> ([String], [String]) {
@@ -152,6 +209,7 @@ extension EditMembersViewController: UITableViewDelegate {
         self.addUser(with: uid)
         selectedContacts.append(indexPath)
         selectedCollectionView.insertItems(at: [IndexPath(item: selectedContacts.count - 1, section: 0)])
+        updateSelectionSummary()
     }
 
     func tableView(_ tableView: UITableView, willDeselectRowAt indexPath: IndexPath) -> IndexPath? {
@@ -175,6 +233,7 @@ extension EditMembersViewController: UITableViewDelegate {
             selectedContacts.remove(at: removeAt)
             selectedCollectionView.deleteItems(at: [IndexPath(item: removeAt, section: 0)])
         }
+        updateSelectionSummary()
     }
 }
 
