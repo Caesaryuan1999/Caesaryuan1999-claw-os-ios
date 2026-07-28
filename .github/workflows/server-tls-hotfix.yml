@@ -1,0 +1,174 @@
+name: Server TLS Hotfix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Switch veilping.app to RSA TLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure server SSH key
+        env:
+          SERVER_SSH_KEY: ${{ secrets.CLAW_SERVER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${SERVER_SSH_KEY}"
+          install -d -m 700 "${HOME}/.ssh"
+          printf '%s\n' "${SERVER_SSH_KEY}" > "${HOME}/.ssh/id_ed25519"
+          chmod 600 "${HOME}/.ssh/id_ed25519"
+          ssh-keyscan -T 10 -H 80.78.23.14 >> "${HOME}/.ssh/known_hosts"
+
+      - name: Back up and deploy RSA Caddy policy
+        run: |
+          set -euo pipefail
+
+          CADDY_CONFIG_B64="$(
+            cat <<'CADDYFILE' | base64 -w 0
+          {
+            key_type rsa2048
+            preferred_chains {
+              root_common_name "ISRG Root X1"
+            }
+          }
+
+          {$TINODE_DOMAIN}, www.{$TINODE_DOMAIN} {
+            redir /download /download/
+            redir /app /app/
+
+            handle_path /download/* {
+              root * /srv/download
+              file_server
+            }
+
+            handle_path /app/* {
+              root * /srv/download
+              file_server
+            }
+
+            handle /claw-os.apk {
+              root * /srv/download
+              rewrite * /claw-os-latest.apk
+              file_server
+            }
+
+            reverse_proxy tinode:6060
+          }
+          CADDYFILE
+          )"
+
+          ssh -o BatchMode=yes -o ConnectTimeout=15 root@80.78.23.14 \
+            "CADDY_CONFIG_B64='${CADDY_CONFIG_B64}' bash -se" <<'REMOTE'
+          set -euo pipefail
+
+          ROOT=/opt/tinode
+          STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+          BACKUP_ROOT="${ROOT}/backups/tls-hotfix-${STAMP}"
+          DATA_VOLUME=""
+          CERT_BACKUP_READY=0
+
+          rollback() {
+            exit_code=$?
+            trap - ERR
+            set +e
+            echo "TLS hotfix failed; restoring the previous Caddy state."
+            if [ -f "${BACKUP_ROOT}/Caddyfile.tinode" ]; then
+              cp "${BACKUP_ROOT}/Caddyfile.tinode" "${ROOT}/Caddyfile.tinode"
+            fi
+            if [ "${CERT_BACKUP_READY}" = "1" ] && [ -n "${DATA_VOLUME}" ]; then
+              docker stop tinode-caddy >/dev/null 2>&1
+              docker run --rm \
+                -v "${DATA_VOLUME}:/data" \
+                -v "${BACKUP_ROOT}:/backup:ro" \
+                alpine:3.20 sh -c \
+                'rm -rf /data/caddy/certificates && cd /data && tar xzf /backup/caddy-certificates.tgz'
+            fi
+            docker start tinode-caddy >/dev/null 2>&1
+            exit "${exit_code}"
+          }
+          trap rollback ERR
+
+          test -d "${ROOT}"
+          test -f "${ROOT}/Caddyfile.tinode"
+          docker inspect tinode-caddy >/dev/null
+
+          mkdir -p "${BACKUP_ROOT}"
+          cp "${ROOT}/Caddyfile.tinode" "${BACKUP_ROOT}/Caddyfile.tinode"
+          printf '%s' "${CADDY_CONFIG_B64}" | base64 -d > "${ROOT}/Caddyfile.tinode.new"
+
+          docker cp "${ROOT}/Caddyfile.tinode.new" tinode-caddy:/tmp/Caddyfile.hotfix
+          docker exec tinode-caddy caddy validate \
+            --config /tmp/Caddyfile.hotfix \
+            --adapter caddyfile
+
+          DATA_VOLUME="$(
+            docker inspect tinode-caddy \
+              --format '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Name}}{{end}}{{end}}'
+          )"
+          test -n "${DATA_VOLUME}"
+
+          docker pull alpine:3.20 >/dev/null
+          docker run --rm \
+            -v "${DATA_VOLUME}:/data:ro" \
+            -v "${BACKUP_ROOT}:/backup" \
+            alpine:3.20 sh -c \
+            'cd /data && tar czf /backup/caddy-certificates.tgz caddy/certificates'
+          CERT_BACKUP_READY=1
+
+          mv "${ROOT}/Caddyfile.tinode.new" "${ROOT}/Caddyfile.tinode"
+          docker stop tinode-caddy >/dev/null
+          docker run --rm -v "${DATA_VOLUME}:/data" alpine:3.20 sh -c \
+            'find /data/caddy/certificates -type d \( -name veilping.app -o -name www.veilping.app \) -prune -exec rm -rf {} +'
+          docker start tinode-caddy >/dev/null
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS --resolve veilping.app:443:127.0.0.1 \
+              https://veilping.app/ >/dev/null 2>&1; then
+              break
+            fi
+            if [ "${attempt}" = "30" ]; then
+              echo "Caddy did not restore HTTPS within 60 seconds."
+              false
+            fi
+            sleep 2
+          done
+
+          docker exec tinode-caddy caddy validate \
+            --config /etc/caddy/Caddyfile \
+            --adapter caddyfile
+          trap - ERR
+          echo "Server-side TLS hotfix completed. Backup: ${BACKUP_ROOT}"
+          REMOTE
+
+      - name: Verify public TLS and WebSocket endpoint
+        run: |
+          set -euo pipefail
+
+          curl --fail --silent --show-error https://veilping.app/ >/dev/null
+          echo | openssl s_client \
+            -connect veilping.app:443 \
+            -servername veilping.app 2>/dev/null \
+            | openssl x509 -noout -subject -issuer -text > /tmp/veilping-leaf.txt
+
+          grep -q "Public Key Algorithm: rsaEncryption" /tmp/veilping-leaf.txt
+          grep -q "ISRG Root X1\|Let's Encrypt" /tmp/veilping-leaf.txt
+
+          status="$(
+            curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              --http1.1 \
+              --header 'Connection: Upgrade' \
+              --header 'Upgrade: websocket' \
+              --header 'Sec-WebSocket-Version: 13' \
+              --header 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
+              https://veilping.app/v0/channels
+          )"
+          test "${status}" = "403"
+          echo "Public RSA TLS and Tinode WebSocket routing verified."

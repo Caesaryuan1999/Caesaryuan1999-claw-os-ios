@@ -124,6 +124,9 @@ jobs:
       - name: Verify release identity policy
         run: python3 Scripts/ci/test_ios_release_identity.py
 
+      - name: Verify WebSocket TLS policy
+        run: python3 Scripts/ci/test_websocket_tls_policy.py
+
       - name: Build and launch simulator app
         run: |
           set -euo pipefail
