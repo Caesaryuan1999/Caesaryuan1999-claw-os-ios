@@ -522,3 +522,13 @@ Menu item: video call */
 "Video playback error" = "视频播放失败";
 "Unable to read video" = "无法读取视频";
 
+"device_info" = "手机信息";
+"device_info_explained" = "查看设备、系统和应用版本";
+"device_model" = "设备型号";
+"operating_system" = "操作系统";
+"app_version" = "应用版本";
+"current_language" = "当前语言";
+"copy_info" = "复制信息";
+"close" = "关闭";
+"privacy_device_info" = "不包含手机号、IMEI 或序列号。";
+"device_info_copied" = "手机信息已复制";

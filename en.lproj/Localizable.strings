@@ -349,3 +349,13 @@
 "Invalid video" = "Invalid video";
 "Video playback error" = "Video playback error";
 "Unable to read video" = "Unable to read video";
+"device_info" = "Phone information";
+"device_info_explained" = "View device, system and app version";
+"device_model" = "Device model";
+"operating_system" = "Operating system";
+"app_version" = "App version";
+"current_language" = "Current language";
+"copy_info" = "Copy information";
+"close" = "Close";
+"privacy_device_info" = "Does not include your phone number, IMEI or serial number.";
+"device_info_copied" = "Phone information copied";

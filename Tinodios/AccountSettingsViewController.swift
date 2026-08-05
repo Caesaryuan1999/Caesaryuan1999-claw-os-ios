@@ -31,6 +31,7 @@ class AccountSettingsViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setup()
+        tableView.tableFooterView = makeDeviceInfoFooter()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -42,6 +43,103 @@ class AccountSettingsViewController: UITableViewController {
     private func setup() {
         self.tinode = Cache.tinode
         self.me = self.tinode.getMeTopic()!
+    }
+
+    private func makeDeviceInfoFooter() -> UIView {
+        let footer = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 104))
+        let control = UIControl()
+        control.translatesAutoresizingMaskIntoConstraints = false
+        control.backgroundColor = .secondarySystemGroupedBackground
+        control.layer.cornerRadius = 8
+        control.accessibilityLabel = NSLocalizedString("device_info", comment: "Phone information")
+        control.accessibilityHint = NSLocalizedString("device_info_explained", comment: "Phone information explanation")
+        control.accessibilityIdentifier = "account_device_info"
+        control.addTarget(self, action: #selector(showDeviceInfo), for: .touchUpInside)
+
+        let iconView = UIImageView(image: UIImage(systemName: "iphone"))
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconView.tintColor = view.tintColor
+        iconView.contentMode = .scaleAspectFit
+
+        let titleLabel = UILabel()
+        titleLabel.text = NSLocalizedString("device_info", comment: "Phone information")
+        titleLabel.font = .preferredFont(forTextStyle: .headline)
+        titleLabel.textColor = .label
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = NSLocalizedString("device_info_explained", comment: "Phone information explanation")
+        subtitleLabel.font = .preferredFont(forTextStyle: .subheadline)
+        subtitleLabel.textColor = .secondaryLabel
+        subtitleLabel.numberOfLines = 0
+
+        let labels = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
+        labels.translatesAutoresizingMaskIntoConstraints = false
+        labels.axis = .vertical
+        labels.spacing = 3
+
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.right"))
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+        chevron.tintColor = .tertiaryLabel
+        chevron.contentMode = .scaleAspectFit
+
+        footer.addSubview(control)
+        control.addSubview(iconView)
+        control.addSubview(labels)
+        control.addSubview(chevron)
+
+        NSLayoutConstraint.activate([
+            control.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 16),
+            control.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -16),
+            control.topAnchor.constraint(equalTo: footer.topAnchor, constant: 12),
+            control.bottomAnchor.constraint(equalTo: footer.bottomAnchor, constant: -12),
+            iconView.leadingAnchor.constraint(equalTo: control.leadingAnchor, constant: 18),
+            iconView.centerYAnchor.constraint(equalTo: control.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 28),
+            iconView.heightAnchor.constraint(equalToConstant: 34),
+            labels.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 16),
+            labels.centerYAnchor.constraint(equalTo: control.centerYAnchor),
+            labels.trailingAnchor.constraint(lessThanOrEqualTo: chevron.leadingAnchor, constant: -12),
+            chevron.trailingAnchor.constraint(equalTo: control.trailingAnchor, constant: -18),
+            chevron.centerYAnchor.constraint(equalTo: control.centerYAnchor),
+            chevron.widthAnchor.constraint(equalToConstant: 10)
+        ])
+        return footer
+    }
+
+    @objc private func showDeviceInfo() {
+        let deviceModel = UIDevice.current.model
+        let operatingSystem = "\(UIDevice.current.systemName) \(UIDevice.current.systemVersion)"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "-"
+        let appVersion = build == "-" ? version : "\(version) (\(build))"
+        let languageIdentifier = Locale.preferredLanguages.first ?? Locale.current.identifier
+        let currentLanguage = Locale.current.localizedString(forIdentifier: languageIdentifier) ?? languageIdentifier
+
+        let lines = [
+            "\(NSLocalizedString("device_model", comment: "Device model")): \(deviceModel)",
+            "\(NSLocalizedString("operating_system", comment: "Operating system")): \(operatingSystem)",
+            "\(NSLocalizedString("app_version", comment: "App version")): \(appVersion)",
+            "\(NSLocalizedString("current_language", comment: "Current language")): \(currentLanguage)"
+        ]
+        let copyValue = lines.joined(separator: "\n")
+        let message = copyValue + "\n\n" + NSLocalizedString("privacy_device_info", comment: "Device information privacy note")
+        let alert = UIAlertController(
+            title: NSLocalizedString("device_info", comment: "Phone information"),
+            message: message,
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(
+            title: NSLocalizedString("copy_info", comment: "Copy phone information"),
+            style: .default,
+            handler: { _ in
+                UIPasteboard.general.string = copyValue
+                UiUtils.showToast(
+                    message: NSLocalizedString("device_info_copied", comment: "Device information copied"),
+                    level: .info)
+            }))
+        alert.addAction(UIAlertAction(
+            title: NSLocalizedString("close", comment: "Close"),
+            style: .cancel))
+        present(alert, animated: true)
     }
 
     private func reloadData() {

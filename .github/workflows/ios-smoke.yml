@@ -127,6 +127,9 @@ jobs:
       - name: Verify WebSocket TLS policy
         run: python3 Scripts/ci/test_websocket_tls_policy.py
 
+      - name: Verify device information privacy policy
+        run: python3 Scripts/ci/test_device_info_policy.py
+
       - name: Build and launch simulator app
         run: |
           set -euo pipefail
