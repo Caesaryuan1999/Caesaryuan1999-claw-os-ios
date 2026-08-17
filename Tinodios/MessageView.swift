@@ -14,6 +14,7 @@ class MessageView: UICollectionView {
 
     weak var cellDelegate: MessageCellDelegate?
     weak var foregroundView: UIView?
+    var isBulkSelectionMode = false
 
     // MARK: - Initializers
 
@@ -54,6 +55,10 @@ class MessageView: UICollectionView {
         guard let indexPath = indexPathForItem(at: touchLocation) else { return }
 
         if let cell = cellForItem(at: indexPath) as? MessageCell {
+            if isBulkSelectionMode {
+                cellDelegate?.didTapMessage(in: cell)
+                return
+            }
             cell.handleTapGesture(gesture)
         }
     }

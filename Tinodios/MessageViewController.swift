@@ -171,6 +171,11 @@ class MessageViewController: UIViewController {
     /// Button [GO to latest message].
     private weak var goToLatestButton: UIButton!
     private var goToLatestButtonBottomAnchor: NSLayoutConstraint!
+    var bulkSelectionMode = false
+    var selectedBulkMessageSeqIds = Set<Int>()
+    private var bulkSelectionOriginalTitle: String?
+    private var bulkSelectionOriginalLeftItem: UIBarButtonItem?
+    private var bulkSelectionOriginalRightItems: [UIBarButtonItem]?
 
 
     var interactor: (MessageBusinessLogic & MessageDataStore)?
@@ -330,6 +335,77 @@ class MessageViewController: UIViewController {
     // i.e. the forwarded message preview is shown in the preview bar.
     var isForwardingMessage: Bool = false
 
+    func beginBulkMessageSelection(starting seqId: Int) {
+        guard let message = message(atSeqId: seqId), !message.isDeleted else { return }
+        if !bulkSelectionMode {
+            bulkSelectionMode = true
+            selectedBulkMessageSeqIds.removeAll()
+            bulkSelectionOriginalTitle = navigationItem.title
+            bulkSelectionOriginalLeftItem = navigationItem.leftBarButtonItem
+            bulkSelectionOriginalRightItems = navigationItem.rightBarButtonItems
+            collectionView.isBulkSelectionMode = true
+        }
+        selectedBulkMessageSeqIds.insert(seqId)
+        updateBulkMessageSelectionUI()
+        collectionView.reloadData()
+    }
+
+    func toggleBulkMessageSelection(seqId: Int) {
+        guard bulkSelectionMode, let message = message(atSeqId: seqId), !message.isDeleted else { return }
+        if selectedBulkMessageSeqIds.contains(seqId) {
+            selectedBulkMessageSeqIds.remove(seqId)
+        } else {
+            selectedBulkMessageSeqIds.insert(seqId)
+        }
+        if selectedBulkMessageSeqIds.isEmpty {
+            finishBulkMessageSelection()
+        } else {
+            updateBulkMessageSelectionUI()
+            collectionView.reloadData()
+        }
+    }
+
+    func finishBulkMessageSelection() {
+        guard bulkSelectionMode else { return }
+        bulkSelectionMode = false
+        selectedBulkMessageSeqIds.removeAll()
+        collectionView.isBulkSelectionMode = false
+        navigationItem.title = bulkSelectionOriginalTitle
+        navigationItem.leftBarButtonItem = bulkSelectionOriginalLeftItem
+        navigationItem.rightBarButtonItems = bulkSelectionOriginalRightItems
+        bulkSelectionOriginalTitle = nil
+        bulkSelectionOriginalLeftItem = nil
+        bulkSelectionOriginalRightItems = nil
+        collectionView.reloadData()
+    }
+
+    func selectedBulkMessages() -> [Message] {
+        return selectedBulkMessageSeqIds.sorted().compactMap { message(atSeqId: $0) }
+    }
+
+    private func updateBulkMessageSelectionUI() {
+        let count = selectedBulkMessageSeqIds.count
+        navigationItem.title = String(format: NSLocalizedString("已选择 %d 条消息", comment: "Selected message count"), count)
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            title: NSLocalizedString("取消", comment: "Cancel bulk message selection"),
+            style: .plain,
+            target: self,
+            action: #selector(cancelBulkMessageSelection))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: NSLocalizedString("操作", comment: "Bulk message actions"),
+            style: .plain,
+            target: self,
+            action: #selector(showBulkMessageActions))
+    }
+
+    @objc private func cancelBulkMessageSelection() {
+        finishBulkMessageSelection()
+    }
+
+    @objc private func showBulkMessageActions() {
+        presentBulkMessageActions()
+    }
+
     override var canBecomeFirstResponder: Bool {
         return true
     }
@@ -351,6 +427,7 @@ class MessageViewController: UIViewController {
         collectionView.alwaysBounceVertical = true
         collectionView.layoutMargins = Constants.kCollectionViewInset
         collectionView.delegate = self
+        collectionView.cellDelegate = self
         view.addSubview(collectionView)
         self.collectionView = collectionView
 
@@ -685,6 +762,9 @@ extension MessageViewController: UICollectionViewDataSource {
 
         // Set colors and fill out content except for the avatar. The maxumum size is needed for placing attached images.
         configureCell(cell: cell, with: message, at: indexPath)
+        cell.setBulkSelectionMode(
+            (collectionView as? MessageView)?.isBulkSelectionMode == true,
+            selected: selectedBulkMessageSeqIds.contains(message.seqId))
 
         cell.avatarView.frame = attributes.avatarFrame
         if attributes.avatarFrame != .zero {

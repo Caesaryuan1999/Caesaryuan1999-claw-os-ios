@@ -45,9 +45,12 @@ extension MessageViewController: MessageDisplayLogic {
     func updateTitleBar(pub: TheCard?, online: Bool?, deleted: Bool) {
         assert(Thread.isMainThread)
         let isSlf = self.topic?.isSlfType ?? false
-        self.navigationItem.title = isSlf ?
+        let title = isSlf ?
             NSLocalizedString("已保存消息", comment: "Title of the slf topic") :
             pub?.fn ?? NSLocalizedString("未命名", comment: "Undefined chat name")
+        if !bulkSelectionMode {
+            self.navigationItem.title = title
+        }
         navBarAvatarView.set(pub: pub, id: topicName, online: isSlf ? nil : online, deleted: deleted)
         navBarAvatarView.bounds = CGRect(x: 0, y: 0, width: Constants.kNavBarAvatarSmallState, height: Constants.kNavBarAvatarSmallState)
 
@@ -60,7 +63,9 @@ extension MessageViewController: MessageDisplayLogic {
         if let t = self.topic, t.callsAllowed {
             items.append(self.navBarCallBtn)
         }
-        self.navigationItem.setRightBarButtonItems(items, animated: false)
+        if !bulkSelectionMode {
+            self.navigationItem.setRightBarButtonItems(items, animated: false)
+        }
     }
 
     func displayPinnedMessages(pins: [Int], selected: Int) {

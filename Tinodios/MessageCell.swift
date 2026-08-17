@@ -138,6 +138,27 @@ class MessageCell: UICollectionViewCell {
 
     var progressView = ProgressView()
 
+    private let bulkSelectionBadge: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.layer.cornerRadius = 12
+        view.layer.cornerCurve = .continuous
+        view.layer.borderWidth = 1.5
+        view.layer.borderColor = ClawTheme.border.cgColor
+        view.backgroundColor = ClawTheme.surface
+        view.isHidden = true
+        return view
+    }()
+
+    private let bulkSelectionCheckmark: UIImageView = {
+        let view = UIImageView(image: ClawTheme.symbol("checkmark", pointSize: 12, weight: .bold))
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.tintColor = .white
+        view.contentMode = .scaleAspectFit
+        view.isHidden = true
+        return view
+    }()
+
     /// The `MessageCellDelegate` for the cell.
     weak var delegate: MessageCellDelegate?
 
@@ -150,6 +171,25 @@ class MessageCell: UICollectionViewCell {
         containerView.addSubview(deliveryMarker)
         containerView.addSubview(editedMarker)
         contentView.addSubview(avatarView)
+        contentView.addSubview(bulkSelectionBadge)
+        bulkSelectionBadge.addSubview(bulkSelectionCheckmark)
+        NSLayoutConstraint.activate([
+            bulkSelectionBadge.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            bulkSelectionBadge.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            bulkSelectionBadge.widthAnchor.constraint(equalToConstant: 24),
+            bulkSelectionBadge.heightAnchor.constraint(equalToConstant: 24),
+            bulkSelectionCheckmark.centerXAnchor.constraint(equalTo: bulkSelectionBadge.centerXAnchor),
+            bulkSelectionCheckmark.centerYAnchor.constraint(equalTo: bulkSelectionBadge.centerYAnchor),
+            bulkSelectionCheckmark.widthAnchor.constraint(equalToConstant: 14),
+            bulkSelectionCheckmark.heightAnchor.constraint(equalToConstant: 14)
+        ])
+    }
+
+    func setBulkSelectionMode(_ enabled: Bool, selected: Bool) {
+        bulkSelectionBadge.isHidden = !enabled
+        bulkSelectionCheckmark.isHidden = !selected
+        bulkSelectionBadge.backgroundColor = selected ? ClawTheme.primary : ClawTheme.surface
+        bulkSelectionBadge.layer.borderColor = selected ? ClawTheme.primary.cgColor : ClawTheme.border.cgColor
     }
 
     func showProgressBar() {
@@ -179,6 +219,7 @@ class MessageCell: UICollectionViewCell {
         mediaEntityKey = nil
 
         timeStamp = nil
+        setBulkSelectionMode(false, selected: false)
     }
 
     /// Handle tap gesture on contentView and its subviews.

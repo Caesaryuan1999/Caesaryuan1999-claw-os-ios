@@ -13,6 +13,10 @@ import TinodeSDK
 
 extension MessageViewController: MessageCellDelegate {
     func didLongTap(in cell: MessageCell) {
+        if bulkSelectionMode {
+            toggleBulkMessageSelection(seqId: cell.seqId)
+            return
+        }
         createPopupMenu(in: cell)
     }
 
@@ -48,7 +52,11 @@ extension MessageViewController: MessageCellDelegate {
     }
 
     // TODO: remove as unused
-    func didTapMessage(in cell: MessageCell) {}
+    func didTapMessage(in cell: MessageCell) {
+        if bulkSelectionMode {
+            toggleBulkMessageSelection(seqId: cell.seqId)
+        }
+    }
 
     // TODO: remove as unused or go to user's profile (p2p topic?)
     func didTapAvatar(in cell: MessageCell) {}
@@ -97,10 +105,14 @@ extension MessageViewController: MessageCellDelegate {
     func createPopupMenu(in cell: MessageCell) {
         guard !cell.isDeleted else { return }
         guard let topic = topic else { return }
+        let messageSeqId = cell.seqId
 
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: NSLocalizedString("复制", comment: "Menu item"), style: .default) { [weak self] _ in
             self?.copyMessageContent(seqId: cell.seqId)
+        })
+        alert.addAction(UIAlertAction(title: NSLocalizedString("多选", comment: "Menu item"), style: .default) { [weak self] _ in
+            self?.beginBulkMessageSelection(starting: cell.seqId)
         })
         if topic.isSlfType {
             // Self-type: always hard-delete.
@@ -203,7 +215,7 @@ extension MessageViewController: MessageCellDelegate {
         return (seqId ?? 0) > 0 ? seqId : nil
     }
 
-    private func message(atSeqId seqId: Int) -> Message? {
+    func message(atSeqId seqId: Int) -> Message? {
         guard let msgIndex = messageSeqIdIndex[seqId] else { return nil }
         return messages[msgIndex]
     }
@@ -222,6 +234,62 @@ extension MessageViewController: MessageCellDelegate {
         }
         senderName = senderName ?? String(format: NSLocalizedString("未知 %@", comment: ""), msg.from ?? "none")
         UIPasteboard.general.string = "[\(senderName!)]: \(msg.content?.string ?? ""); \(RelativeDateFormatter.shared.shortDate(from: msg.ts))"
+    }
+
+    func presentBulkMessageActions() {
+        let selected = selectedBulkMessages()
+        guard !selected.isEmpty else {
+            finishBulkMessageSelection()
+            return
+        }
+        let alert = UIAlertController(
+            title: String(format: NSLocalizedString("已选择 %d 条消息", comment: "Selected message count"), selected.count),
+            message: nil,
+            preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("复制所选消息", comment: "Copy selected messages"), style: .default) { [weak self] _ in
+            self?.copyBulkMessages(selected)
+        })
+        if selected.count == 1 {
+            let seqId = selected[0].seqId
+            alert.addAction(UIAlertAction(title: NSLocalizedString("回复", comment: "Reply selected message"), style: .default) { [weak self] _ in
+                self?.showQuotedPreview(seqId: seqId, isReply: true) { value in
+                    guard let value = value, case let .replyTo(quote, _) = value else { return }
+                    self?.showInPreviewBar(content: quote, forwarded: false, onAction: .reply)
+                }
+            })
+            alert.addAction(UIAlertAction(title: NSLocalizedString("转发", comment: "Forward selected message"), style: .default) { [weak self] _ in
+                self?.showForwardSelector(seqId: seqId)
+            })
+        }
+        alert.addAction(UIAlertAction(title: NSLocalizedString("重试发送", comment: "Retry selected messages"), style: .default) { [weak self] _ in
+            self?.topic?.syncAll().thenCatch { error in
+                UiUtils.showToast(message: String(format: NSLocalizedString("重试失败：%@", comment: "Retry failed"), error.localizedDescription))
+                return nil
+            }
+            self?.finishBulkMessageSelection()
+        })
+        alert.addAction(UIAlertAction(title: NSLocalizedString("删除所选消息", comment: "Delete selected messages"), style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            for message in selected {
+                self.interactor?.deleteMessage(message, hard: false)
+            }
+            self.finishBulkMessageSelection()
+        })
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Cancel"), style: .cancel))
+        if let popover = alert.popoverPresentationController {
+            popover.barButtonItem = navigationItem.rightBarButtonItem
+        }
+        present(alert, animated: true)
+    }
+
+    private func copyBulkMessages(_ messages: [Message]) {
+        let text = messages.map { message in
+            let senderName = topic?.getSubscription(for: message.from)?.pub?.fn
+                ?? String(format: NSLocalizedString("未知 %@", comment: "Unknown sender"), message.from ?? "none")
+            return "[\(senderName)]: \(message.content?.string ?? ""); \(RelativeDateFormatter.shared.shortDate(from: message.ts))"
+        }.joined(separator: "\n")
+        UIPasteboard.general.string = text
+        finishBulkMessageSelection()
     }
 
     func showInPreviewBar(content: Drafty?, forwarded: Bool, onAction action: PendingPreviewAction = .none) {
