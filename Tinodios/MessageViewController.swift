@@ -176,6 +176,17 @@ class MessageViewController: UIViewController {
     private var bulkSelectionOriginalTitle: String?
     private var bulkSelectionOriginalLeftItem: UIBarButtonItem?
     private var bulkSelectionOriginalRightItems: [UIBarButtonItem]?
+    private lazy var bulkActionToolbar: UIToolbar = {
+        let toolbar = UIToolbar(frame: .zero)
+        toolbar.barStyle = .default
+        toolbar.isTranslucent = false
+        toolbar.tintColor = ClawTheme.primary
+        toolbar.barTintColor = ClawTheme.surface
+        toolbar.accessibilityIdentifier = "claw.message.bulk.actions"
+        toolbar.autoresizingMask = [.flexibleWidth]
+        toolbar.sizeToFit()
+        return toolbar
+    }()
 
 
     var interactor: (MessageBusinessLogic & MessageDataStore)?
@@ -328,6 +339,9 @@ class MessageViewController: UIViewController {
 
     // This makes messageInputBar visible.
     override var inputAccessoryView: UIView? {
+        if bulkSelectionMode {
+            return bulkActionToolbar
+        }
         return !isForwardingMessage ? sendMessageBar : forwardMessageBar
     }
 
@@ -338,6 +352,7 @@ class MessageViewController: UIViewController {
     func beginBulkMessageSelection(starting seqId: Int) {
         guard let message = message(atSeqId: seqId), !message.isDeleted else { return }
         if !bulkSelectionMode {
+            sendMessageBar.inputField.resignFirstResponder()
             bulkSelectionMode = true
             selectedBulkMessageSeqIds.removeAll()
             bulkSelectionOriginalTitle = navigationItem.title
@@ -348,6 +363,8 @@ class MessageViewController: UIViewController {
         selectedBulkMessageSeqIds.insert(seqId)
         updateBulkMessageSelectionUI()
         collectionView.reloadData()
+        becomeFirstResponder()
+        reloadInputViews()
     }
 
     func toggleBulkMessageSelection(seqId: Int) {
@@ -376,7 +393,10 @@ class MessageViewController: UIViewController {
         bulkSelectionOriginalTitle = nil
         bulkSelectionOriginalLeftItem = nil
         bulkSelectionOriginalRightItems = nil
+        bulkActionToolbar.items = nil
         collectionView.reloadData()
+        becomeFirstResponder()
+        reloadInputViews()
     }
 
     func selectedBulkMessages() -> [Message] {
@@ -392,18 +412,65 @@ class MessageViewController: UIViewController {
             target: self,
             action: #selector(cancelBulkMessageSelection))
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: NSLocalizedString("操作", comment: "Bulk message actions"),
+            title: NSLocalizedString("完成", comment: "Finish bulk message selection"),
             style: .plain,
             target: self,
-            action: #selector(showBulkMessageActions))
+            action: #selector(finishBulkMessageSelectionFromToolbar))
+        updateBulkActionToolbar()
+    }
+
+    private func updateBulkActionToolbar() {
+        var items = [UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)]
+        items.append(bulkToolbarButton(
+            title: NSLocalizedString("复制", comment: "Copy selected messages"),
+            symbolName: "doc.on.doc",
+            identifier: "copy",
+            action: #selector(bulkToolbarCopy)))
+        if selectedBulkMessageSeqIds.count == 1 {
+            items.append(bulkToolbarButton(
+                title: NSLocalizedString("回复", comment: "Reply selected message"),
+                symbolName: "arrowshape.turn.up.left",
+                identifier: "reply",
+                action: #selector(bulkToolbarReply)))
+            items.append(bulkToolbarButton(
+                title: NSLocalizedString("转发", comment: "Forward selected message"),
+                symbolName: "arrowshape.turn.up.right",
+                identifier: "forward",
+                action: #selector(bulkToolbarForward)))
+        }
+        items.append(bulkToolbarButton(
+            title: NSLocalizedString("重试", comment: "Retry selected messages"),
+            symbolName: "arrow.clockwise",
+            identifier: "retry",
+            action: #selector(bulkToolbarRetry)))
+        let delete = bulkToolbarButton(
+            title: NSLocalizedString("删除", comment: "Delete selected messages"),
+            symbolName: "trash",
+            identifier: "delete",
+            action: #selector(bulkToolbarDelete))
+        delete.tintColor = ClawTheme.danger
+        items.append(delete)
+        items.append(UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil))
+        bulkActionToolbar.items = items
+    }
+
+    private func bulkToolbarButton(title: String, symbolName: String, identifier: String, action: Selector) -> UIBarButtonItem {
+        let item = UIBarButtonItem(
+            image: ClawTheme.symbol(symbolName, pointSize: 18, weight: .medium),
+            style: .plain,
+            target: self,
+            action: action)
+        item.accessibilityLabel = title
+        item.accessibilityIdentifier = "claw.message.bulk.\(identifier)"
+        return item
     }
 
     @objc private func cancelBulkMessageSelection() {
         finishBulkMessageSelection()
     }
 
-    @objc private func showBulkMessageActions() {
-        presentBulkMessageActions()
+    @objc private func finishBulkMessageSelectionFromToolbar() {
+        finishBulkMessageSelection()
     }
 
     override var canBecomeFirstResponder: Bool {

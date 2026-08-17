@@ -22,7 +22,15 @@ assert "collectionView.cellDelegate = self" in message_controller
 assert "finishBulkMessageSelection" in message_controller
 assert "toggleBulkMessageSelection" in message_actions
 assert 'NSLocalizedString("多选"' in message_actions
-assert 'NSLocalizedString("重试发送"' in message_actions
-assert 'NSLocalizedString("删除所选消息"' in message_actions
+assert 'NSLocalizedString("删除所选消息？"' in message_actions
+assert "bulkActionToolbar" in message_controller
+assert "reloadInputViews()" in message_controller
+assert "bulkToolbarCopy" in message_controller
+assert "bulkToolbarReply" in message_controller
+assert "bulkToolbarForward" in message_controller
+assert "bulkToolbarDelete" in message_controller
+assert "bulkToolbarRetry" in message_controller
+assert "UIToolbar" in message_controller
+assert "presentBulkMessageActions" not in message_actions
 
 print("iOS message multi-select policy checks passed")

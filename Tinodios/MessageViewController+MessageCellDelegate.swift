@@ -236,49 +236,49 @@ extension MessageViewController: MessageCellDelegate {
         UIPasteboard.general.string = "[\(senderName!)]: \(msg.content?.string ?? ""); \(RelativeDateFormatter.shared.shortDate(from: msg.ts))"
     }
 
-    func presentBulkMessageActions() {
+    @objc func bulkToolbarCopy() {
         let selected = selectedBulkMessages()
-        guard !selected.isEmpty else {
-            finishBulkMessageSelection()
-            return
+        guard !selected.isEmpty else { return }
+        copyBulkMessages(selected)
+    }
+
+    @objc func bulkToolbarReply() {
+        let selected = selectedBulkMessages()
+        guard selected.count == 1, let message = selected.first else { return }
+        showQuotedPreview(seqId: message.seqId, isReply: true) { [weak self] value in
+            guard let value = value, case let .replyTo(quote, _) = value else { return }
+            self?.showInPreviewBar(content: quote, forwarded: false, onAction: .reply)
         }
+    }
+
+    @objc func bulkToolbarForward() {
+        let selected = selectedBulkMessages()
+        guard selected.count == 1, let message = selected.first else { return }
+        showForwardSelector(seqId: message.seqId)
+    }
+
+    @objc func bulkToolbarRetry() {
+        guard !selectedBulkMessages().isEmpty else { return }
+        topic?.syncAll().thenCatch { error in
+            UiUtils.showToast(message: String(format: NSLocalizedString("重试失败：%@", comment: "Retry failed"), error.localizedDescription))
+            return nil
+        }
+        finishBulkMessageSelection()
+    }
+
+    @objc func bulkToolbarDelete() {
+        let selected = selectedBulkMessages()
+        guard !selected.isEmpty else { return }
         let alert = UIAlertController(
-            title: String(format: NSLocalizedString("已选择 %d 条消息", comment: "Selected message count"), selected.count),
-            message: nil,
-            preferredStyle: .actionSheet)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("复制所选消息", comment: "Copy selected messages"), style: .default) { [weak self] _ in
-            self?.copyBulkMessages(selected)
-        })
-        if selected.count == 1 {
-            let seqId = selected[0].seqId
-            alert.addAction(UIAlertAction(title: NSLocalizedString("回复", comment: "Reply selected message"), style: .default) { [weak self] _ in
-                self?.showQuotedPreview(seqId: seqId, isReply: true) { value in
-                    guard let value = value, case let .replyTo(quote, _) = value else { return }
-                    self?.showInPreviewBar(content: quote, forwarded: false, onAction: .reply)
-                }
-            })
-            alert.addAction(UIAlertAction(title: NSLocalizedString("转发", comment: "Forward selected message"), style: .default) { [weak self] _ in
-                self?.showForwardSelector(seqId: seqId)
-            })
-        }
-        alert.addAction(UIAlertAction(title: NSLocalizedString("重试发送", comment: "Retry selected messages"), style: .default) { [weak self] _ in
-            self?.topic?.syncAll().thenCatch { error in
-                UiUtils.showToast(message: String(format: NSLocalizedString("重试失败：%@", comment: "Retry failed"), error.localizedDescription))
-                return nil
-            }
-            self?.finishBulkMessageSelection()
-        })
-        alert.addAction(UIAlertAction(title: NSLocalizedString("删除所选消息", comment: "Delete selected messages"), style: .destructive) { [weak self] _ in
+            title: NSLocalizedString("删除所选消息？", comment: "Confirm deleting selected messages"),
+            message: String(format: NSLocalizedString("将删除 %d 条消息", comment: "Selected message deletion count"), selected.count),
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Cancel"), style: .cancel))
+        alert.addAction(UIAlertAction(title: NSLocalizedString("删除", comment: "Delete selected messages"), style: .destructive) { [weak self] _ in
             guard let self = self else { return }
-            for message in selected {
-                self.interactor?.deleteMessage(message, hard: false)
-            }
+            selected.forEach { self.interactor?.deleteMessage($0, hard: false) }
             self.finishBulkMessageSelection()
         })
-        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Cancel"), style: .cancel))
-        if let popover = alert.popoverPresentationController {
-            popover.barButtonItem = navigationItem.rightBarButtonItem
-        }
         present(alert, animated: true)
     }
 
