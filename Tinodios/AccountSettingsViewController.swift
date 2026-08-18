@@ -152,7 +152,8 @@ class AccountSettingsViewController: UITableViewController {
         logoutButton.layer.cornerCurve = .continuous
         logoutButton.layer.borderWidth = 1
         logoutButton.layer.borderColor = ClawTheme.danger.withAlphaComponent(0.22).cgColor
-        logoutButton.configuration?.imagePadding = 10
+        logoutButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: -5, bottom: 0, right: 5)
+        logoutButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: -5)
         logoutButton.addTarget(self, action: #selector(confirmLogout), for: .touchUpInside)
 
         header.addSubview(premiumAvatar)

@@ -266,7 +266,7 @@ class CallManager {
                 self.completeCallInProgress(reportToSystem: false, reportToPeer: true)
                 return
             }
-            let user = Cache.tinode.getUser(with: call.from)
+            let user: DefaultUser? = Cache.tinode.getUser(with: call.from)
             let senderName = user?.pub?.fn ?? NSLocalizedString("未知联系人", comment: "Unknown caller")
             let callType = call.audioOnly
                 ? NSLocalizedString("语音来电", comment: "Incoming audio call")

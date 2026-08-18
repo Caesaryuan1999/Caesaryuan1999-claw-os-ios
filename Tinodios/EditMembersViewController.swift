@@ -196,7 +196,7 @@ class EditMembersViewController: UIViewController, UITableViewDataSource {
             initialContacts[uid] = contact
         }
 
-        contacts = contactsManager.fetchContacts().filter { contact in
+        contacts = (contactsManager.fetchContacts() ?? []).filter { contact in
             guard let uid = contact.uniqueId else { return false }
             return ContactsManager.isDirectContactId(uid) && !Cache.tinode.isMe(uid: uid)
         }

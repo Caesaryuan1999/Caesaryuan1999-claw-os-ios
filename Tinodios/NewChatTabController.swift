@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import TinodeSDK
 
 final class ClawMainTabBarController: UITabBarController, UITabBarControllerDelegate {
     private(set) var messagesNavigationController: UINavigationController!

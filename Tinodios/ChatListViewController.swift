@@ -203,7 +203,7 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
                         y: 42,
                         width: 36,
                         height: 18))
-                    callBadge.backgroundColor = ClawTheme.cyan
+                    callBadge.backgroundColor = ClawTheme.accent
                     callBadge.layer.cornerRadius = 9
                     callBadge.layer.cornerCurve = .continuous
                     callBadge.isUserInteractionEnabled = false
