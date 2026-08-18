@@ -21,17 +21,24 @@ class AddByIDViewController: UIViewController {
     @IBOutlet weak var qrcodeImageView: UIImageView!
     @IBOutlet weak var cameraPreviewView: UIView!
 
+    private weak var contentStackView: UIStackView?
+    private var qrContainerWidthConstraint: NSLayoutConstraint?
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
         navigationItem.title = NSLocalizedString("查找联系人", comment: "Find contacts title")
         view.backgroundColor = ClawTheme.background
         titleLabel.textColor = ClawTheme.ink
-        titleLabel.font = .systemFont(ofSize: 20, weight: .semibold)
+        titleLabel.font = .systemFont(ofSize: 22, weight: .bold)
         ClawTheme.styleTextField(idTextField)
         ClawTheme.stylePrimaryButton(okayButton)
         ClawTheme.styleRoundedIconButton(showCodeButton, symbolName: "qrcode", selected: true)
         ClawTheme.styleRoundedIconButton(scanCodeButton, symbolName: "viewfinder")
+        showCodeButton.setTitle(NSLocalizedString("显示二维码", comment: "Show QR code"), for: .normal)
+        scanCodeButton.setTitle(NSLocalizedString("扫描二维码", comment: "Scan QR code"), for: .normal)
+        showCodeButton.accessibilityLabel = NSLocalizedString("显示二维码", comment: "Show QR code")
+        scanCodeButton.accessibilityLabel = NSLocalizedString("扫描二维码", comment: "Scan QR code")
         ClawTheme.styleCard(qrcodeImageView)
         cameraPreviewView.layer.cornerRadius = ClawTheme.cardRadius
         cameraPreviewView.layer.cornerCurve = .continuous
@@ -42,9 +49,64 @@ class AddByIDViewController: UIViewController {
         UiUtils.dismissKeyboardForTaps(onView: self.view)
 
         idTextField.placeholder = NSLocalizedString("用户名或账号名", comment: "Placeholder for contact lookup")
+        okayButton.setTitle(NSLocalizedString("确认", comment: "Confirm contact lookup"), for: .normal)
         idTextField.autocorrectionType = .no
         idTextField.autocapitalizationType = .none
         qrcodeImageView.image = Utils.generateQRCode(from: "https://veilping.app/")
+        configureLayout()
+    }
+
+    private func configureLayout() {
+        guard let qrContainer = qrcodeImageView.superview,
+              let contentStack = qrContainer.superview as? UIStackView else {
+            return
+        }
+
+        contentStackView = contentStack
+        contentStack.alignment = .center
+        contentStack.spacing = 12
+
+        // Use wider horizontal margins for the lookup row while keeping the QR card compact.
+        for constraint in view.constraints {
+            guard constraint.firstAttribute == .leading || constraint.firstAttribute == .trailing else { continue }
+            if (constraint.firstItem as AnyObject?) === contentStack ||
+                (constraint.secondItem as AnyObject?) === contentStack {
+                constraint.constant = 24
+            }
+        }
+
+        if let searchRow = contentStack.arrangedSubviews
+            .compactMap({ $0 as? UIStackView })
+            .first(where: { $0.arrangedSubviews.contains { $0 === idTextField } }) {
+            searchRow.widthAnchor.constraint(equalTo: contentStack.widthAnchor).isActive = true
+            searchRow.heightAnchor.constraint(equalToConstant: 48).isActive = true
+            idTextField.heightAnchor.constraint(equalToConstant: 48).isActive = true
+            okayButton.widthAnchor.constraint(equalToConstant: 72).isActive = true
+            okayButton.heightAnchor.constraint(equalToConstant: 48).isActive = true
+        }
+
+        if let actionRow = contentStack.arrangedSubviews
+            .compactMap({ $0 as? UIStackView })
+            .first(where: { $0.arrangedSubviews.contains { $0 === showCodeButton } }) {
+            actionRow.widthAnchor.constraint(equalTo: contentStack.widthAnchor).isActive = true
+            actionRow.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        }
+
+        titleLabel.widthAnchor.constraint(equalTo: contentStack.widthAnchor).isActive = true
+        let qrWidth = qrContainer.widthAnchor.constraint(equalToConstant: 240)
+        qrWidth.isActive = true
+        qrContainerWidthConstraint = qrWidth
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+
+        guard let contentStack = contentStackView,
+              let qrWidth = qrContainerWidthConstraint else { return }
+        let compactSide = min(252, max(188, contentStack.bounds.width - 32))
+        if abs(qrWidth.constant - compactSide) > 0.5 {
+            qrWidth.constant = compactSide
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
