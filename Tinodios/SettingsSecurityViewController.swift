@@ -24,6 +24,11 @@ class SettingsSecurityViewController: UITableViewController {
     weak var tinode: Tinode!
     weak var me: DefaultMeTopic!
 
+    private let securityRowLeadingInset: CGFloat = 30
+    private let securityRowTrailingInset: CGFloat = 18
+    private let securityRowIconColumnWidth: CGFloat = 40
+    private let securityRowIconSize = CGSize(width: 28, height: 28)
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setup()
@@ -52,11 +57,13 @@ class SettingsSecurityViewController: UITableViewController {
         actionBlockedContacts.textLabel?.text = NSLocalizedString("已屏蔽联系人", comment: "Blocked contacts")
         actionDeleteAccount.textLabel?.text = NSLocalizedString("删除账号", comment: "Delete account")
 
-        ClawTheme.styleTableCell(authUsersPermissions, symbolName: "person.crop.circle")
-        ClawTheme.styleTableCell(anonUsersPermissions, symbolName: "eye.slash")
-        ClawTheme.styleTableCell(actionChangePassword, symbolName: "key")
-        ClawTheme.styleTableCell(actionBlockedContacts, symbolName: "hand.raised")
-        ClawTheme.styleTableCell(actionDeleteAccount, symbolName: "trash", destructive: true)
+        configureSecurityCell(authUsersPermissions, title: "已登录用户", symbolName: "person.crop.circle",
+                              detail: authPermissionsLabel.text)
+        configureSecurityCell(anonUsersPermissions, title: "访客用户", symbolName: "eye.slash",
+                              detail: anonPermissionsLabel.text)
+        configureSecurityCell(actionChangePassword, title: "修改密码", symbolName: "key")
+        configureSecurityCell(actionBlockedContacts, title: "已屏蔽联系人", symbolName: "hand.raised")
+        configureSecurityCell(actionDeleteAccount, title: "删除账号", symbolName: "trash", destructive: true)
 
         // Logout is presented on the account overview screen. Keep the old static
         // cell connected for backwards-compatible storyboards, but remove it here.
@@ -139,24 +146,66 @@ class SettingsSecurityViewController: UITableViewController {
         ClawTheme.normalizeIconButtons(in: cell.contentView)
     }
 
+    private func configureSecurityCell(_ cell: UITableViewCell, title: String, symbolName: String,
+                                       detail: String? = nil, destructive: Bool = false,
+                                       enabled: Bool = true) {
+        var configuration = UIListContentConfiguration.valueCell()
+        configuration.text = NSLocalizedString(title, comment: "Security settings row title")
+        configuration.secondaryText = detail
+        configuration.image = ClawTheme.symbol(symbolName, pointSize: 24, weight: .medium)
+        configuration.directionalLayoutMargins = NSDirectionalEdgeInsets(
+            top: 0,
+            leading: securityRowLeadingInset,
+            bottom: 0,
+            trailing: securityRowTrailingInset)
+        configuration.imageProperties.reservedLayoutSize = securityRowIconColumnWidth
+        configuration.imageProperties.maximumSize = securityRowIconSize
+        configuration.imageProperties.preferredSymbolConfiguration = UIImage.SymbolConfiguration(
+            pointSize: 24,
+            weight: .medium,
+            scale: .medium)
+        configuration.imageProperties.tintColor = enabled
+            ? (destructive ? ClawTheme.danger : ClawTheme.primary)
+            : ClawTheme.muted
+        configuration.textProperties.font = .systemFont(ofSize: 16, weight: .medium)
+        configuration.textProperties.color = enabled
+            ? (destructive ? ClawTheme.danger : ClawTheme.ink)
+            : ClawTheme.muted
+        configuration.textProperties.adjustsFontForContentSizeCategory = true
+        configuration.secondaryTextProperties.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+        configuration.secondaryTextProperties.color = ClawTheme.muted
+        configuration.secondaryTextProperties.adjustsFontForContentSizeCategory = true
+
+        // The storyboard imageView/textLabel use UIKit's legacy layout, whose
+        // icon frame is not aware of the grouped card's 18pt inset. Hide those
+        // legacy subviews and let the iOS 14 content configuration own the row.
+        cell.imageView?.isHidden = true
+        cell.textLabel?.isHidden = true
+        cell.detailTextLabel?.isHidden = true
+        cell.contentConfiguration = configuration
+        cell.isUserInteractionEnabled = enabled
+        cell.accessibilityLabel = NSLocalizedString(title, comment: "Security settings row title")
+        cell.accessibilityValue = detail
+    }
+
     private func reloadData() {
         // Permissions.
-        self.authPermissionsLabel.text = me.defacs?.getAuth() ?? ""
-        self.authPermissionsLabel.sizeToFit()
-        self.anonPermissionsLabel.text = me.defacs?.getAnon() ?? ""
-        self.anonPermissionsLabel.sizeToFit()
+        let authPermissions = me.defacs?.getAuth() ?? ""
+        let anonPermissions = me.defacs?.getAnon() ?? ""
+        self.authPermissionsLabel.text = authPermissions
+        self.anonPermissionsLabel.text = anonPermissions
+        configureSecurityCell(authUsersPermissions, title: "已登录用户", symbolName: "person.crop.circle",
+                              detail: authPermissions)
+        configureSecurityCell(anonUsersPermissions, title: "访客用户", symbolName: "eye.slash",
+                              detail: anonPermissions)
 
         if self.tinode.countFilteredTopics(filter: { topic in return topic.topicType.matches(TopicType.user) && !topic.isJoiner }) == 0 {
             // No blocked contacts, disable cell.
-            self.actionBlockedContacts.isUserInteractionEnabled = false
-            self.actionBlockedContacts.textLabel?.isEnabled = false
-            self.actionBlockedContacts.imageView?.tintColor = ClawTheme.muted
+            configureSecurityCell(actionBlockedContacts, title: "已屏蔽联系人", symbolName: "hand.raised", enabled: false)
             self.actionBlockedContacts.accessoryType = .none
         } else {
             // Some blocked contacts, enable cell.
-            self.actionBlockedContacts.isUserInteractionEnabled = true
-            self.actionBlockedContacts.textLabel?.isEnabled = true
-            self.actionBlockedContacts.imageView?.tintColor = ClawTheme.primary
+            configureSecurityCell(actionBlockedContacts, title: "已屏蔽联系人", symbolName: "hand.raised")
             self.actionBlockedContacts.accessoryType = .disclosureIndicator
         }
     }
