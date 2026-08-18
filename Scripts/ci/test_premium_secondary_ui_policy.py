@@ -93,7 +93,7 @@ for marker in [
     "premiumAvatar.heightAnchor.constraint(equalToConstant: 112)",
     "logoutButton.heightAnchor.constraint(equalToConstant: 54)",
     "AccountSettings2General",
-    "AccountSettings2Notifications",
+    "SettingsNotificationsViewController(style: .insetGrouped)",
     "AccountSettings2Security",
     "tableView.tableFooterView = UIView(frame: .zero)",
 ]:

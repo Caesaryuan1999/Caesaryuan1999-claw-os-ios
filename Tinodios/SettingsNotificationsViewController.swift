@@ -64,16 +64,14 @@ class SettingsNotificationsViewController: UITableViewController {
         title = text("notification_settings_title")
         me = Cache.tinode.getMeTopic()
 
-        let premiumTable = UITableView(frame: .zero, style: .insetGrouped)
-        premiumTable.backgroundColor = ClawTheme.background
-        premiumTable.separatorColor = ClawTheme.border
-        premiumTable.separatorInset = UIEdgeInsets(top: 0, left: 58, bottom: 0, right: 16)
-        premiumTable.sectionHeaderHeight = 38
-        premiumTable.sectionFooterHeight = 12
-        premiumTable.keyboardDismissMode = .onDrag
-        premiumTable.dataSource = self
-        premiumTable.delegate = self
-        tableView = premiumTable
+        tableView.backgroundColor = ClawTheme.background
+        tableView.separatorColor = ClawTheme.border
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 58, bottom: 0, right: 16)
+        tableView.sectionHeaderHeight = 38
+        tableView.sectionFooterHeight = 12
+        tableView.keyboardDismissMode = .onDrag
+        tableView.dataSource = self
+        tableView.delegate = self
     }
 
     private func rows(in section: Section) -> [RowModel] {

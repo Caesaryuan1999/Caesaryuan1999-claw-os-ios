@@ -340,7 +340,12 @@ class AccountSettingsViewController: UITableViewController {
     }
 
     @objc private func openNotifications() {
-        performSegue(withIdentifier: "AccountSettings2Notifications", sender: self)
+        let notifications = SettingsNotificationsViewController(style: .insetGrouped)
+        if let navigationController = navigationController {
+            navigationController.pushViewController(notifications, animated: true)
+        } else {
+            present(UINavigationController(rootViewController: notifications), animated: true)
+        }
     }
 
     @objc private func openSecurity() {
