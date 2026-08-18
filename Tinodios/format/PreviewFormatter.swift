@@ -11,7 +11,7 @@ import UIKit
 
 /// Creates a preview of the Drafty object as NSAttributedString .
 class PreviewFormatter: AbstractFormatter {
-    static let kDefaultFont = UIFont.preferredFont(forTextStyle: .subheadline)
+    static let kDefaultFont = UIFont.systemFont(ofSize: 13, weight: .regular)
 
     init(defaultAttributes attrs: [NSAttributedString.Key : Any]) {
         super.init(defaultAttributes: attrs, defaultFont: PreviewFormatter.kDefaultFont)
@@ -43,8 +43,10 @@ class PreviewFormatter: AbstractFormatter {
             aspectRatio = size.width / size.height
         }
         let baseFont = PreviewFormatter.kDefaultFont
-        let height = baseFont.lineHeight * 0.8
-        icon.bounds = CGRect(origin: CGPoint(x: 0, y: -2), size: CGSize(width: height * aspectRatio, height: height))
+        let height = baseFont.lineHeight * 0.9
+        let baselineOffset = (baseFont.capHeight - height) * 0.5
+        icon.bounds = CGRect(origin: CGPoint(x: 0, y: baselineOffset),
+                             size: CGSize(width: height * aspectRatio, height: height))
 
         var iconNode = FormatNode()
         iconNode.preformattedAttachment(icon)

@@ -9,6 +9,202 @@ import MobileVLCKit
 import UIKit
 import TinodeSDK
 
+private struct ClawMessageAction {
+    let title: String
+    let symbolName: String
+    let destructive: Bool
+    let handler: () -> Void
+}
+
+private final class ClawMessageActionControl: UIControl {
+    private let iconView = UIImageView()
+    private let titleLabel = UILabel()
+    private let handler: () -> Void
+
+    init(action: ClawMessageAction) {
+        self.handler = action.handler
+        super.init(frame: .zero)
+
+        accessibilityLabel = action.title
+        accessibilityTraits = .button
+        translatesAutoresizingMaskIntoConstraints = false
+        heightAnchor.constraint(equalToConstant: 62).isActive = true
+
+        iconView.image = ClawTheme.symbol(action.symbolName, pointSize: 22, weight: .medium)
+        iconView.tintColor = action.destructive ? ClawTheme.danger : ClawTheme.ink
+        iconView.contentMode = .scaleAspectFit
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+
+        titleLabel.text = action.title
+        titleLabel.textColor = action.destructive ? ClawTheme.danger : ClawTheme.ink
+        titleLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        titleLabel.textAlignment = .center
+        titleLabel.adjustsFontSizeToFitWidth = true
+        titleLabel.minimumScaleFactor = 0.8
+        titleLabel.numberOfLines = 1
+
+        let stack = UIStackView(arrangedSubviews: [iconView, titleLabel])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.distribution = .fill
+        stack.spacing = 7
+        stack.isUserInteractionEnabled = false
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            iconView.widthAnchor.constraint(equalToConstant: ClawTheme.iconStandard),
+            iconView.heightAnchor.constraint(equalToConstant: ClawTheme.iconStandard),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
+            stack.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ])
+        addTarget(self, action: #selector(runAction), for: .touchUpInside)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    @objc private func runAction() {
+        handler()
+    }
+}
+
+private final class ClawMessageActionsViewController: UIViewController, UIGestureRecognizerDelegate {
+    private let actions: [ClawMessageAction]
+    private let panel = UIView()
+
+    init(actions: [ClawMessageAction]) {
+        self.actions = actions
+        super.init(nibName: nil, bundle: nil)
+        modalPresentationStyle = .overFullScreen
+        modalTransitionStyle = .crossDissolve
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.28)
+        view.accessibilityIdentifier = "claw.message.actions.overlay"
+
+        panel.backgroundColor = ClawTheme.surface
+        panel.layer.cornerRadius = 18
+        panel.layer.cornerCurve = .continuous
+        panel.layer.borderWidth = 1
+        panel.layer.borderColor = ClawTheme.border.cgColor
+        panel.translatesAutoresizingMaskIntoConstraints = false
+        panel.accessibilityIdentifier = "claw.message.actions.panel"
+        view.addSubview(panel)
+
+        let title = UILabel()
+        title.text = NSLocalizedString("消息操作", comment: "Message actions title")
+        title.textColor = ClawTheme.muted
+        title.font = .systemFont(ofSize: 13, weight: .medium)
+
+        let regularActions = actions.filter { !$0.destructive }
+        let destructiveActions = actions.filter { $0.destructive }
+        let content = UIStackView()
+        content.axis = .vertical
+        content.spacing = 12
+        content.translatesAutoresizingMaskIntoConstraints = false
+        content.addArrangedSubview(title)
+
+        for start in stride(from: 0, to: regularActions.count, by: 5) {
+            let end = min(start + 5, regularActions.count)
+            let row = UIStackView()
+            row.axis = .horizontal
+            row.alignment = .fill
+            row.distribution = .fillEqually
+            row.spacing = 4
+            for index in start..<end {
+                row.addArrangedSubview(makeControl(for: regularActions[index]))
+            }
+            for _ in end..<(start + 5) {
+                let spacer = UIView()
+                spacer.isAccessibilityElement = false
+                row.addArrangedSubview(spacer)
+            }
+            content.addArrangedSubview(row)
+        }
+
+        if !destructiveActions.isEmpty {
+            let divider = UIView()
+            divider.backgroundColor = ClawTheme.border
+            divider.translatesAutoresizingMaskIntoConstraints = false
+            divider.heightAnchor.constraint(equalToConstant: 1).isActive = true
+            content.addArrangedSubview(divider)
+
+            let dangerRow = UIStackView()
+            dangerRow.axis = .horizontal
+            dangerRow.alignment = .fill
+            dangerRow.distribution = .fillEqually
+            dangerRow.spacing = 10
+            destructiveActions.forEach { action in
+                let control = makeDangerControl(for: action)
+                dangerRow.addArrangedSubview(control)
+            }
+            content.addArrangedSubview(dangerRow)
+        }
+
+        panel.addSubview(content)
+        let bottom = panel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16)
+        bottom.priority = .required
+        let preferredWidth = panel.widthAnchor.constraint(
+            equalTo: view.safeAreaLayoutGuide.widthAnchor,
+            constant: -32)
+        preferredWidth.priority = .defaultHigh
+        NSLayoutConstraint.activate([
+            panel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            panel.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            panel.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            panel.widthAnchor.constraint(lessThanOrEqualToConstant: 440),
+            preferredWidth,
+            bottom,
+            content.topAnchor.constraint(equalTo: panel.topAnchor, constant: 16),
+            content.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 16),
+            content.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -16),
+            content.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -16)
+        ])
+
+        let tap = UITapGestureRecognizer(target: self, action: #selector(backgroundTapped(_:)))
+        tap.delegate = self
+        view.addGestureRecognizer(tap)
+    }
+
+    private func makeControl(for action: ClawMessageAction) -> UIControl {
+        ClawMessageActionControl(action: wrapped(action))
+    }
+
+    private func makeDangerControl(for action: ClawMessageAction) -> UIControl {
+        let control = ClawMessageActionControl(action: wrapped(action))
+        control.backgroundColor = ClawTheme.danger.withAlphaComponent(0.09)
+        control.layer.cornerRadius = 12
+        control.layer.cornerCurve = .continuous
+        return control
+    }
+
+    private func wrapped(_ action: ClawMessageAction) -> ClawMessageAction {
+        ClawMessageAction(title: action.title, symbolName: action.symbolName,
+                          destructive: action.destructive) { [weak self] in
+            self?.dismiss(animated: true, completion: action.handler)
+        }
+    }
+
+    @objc private func backgroundTapped(_ sender: UITapGestureRecognizer) {
+        if !panel.frame.contains(sender.location(in: view)) {
+            dismiss(animated: true)
+        }
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        !panel.bounds.contains(touch.location(in: panel))
+    }
+}
+
 // Methods for handling taps in messages.
 
 extension MessageViewController: MessageCellDelegate {
@@ -107,31 +303,36 @@ extension MessageViewController: MessageCellDelegate {
         guard let topic = topic else { return }
         let messageSeqId = cell.seqId
 
-        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("复制", comment: "Menu item"), style: .default) { [weak self] _ in
+        var actions = [ClawMessageAction]()
+        actions.append(ClawMessageAction(title: NSLocalizedString("复制", comment: "Menu item"),
+                                         symbolName: "doc.on.doc", destructive: false) { [weak self] in
             self?.copyMessageContent(seqId: cell.seqId)
         })
-        alert.addAction(UIAlertAction(title: NSLocalizedString("多选", comment: "Menu item"), style: .default) { [weak self] _ in
-            self?.beginBulkMessageSelection(starting: cell.seqId)
+        actions.append(ClawMessageAction(title: NSLocalizedString("多选", comment: "Menu item"),
+                                         symbolName: "checklist", destructive: false) { [weak self] in
+            self?.beginBulkMessageSelection(starting: messageSeqId)
         })
         if topic.isSlfType {
             // Self-type: always hard-delete.
-            alert.addAction(UIAlertAction(title: NSLocalizedString("删除该消息", comment: "Menu item"), style: .destructive) { [weak self] _ in
-                self?.deleteMessage(seqId: cell.seqId, hard: true)
+            actions.append(ClawMessageAction(title: NSLocalizedString("删除该消息", comment: "Menu item"),
+                                             symbolName: "trash", destructive: true) { [weak self] in
+                                             self?.deleteMessage(seqId: messageSeqId, hard: true)
             })
         } else if !topic.isChannel {
             // Channel users cannot delete messages at all.
             // Non-channel can delete at least for self.
-            alert.addAction(UIAlertAction(title: NSLocalizedString("删除该消息", comment: "Menu item"), style: .destructive) { [weak self] _ in
-                self?.deleteMessage(seqId: cell.seqId, hard: false)
+            actions.append(ClawMessageAction(title: NSLocalizedString("删除该消息", comment: "Menu item"),
+                                             symbolName: "trash", destructive: true) { [weak self] in
+                                             self?.deleteMessage(seqId: messageSeqId, hard: false)
             })
 
             if topic.isDeleter {
                 let maxDelAge = Cache.tinode.getServerLimit(for: Tinode.kMessageDeleteAge, withDefault: 0)
                 let canDelete = topic.isOwner || maxDelAge == 0 || (maxDelAge > 0 && (cell.timeStamp?.timeIntervalSince1970 ?? -1) > (Date().timeIntervalSince1970 - Double(maxDelAge)))
                 if canDelete {
-                    alert.addAction(UIAlertAction(title: NSLocalizedString("双方删除该消息", comment: "Menu item"), style: .destructive) { [weak self] _ in
-                        self?.deleteMessage(seqId: cell.seqId, hard: true)
+                    actions.append(ClawMessageAction(title: NSLocalizedString("为所有人删除", comment: "Menu item"),
+                                                     symbolName: "trash.slash", destructive: true) { [weak self] in
+                        self?.deleteMessage(seqId: messageSeqId, hard: true)
                     })
                 }
             }
@@ -139,13 +340,15 @@ extension MessageViewController: MessageCellDelegate {
 
         if !cell.isDeleted, let msgIndex = messageSeqIdIndex[cell.seqId], messages[msgIndex].isSynced {
             let msg = messages[msgIndex]
-            alert.addAction(UIAlertAction(title: NSLocalizedString("回复", comment: "Menu item"), style: .default) { [weak self] _ in
+            actions.append(ClawMessageAction(title: NSLocalizedString("回复", comment: "Menu item"),
+                                             symbolName: "arrowshape.turn.up.left", destructive: false) { [weak self] in
                 self?.showQuotedPreview(seqId: cell.seqId, isReply: true) {
                     guard let value = $0, case let .replyTo(quote, _) = value else { return }
                     self?.showInPreviewBar(content: quote, forwarded: false, onAction: .reply)
                 }
             })
-            alert.addAction(UIAlertAction(title: NSLocalizedString("转发", comment: "Menu item"), style: .default) { [weak self] _ in
+            actions.append(ClawMessageAction(title: NSLocalizedString("转发", comment: "Menu item"),
+                                             symbolName: "arrowshape.turn.up.right", destructive: false) { [weak self] in
                 self?.showForwardSelector(seqId: cell.seqId)
             })
             if isFromCurrentSender(message: msg), let content = msg.content {
@@ -168,7 +371,8 @@ extension MessageViewController: MessageCellDelegate {
                     }
                 }
                 if canEdit {
-                    alert.addAction(UIAlertAction(title: NSLocalizedString("编辑", comment: "Menu item"), style: .default) { [weak self] _ in
+                    actions.append(ClawMessageAction(title: NSLocalizedString("编辑", comment: "Menu item"),
+                                                     symbolName: "square.and.pencil", destructive: false) { [weak self] in
                         self?.showQuotedPreview(seqId: cell.seqId, isReply: false) {
                             guard let value = $0, case let .edit(quote, original, _) = value else { return }
                             self?.sendMessageBar.inputField.becomeFirstResponder()
@@ -181,23 +385,20 @@ extension MessageViewController: MessageCellDelegate {
 
             if topic.isAdmin {
                 if self.topic!.pinned.contains(where: { $0 == cell.seqId }) {
-                    alert.addAction(UIAlertAction(title: NSLocalizedString("取消置顶", comment: "Menu item for un-pinning message"), style: .default) { [weak self] _ in
+                    actions.append(ClawMessageAction(title: NSLocalizedString("取消置顶", comment: "Menu item for un-pinning message"),
+                                                     symbolName: "pin.slash", destructive: false) { [weak self] in
                         self?.pinMessage(seqId: cell.seqId, pin: false)
                     })
                 } else {
-                    alert.addAction(UIAlertAction(title: NSLocalizedString("置顶", comment: "Menu item for pinning message"), style: .default) { [weak self] _ in
+                    actions.append(ClawMessageAction(title: NSLocalizedString("置顶", comment: "Menu item for pinning message"),
+                                                     symbolName: "pin", destructive: false) { [weak self] in
                         self?.pinMessage(seqId: cell.seqId, pin: true)
                     })
                 }
             }
         }
 
-        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Menu item"), style: .cancel))
-        if let popover = alert.popoverPresentationController {
-            popover.sourceView = cell.containerView
-            popover.sourceRect = cell.content.frame
-        }
-        present(alert, animated: true)
+        present(ClawMessageActionsViewController(actions: actions), animated: true)
     }
 
     @objc func willHidePopupMenu() {

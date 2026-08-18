@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ACCOUNT_SETTINGS = ROOT / "Tinodios" / "AccountSettingsViewController.swift"
+SECURITY_SETTINGS = ROOT / "Tinodios" / "SettingsSecurityViewController.swift"
 LOCALIZATIONS = [
     ROOT / "en.lproj" / "Localizable.strings",
     ROOT / "zh-Hans.lproj" / "Localizable.strings",
@@ -14,7 +15,11 @@ LOCALIZATIONS = [
 
 
 def main() -> None:
-    source = ACCOUNT_SETTINGS.read_text(encoding="utf-8")
+    account_source = ACCOUNT_SETTINGS.read_text(encoding="utf-8")
+    source = SECURITY_SETTINGS.read_text(encoding="utf-8")
+
+    assert "makeDeviceInfoFooter" not in account_source
+    assert "tableView.tableFooterView = UIView(frame: .zero)" in account_source
 
     required_source = [
         "showDeviceInfo",
@@ -24,6 +29,7 @@ def main() -> None:
         "CFBundleShortVersionString",
         "Locale.preferredLanguages",
         "UIPasteboard.general.string",
+        'accessibilityIdentifier = "security_device_info"',
     ]
     for marker in required_source:
         assert marker in source, f"Missing device-info implementation marker: {marker}"

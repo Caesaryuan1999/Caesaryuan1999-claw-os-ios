@@ -509,6 +509,9 @@ Menu item: video call */
 "Group created. Some members could not be added; retry from Group settings." = "群聊已创建，部分成员添加失败，可在群设置中重试。";
 "Invalid member selection. Try again." = "成员选择无效，请重试。";
 "Added to contacts" = "已添加到联系人";
+"Search contacts" = "搜索联系人、用户名或账号名";
+"Group name" = "群聊名称";
+"Account settings" = "账号设置";
 
 /* CLAW OS 附件流程 */
 "Photo or video" = "照片或视频";
@@ -516,6 +519,7 @@ Menu item: video call */
 "Take photo or video" = "拍摄照片或视频";
 "Take photo" = "拍照";
 "Choose photo or video" = "从相册选择照片或视频";
+"Send content" = "发送内容";
 "Choose photo" = "从相册选择照片";
 "Video caption" = "添加视频说明";
 "Invalid video" = "视频无效";
@@ -532,3 +536,45 @@ Menu item: video call */
 "close" = "关闭";
 "privacy_device_info" = "不包含手机号、IMEI 或序列号。";
 "device_info_copied" = "手机信息已复制";
+
+/* CLAW OS 通知设置 */
+"notification_settings_title" = "通知";
+"notification_status_enabled" = "通知已启用";
+"notification_status_disabled" = "通知未启用";
+"notification_status_enabled_summary" = "声音、角标和锁屏提醒";
+"notification_status_disabled_summary" = "点击开启系统通知权限";
+"message_notifications" = "消息通知";
+"private_messages" = "私聊消息";
+"private_messages_summary" = "新消息到达时提醒";
+"group_messages" = "群聊消息";
+"group_messages_summary" = "群组与频道消息提醒";
+"call_reminders" = "通话提醒";
+"call_reminders_summary" = "语音与视频来电提醒";
+"message_preview" = "消息预览";
+"message_preview_summary" = "在提醒中显示消息内容";
+"alert_style" = "提醒方式";
+"notification_sound" = "通知声音";
+"notification_sound_value" = "CLAW";
+"in_app_vibration" = "应用内振动";
+"in_app_vibration_summary" = "收到新消息时轻触反馈";
+"privacy_and_receipts" = "隐私与回执";
+"incognito_mode" = "隐身模式";
+"incognito_mode_summary" = "不向联系人显示在线状态";
+"read_receipts" = "已读回执";
+"read_receipts_summary" = "向对方发送已读状态";
+"typing_status" = "正在输入";
+"typing_status_summary" = "向对方发送输入状态";
+"account_status_not_ready" = "账号状态尚未就绪";
+"new_message" = "新消息";
+"new_message_hidden" = "收到一条新消息";
+"Selected" = "已选成员";
+"Contacts" = "联系人";
+"New group chat" = "新建群聊";
+"Manage members" = "管理成员";
+"Selected count %d" = "已选择 · %d 人";
+"Next count %d" = "下一步 · %d 人";
+"Save count %d" = "保存 · %d 人";
+"call_connection_failed" = "无法建立通话连接，请检查网络后重试";
+"call_negotiation_failed" = "通话协商失败，请重试";
+"call_camera_unavailable" = "摄像头不可用，无法发起视频通话";
+"call_cannot_start" = "当前无法发起通话，请确认账号已登录并稍后重试";

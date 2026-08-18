@@ -78,6 +78,25 @@ validate_profile_bundle_id() {
   fi
 }
 
+validate_profile_push_entitlement() {
+  local profile_path="$1"
+  local expected_environment="$2"
+  local label="$3"
+  local plist_path="${profile_path}.plist"
+  local actual_environment
+
+  actual_environment="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:aps-environment' "${plist_path}" 2>/dev/null || true)"
+  if [ -z "${actual_environment}" ]; then
+    echo "::error::${label} provisioning profile does not enable Push Notifications (missing aps-environment)."
+    exit 1
+  fi
+  if [ -n "${expected_environment}" ] && [ "${actual_environment}" != "${expected_environment}" ]; then
+    echo "::error::${label} provisioning profile aps-environment mismatch. Expected '${expected_environment}', got '${actual_environment}'."
+    exit 1
+  fi
+  echo "Validated ${label} Push Notifications entitlement: aps-environment=${actual_environment}."
+}
+
 install_profile() {
   local profile_path="$1"
   local env_name="$2"
@@ -92,6 +111,7 @@ install_profile() {
 
 validate_profile_bundle_id "${APP_PROFILE_PATH}" "${APP_BUNDLE_ID}" "Main app"
 validate_profile_bundle_id "${EXT_PROFILE_PATH}" "${EXTENSION_BUNDLE_ID}" "Notification extension"
+validate_profile_push_entitlement "${APP_PROFILE_PATH}" "${IOS_EXPECTED_APS_ENVIRONMENT:-}" "Main app"
 
 install_profile "${APP_PROFILE_PATH}" APP_PROFILE_NAME
 install_profile "${EXT_PROFILE_PATH}" EXTENSION_PROFILE_NAME

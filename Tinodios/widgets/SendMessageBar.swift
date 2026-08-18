@@ -25,9 +25,15 @@ public enum PendingPreviewAction {
     case edit
 }
 
+enum MessageAttachmentAction {
+    case library
+    case camera
+    case file
+}
+
 protocol SendMessageBarDelegate: AnyObject {
     func sendMessageBar(sendText: String)
-    func sendMessageBar(attachment: Bool)
+    func sendMessageBar(attachment: MessageAttachmentAction)
     func sendMessageBar(textChangedTo text: String)
     func sendMessageBar(enablePeersMessaging: Bool)
     func sendMessageBar(recordAudio: AudioBarAction)
@@ -51,19 +57,19 @@ class SendMessageBar: UIView {
         static let peerMessagingDisabledHeight: CGFloat = 30
         static let kPreviewCancelButtonMaxWidth: CGFloat = 36
 
-        static let kSendButtonPointsNormal: CGFloat = 26
+        static let kSendButtonPointsNormal: CGFloat = 22
         static let kSendButtonPointsPressed: CGFloat = 44
-        static let kButtonSizeNormal: CGFloat = 32
+        static let kButtonSizeNormal: CGFloat = 44
         // Size of the activated audio recording button.
         static let kSendButtonSizePressed: CGFloat = 54
 
         // Initial input text weight.
-        static let kInitialInputFieldHeight: CGFloat = 40
+        static let kInitialInputFieldHeight: CGFloat = 48
 
-        static let kSendButtonImageWave = UIImage(systemName: "waveform.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: Constants.kSendButtonPointsNormal))!
-        static let kSendButtonImageWavePressed = UIImage(systemName: "waveform.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: Constants.kSendButtonPointsPressed))!
-        static let kSendButtonImageArrow = UIImage(systemName: "arrow.up.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: Constants.kSendButtonPointsNormal))!
-        static let kSendButtonImageEditCheck = UIImage(systemName: "checkmark.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: Constants.kSendButtonPointsNormal))
+        static let kSendButtonImageWave = ClawTheme.symbol("mic.fill", pointSize: Constants.kSendButtonPointsNormal, weight: .medium)!
+        static let kSendButtonImageWavePressed = ClawTheme.symbol("mic.circle.fill", pointSize: Constants.kSendButtonPointsPressed, weight: .medium)!
+        static let kSendButtonImageArrow = ClawTheme.symbol("arrow.up.circle.fill", pointSize: Constants.kSendButtonPointsNormal, weight: .semibold)!
+        static let kSendButtonImageEditCheck = ClawTheme.symbol("checkmark.circle.fill", pointSize: Constants.kSendButtonPointsNormal, weight: .semibold)
         static let kWaveInsetsShort = UIEdgeInsets(top: 2, left: 6, bottom: 2, right: 88)
         static let kWaveInsetsLong = UIEdgeInsets(top: 2, left: 6, bottom: 2, right: 52)
     }
@@ -139,18 +145,25 @@ class SendMessageBar: UIView {
 
     @IBAction func attach(_ sender: UIButton) {
         inputField.resignFirstResponder()
+        guard let presenter = topPresenter() else { return }
+        let sheet = ClawAttachmentSheetController { [weak self] action in
+            self?.delegate?.sendMessageBar(attachment: action)
+        }
+        presenter.present(sheet, animated: false)
+    }
 
-        let alert = UIAlertController(title: NSLocalizedString("Attachment", comment: "Attachment menu title"),
-                                      message: nil, preferredStyle: .actionSheet)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Photo or video", comment: "Photo and video picker action"),
-                                      style: .default, handler: { _ in
-            self.delegate?.sendMessageBar(attachment: false)
-        }))
-        alert.addAction(UIAlertAction(title: NSLocalizedString("File", comment: "File picker action"), style: .default, handler: { _ in
-            self.delegate?.sendMessageBar(attachment: true)
-        }))
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Cancel action"), style: .cancel, handler: nil))
-        self.window?.rootViewController?.present(alert, animated: true, completion: nil)
+    private func topPresenter() -> UIViewController? {
+        var presenter = window?.rootViewController
+        while let presented = presenter?.presentedViewController {
+            presenter = presented
+        }
+        if let navigation = presenter as? UINavigationController {
+            return navigation.visibleViewController ?? navigation
+        }
+        if let tabs = presenter as? UITabBarController {
+            return tabs.selectedViewController ?? tabs
+        }
+        return presenter
     }
 
     @IBAction func send(_ sender: UIButton) {
@@ -292,7 +305,7 @@ class SendMessageBar: UIView {
     private func loadNib() {
         let nib = UINib(nibName: "SendMessageBar", bundle: Bundle(for: type(of: self)))
         let nibView = nib.instantiate(withOwner: self, options: nil).first as! UIView
-        nibView.backgroundColor = UIColor.lightGray.withAlphaComponent(0.5)
+        nibView.backgroundColor = ClawTheme.surface
         nibView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(nibView)
         NSLayoutConstraint.activate([
@@ -308,15 +321,31 @@ class SendMessageBar: UIView {
         horizontalSliderView.alpha = 0.9
         verticalSliderView.alpha = 0.9
 
-        inputField.layer.borderWidth = 0
-        inputField.layer.cornerRadius = 18
+        backgroundColor = ClawTheme.surface
+        inputField.backgroundColor = ClawTheme.surfaceMuted
+        inputField.textColor = ClawTheme.ink
+        inputField.tintColor = ClawTheme.primary
+        inputField.layer.borderWidth = 1
+        inputField.layer.borderColor = ClawTheme.border.cgColor
+        inputField.layer.cornerRadius = ClawTheme.cardRadius
+        inputField.layer.cornerCurve = .continuous
+        inputField.clipsToBounds = true
         inputField.autoresizingMask = [.flexibleHeight]
         inputField.delegate = self
         inputField.textContainerInset = UIEdgeInsets(
             top: inputField.textContainerInset.top,
-            left: Constants.inputFieldInsetLeading,
+            left: 14,
             bottom: inputField.textContainerInset.bottom,
             right: Constants.inputFieldInsetTrailing)
+
+        ClawTheme.styleIconButton(attachButton, symbolName: "plus", pointSize: ClawTheme.iconCompact)
+        attachButton.accessibilityLabel = NSLocalizedString("添加附件", comment: "Add attachment")
+        sendButton.tintColor = ClawTheme.primary
+        sendButton.imageView?.contentMode = .scaleAspectFit
+        sendButton.contentHorizontalAlignment = .center
+        sendButton.contentVerticalAlignment = .center
+        sendButton.imageEdgeInsets = .zero
+        sendButton.contentEdgeInsets = .zero
 
         if let font = inputField.font {
             inputFieldMaxHeight = font.lineHeight * Constants.maxLines
@@ -485,6 +514,221 @@ extension SendMessageBar: UITextViewDelegate {
             }
 
             self.sendButton.setImage(self.sendButtonTextImage, for: .normal)
+        }
+    }
+}
+
+private final class ClawAttachmentSheetController: UIViewController {
+    private let onSelect: (MessageAttachmentAction) -> Void
+    private let dimControl = UIControl()
+    private let panel = UIView()
+
+    init(onSelect: @escaping (MessageAttachmentAction) -> Void) {
+        self.onSelect = onSelect
+        super.init(nibName: nil, bundle: nil)
+        modalPresentationStyle = .overFullScreen
+        modalTransitionStyle = .crossDissolve
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureView()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        view.layoutIfNeeded()
+        panel.transform = CGAffineTransform(translationX: 0, y: panel.bounds.height)
+        dimControl.alpha = 0
+        UIView.animate(withDuration: 0.24, delay: 0, options: [.curveEaseOut]) {
+            self.panel.transform = .identity
+            self.dimControl.alpha = 1
+        }
+    }
+
+    private func configureView() {
+        view.backgroundColor = .clear
+
+        dimControl.translatesAutoresizingMaskIntoConstraints = false
+        dimControl.backgroundColor = UIColor.black.withAlphaComponent(0.34)
+        dimControl.accessibilityLabel = NSLocalizedString("Cancel", comment: "Cancel action")
+        dimControl.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+        view.addSubview(dimControl)
+
+        panel.translatesAutoresizingMaskIntoConstraints = false
+        panel.backgroundColor = ClawTheme.surface
+        panel.layer.cornerRadius = 20
+        panel.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        panel.layer.cornerCurve = .continuous
+        panel.clipsToBounds = true
+        view.addSubview(panel)
+
+        let title = UILabel()
+        title.translatesAutoresizingMaskIntoConstraints = false
+        title.text = NSLocalizedString("Send content", comment: "Attachment sheet title")
+        title.textColor = ClawTheme.ink
+        title.font = .systemFont(ofSize: 18, weight: .semibold)
+        title.adjustsFontForContentSizeCategory = true
+
+        let close = UIButton(type: .system)
+        close.translatesAutoresizingMaskIntoConstraints = false
+        ClawTheme.styleIconButton(close, symbolName: "xmark", pointSize: ClawTheme.iconSmall,
+                                  tintColor: ClawTheme.muted)
+        close.accessibilityLabel = NSLocalizedString("Cancel", comment: "Cancel action")
+        close.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+
+        let header = UIView()
+        header.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(title)
+        header.addSubview(close)
+        panel.addSubview(header)
+
+        let actions = UIStackView(arrangedSubviews: [
+            makeTile(symbol: "photo.on.rectangle.angled",
+                     title: NSLocalizedString("Choose photo or video", comment: "Media library action"),
+                     action: .library),
+            makeTile(symbol: "camera",
+                     title: NSLocalizedString("Take photo or video", comment: "Camera action"),
+                     action: .camera),
+            makeTile(symbol: "doc",
+                     title: NSLocalizedString("File", comment: "File attachment action"),
+                     action: .file)
+        ])
+        actions.translatesAutoresizingMaskIntoConstraints = false
+        actions.axis = .horizontal
+        actions.alignment = .fill
+        actions.distribution = .fillEqually
+        actions.spacing = 12
+        panel.addSubview(actions)
+
+        NSLayoutConstraint.activate([
+            dimControl.topAnchor.constraint(equalTo: view.topAnchor),
+            dimControl.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            dimControl.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            dimControl.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            panel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            panel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            panel.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            header.topAnchor.constraint(equalTo: panel.topAnchor, constant: 8),
+            header.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 20),
+            header.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -8),
+            header.heightAnchor.constraint(equalToConstant: 48),
+
+            title.leadingAnchor.constraint(equalTo: header.leadingAnchor),
+            title.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            title.trailingAnchor.constraint(lessThanOrEqualTo: close.leadingAnchor, constant: -8),
+            close.trailingAnchor.constraint(equalTo: header.trailingAnchor),
+            close.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            close.widthAnchor.constraint(equalToConstant: 48),
+            close.heightAnchor.constraint(equalToConstant: 48),
+
+            actions.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
+            actions.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 20),
+            actions.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -20),
+            actions.heightAnchor.constraint(greaterThanOrEqualToConstant: 96),
+            actions.bottomAnchor.constraint(equalTo: panel.safeAreaLayoutGuide.bottomAnchor, constant: -16)
+        ])
+    }
+
+    private func makeTile(symbol: String, title: String,
+                          action: MessageAttachmentAction) -> ClawAttachmentTileControl {
+        let tile = ClawAttachmentTileControl(symbol: symbol, title: title, action: action)
+        tile.addTarget(self, action: #selector(tileTapped(_:)), for: .touchUpInside)
+        return tile
+    }
+
+    @objc private func closeTapped() {
+        dismissSheet(completion: nil)
+    }
+
+    @objc private func tileTapped(_ sender: ClawAttachmentTileControl) {
+        let action = sender.action
+        let callback = onSelect
+        dismissSheet { callback(action) }
+    }
+
+    private func dismissSheet(completion: (() -> Void)?) {
+        UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseIn], animations: {
+            self.panel.transform = CGAffineTransform(translationX: 0, y: self.panel.bounds.height)
+            self.dimControl.alpha = 0
+        }) { _ in
+            self.dismiss(animated: false, completion: completion)
+        }
+    }
+}
+
+private final class ClawAttachmentTileControl: UIControl {
+    let action: MessageAttachmentAction
+
+    init(symbol: String, title: String, action: MessageAttachmentAction) {
+        self.action = action
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+        accessibilityLabel = title
+        accessibilityTraits = .button
+
+        let iconFrame = UIView()
+        iconFrame.translatesAutoresizingMaskIntoConstraints = false
+        iconFrame.backgroundColor = ClawTheme.surfaceMuted
+        iconFrame.layer.cornerRadius = 16
+        iconFrame.layer.cornerCurve = .continuous
+        iconFrame.isUserInteractionEnabled = false
+
+        let icon = UIImageView(image: ClawTheme.symbol(symbol, pointSize: ClawTheme.iconStandard, weight: .regular))
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.tintColor = action == .library ? ClawTheme.primary : ClawTheme.ink
+        icon.contentMode = .scaleAspectFit
+        icon.isUserInteractionEnabled = false
+        iconFrame.addSubview(icon)
+
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = title
+        label.textColor = ClawTheme.ink
+        label.font = .systemFont(ofSize: 12, weight: .medium)
+        label.adjustsFontForContentSizeCategory = true
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.82
+        label.textAlignment = .center
+        label.numberOfLines = 2
+        label.isUserInteractionEnabled = false
+
+        addSubview(iconFrame)
+        addSubview(label)
+
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(greaterThanOrEqualToConstant: 96),
+            iconFrame.topAnchor.constraint(equalTo: topAnchor),
+            iconFrame.centerXAnchor.constraint(equalTo: centerXAnchor),
+            iconFrame.widthAnchor.constraint(equalToConstant: 56),
+            iconFrame.heightAnchor.constraint(equalToConstant: 56),
+            icon.centerXAnchor.constraint(equalTo: iconFrame.centerXAnchor),
+            icon.centerYAnchor.constraint(equalTo: iconFrame.centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: 24),
+            icon.heightAnchor.constraint(equalToConstant: 24),
+            label.topAnchor.constraint(equalTo: iconFrame.bottomAnchor, constant: 8),
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
+            label.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var isHighlighted: Bool {
+        didSet {
+            UIView.animate(withDuration: 0.12) {
+                self.alpha = self.isHighlighted ? 0.58 : 1
+                self.transform = self.isHighlighted ? CGAffineTransform(scaleX: 0.97, y: 0.97) : .identity
+            }
         }
     }
 }

@@ -46,6 +46,23 @@ class TopicGeneralViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.accessibilityIdentifier = "claw.settings.topic.general.screen"
+        tableView.accessibilityIdentifier = "claw.settings.topic.general.list"
+        loadAvatarButton.accessibilityIdentifier = "claw.settings.topic.general.avatar"
+        ClawTheme.styleList(tableView, rowHeight: 64)
+        ClawTheme.styleTextField(topicTitleTextField)
+        ClawTheme.styleTextField(aliasTextField)
+        ClawTheme.styleTextField(topicPrivateTextField)
+        topicDescriptTextView.backgroundColor = ClawTheme.surface
+        topicDescriptTextView.textColor = ClawTheme.ink
+        topicDescriptTextView.layer.cornerRadius = ClawTheme.inputRadius
+        topicDescriptTextView.layer.borderWidth = 1
+        topicDescriptTextView.layer.borderColor = ClawTheme.border.cgColor
+        avatarImage.layer.borderWidth = 2
+        avatarImage.layer.borderColor = ClawTheme.brandSoft.cgColor
+        ClawTheme.styleIconButton(loadAvatarButton, symbolName: "camera.fill", pointSize: 20)
+        loadAvatarButton.backgroundColor = ClawTheme.brandSoft
+        loadAvatarButton.layer.cornerRadius = 24
         setup()
         reloadData()
     }

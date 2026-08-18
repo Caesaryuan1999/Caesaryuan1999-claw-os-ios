@@ -10,6 +10,9 @@ HOST_NAME = veilping.app
 // Use TLS (https, wss)
 USE_TLS = YES
 
+// APNs environment used by the signed Release build.
+APS_ENVIRONMENT = production
+
 // App Settings
 APP_NAME = CLAW OS
 

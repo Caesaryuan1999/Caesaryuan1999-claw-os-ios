@@ -24,6 +24,11 @@ public class ContactHolder {
 }
 
 class ContactsManager {
+    static func isDirectContactId(_ uid: String?) -> Bool {
+        guard let uid = uid else { return false }
+        return Tinode.topicTypeByName(name: uid) == .p2p
+    }
+
     public static var `default` = ContactsManager()
 
     private let queue = DispatchQueue(label: "co.tinode.contacts")
@@ -88,8 +93,9 @@ class ContactsManager {
             users = userDb.readAll(for: uid)
         }
         // Turn users into contacts.
-        return users?.map { user in
+        return users?.compactMap { user in
             let q = user as! DefaultUser
+            guard ContactsManager.isDirectContactId(q.uid) else { return nil }
             return ContactHolder(pub: q.pub, uniqueId: q.uid, accountName: (q.payload as? StoredUser)?.accountName)
         }
     }

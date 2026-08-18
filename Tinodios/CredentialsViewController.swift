@@ -17,11 +17,9 @@ class CredentialsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        if traitCollection.userInterfaceStyle == .dark {
-            self.view.backgroundColor = .black
-        } else {
-            self.view.backgroundColor = .white
-        }
+        title = NSLocalizedString("验证账号", comment: "Verify account title")
+        self.view.backgroundColor = ClawTheme.background
+        ClawTheme.styleTextField(codeText)
         self.authToken = Cache.tinode.authToken
         UiUtils.dismissKeyboardForTaps(onView: self.view)
     }

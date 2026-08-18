@@ -6,11 +6,382 @@
 //
 
 import Foundation
+import UIKit
 import Kingfisher
 import MobileCoreServices
 import PhoneNumberKit
 import TinodeSDK
 import TinodiosDB
+
+enum ClawTheme {
+    enum GroupedCellPosition {
+        case single
+        case first
+        case middle
+        case last
+    }
+
+    static let primary = UIColor(red: 0 / 255, green: 168 / 255, blue: 157 / 255, alpha: 1)
+    static let primaryPressed = UIColor(red: 0 / 255, green: 122 / 255, blue: 114 / 255, alpha: 1)
+    static let accent = UIColor(red: 17 / 255, green: 200 / 255, blue: 213 / 255, alpha: 1)
+    static let success = UIColor(red: 37 / 255, green: 197 / 255, blue: 122 / 255, alpha: 1)
+    static let warning = UIColor(red: 255 / 255, green: 176 / 255, blue: 32 / 255, alpha: 1)
+    static let danger = UIColor(red: 239 / 255, green: 91 / 255, blue: 98 / 255, alpha: 1)
+    static let dangerSoft = UIColor(red: 253 / 255, green: 236 / 255, blue: 234 / 255, alpha: 1)
+    static let brandSoft = UIColor(red: 234 / 255, green: 248 / 255, blue: 246 / 255, alpha: 1)
+    static let background = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 11 / 255, green: 21 / 255, blue: 20 / 255, alpha: 1)
+            : UIColor(red: 244 / 255, green: 247 / 255, blue: 246 / 255, alpha: 1)
+    }
+    static let surface = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 18 / 255, green: 32 / 255, blue: 30 / 255, alpha: 1)
+            : .white
+    }
+    static let surfaceMuted = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 25 / 255, green: 48 / 255, blue: 44 / 255, alpha: 1)
+            : UIColor(red: 244 / 255, green: 247 / 255, blue: 246 / 255, alpha: 1)
+    }
+    static let border = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 49 / 255, green: 73 / 255, blue: 69 / 255, alpha: 1)
+            : UIColor(red: 228 / 255, green: 233 / 255, blue: 232 / 255, alpha: 1)
+    }
+    static let ink = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 236 / 255, green: 245 / 255, blue: 243 / 255, alpha: 1)
+            : UIColor(red: 7 / 255, green: 28 / 255, blue: 26 / 255, alpha: 1)
+    }
+    static let muted = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 168 / 255, green: 186 / 255, blue: 183 / 255, alpha: 1)
+            : UIColor(red: 107 / 255, green: 119 / 255, blue: 117 / 255, alpha: 1)
+    }
+    static let inputRadius: CGFloat = 14
+    static let buttonRadius: CGFloat = 15
+    static let cardRadius: CGFloat = 16
+    static let cornerRadius: CGFloat = cardRadius
+    static let touchTarget: CGFloat = 44
+    static let iconSmall: CGFloat = 18
+    static let iconCompact: CGFloat = 20
+    static let iconStandard: CGFloat = 24
+
+    static func applyGlobalAppearance() {
+        let navigationAppearance = UINavigationBarAppearance()
+        navigationAppearance.configureWithOpaqueBackground()
+        navigationAppearance.backgroundColor = surface
+        navigationAppearance.shadowColor = border
+        navigationAppearance.titleTextAttributes = [.foregroundColor: ink]
+        navigationAppearance.largeTitleTextAttributes = [.foregroundColor: ink]
+
+        let navigationBar = UINavigationBar.appearance()
+        navigationBar.standardAppearance = navigationAppearance
+        navigationBar.compactAppearance = navigationAppearance
+        navigationBar.scrollEdgeAppearance = navigationAppearance
+        navigationBar.tintColor = primary
+
+        let tabAppearance = UITabBarAppearance()
+        tabAppearance.configureWithOpaqueBackground()
+        tabAppearance.backgroundColor = surface
+        tabAppearance.shadowColor = border
+        let tabBar = UITabBar.appearance()
+        tabBar.standardAppearance = tabAppearance
+        if #available(iOS 15.0, *) {
+            tabBar.scrollEdgeAppearance = tabAppearance
+        }
+        tabBar.tintColor = primary
+
+        UISwitch.appearance().onTintColor = primary
+        UITableView.appearance().tintColor = primary
+        UITableView.appearance().separatorColor = border
+    }
+
+    static func stylePrimaryButton(_ button: UIButton) {
+        button.backgroundColor = primary
+        button.tintColor = .white
+        button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(UIColor.white.withAlphaComponent(0.6), for: .disabled)
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        button.titleLabel?.textAlignment = .center
+        button.contentHorizontalAlignment = .center
+        button.contentVerticalAlignment = .center
+        button.layer.cornerRadius = buttonRadius
+        button.layer.cornerCurve = .continuous
+        button.clipsToBounds = true
+    }
+
+    static func styleSecondaryButton(_ button: UIButton) {
+        button.backgroundColor = .clear
+        button.tintColor = primary
+        button.setTitleColor(primary, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+    }
+
+    static func styleTextField(_ textField: UITextField) {
+        textField.backgroundColor = surface
+        textField.textColor = ink
+        textField.tintColor = primary
+        textField.borderStyle = .none
+        textField.layer.borderWidth = 1
+        textField.layer.borderColor = border.cgColor
+        textField.layer.cornerRadius = inputRadius
+        textField.layer.cornerCurve = .continuous
+        textField.clipsToBounds = true
+        if textField.leftView == nil {
+            textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
+            textField.leftViewMode = .always
+        }
+    }
+
+    static func styleTextView(_ textView: UITextView) {
+        textView.backgroundColor = surface
+        textView.textColor = ink
+        textView.tintColor = primary
+        textView.layer.borderWidth = 1
+        textView.layer.borderColor = border.cgColor
+        textView.layer.cornerRadius = inputRadius
+        textView.layer.cornerCurve = .continuous
+        textView.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
+        textView.clipsToBounds = true
+    }
+
+    static func styleTableCell(_ cell: UITableViewCell, destructive: Bool = false) {
+        cell.backgroundColor = surface
+        cell.textLabel?.textColor = destructive ? danger : ink
+        cell.detailTextLabel?.textColor = muted
+        cell.imageView?.tintColor = destructive ? danger : primary
+        cell.imageView?.contentMode = .center
+        cell.imageView?.clipsToBounds = false
+        cell.tintColor = primary
+    }
+
+    static func styleTableCell(_ cell: UITableViewCell, symbolName: String,
+                               destructive: Bool = false) {
+        styleTableCell(cell, destructive: destructive)
+        cell.imageView?.image = symbol(symbolName, pointSize: iconStandard, weight: .medium)
+        cell.imageView?.preferredSymbolConfiguration = UIImage.SymbolConfiguration(
+            pointSize: iconStandard,
+            weight: .medium,
+            scale: .medium)
+        cell.imageView?.contentMode = .center
+    }
+
+    static func groupedPosition(for row: Int, visibleRows: [Int]) -> GroupedCellPosition {
+        guard visibleRows.count > 1 else { return .single }
+        if row == visibleRows.first { return .first }
+        if row == visibleRows.last { return .last }
+        return .middle
+    }
+
+    static func styleGroupedCell(_ cell: UITableViewCell,
+                                 position: GroupedCellPosition,
+                                 destructive: Bool = false,
+                                 backgroundColor: UIColor = surface) {
+        let normal = ClawGroupedCellBackgroundView(position: position, color: backgroundColor)
+        let selected = ClawGroupedCellBackgroundView(position: position, color: brandSoft)
+        cell.backgroundColor = .clear
+        cell.backgroundView = normal
+        cell.selectedBackgroundView = selected
+        cell.textLabel?.textColor = destructive ? danger : ink
+        cell.detailTextLabel?.textColor = muted
+        cell.preservesSuperviewLayoutMargins = false
+        cell.layoutMargins = UIEdgeInsets(top: 0, left: 18, bottom: 0, right: 18)
+        cell.separatorInset = position == .last || position == .single
+            ? UIEdgeInsets(top: 0, left: 0, bottom: 0, right: .greatestFiniteMagnitude)
+            : UIEdgeInsets(top: 0, left: 58, bottom: 0, right: 18)
+    }
+
+    static func normalizeIconButtons(in rootView: UIView) {
+        if let button = rootView as? UIButton, button.currentImage != nil {
+            button.contentHorizontalAlignment = .center
+            button.contentVerticalAlignment = .center
+            button.imageView?.contentMode = .scaleAspectFit
+            button.imageView?.clipsToBounds = false
+            button.imageEdgeInsets = .zero
+            if button.currentTitle == nil {
+                button.contentEdgeInsets = .zero
+            }
+        }
+        rootView.subviews.forEach { normalizeIconButtons(in: $0) }
+    }
+
+    static func makeStatusHeader(title: String, detail: String, symbolName: String) -> UIView {
+        let container = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 124))
+        container.backgroundColor = .clear
+
+        let card = UIView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        card.backgroundColor = brandSoft
+        card.layer.cornerRadius = 18
+        card.layer.cornerCurve = .continuous
+
+        let iconBox = UIView()
+        iconBox.translatesAutoresizingMaskIntoConstraints = false
+        iconBox.backgroundColor = primary.withAlphaComponent(0.10)
+        iconBox.layer.cornerRadius = 14
+        iconBox.layer.cornerCurve = .continuous
+
+        let icon = UIImageView(image: symbol(symbolName, pointSize: iconStandard, weight: .medium))
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.tintColor = primary
+        icon.contentMode = .center
+        iconBox.addSubview(icon)
+
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = title
+        titleLabel.textColor = ink
+        titleLabel.font = .systemFont(ofSize: 17, weight: .semibold)
+        titleLabel.numberOfLines = 1
+
+        let detailLabel = UILabel()
+        detailLabel.translatesAutoresizingMaskIntoConstraints = false
+        detailLabel.text = detail
+        detailLabel.textColor = muted
+        detailLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        detailLabel.numberOfLines = 2
+
+        card.addSubview(iconBox)
+        card.addSubview(titleLabel)
+        card.addSubview(detailLabel)
+        container.addSubview(card)
+
+        NSLayoutConstraint.activate([
+            card.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
+            card.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 18),
+            card.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -18),
+            card.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12),
+            iconBox.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            iconBox.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+            iconBox.widthAnchor.constraint(equalToConstant: 48),
+            iconBox.heightAnchor.constraint(equalToConstant: 48),
+            icon.centerXAnchor.constraint(equalTo: iconBox.centerXAnchor),
+            icon.centerYAnchor.constraint(equalTo: iconBox.centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: iconStandard),
+            icon.heightAnchor.constraint(equalToConstant: iconStandard),
+            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 22),
+            titleLabel.leadingAnchor.constraint(equalTo: iconBox.trailingAnchor, constant: 14),
+            titleLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            detailLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
+            detailLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            detailLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            detailLabel.bottomAnchor.constraint(lessThanOrEqualTo: card.bottomAnchor, constant: -16)
+        ])
+        return container
+    }
+
+    static func symbol(_ name: String, pointSize: CGFloat = iconStandard,
+                       weight: UIImage.SymbolWeight = .regular) -> UIImage? {
+        let configuration = UIImage.SymbolConfiguration(pointSize: pointSize, weight: weight, scale: .medium)
+        return UIImage(systemName: name, withConfiguration: configuration)
+    }
+
+    static func styleIconButton(_ button: UIButton, symbolName: String,
+                                pointSize: CGFloat = iconCompact,
+                                tintColor: UIColor = primary) {
+        button.setImage(symbol(symbolName, pointSize: pointSize), for: .normal)
+        button.tintColor = tintColor
+        button.imageView?.contentMode = .scaleAspectFit
+        button.contentHorizontalAlignment = .center
+        button.contentVerticalAlignment = .center
+        button.imageEdgeInsets = .zero
+        button.contentEdgeInsets = .zero
+        button.clipsToBounds = false
+    }
+
+    static func styleRoundedIconButton(_ button: UIButton, symbolName: String,
+                                       selected: Bool = false) {
+        styleIconButton(button, symbolName: symbolName, pointSize: iconCompact,
+                        tintColor: selected ? .white : primary)
+        button.backgroundColor = selected ? primary : brandSoft
+        button.layer.cornerRadius = 12
+        button.layer.cornerCurve = .continuous
+        button.clipsToBounds = true
+    }
+
+    static func styleSearchBar(_ searchBar: UISearchBar) {
+        searchBar.tintColor = primary
+        searchBar.barTintColor = background
+        searchBar.backgroundImage = UIImage()
+        searchBar.searchTextField.backgroundColor = surfaceMuted
+        searchBar.searchTextField.textColor = ink
+        searchBar.searchTextField.tintColor = primary
+        searchBar.searchTextField.layer.cornerRadius = inputRadius
+        searchBar.searchTextField.layer.cornerCurve = .continuous
+        searchBar.searchTextField.clipsToBounds = true
+        searchBar.searchTextField.leftView?.tintColor = muted
+        searchBar.searchTextField.clearButtonMode = .whileEditing
+    }
+
+    static func styleList(_ tableView: UITableView, rowHeight: CGFloat = 76) {
+        tableView.backgroundColor = background
+        tableView.separatorColor = border
+        tableView.rowHeight = rowHeight
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 72, bottom: 0, right: 18)
+        tableView.sectionHeaderHeight = 38
+        tableView.sectionFooterHeight = 12
+        tableView.keyboardDismissMode = .onDrag
+    }
+
+    static func styleCard(_ view: UIView, radius: CGFloat = cardRadius) {
+        view.backgroundColor = surface
+        view.layer.cornerRadius = radius
+        view.layer.cornerCurve = .continuous
+        view.layer.borderWidth = 1
+        view.layer.borderColor = border.cgColor
+        view.clipsToBounds = true
+    }
+
+    static func styleCallControl(_ button: UIButton, symbolName: String,
+                                 backgroundColor: UIColor = surface,
+                                 tintColor: UIColor = primary) {
+        styleIconButton(button, symbolName: symbolName, pointSize: 21, tintColor: tintColor)
+        button.backgroundColor = backgroundColor
+        button.layer.cornerRadius = 28
+        button.layer.cornerCurve = .continuous
+        button.clipsToBounds = true
+        button.adjustsImageWhenHighlighted = true
+    }
+}
+
+private final class ClawGroupedCellBackgroundView: UIView {
+    private let fillView = UIView()
+    private let position: ClawTheme.GroupedCellPosition
+
+    init(position: ClawTheme.GroupedCellPosition, color: UIColor) {
+        self.position = position
+        super.init(frame: .zero)
+        backgroundColor = .clear
+        fillView.backgroundColor = color
+        fillView.layer.cornerCurve = .continuous
+        addSubview(fillView)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        fillView.frame = bounds.inset(by: UIEdgeInsets(top: 0.5, left: 18, bottom: 0.5, right: 18))
+        fillView.layer.cornerRadius = (position == .middle) ? 0 : ClawTheme.cardRadius
+        switch position {
+        case .single:
+            fillView.layer.maskedCorners = [
+                .layerMinXMinYCorner, .layerMaxXMinYCorner,
+                .layerMinXMaxYCorner, .layerMaxXMaxYCorner
+            ]
+        case .first:
+            fillView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        case .middle:
+            fillView.layer.maskedCorners = []
+        case .last:
+            fillView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        }
+    }
+}
 
 public class Utils {
     public static let kTopicUriPrefix = "tinode:topic/"
@@ -498,6 +869,122 @@ enum ClawAuthInput {
     }
 }
 
+enum ClawAuthErrorMessages {
+    static func loginMessage(for error: Error) -> String {
+        if let tinodeError = error as? TinodeError,
+           case .serverResponseError(let code, _, _) = tinodeError {
+            switch code {
+            case 401:
+                return NSLocalizedString("账号名或密码错误", comment: "Invalid login credentials")
+            case 403:
+                return NSLocalizedString("服务器拒绝了登录请求，请检查连接设置", comment: "Login forbidden")
+            case 429:
+                return NSLocalizedString("登录尝试过于频繁，请稍后重试", comment: "Login rate limited")
+            case 500...599:
+                return NSLocalizedString("服务器暂时不可用，请稍后重试", comment: "Login server error")
+            default:
+                break
+            }
+        }
+        return networkMessage(for: error,
+                              fallback: NSLocalizedString("登录失败，请检查账号名、密码和网络连接", comment: "Generic login failure"))
+    }
+
+    static func signUpMessage(for error: Error) -> String {
+        return networkMessage(for: error,
+                              fallback: NSLocalizedString("注册失败，请检查账号名、密码、邀请码和网络连接", comment: "Generic registration failure"))
+    }
+
+    static func passwordChangeMessage(for error: Error) -> String {
+        if let tinodeError = error as? TinodeError,
+           case .serverResponseError(let code, _, _) = tinodeError,
+           code == 401 || code == 403 {
+            return NSLocalizedString("身份验证已失效，请重新登录后修改密码", comment: "Password change authentication failure")
+        }
+        return networkMessage(for: error,
+                              fallback: NSLocalizedString("密码修改失败，请稍后重试", comment: "Generic password change failure"))
+    }
+
+    private static func networkMessage(for error: Error, fallback: String) -> String {
+        if let tinodeError = error as? TinodeError, case .notConnected(_) = tinodeError {
+            return NSLocalizedString("暂时无法连接服务器，请检查网络后重试", comment: "Server unavailable")
+        }
+
+        let message = error.localizedDescription.lowercased()
+        if message.contains("ssl") || message.contains("certificate") || message.contains("handshake") {
+            return NSLocalizedString("安全连接失败，请检查网络或服务器证书", comment: "Secure connection failure")
+        }
+        if message.contains("timed out") || message.contains("timeout") {
+            return NSLocalizedString("连接超时，请检查网络后重试", comment: "Connection timeout")
+        }
+        if message.contains("not connected") || message.contains("unable to resolve") ||
+            message.contains("network is unreachable") || message.contains("connection refused") ||
+            message.contains("failed to connect") {
+            return NSLocalizedString("暂时无法连接服务器，请检查网络后重试", comment: "Server unavailable")
+        }
+        return fallback
+    }
+}
+
+enum ClawAuthFormValidation {
+    enum Result: Equatable {
+        case ok
+        case accountRequired
+        case accountInvalid
+        case passwordRequired
+        case passwordPolicy
+        case inviteRequired
+        case passwordMismatch
+    }
+
+    static func validateLogin(accountName: String, password: String) -> Result {
+        if accountName.isEmpty { return .accountRequired }
+        if !ClawAuthInput.isAccountNameValid(accountName) { return .accountInvalid }
+        if password.isEmpty { return .passwordRequired }
+        return .ok
+    }
+
+    static func validateSignUp(accountName: String, password: String, inviteCode: String) -> Result {
+        let loginResult = validateLogin(accountName: accountName, password: password)
+        if loginResult != .ok { return loginResult }
+        if !ClawAuthInput.isPasswordValid(password) { return .passwordPolicy }
+        if inviteCode.isEmpty { return .inviteRequired }
+        return .ok
+    }
+
+    static func validatePasswordChange(password: String, confirmation: String) -> Result {
+        if password.isEmpty { return .passwordRequired }
+        if !ClawAuthInput.isPasswordValid(password) { return .passwordPolicy }
+        if password != confirmation { return .passwordMismatch }
+        return .ok
+    }
+}
+
+final class ClawSubmissionGate {
+    private let lock = NSLock()
+    private var submitting = false
+
+    func begin() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !submitting else { return false }
+        submitting = true
+        return true
+    }
+
+    func finish() {
+        lock.lock()
+        submitting = false
+        lock.unlock()
+    }
+
+    var isSubmitting: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return submitting
+    }
+}
+
 enum AccountNames {
     static let basicTagPrefix = "basic:"
 
@@ -576,5 +1063,46 @@ enum AccountNames {
 
     private static func isPublicAccountName(_ value: String?) -> Bool {
         return ClawAuthInput.isAccountNameValid(value) && !isUserIdLike(value)
+    }
+}
+
+/// Immutable, UI-ready representation of an incoming message notice.
+///
+/// Keep normalization and de-duplication inputs in one place so socket and
+/// push notifications produce the same preview and delivery key on iOS.
+struct ClawMessageNotice: Equatable {
+    static let maxBodyLength = 120
+
+    let topic: String
+    let title: String
+    let body: String
+    let seq: Int
+
+    init(topic: String?, title: String?, body: String?, seq: Int? = nil) {
+        self.topic = Self.clean(topic)
+        self.title = Self.clean(title)
+        self.body = Self.shorten(Self.clean(body))
+        self.seq = max(0, seq ?? 0)
+    }
+
+    var canOpenTopic: Bool {
+        return !topic.isEmpty
+    }
+
+    var deliveryKey: String {
+        return "\(topic):\(seq)"
+    }
+
+    private static func clean(_ value: String?) -> String {
+        guard let value = value else { return "" }
+        return value.trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(whereSeparator: { $0.isWhitespace })
+            .joined(separator: " ")
+    }
+
+    private static func shorten(_ value: String) -> String {
+        guard value.count > maxBodyLength else { return value }
+        let end = value.index(value.startIndex, offsetBy: maxBodyLength - 1)
+        return String(value[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
     }
 }

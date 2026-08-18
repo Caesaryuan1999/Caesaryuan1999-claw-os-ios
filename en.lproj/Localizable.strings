@@ -336,6 +336,9 @@
 "Group created. Some members could not be added; retry from Group settings." = "Group created. Some members could not be added; retry from Group settings.";
 "Invalid member selection. Try again." = "Invalid member selection. Try again.";
 "Added to contacts" = "Added to contacts";
+"Search contacts" = "Search contacts, username or account name";
+"Group name" = "Group name";
+"Account settings" = "Account settings";
 
 /* CLAW OS attachment workflow */
 "Attachment" = "Attachment";
@@ -344,6 +347,7 @@
 "Take photo or video" = "Take photo or video";
 "Take photo" = "Take photo";
 "Choose photo or video" = "Choose photo or video";
+"Send content" = "Send content";
 "Choose photo" = "Choose photo";
 "Video caption" = "Video caption";
 "Invalid video" = "Invalid video";
@@ -359,3 +363,45 @@
 "close" = "Close";
 "privacy_device_info" = "Does not include your phone number, IMEI or serial number.";
 "device_info_copied" = "Phone information copied";
+
+/* CLAW OS notification settings */
+"notification_settings_title" = "Notifications";
+"notification_status_enabled" = "Notifications enabled";
+"notification_status_disabled" = "Notifications disabled";
+"notification_status_enabled_summary" = "Sounds, badges, and Lock Screen alerts";
+"notification_status_disabled_summary" = "Tap to enable notifications in Settings";
+"message_notifications" = "MESSAGE NOTIFICATIONS";
+"private_messages" = "Private messages";
+"private_messages_summary" = "Alert me when a new message arrives";
+"group_messages" = "Group messages";
+"group_messages_summary" = "Alerts from groups and channels";
+"call_reminders" = "Call alerts";
+"call_reminders_summary" = "Incoming voice and video calls";
+"message_preview" = "Message preview";
+"message_preview_summary" = "Show message content in notifications";
+"alert_style" = "ALERT STYLE";
+"notification_sound" = "Notification sound";
+"notification_sound_value" = "CLAW";
+"in_app_vibration" = "In-app vibration";
+"in_app_vibration_summary" = "Haptic feedback for new messages";
+"privacy_and_receipts" = "PRIVACY AND RECEIPTS";
+"incognito_mode" = "Incognito mode";
+"incognito_mode_summary" = "Hide your online status from contacts";
+"read_receipts" = "Read receipts";
+"read_receipts_summary" = "Let others know when you read messages";
+"typing_status" = "Typing status";
+"typing_status_summary" = "Let others know when you are typing";
+"account_status_not_ready" = "Account status is not ready";
+"new_message" = "New message";
+"new_message_hidden" = "You received a new message";
+"Selected" = "Selected";
+"Contacts" = "Contacts";
+"New group chat" = "New group chat";
+"Manage members" = "Manage members";
+"Selected count %d" = "Selected · %d people";
+"Next count %d" = "Next · %d people";
+"Save count %d" = "Save · %d people";
+"call_connection_failed" = "Unable to establish the call. Check the network and try again.";
+"call_negotiation_failed" = "Call setup failed. Please try again.";
+"call_camera_unavailable" = "The camera is unavailable. Video calling cannot start.";
+"call_cannot_start" = "The call cannot start. Confirm that you are signed in and try again.";

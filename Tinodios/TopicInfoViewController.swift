@@ -57,8 +57,28 @@ class TopicInfoViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.accessibilityIdentifier = "claw.settings.topic.info.screen"
+        tableView.accessibilityIdentifier = "claw.settings.topic.info.list"
+        ClawTheme.styleList(tableView, rowHeight: 64)
+        avatarImage.layer.borderWidth = 2
+        avatarImage.layer.borderColor = ClawTheme.brandSoft.cgColor
+        topicTitleLabel.textColor = ClawTheme.ink
+        topicIDLabel.textColor = ClawTheme.muted
+        lastSeenTimestampLabel.textColor = ClawTheme.muted
+        aliasLabel.textColor = ClawTheme.muted
+        topicPrivateTextView.backgroundColor = .clear
+        topicDescriptionTextView.backgroundColor = .clear
+        mutedSwitch.onTintColor = ClawTheme.primary
+        archivedSwitch.onTintColor = ClawTheme.primary
         setup()
         reloadData()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        avatarImage.layer.cornerRadius = avatarImage.bounds.width * 0.5
+        avatarImage.clipsToBounds = true
+        ClawTheme.normalizeIconButtons(in: view)
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -94,7 +114,7 @@ class TopicInfoViewController: UITableViewController {
             NSLocalizedString("已保存消息", comment: "Title for slf topic") :
             (topic.isP2PType ?
                 AccountNames.contactDisplayName(displayName: topic.pub?.fn, accountName: topic.alias, userId: topic.name) :
-                topic.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing user name"))
+                topic.pub?.fn ?? NSLocalizedString("未命名会话", comment: "Placeholder for missing user name"))
         topicTitleLabel.textAlignment = .center
 
         let descPlaceholder: String? = topic.isOwner ? NSLocalizedString("说明（可选）", comment: "Placeholder for missing topic description") : nil
@@ -158,7 +178,7 @@ class TopicInfoViewController: UITableViewController {
                 DispatchQueue.main.async {
                     self.mutedSwitch.isOn = !isChecked
                     if let e = err as? TinodeError, case .notConnected(_) = e {
-                        UiUtils.showToast(message: NSLocalizedString("You are offline.", comment: "Toast notification"))
+                        UiUtils.showToast(message: NSLocalizedString("当前网络不可用，请稍后重试", comment: "Toast notification"))
                     }
                 }
                 return nil
@@ -175,7 +195,7 @@ class TopicInfoViewController: UITableViewController {
                 DispatchQueue.main.async {
                     self.archivedSwitch.isOn = !isChecked
                     if let e = err as? TinodeError, case .notConnected(_) = e {
-                        UiUtils.showToast(message: NSLocalizedString("You are offline.", comment: "Toast notification"))
+                        UiUtils.showToast(message: NSLocalizedString("当前网络不可用，请稍后重试", comment: "Toast notification"))
                     }
                 }
                 return nil
@@ -195,8 +215,8 @@ class TopicInfoViewController: UITableViewController {
 
 
     @IBAction func showTopicIDQRCode(_ sender: Any) {
-        let alert = UIAlertController(title: "Scan QR code", message: "\n\n\n\n\n\n\n\n", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        let alert = UIAlertController(title: "扫描二维码", message: "\n\n\n\n\n\n\n\n", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "确定", style: .default, handler: nil))
         let qrcode = UIImageView(image: Utils.generateQRCode(from: Utils.kTopicUriPrefix + topic.name))
         alert.view.addSubview(qrcode)
         qrcode.translatesAutoresizingMaskIntoConstraints = false
@@ -245,8 +265,8 @@ extension TopicInfoViewController {
     }
 
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        if indexPath.section == TopicInfoViewController.kSectionMembers && indexPath.row != 0 {
-            return 60
+        if indexPath.section == TopicInfoViewController.kSectionMembers {
+            return 62
         } else if indexPath.section == TopicInfoViewController.kSectionBasic {
             if indexPath.row == TopicInfoViewController.kSectionBasicLastSeen && topic?.lastSeen == nil {
                 return CGFloat.leastNonzeroMagnitude
@@ -261,21 +281,37 @@ extension TopicInfoViewController {
                 (indexPath.row == TopicInfoViewController.kSectionExtendedDanger && !(topic?.isDangerous ?? false)) {
                 return CGFloat.leastNonzeroMagnitude
             }
+            return indexPath.row == TopicInfoViewController.kSectionExtendedPrivate ||
+                indexPath.row == TopicInfoViewController.kSectionExtendedDescription ? 72 : 62
         } else if indexPath.section == TopicInfoViewController.kSectionQuickAction {
             if (indexPath.row == TopicInfoViewController.kSectionQuickActionMute && topic.isSlfType) {
                 return CGFloat.leastNonzeroMagnitude
             }
+            return 62
+        } else if indexPath.section == TopicInfoViewController.kSectionActions {
+            return 62
         }
 
         return super.tableView(tableView, heightForRowAt: indexPath)
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        if section == TopicInfoViewController.kSectionMembers && !showGroupMembers {
+        if section == TopicInfoViewController.kSectionBasic ||
+            (section == TopicInfoViewController.kSectionMembers && !showGroupMembers) {
             return nil
         }
-
-        return super.tableView(tableView, titleForHeaderInSection: section)
+        switch section {
+        case TopicInfoViewController.kSectionExtended:
+            return NSLocalizedString("公开信息", comment: "Topic public information section")
+        case TopicInfoViewController.kSectionQuickAction:
+            return NSLocalizedString("会话设置", comment: "Topic settings section")
+        case TopicInfoViewController.kSectionActions:
+            return NSLocalizedString("管理", comment: "Topic management section")
+        case TopicInfoViewController.kSectionMembers:
+            return NSLocalizedString("群成员", comment: "Group members section")
+        default:
+            return nil
+        }
     }
 
     override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
@@ -288,7 +324,7 @@ extension TopicInfoViewController {
             return CGFloat.leastNormalMagnitude
         }
 
-        return super.tableView(tableView, heightForHeaderInSection: section)
+        return 38
     }
 
     override func tableView(_ tableView: UITableView, indentationLevelForRowAt indexPath: IndexPath) -> Int {
@@ -310,28 +346,28 @@ extension TopicInfoViewController {
             if acs.isModeDefined {
                 if !acs.isNone {
                     if !acs.isJoiner || (!acs.isWriter && !acs.isReader) {
-                        result.append(AccessModeLabel(color: AccessModeLabel.kColorRedBorder, text: "blocked"))
+                        result.append(AccessModeLabel(color: AccessModeLabel.kColorRedBorder, text: "已屏蔽"))
                     } else if acs.isOwner {
-                        result.append(AccessModeLabel(color: AccessModeLabel.kColorGreenBorder, text: "owner"))
+                        result.append(AccessModeLabel(color: AccessModeLabel.kColorGreenBorder, text: "群主"))
                     } else if acs.isAdmin {
-                        result.append(AccessModeLabel(color: AccessModeLabel.kColorGreenBorder, text: "admin"))
+                        result.append(AccessModeLabel(color: AccessModeLabel.kColorGreenBorder, text: "管理员"))
                     } else if !acs.isWriter {
-                        result.append(AccessModeLabel(color: AccessModeLabel.kColorYellowBorder, text: "read-only"))
+                        result.append(AccessModeLabel(color: AccessModeLabel.kColorYellowBorder, text: "只读"))
                     } else if !acs.isReader {
-                        result.append(AccessModeLabel(color: AccessModeLabel.kColorYellowBorder, text: "write-only"))
+                        result.append(AccessModeLabel(color: AccessModeLabel.kColorYellowBorder, text: "仅发送"))
                     }
                 } else {
                     // The acs.mode is 'N' (none)
                     if !acs.isNoneGiven || acs.isNoneWant {
-                        result.append(AccessModeLabel(color: AccessModeLabel.kColorGrayBorder, text: "invited"))
+                        result.append(AccessModeLabel(color: AccessModeLabel.kColorGrayBorder, text: "已邀请"))
                     } else if acs.isNoneGiven && !acs.isNoneWant {
-                        result.append(AccessModeLabel(color: AccessModeLabel.kColorGrayBorder, text: "requested"))
+                        result.append(AccessModeLabel(color: AccessModeLabel.kColorGrayBorder, text: "待审核"))
                     }
                 }
             }
         }
         if let status = status, status == .queued {
-            result.append(AccessModeLabel(color: AccessModeLabel.kColorGrayBorder, text: "pending"))
+            result.append(AccessModeLabel(color: AccessModeLabel.kColorGrayBorder, text: "待同步"))
         }
         return !result.isEmpty ? result : nil
     }
@@ -360,7 +396,7 @@ extension TopicInfoViewController {
             let pub = sub.pub
 
             cell.avatar.set(pub: pub, id: uid, deleted: false)
-            cell.title.text = isMe ? NSLocalizedString("You", comment: "This is 'you'") : (pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing user name"))
+            cell.title.text = isMe ? NSLocalizedString("我", comment: "This is 'you'") : (pub?.fn ?? NSLocalizedString("未命名成员", comment: "Placeholder for missing user name"))
             cell.title.sizeToFit()
             cell.subtitle.text = sub.acs?.givenString
             for l in cell.statusLabels {
@@ -383,6 +419,28 @@ extension TopicInfoViewController {
         }
 
         return cell
+    }
+
+    private func visibleRows(in section: Int) -> [Int] {
+        guard section < tableView.numberOfSections else { return [] }
+        return (0..<tableView.numberOfRows(inSection: section)).filter {
+            self.tableView(self.tableView, heightForRowAt: IndexPath(row: $0, section: section)) > 1
+        }
+    }
+
+    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell,
+                            forRowAt indexPath: IndexPath) {
+        let rows = visibleRows(in: indexPath.section)
+        let position = ClawTheme.groupedPosition(for: indexPath.row, visibleRows: rows)
+        ClawTheme.styleGroupedCell(
+            cell,
+            position: position,
+            backgroundColor: indexPath.section == TopicInfoViewController.kSectionBasic
+                ? ClawTheme.surfaceMuted : ClawTheme.surface)
+        cell.contentView.backgroundColor = .clear
+        cell.textLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        cell.detailTextLabel?.font = .systemFont(ofSize: 13, weight: .regular)
+        ClawTheme.normalizeIconButtons(in: cell.contentView)
     }
 
     enum MemberActions {
@@ -420,7 +478,7 @@ extension TopicInfoViewController {
             return
         }
 
-        let alert = UIAlertController(title: sub.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing user name"), message: nil, preferredStyle: .actionSheet)
+        let alert = UIAlertController(title: sub.pub?.fn ?? NSLocalizedString("未命名成员", comment: "Placeholder for missing user name"), message: nil, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: NSLocalizedString("Send message", comment: "Alert action"), style: .default, handler: { _ in
             if let topic = sub.user {
                 self.presentChatReplacingCurrentVC(with: topic)
@@ -428,32 +486,41 @@ extension TopicInfoViewController {
                 UiUtils.showToast(message: NSLocalizedString("Topic name missing", comment: "Toast notification"))
             }
         }))
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Change permissions", comment: "Alert action"), style: .default, handler: { _ in
-            guard let acsUnwrapped = sub.acs?.given, acsUnwrapped.isDefined else {
-                UiUtils.showToast(message: NSLocalizedString("Can't change permissions for this user.", comment: "Toast notification"))
-                return
-            }
-            UiUtils.showPermissionsEditDialog(over: self, acs: acsUnwrapped, callback: { perm in
-                    UiUtils.handlePermissionsChange(onTopic: self.topic, forUid: sub.user, changeType: .updateSub, newPermissions: perm)?.then(onSuccess: self.promiseSuccessHandler) }, disabledPermissions: nil)
-        }))
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Make owner", comment: "Alert action"), style: .default, handler: { _ in
-            guard let uid = sub.user else {
-                UiUtils.showToast(message: NSLocalizedString("Can't make this user owner.", comment: "Toast notification"))
-                return
-            }
-            self.topic.updateMode(uid: uid, update: "+O").then(
-                onSuccess: self.promiseSuccessHandler,
-                onFailure: UiUtils.ToastFailureHandler)
-        }))
-        let topicTitle = self.topic.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing topic name")
-        let title = sub.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing user name")
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Remove", comment: "Alert action"), style: .default, handler: { _ in
-            self.showConfirmationDialog( forAction: .remove, withUid: sub.user, message: String(format: NSLocalizedString("Remove %@ from %@?", comment: "Confirmation"), title, topicTitle))
-        }))
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Block", comment: "Alert action"), style: .default, handler: { _ in
-            self.showConfirmationDialog(forAction: .ban, withUid: sub.user, message: String(format: NSLocalizedString("Remove and ban %@ from %@?", comment: "Confirmation"), title, topicTitle))
-        }))
+        let topicTitle = self.topic.pub?.fn ?? NSLocalizedString("未命名群组", comment: "Placeholder for missing topic name")
+        let title = sub.pub?.fn ?? NSLocalizedString("未命名成员", comment: "Placeholder for missing user name")
+        if topic.isAdmin {
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Change permissions", comment: "Alert action"), style: .default, handler: { _ in
+                guard let acsUnwrapped = sub.acs?.given, acsUnwrapped.isDefined else {
+                    UiUtils.showToast(message: NSLocalizedString("Can't change permissions for this user.", comment: "Toast notification"))
+                    return
+                }
+                UiUtils.showPermissionsEditDialog(over: self, acs: acsUnwrapped, callback: { perm in
+                    UiUtils.handlePermissionsChange(onTopic: self.topic, forUid: sub.user, changeType: .updateSub, newPermissions: perm)?.then(onSuccess: self.promiseSuccessHandler)
+                }, disabledPermissions: nil)
+            }))
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Remove", comment: "Alert action"), style: .destructive, handler: { _ in
+                self.showConfirmationDialog(forAction: .remove, withUid: sub.user, message: String(format: NSLocalizedString("Remove %@ from %@?", comment: "Confirmation"), title, topicTitle))
+            }))
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Block", comment: "Alert action"), style: .destructive, handler: { _ in
+                self.showConfirmationDialog(forAction: .ban, withUid: sub.user, message: String(format: NSLocalizedString("Remove and ban %@ from %@?", comment: "Confirmation"), title, topicTitle))
+            }))
+        }
+        if topic.isOwner {
+            alert.addAction(UIAlertAction(title: NSLocalizedString("Make owner", comment: "Alert action"), style: .default, handler: { _ in
+                guard let uid = sub.user else {
+                    UiUtils.showToast(message: NSLocalizedString("Can't make this user owner.", comment: "Toast notification"))
+                    return
+                }
+                self.topic.updateMode(uid: uid, update: "+O").then(
+                    onSuccess: self.promiseSuccessHandler,
+                    onFailure: UiUtils.ToastFailureHandler)
+            }))
+        }
         alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Alert action"), style: .cancel, handler: nil))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = tableView
+            popover.sourceRect = tableView.rectForRow(at: indexPath)
+        }
         self.present(alert, animated: true)
     }
 }
@@ -461,11 +528,22 @@ extension TopicInfoViewController {
 extension TopicInfoViewController: EditMembersDelegate {
     func editMembersInitialSelection(_: UIView) -> [ContactHolder] {
         return subscriptions?.compactMap {
+            guard ContactsManager.isDirectContactId($0.user) else { return nil }
             return ContactHolder(pub: $0.pub, uniqueId: $0.user)
         } ?? []
     }
 
     func editMembersDidEndEditing(_: UIView, added: [String], removed: [String], completion: @escaping (Error?) -> Void) {
+        guard added.allSatisfy({ ContactsManager.isDirectContactId($0) && !tinode.isMe(uid: $0) }),
+              removed.allSatisfy({ ContactsManager.isDirectContactId($0) }) else {
+            completion(NSError(
+                domain: "app.veilping.clawoschat.group-members",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: NSLocalizedString(
+                    "群成员只能选择联系人账号",
+                    comment: "Group member type validation error")]))
+            return
+        }
         enum MemberChange {
             case add(String)
             case remove(String)
@@ -501,6 +579,8 @@ extension TopicInfoViewController: EditMembersDelegate {
     }
 
     func editMembersWillChangeState(_: UIView, uid: String, added: Bool, initiallySelected: Bool) -> Bool {
-        return !tinode.isMe(uid: uid) && (added || topic.isAdmin || !initiallySelected)
+        return ContactsManager.isDirectContactId(uid)
+            && !tinode.isMe(uid: uid)
+            && (added || topic.isAdmin || !initiallySelected)
     }
 }

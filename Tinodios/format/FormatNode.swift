@@ -87,9 +87,9 @@ class FormatNode: CustomStringConvertible {
         /// Size of the phone icon (video calls).
         static let kCallIconSize: CGFloat = 28
         /// Size of the play/pause icon (square)
-        static let kPlayIconSize: CGFloat = 28
+        static let kPlayIconSize: CGFloat = 24
         /// Size of the audio wave.
-        static let kWaveSize = CGSize(width: 144, height: 32)
+        static let kWaveSize = CGSize(width: 120, height: 28)
         /// URL and Button text color
         static let kLinkColor = UIColor.link //(red: 0, green: 122/255, blue: 1, alpha: 1)
         static let kQuoteTextColorAdj = 0.7 // Adjustment to font alpha in quote to make it less prominent.
@@ -362,9 +362,6 @@ class FormatNode: CustomStringConvertible {
     private func createAudioAttachmentString(_ attachment: Attachment, withData bits: Data?, withRef ref: String?, defaultAttrs attributes: [NSAttributedString.Key: Any], maxSize size: CGSize) -> NSAttributedString {
 
         let baseFont = attributes[.font] as! UIFont
-        var baseUrl = URLComponents(string: "tinode://\(ref != nil ? "/audio/large" : "/audio/small")")!
-        baseUrl.queryItems = [URLQueryItem(name: "key", value: (attachment.draftyEntityKey != nil ? String(attachment.draftyEntityKey!) : nil))]
-
         let attributed = NSMutableAttributedString(string: "\u{2009}")
         attributed.beginEditing()
 
@@ -373,8 +370,19 @@ class FormatNode: CustomStringConvertible {
             attrs[.foregroundColor] = fg.withAlphaComponent(Constants.kSecondaryColorAlpha)
         }
 
-        // Play icon.
-        let play = MultiImageTextAttachment(images: [UIImage(named: "play.circle.fill")!.withRenderingMode(.alwaysTemplate), UIImage(named: "pause.circle")!.withRenderingMode(.alwaysTemplate)])
+        // Compact voice row: speaker icon and duration on one line.
+        let duration = attachment.duration != nil ? AbstractFormatter.millisToTime(millis: attachment.duration!) : "-:--"
+        let voiceMaxWidth = MessageBubbleLayoutPolicy.voiceWidth(
+            durationMs: attachment.duration,
+            maxWidth: MessageBubbleLayoutPolicy.maxContentWidth(availableWidth: size.width))
+        guard voiceMaxWidth >= Constants.kPlayIconSize else {
+            return NSAttributedString(string: duration, attributes: attributes)
+        }
+        guard let speakerImage = ClawTheme.symbol("speaker.wave.2.fill", pointSize: Constants.kPlayIconSize),
+              let mutedSpeakerImage = ClawTheme.symbol("speaker.slash.fill", pointSize: Constants.kPlayIconSize) else {
+            return NSAttributedString(string: duration, attributes: attributes)
+        }
+        let play = MultiImageTextAttachment(images: [speakerImage.withRenderingMode(.alwaysTemplate), mutedSpeakerImage.withRenderingMode(.alwaysTemplate)])
         play.type = "audio/toggle-play"
         play.draftyEntityKey = attachment.draftyEntityKey
         play.delegate = PlayTextAttachmentDelegate(parent: play)
@@ -383,41 +391,9 @@ class FormatNode: CustomStringConvertible {
         var second = NSMutableAttributedString()
         second.beginEditing()
         second.append(NSAttributedString(attachment: play))
-        second.addAttributes(attrs, range: NSRange(location: 0, length: attributed.length))
-        second.endEditing()
-
-        attributed.append(second)
-
-        let wave = WaveTextAttachment(frame: CGRect(origin: CGPoint(x: 0, y: 0), size: Constants.kWaveSize), data: attachment.preview)
-        wave.type = "audio/seek"
-        wave.draftyEntityKey = attachment.draftyEntityKey
-        wave.delegate = WaveTextAttachmentDelegate(parent: wave)
-        if let duration = attachment.duration, duration > 0 {
-            wave.duration = duration
-        }
-        if let fg = attributes[.foregroundColor] as? UIColor {
-            wave.pastBarColor = fg.withAlphaComponent(0.7).cgColor
-            wave.futureBarColor = fg.withAlphaComponent(0.5).cgColor
-            wave.update(recalc: false)
-        }
-        attributed.append(NSAttributedString(attachment: wave))
-
-        // Linebreak.
-        attributed.append(NSAttributedString(string: "\u{2009}\n", attributes: [NSAttributedString.Key.font: baseFont]))
-
-        // Second line: duration
-        let duration = attachment.duration != nil ? AbstractFormatter.millisToTime(millis: attachment.duration!) : "-:--"
-        second = NSMutableAttributedString(string: duration)
-        second.beginEditing()
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.firstLineHeadIndent = Constants.kPlayIconSize + baseFont.capHeight * 0.25
-        paragraph.lineSpacing = 0
-        paragraph.lineHeightMultiple = 0.5
-        var strAttrs: [NSAttributedString.Key: Any] = [NSAttributedString.Key.paragraphStyle: paragraph]
-        if let fg = attributes[.foregroundColor] {
-            strAttrs[NSAttributedString.Key.foregroundColor] = fg
-        }
-        second.addAttributes(strAttrs, range: NSRange(location: 0, length: second.length))
+        second.append(NSAttributedString(string: " "))
+        second.append(NSAttributedString(string: duration, attributes: attrs))
+        second.addAttributes(attrs, range: NSRange(location: 0, length: second.length))
         second.endEditing()
 
         attributed.append(second)

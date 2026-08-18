@@ -33,9 +33,6 @@ struct VideoPreviewContent {
 
 class VideoPreviewController: UIViewController {
     @IBOutlet weak var videoView: UIView!
-    @IBOutlet weak var fileNameLabel: UILabel!
-    @IBOutlet weak var contentTypeLabel: UILabel!
-    @IBOutlet weak var sizeLabel: UILabel!
 
     @IBOutlet weak var videoSlider: UISlider!
     @IBOutlet weak var currentTimeLabel: UILabel!
@@ -115,9 +112,6 @@ class VideoPreviewController: UIViewController {
             sendVideoBar.replyPreviewDelegate = replyPreviewDelegate
             // Hide [Save video] button.
             navigationItem.rightBarButtonItem = nil
-            // Hide image details panel.
-            //imageDetailsPanel.bounds = CGRect()
-            break
         case .remote(let bits, let ref):
             if let ref = ref, let tinodeUrl = URL(string: ref, relativeTo: Cache.tinode.baseURL(useWebsocketProtocol: false)) {
                 url = Cache.tinode.addAuthQueryParams(tinodeUrl)
@@ -130,20 +124,6 @@ class VideoPreviewController: UIViewController {
         sendVideoBar.togglePreviewBar(with: content.pendingMessagePreview)
         self.duration = content.duration
 
-        // Fill out details panel for the received video.
-        fileNameLabel.text = content.fileName ?? NSLocalizedString("undefined", comment: "Placeholder for missing file name")
-        contentTypeLabel.text = content.contentType ?? NSLocalizedString("undefined", comment: "Placeholder for missing file type")
-
-        var sizeString = "?? KB"
-        if let size = content.size {
-            sizeString = UiUtils.bytesToHumanSize(size)
-        }
-        if let width = content.width, let height = content.height {
-            sizeString += "; \(width)×\(height)"
-        } else {
-            sizeString += "; ??×??"
-        }
-        sizeLabel.text = sizeString
         currentTimeLabel.text = "--:--"
 
         updatePlayPauseButton(isPlaying: false)
@@ -205,11 +185,8 @@ class VideoPreviewController: UIViewController {
     }
 
     private func setInterfaceColors() {
-        if traitCollection.userInterfaceStyle == .dark {
-            self.view.backgroundColor = .black
-        } else {
-            self.view.backgroundColor = .white
-        }
+        view.backgroundColor = .black
+        videoView.backgroundColor = .black
     }
 
     private func updatePlayPauseButton(isPlaying: Bool) {
@@ -314,8 +291,8 @@ extension VideoPreviewController: VLCMediaPlayerDelegate {
             }
             updatePlayPauseButton(isPlaying: !shouldPause)
         case .opening:
-            controlsView.backgroundColor = .white
-            controlsView.alpha = 0.5
+            controlsView.backgroundColor = .black
+            controlsView.alpha = 0.65
             spinner.startAnimating()
             spinner.isHidden = false
         case .buffering:

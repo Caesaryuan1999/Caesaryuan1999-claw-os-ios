@@ -36,6 +36,17 @@ class SettingsHelpViewController: UITableViewController {
     }
 
     private func setup() {
+        title = NSLocalizedString("帮助", comment: "Help settings title")
+        view.backgroundColor = ClawTheme.background
+        ClawTheme.styleList(tableView, rowHeight: SettingsHelpViewController.kDefaultRowHeight)
+        [contactUs, termsOfUse, privacyPolicy].forEach { ClawTheme.styleTableCell($0) }
+        appVersion.textColor = ClawTheme.muted
+        serviceNameLabel.textColor = ClawTheme.muted
+        serviceLinkLabel.textColor = ClawTheme.muted
+        serverAddressLabel.textColor = ClawTheme.muted
+        logoView.layer.cornerRadius = 16
+        logoView.layer.cornerCurve = .continuous
+        logoView.clipsToBounds = true
         UiUtils.setupTapRecognizer(
             forView: privacyPolicy,
             action: #selector(SettingsHelpViewController.privacyPolicyClicked),
@@ -57,13 +68,9 @@ class SettingsHelpViewController: UITableViewController {
         self.privacyUrl = URL(string: SharedUtils.privacyUrl ?? "https://veilping.app/privacy.html")
 
         // Logo.
-        if let logo = SharedUtils.largeIcon {
-            logoView.image = logo
-        }
+        logoView.image = UIImage(named: "logo-ios")
         // Service name.
-        if let serviceName = SharedUtils.serviceName {
-            serviceNameLabel.text = serviceName
-        }
+        serviceNameLabel.text = NSLocalizedString("CLAW OS", comment: "Product name")
         // Service link (strip path from privacy url).
         var components = URLComponents()
         components.scheme = privacyUrl!.scheme

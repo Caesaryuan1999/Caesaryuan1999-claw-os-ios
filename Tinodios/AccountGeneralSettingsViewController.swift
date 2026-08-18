@@ -50,19 +50,29 @@ class AccountGeneralSettingsViewController: UITableViewController {
     }
 
     private func setup() {
+        title = NSLocalizedString("通用设置", comment: "Account general settings title")
+        view.backgroundColor = ClawTheme.background
+        ClawTheme.styleList(tableView, rowHeight: UITableView.automaticDimension)
         self.tinode = Cache.tinode
         self.me = self.tinode.getMeTopic()!
 
+        ClawTheme.styleTextField(nameTextField)
         nameTextField.delegate = self
         nameTextField.tag = AccountGeneralSettingsViewController.kPersonalName
 
+        ClawTheme.styleTextField(aliasTextField)
         aliasTextField.delegate = self
         aliasTextField.tag = AccountGeneralSettingsViewController.kPersonalAlias
         aliasTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
         aliasTextField.isHidden = true
 
+        ClawTheme.styleTextView(descriptionTextView)
         descriptionTextView.delegate = self
         descriptionTextView.tag = AccountGeneralSettingsViewController.kPersonalDescription
+
+        avatarImage.layer.borderWidth = 2
+        avatarImage.layer.borderColor = ClawTheme.border.cgColor
+        ClawTheme.styleRoundedIconButton(loadAvatarButton, symbolName: "camera.fill")
 
         self.imagePicker = ImagePicker(presentationController: self, delegate: self, editable: true)
     }

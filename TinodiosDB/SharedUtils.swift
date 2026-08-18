@@ -18,6 +18,11 @@ public class SharedUtils {
     static public let kTinodePrefLastLogin = "tinodeLastLogin"
     static public let kTinodePrefReadReceipts = "tinodePrefSendReadReceipts"
     static public let kTinodePrefTypingNotifications = "tinodePrefTypingNoficications"
+    static public let kClawPrefPrivateMessageNotifications = "clawPrefPrivateMessageNotifications"
+    static public let kClawPrefGroupMessageNotifications = "clawPrefGroupMessageNotifications"
+    static public let kClawPrefCallNotifications = "clawPrefCallNotifications"
+    static public let kClawPrefMessagePreview = "clawPrefMessagePreview"
+    static public let kClawPrefInAppVibration = "clawPrefInAppVibration"
     static public let kTinodePrefAppLaunchedBefore = "tinodePrefAppLaunchedBefore"
 
     static public let kTinodePrefTosUrl = "tinodePrefTosUrl"
@@ -197,7 +202,12 @@ public class SharedUtils {
         // Give default values to UserDefault keys.
         kAppDefaults.register(defaults: [
             kTinodePrefReadReceipts: true,
-            kTinodePrefTypingNotifications: true
+            kTinodePrefTypingNotifications: true,
+            kClawPrefPrivateMessageNotifications: true,
+            kClawPrefGroupMessageNotifications: true,
+            kClawPrefCallNotifications: true,
+            kClawPrefMessagePreview: false,
+            kClawPrefInAppVibration: true
         ])
 
         // Make sure changes are copied.

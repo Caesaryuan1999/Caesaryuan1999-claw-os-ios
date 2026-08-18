@@ -167,9 +167,10 @@ class MessageCell: UICollectionViewCell {
         contentView.addSubview(senderNameLabel)
         contentView.addSubview(containerView)
         containerView.addSubview(content)
-        containerView.addSubview(timestampLabel)
-        containerView.addSubview(deliveryMarker)
-        containerView.addSubview(editedMarker)
+        // Metadata belongs to the cell, not the colored message bubble.
+        contentView.addSubview(timestampLabel)
+        contentView.addSubview(deliveryMarker)
+        contentView.addSubview(editedMarker)
         contentView.addSubview(avatarView)
         contentView.addSubview(bulkSelectionBadge)
         bulkSelectionBadge.addSubview(bulkSelectionCheckmark)
@@ -212,6 +213,11 @@ class MessageCell: UICollectionViewCell {
         progressView.isHidden = true
 
         isDeleted = false
+        containerView.backgroundColor = nil
+        containerView.layer.mask = nil
+        containerView.layer.cornerRadius = 0
+        containerView.layer.masksToBounds = false
+        content.backgroundColor = nil
 
         audioPlayer?.stop()
         audioPlayer = nil

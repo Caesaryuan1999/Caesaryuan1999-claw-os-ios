@@ -8,31 +8,47 @@ import UIKit
 import TinodeSDK
 
 public protocol EditMembersDelegate: AnyObject {
-    // Asks for the UIDs and contact info of initially selected members
     func editMembersInitialSelection(_: UIView) -> [ContactHolder]
-    // Called when the editor completes selection.
     func editMembersDidEndEditing(_: UIView, added: [String], removed: [String], completion: @escaping (Error?) -> Void)
-    // Called when member is added or removed. Return 'true' to continue, 'false' to reject the change.
     func editMembersWillChangeState(_: UIView, uid: String, added: Bool, initiallySelected: Bool) -> Bool
 }
 
 class EditMembersViewController: UIViewController, UITableViewDataSource {
     private var contactsManager = ContactsManager()
-    private var contacts: [ContactHolder]!
-    private var selectedContacts = [IndexPath]()
+    private var contacts = [ContactHolder]()
+    private var filteredContacts = [ContactHolder]()
     private var initialIds = Set<String>()
     private var selectedIds = Set<String>()
+    private var selectedContactIds = [String]()
     private var isSaving = false
+    private var wasNavigationBarHidden = false
+
+    private let headerTitleLabel = UILabel()
+    private let headerSubtitleLabel = UILabel()
+    private let selectedSectionLabel = UILabel()
+    private let contactsSectionLabel = UILabel()
+    private let backButton = UIButton(type: .system)
+    private let primaryButton = UIButton(type: .system)
 
     weak var delegate: EditMembersDelegate?
 
+    private lazy var searchController: UISearchController = {
+        let controller = UISearchController(searchResultsController: nil)
+        controller.searchResultsUpdater = self
+        controller.obscuresBackgroundDuringPresentation = false
+        controller.searchBar.autocapitalizationType = .none
+        controller.searchBar.placeholder = NSLocalizedString("搜索联系人", comment: "Member search placeholder")
+        ClawTheme.styleSearchBar(controller.searchBar)
+        controller.searchBar.delegate = self
+        return controller
+    }()
     private lazy var doneButtonItem = UIBarButtonItem(
-        title: NSLocalizedString("Done", comment: "Button title"),
+        title: NSLocalizedString("完成", comment: "Button title"),
         style: .done,
         target: self,
         action: #selector(saveClicked(_:)))
     private lazy var cancelButtonItem = UIBarButtonItem(
-        title: NSLocalizedString("Cancel", comment: "Button title"),
+        title: NSLocalizedString("取消", comment: "Button title"),
         style: .plain,
         target: self,
         action: #selector(cancelClicked(_:)))
@@ -44,105 +60,260 @@ class EditMembersViewController: UIViewController, UITableViewDataSource {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.membersTableView.dataSource = self
-        self.membersTableView.allowsMultipleSelection = true
-        self.membersTableView.delegate = self
-        self.membersTableView.register(UINib(nibName: "ContactViewCell", bundle: nil), forCellReuseIdentifier: "ContactViewCell")
+        membersTableView.dataSource = self
+        membersTableView.delegate = self
+        membersTableView.allowsMultipleSelection = true
+        membersTableView.register(UINib(nibName: "ContactViewCell", bundle: nil), forCellReuseIdentifier: "ContactViewCell")
+        ClawTheme.styleList(membersTableView, rowHeight: 70)
+        view.accessibilityIdentifier = "claw.group.members.screen"
+        membersTableView.accessibilityIdentifier = "claw.group.members.list"
+        selectedCollectionView.accessibilityIdentifier = "claw.group.members.selected"
+        searchController.searchBar.accessibilityIdentifier = "claw.group.members.search"
+        primaryButton.accessibilityIdentifier = "claw.group.members.done"
+        backButton.accessibilityIdentifier = "claw.group.members.cancel"
 
-        self.selectedCollectionView.dataSource = self
-        self.selectedCollectionView.register(UINib(nibName: "SelectedMemberViewCell", bundle: nil), forCellWithReuseIdentifier: "SelectedMemberViewCell")
-
-        self.navigationItem.leftBarButtonItem = cancelButtonItem
-        self.navigationItem.rightBarButtonItem = doneButtonItem
-
+        selectedCollectionView.dataSource = self
+        selectedCollectionView.register(UINib(nibName: "SelectedMemberViewCell", bundle: nil), forCellWithReuseIdentifier: "SelectedMemberViewCell")
+        rebuildPremiumMemberSelection()
         setup()
     }
 
-    private func setup() {
-        var uid2contact = [String: Int]()
-        let subscriptions = delegate?.editMembersInitialSelection(editMembersView)
-        if let subs = subscriptions {
-            for (idx, contact) in subs.enumerated() {
-                if let uid = contact.uniqueId {
-                    selectedIds.insert(uid)
-                    initialIds.insert(uid)
-                    uid2contact[uid] = idx
-                }
-            }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        wasNavigationBarHidden = navigationController?.isNavigationBarHidden ?? false
+        navigationController?.setNavigationBarHidden(true, animated: false)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(wasNavigationBarHidden, animated: false)
+    }
+
+    private func rebuildPremiumMemberSelection() {
+        let table = membersTableView!
+        let collection = selectedCollectionView!
+        table.removeFromSuperview()
+        collection.removeFromSuperview()
+        view.subviews.forEach { $0.removeFromSuperview() }
+
+        view.backgroundColor = ClawTheme.surface
+        editMembersView.backgroundColor = ClawTheme.surface
+
+        ClawTheme.styleIconButton(backButton, symbolName: "chevron.left", pointSize: 20, tintColor: ClawTheme.ink)
+        backButton.addTarget(self, action: #selector(cancelClicked(_:)), for: .touchUpInside)
+
+        headerTitleLabel.font = .systemFont(ofSize: 20, weight: .bold)
+        headerTitleLabel.textColor = ClawTheme.ink
+        headerSubtitleLabel.font = .systemFont(ofSize: 11, weight: .regular)
+        headerSubtitleLabel.textColor = ClawTheme.muted
+
+        let searchBar = searchController.searchBar
+        searchBar.searchBarStyle = .minimal
+        searchBar.backgroundImage = UIImage()
+
+        [selectedSectionLabel, contactsSectionLabel].forEach { label in
+            label.font = .systemFont(ofSize: 14, weight: .semibold)
+            label.textColor = ClawTheme.ink
+        }
+        selectedSectionLabel.text = NSLocalizedString("已选择", comment: "Selected group members section")
+        contactsSectionLabel.text = NSLocalizedString("联系人", comment: "Contacts section")
+
+        if let flow = collection.collectionViewLayout as? UICollectionViewFlowLayout {
+            flow.scrollDirection = .horizontal
+            flow.minimumLineSpacing = 8
+            flow.minimumInteritemSpacing = 8
+            flow.sectionInset = .zero
+        }
+        collection.delegate = self
+        collection.backgroundColor = .clear
+        collection.showsHorizontalScrollIndicator = false
+        collection.alwaysBounceHorizontal = true
+
+        table.backgroundColor = ClawTheme.surface
+        table.separatorColor = ClawTheme.border
+        table.separatorInset = UIEdgeInsets(top: 0, left: 88, bottom: 0, right: 18)
+
+        ClawTheme.stylePrimaryButton(primaryButton)
+        primaryButton.layer.cornerRadius = 8
+        primaryButton.addTarget(self, action: #selector(saveClicked(_:)), for: .touchUpInside)
+
+        [backButton, headerTitleLabel, headerSubtitleLabel, searchBar,
+         selectedSectionLabel, collection, contactsSectionLabel, table, primaryButton].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview($0)
         }
 
-        var presentIds = Set<String>()
-        contacts = contactsManager.fetchContacts()
-        for i in 0..<contacts.count {
-            let c = contacts[i]
-            if let uid = c.uniqueId, userSelected(with: uid) {
-                selectedContacts.append(IndexPath(row: i, section: 0))
-                presentIds.insert(uid)
+        let safe = view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            backButton.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+            backButton.topAnchor.constraint(equalTo: safe.topAnchor),
+            backButton.widthAnchor.constraint(equalToConstant: 44),
+            backButton.heightAnchor.constraint(equalToConstant: 44),
+
+            headerTitleLabel.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 58),
+            headerTitleLabel.topAnchor.constraint(equalTo: safe.topAnchor, constant: 4),
+            headerTitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: safe.trailingAnchor, constant: -18),
+            headerSubtitleLabel.leadingAnchor.constraint(equalTo: headerTitleLabel.leadingAnchor),
+            headerSubtitleLabel.topAnchor.constraint(equalTo: headerTitleLabel.bottomAnchor, constant: 1),
+            headerSubtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: safe.trailingAnchor, constant: -18),
+
+            searchBar.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 18),
+            searchBar.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -18),
+            searchBar.topAnchor.constraint(equalTo: headerSubtitleLabel.bottomAnchor, constant: 16),
+            searchBar.heightAnchor.constraint(equalToConstant: 48),
+
+            selectedSectionLabel.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 18),
+            selectedSectionLabel.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 16),
+            selectedSectionLabel.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -18),
+            collection.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 18),
+            collection.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -18),
+            collection.topAnchor.constraint(equalTo: selectedSectionLabel.bottomAnchor, constant: 8),
+            collection.heightAnchor.constraint(equalToConstant: 70),
+
+            contactsSectionLabel.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 18),
+            contactsSectionLabel.topAnchor.constraint(equalTo: collection.bottomAnchor, constant: 8),
+            contactsSectionLabel.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -18),
+            table.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            table.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            table.topAnchor.constraint(equalTo: contactsSectionLabel.bottomAnchor, constant: 6),
+            table.bottomAnchor.constraint(equalTo: primaryButton.topAnchor, constant: -12),
+
+            primaryButton.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 18),
+            primaryButton.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -18),
+            primaryButton.bottomAnchor.constraint(equalTo: safe.bottomAnchor, constant: -12),
+            primaryButton.heightAnchor.constraint(equalToConstant: 52)
+        ])
+    }
+
+    private func setup() {
+        var initialContacts = [String: ContactHolder]()
+        for contact in delegate?.editMembersInitialSelection(editMembersView) ?? [] {
+            guard let uid = contact.uniqueId,
+                  ContactsManager.isDirectContactId(uid),
+                  !Cache.tinode.isMe(uid: uid) else { continue }
+            initialIds.insert(uid)
+            selectedIds.insert(uid)
+            initialContacts[uid] = contact
+        }
+
+        contacts = contactsManager.fetchContacts().filter { contact in
+            guard let uid = contact.uniqueId else { return false }
+            return ContactsManager.isDirectContactId(uid) && !Cache.tinode.isMe(uid: uid)
+        }
+        let knownIds = Set(contacts.compactMap { $0.uniqueId })
+        for uid in initialIds.subtracting(knownIds).sorted() {
+            if ContactsManager.isDirectContactId(uid), let contact = initialContacts[uid] {
+                contacts.append(contact)
             }
         }
-        let unknownIds = initialIds.subtracting(presentIds)
-        for uid in unknownIds {
-            if let idx = uid2contact[uid], let c = subscriptions?[idx] {
-                contacts.append(c)
-                selectedContacts.append(IndexPath(row: contacts.count - 1, section: 0))
-            }
+        filteredContacts = contacts
+        selectedContactIds = contacts.compactMap { contact in
+            guard let uid = contact.uniqueId, selectedIds.contains(uid) else { return nil }
+            return uid
         }
         updateSelectionSummary()
     }
 
     private func updateSelectionSummary() {
         let selectedCount = selectedIds.filter { !Cache.tinode.isMe(uid: $0) }.count
-        navigationItem.title = String(
-            format: NSLocalizedString("Selected members (%d)", comment: "View title with selected member count"),
-            selectedCount)
-        doneButtonItem.title = String(
-            format: NSLocalizedString("Done (%d)", comment: "Button title with selected member count"),
-            selectedCount)
+        let creatingGroup = delegate is NewGroupViewController
+        headerTitleLabel.text = creatingGroup
+            ? NSLocalizedString("创建群聊", comment: "Group creation member selection title")
+            : NSLocalizedString("管理成员", comment: "Group member management title")
+        headerSubtitleLabel.text = String(
+            format: NSLocalizedString("已选择 %d 人", comment: "Selected group member count"), selectedCount)
+        let buttonFormat = creatingGroup
+            ? NSLocalizedString("下一步（%d）", comment: "Continue with selected members")
+            : NSLocalizedString("保存（%d）", comment: "Save selected group members")
+        primaryButton.setTitle(String(format: buttonFormat, selectedCount), for: .normal)
+        primaryButton.isEnabled = !isSaving && (!creatingGroup || selectedCount > 0)
     }
-    func addUser(with uniqueId: String) {
-        self.selectedIds.insert(uniqueId)
+
+    private func contact(for uid: String) -> ContactHolder? {
+        return contacts.first { $0.uniqueId == uid }
     }
-    func removeUser(with uniqueId: String) {
-        self.selectedIds.remove(uniqueId)
+
+    private func setUser(_ uid: String, selected: Bool) {
+        guard ContactsManager.isDirectContactId(uid), !Cache.tinode.isMe(uid: uid) else { return }
+        if selected {
+            guard selectedIds.insert(uid).inserted else { return }
+            selectedContactIds.append(uid)
+        } else {
+            selectedIds.remove(uid)
+            selectedContactIds.removeAll { $0 == uid }
+        }
+        selectedCollectionView.reloadData()
+        membersTableView.reloadData()
+        updateSelectionSummary()
     }
-    func userSelected(with uniqueId: String) -> Bool {
-        return self.selectedIds.contains(uniqueId)
-    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return contacts.count
+        return filteredContacts.count
     }
+
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ContactViewCell", for: indexPath) as! ContactViewCell
-
-        // Configure the cell...
-        let contact = contacts[indexPath.row]
+        let contact = filteredContacts[indexPath.row]
+        let selected = contact.uniqueId.map { selectedIds.contains($0) } ?? false
 
         cell.avatar.set(pub: contact.pub, id: contact.uniqueId, deleted: false)
-        cell.title.text = contact.pub?.fn
-        cell.title.sizeToFit()
+        cell.title.text = contact.pub?.fn ?? contact.accountName ?? contact.uniqueId
+        cell.title.font = .systemFont(ofSize: 15, weight: .semibold)
+        cell.title.textColor = ClawTheme.ink
         cell.subtitle.text = contact.subtitle ?? contact.accountName ?? ""
-        cell.subtitle.sizeToFit()
-        cell.accessoryType = cell.isSelected ? .checkmark : .none
-
-        // Data reload clears selection. If we already have any selected users,
-        // select the corresponding rows in the table.
-        if let uniqueId = contact.uniqueId, self.userSelected(with: uniqueId) {
+        cell.subtitle.font = .systemFont(ofSize: 12, weight: .regular)
+        cell.subtitle.textColor = ClawTheme.muted
+        cell.tintColor = ClawTheme.primary
+        cell.backgroundColor = ClawTheme.surface
+        cell.selectedBackgroundView = {
+            let selection = UIView()
+            selection.backgroundColor = ClawTheme.brandSoft
+            return selection
+        }()
+        cell.accessoryType = .none
+        cell.accessoryView = selectionIndicator(selected: selected)
+        if selected {
             tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
-            cell.accessoryType = .checkmark
+        } else {
+            tableView.deselectRow(at: indexPath, animated: false)
         }
-
         return cell
     }
+
+    private func selectionIndicator(selected: Bool) -> UIView {
+        let indicator = UIView(frame: CGRect(x: 0, y: 0, width: 24, height: 24))
+        indicator.layer.cornerRadius = 12
+        indicator.layer.borderWidth = selected ? 0 : 1.5
+        indicator.layer.borderColor = ClawTheme.border.cgColor
+        indicator.backgroundColor = selected ? ClawTheme.primary : .clear
+        if selected {
+            let check = UIImageView(image: ClawTheme.symbol("checkmark", pointSize: 11, weight: .bold))
+            check.tintColor = .white
+            check.contentMode = .center
+            check.frame = indicator.bounds
+            indicator.addSubview(check)
+        }
+        return indicator
+    }
+
     @IBAction func saveClicked(_ sender: Any) {
         guard !isSaving else { return }
 
-        let deltas = getDeltas()
-        let additions = deltas.0
-        let deletions = deltas.1
+        let validSelectedIds = Set(selectedIds.filter {
+            ContactsManager.isDirectContactId($0) && !Cache.tinode.isMe(uid: $0)
+        })
+        let validInitialIds = Set(initialIds.filter {
+            ContactsManager.isDirectContactId($0) && !Cache.tinode.isMe(uid: $0)
+        })
+        selectedIds = validSelectedIds
+        initialIds = validInitialIds
+        let additions = validSelectedIds.subtracting(validInitialIds).sorted()
+        let deletions = validInitialIds.subtracting(validSelectedIds).sorted()
         isSaving = true
-        doneButtonItem.isEnabled = false
-        cancelButtonItem.isEnabled = false
-        navigationItem.title = NSLocalizedString("Saving changes", comment: "View title while group member changes are being saved")
+        primaryButton.isEnabled = false
+        backButton.isEnabled = false
+        searchController.searchBar.isUserInteractionEnabled = false
+        headerSubtitleLabel.text = NSLocalizedString("正在保存更改", comment: "View title while group member changes are being saved")
 
         guard let delegate = delegate else {
             finishSaving(error: nil)
@@ -161,6 +332,7 @@ class EditMembersViewController: UIViewController, UITableViewDataSource {
     }
 
     private func closeEditor() {
+        searchController.isActive = false
         if navigationController?.presentingViewController != nil {
             navigationController?.dismiss(animated: true)
         } else if presentingViewController != nil {
@@ -173,80 +345,99 @@ class EditMembersViewController: UIViewController, UITableViewDataSource {
     private func finishSaving(error: Error?) {
         if let error = error {
             isSaving = false
-            doneButtonItem.isEnabled = true
-            cancelButtonItem.isEnabled = true
+            backButton.isEnabled = true
+            searchController.searchBar.isUserInteractionEnabled = true
             updateSelectionSummary()
             UiUtils.ToastFailureHandler(err: error)
             return
         }
         closeEditor()
     }
+}
 
-    private func getDeltas() -> ([String], [String]) {
-        let additions = selectedIds.subtracting(initialIds)
-        let deletions = initialIds.subtracting(selectedIds)
-        return (additions.map { $0 }, deletions.map { $0 })
+extension EditMembersViewController: UISearchResultsUpdating, UISearchBarDelegate {
+    func updateSearchResults(for searchController: UISearchController) {
+        applyFilter(searchController.searchBar.text)
+    }
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        applyFilter(searchText)
+    }
+
+    private func applyFilter(_ text: String?) {
+        let query = text?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+        if query.isEmpty {
+            filteredContacts = contacts
+        } else {
+            filteredContacts = contacts.filter { contact in
+                [contact.pub?.fn, contact.accountName, contact.subtitle]
+                    .compactMap { $0?.lowercased() }
+                    .contains { $0.contains(query) }
+            }
+        }
+        membersTableView.reloadData()
     }
 }
 
 extension EditMembersViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, willSelectRowAt indexPath: IndexPath) -> IndexPath? {
-        guard let uid = contacts[indexPath.row].uniqueId else {
-            Cache.log.debug("EditMembersVC - no unique id for user at %d", indexPath.row)
-            return nil
-        }
-
-        return delegate?.editMembersWillChangeState(editMembersView, uid: uid, added: true, initiallySelected: initialIds.contains(uid)) ?? true ? indexPath : nil
+        guard let uid = filteredContacts[indexPath.row].uniqueId,
+              ContactsManager.isDirectContactId(uid),
+              !Cache.tinode.isMe(uid: uid) else { return nil }
+        let allowed = delegate?.editMembersWillChangeState(
+            editMembersView, uid: uid, added: true, initiallySelected: initialIds.contains(uid)) ?? true
+        return allowed ? indexPath : nil
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let uid = contacts[indexPath.row].uniqueId else {
-            Cache.log.debug("EditMembersVC - no unique id for user at %d", indexPath.row)
-            return
-        }
-
-        tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        self.addUser(with: uid)
-        selectedContacts.append(indexPath)
-        selectedCollectionView.insertItems(at: [IndexPath(item: selectedContacts.count - 1, section: 0)])
-        updateSelectionSummary()
+        guard let uid = filteredContacts[indexPath.row].uniqueId,
+              ContactsManager.isDirectContactId(uid),
+              !Cache.tinode.isMe(uid: uid) else { return }
+        setUser(uid, selected: true)
     }
 
     func tableView(_ tableView: UITableView, willDeselectRowAt indexPath: IndexPath) -> IndexPath? {
-        guard let uid = contacts[indexPath.row].uniqueId else {
-            Cache.log.debug("EditMembersVC - no unique id for user at %d", indexPath.row)
-            return indexPath
-        }
-
-        return delegate?.editMembersWillChangeState(editMembersView, uid: uid, added: false, initiallySelected: initialIds.contains(uid)) ?? true ? indexPath : nil
+        guard let uid = filteredContacts[indexPath.row].uniqueId,
+              ContactsManager.isDirectContactId(uid),
+              !Cache.tinode.isMe(uid: uid) else { return nil }
+        let allowed = delegate?.editMembersWillChangeState(
+            editMembersView, uid: uid, added: false, initiallySelected: initialIds.contains(uid)) ?? true
+        return allowed ? indexPath : nil
     }
 
     func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
-        guard let uid = contacts[indexPath.row].uniqueId else {
-            Cache.log.debug("EditMembersVC - no unique id for user at %d", indexPath.row)
-            return
-        }
-
-        tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        self.removeUser(with: uid)
-        if let removeAt = selectedContacts.firstIndex(of: indexPath) {
-            selectedContacts.remove(at: removeAt)
-            selectedCollectionView.deleteItems(at: [IndexPath(item: removeAt, section: 0)])
-        }
-        updateSelectionSummary()
+        guard let uid = filteredContacts[indexPath.row].uniqueId,
+              ContactsManager.isDirectContactId(uid),
+              !Cache.tinode.isMe(uid: uid) else { return }
+        setUser(uid, selected: false)
     }
 }
 
-extension EditMembersViewController: UICollectionViewDataSource {
+extension EditMembersViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        // toggleNoSelectedMembersNote(on: selectedContacts.isEmpty)
-        return selectedContacts.count
+        return selectedContactIds.count
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "SelectedMemberViewCell", for: indexPath) as! SelectedMemberViewCell
-        let contact = contacts[selectedContacts[indexPath.item].item]
-        cell.avatarImageView.set(pub: contact.pub, id: contact.uniqueId, deleted: false)
+        let uid = selectedContactIds[indexPath.item]
+        let selectedContact = contact(for: uid)
+        cell.avatarImageView.set(pub: selectedContact?.pub, id: uid, deleted: false)
+        cell.configure(name: selectedContact?.pub?.fn ?? selectedContact?.accountName ?? uid)
+        cell.onRemove = { [weak self] in
+            guard let self = self else { return }
+            let allowed = self.delegate?.editMembersWillChangeState(
+                self.editMembersView, uid: uid, added: false,
+                initiallySelected: self.initialIds.contains(uid)) ?? true
+            if allowed {
+                self.setUser(uid, selected: false)
+            }
+        }
         return cell
+    }
+
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: 64, height: 70)
     }
 }

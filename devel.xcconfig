@@ -10,5 +10,8 @@ HOST_NAME = veilping.app
 // Use TLS (https, wss)
 USE_TLS = YES
 
+// APNs environment used by the signed Debug build.
+APS_ENVIRONMENT = development
+
 // App Settings
 APP_NAME = CLAW OS (test)

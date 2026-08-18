@@ -9,8 +9,75 @@ import Foundation
 import TinodiosDB
 import TinodeSDK
 import AVFAudio
+import UIKit
 
 public typealias ScalingParams = (dst: CGSize, src: CGRect, scale: CGFloat, altered: Bool)
+
+enum ActiveContactsLayoutMetrics {
+    static let maximumVisibleCount = 6
+    static let wideVisibleCount = 5
+    static let preferredVisibleCount = 4
+    static let minimumVisibleCount = 3
+    static let spacing: CGFloat = 8
+    static let minimumItemWidth: CGFloat = 82
+    static let baseStripHeight: CGFloat = 164
+
+    static var stripHeight: CGFloat {
+        let scaled = UIFontMetrics.default.scaledValue(for: baseStripHeight)
+        return min(max(scaled, baseStripHeight), 180)
+    }
+
+    static var scaledMinimumItemWidth: CGFloat {
+        let scaled = UIFontMetrics.default.scaledValue(for: minimumItemWidth)
+        return min(max(scaled, minimumItemWidth), minimumItemWidth * 1.15)
+    }
+
+    static func visibleCount(
+        viewportWidth: CGFloat,
+        horizontalInset: CGFloat,
+        spacing: CGFloat = ActiveContactsLayoutMetrics.spacing
+    ) -> Int {
+        let usableWidth = max(viewportWidth - horizontalInset * 2, 0)
+        if fits(maximumVisibleCount, in: usableWidth, spacing: spacing) {
+            return maximumVisibleCount
+        }
+        if fits(wideVisibleCount, in: usableWidth, spacing: spacing) {
+            return wideVisibleCount
+        }
+        return fits(preferredVisibleCount, in: usableWidth, spacing: spacing)
+            ? preferredVisibleCount
+            : minimumVisibleCount
+    }
+
+    static func itemWidth(
+        viewportWidth: CGFloat,
+        horizontalInset: CGFloat,
+        spacing: CGFloat = ActiveContactsLayoutMetrics.spacing
+    ) -> CGFloat {
+        let count = visibleCount(
+            viewportWidth: viewportWidth,
+            horizontalInset: horizontalInset,
+            spacing: spacing)
+        let usableWidth = viewportWidth - horizontalInset * 2 - spacing * CGFloat(count - 1)
+        return max(1, floor(usableWidth / CGFloat(count)))
+    }
+
+    private static func fits(_ count: Int, in usableWidth: CGFloat, spacing: CGFloat) -> Bool {
+        return usableWidth >= scaledMinimumItemWidth * CGFloat(count)
+            + spacing * CGFloat(count - 1)
+    }
+
+    static func contentWidth(
+        itemCount: Int,
+        itemWidth: CGFloat,
+        horizontalInset: CGFloat,
+        spacing: CGFloat = ActiveContactsLayoutMetrics.spacing
+    ) -> CGFloat {
+        guard itemCount > 0 else { return 0 }
+        return horizontalInset * 2 + CGFloat(itemCount) * itemWidth
+            + CGFloat(itemCount - 1) * spacing
+    }
+}
 
 class UiTinodeEventListener: TinodeEventListener {
     private var connected: Bool = false
@@ -186,9 +253,10 @@ class UiUtils {
         guard !appDelegate.pushNotificationsConfigured else {
             Messaging.messaging().token { (token, error) in
                 if let error = error {
-                    Cache.log.debug("Error fetching FCM registration token: %@", error.localizedDescription)
+                    Cache.log.error("FCM token fetch failed: %@", error.localizedDescription)
                 } else if let token = token {
-                    Cache.log.info("setUpPushNotifications - device token: %@.", token)
+                    Cache.log.info("FCM token fetched: token=%@ length=%d",
+                                   ClawNotificationDiagnostics.redactedToken(token), token.count)
                     Cache.tinode.setDeviceToken(token: token)
                 }
             }
@@ -205,8 +273,15 @@ class UiUtils {
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         UNUserNotificationCenter.current().requestAuthorization(
             options: authOptions,
-            completionHandler: {_, _ in })
+            completionHandler: { granted, error in
+                if let error = error {
+                    Cache.log.error("Notification authorization request failed: %@", error.localizedDescription)
+                } else {
+                    Cache.log.info("Notification authorization result: granted=%@", granted ? "true" : "false")
+                }
+            })
 
+        Cache.log.info("Requesting APNs remote notification registration")
         application.registerForRemoteNotifications()
         appDelegate.pushNotificationsConfigured = true
     }
@@ -292,27 +367,38 @@ class UiUtils {
     public static func routeToChatListVC() {
         DispatchQueue.main.async {
             let storyboard = UIStoryboard(name: "Main", bundle: nil)
-            let initialViewController = storyboard.instantiateViewController(withIdentifier: "ChatsNavigator") as! UINavigationController
-            if let serviceName = SharedUtils.serviceName {
-                initialViewController.title = serviceName
-            }
+            let initialViewController = ClawMainTabBarController.make(storyboard: storyboard)
             if let window = (UIApplication.shared.delegate as! AppDelegate).window {
                 window.rootViewController = initialViewController
+                window.makeKeyAndVisible()
             }
             UiUtils.setUpPushNotifications()
         }
     }
 
+    static func messagesNavigationController(selectMessages: Bool = false) -> UINavigationController? {
+        guard let root = (UIApplication.shared.delegate as! AppDelegate).window?.rootViewController else {
+            return nil
+        }
+        if let main = root as? ClawMainTabBarController {
+            if selectMessages {
+                main.selectMessages()
+            }
+            return main.messagesNavigationController
+        }
+        return root as? UINavigationController
+    }
+
     // Returns the currently presented/active MessageVC if it's open and .
     private static func presentedMessageVC(forTopic topicName: String) -> MessageViewController? {
-        guard let rootVC = (UIApplication.shared.delegate as! AppDelegate).window?.rootViewController as? UINavigationController else {
+        guard let rootVC = messagesNavigationController() else {
             return nil
         }
         return rootVC.viewControllers.filter { ($0 as? MessageViewController)?.topic?.name == topicName }.first as? MessageViewController
     }
 
     private static func isShowingChatListVC() -> Bool {
-        guard let rootVC = (UIApplication.shared.delegate as! AppDelegate).window?.rootViewController as? UINavigationController else {
+        guard let rootVC = messagesNavigationController() else {
             return false
         }
         return rootVC.viewControllers.contains(where: { $0 is ChatListViewController })
@@ -320,7 +406,7 @@ class UiUtils {
 
     // Returns true if the app is showing the CallVC for the specified topic.
     public static func isShowingCallVC(forTopic topic: String) -> Bool {
-        guard let rootVC = (UIApplication.shared.delegate as! AppDelegate).window?.rootViewController as? UINavigationController else {
+        guard let rootVC = messagesNavigationController() else {
             return false
         }
         return rootVC.viewControllers.contains(where: { ($0 as? CallViewController)?.topic?.name == topic })
@@ -342,30 +428,24 @@ class UiUtils {
 
             let storyboard = UIStoryboard(name: "Main", bundle: nil)
 
-            var shouldReplaceRootVC = true
-            var rootVC: UINavigationController
-            if isShowingChatListVC() {
-                rootVC = keyWindow.rootViewController as! UINavigationController
+            let rootVC: UINavigationController
+            if isShowingChatListVC(), let existingNavigation = messagesNavigationController(selectMessages: true) {
+                rootVC = existingNavigation
                 // The app is in the foreground.
                 while !(rootVC.topViewController is ChatListViewController) {
                     rootVC.popViewController(animated: false)
                 }
-                shouldReplaceRootVC = false
             } else {
-                rootVC = storyboard.instantiateViewController(
-                    withIdentifier: "ChatsNavigator") as! UINavigationController
-                if let serviceName = SharedUtils.serviceName {
-                    rootVC.title = serviceName
-                }
+                let main = ClawMainTabBarController.make(storyboard: storyboard)
+                rootVC = main.messagesNavigationController
+                keyWindow.rootViewController = main
+                keyWindow.makeKeyAndVisible()
             }
             let messageVC =
                 storyboard.instantiateViewController(
                     withIdentifier: "MessageViewController") as! MessageViewController
             messageVC.topicName = topicId
             rootVC.pushViewController(messageVC, animated: false)
-            if shouldReplaceRootVC {
-                keyWindow.rootViewController = rootVC
-            }
             UiUtils.setUpPushNotifications()
             completion?(messageVC)
         }
@@ -793,6 +873,16 @@ extension UIViewController {
     // Opens a chat with the specified topic name after popping all items from the current navigation stack.
     public func presentChatReplacingCurrentVC(with topicName: String, afterDelay delay: DispatchTimeInterval = .seconds(0), initializationCallback: ((UIViewController) -> Void)? = nil) {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            if let main = (UIApplication.shared.delegate as? AppDelegate)?.window?.rootViewController
+                    as? ClawMainTabBarController,
+               self.navigationController !== main.messagesNavigationController {
+                UiUtils.routeToMessageVC(forTopic: topicName) { controller in
+                    if let controller = controller {
+                        initializationCallback?(controller)
+                    }
+                }
+                return
+            }
             if let navController = self.navigationController {
                 navController.popToRootViewController(animated: false)
 

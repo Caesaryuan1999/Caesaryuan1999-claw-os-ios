@@ -9,6 +9,7 @@ import TinodiosDB
 import UIKit
 
 class SettingsSecurityViewController: UITableViewController {
+    private let submissionGate = ClawSubmissionGate()
     @IBOutlet weak var authUsersPermissions: UITableViewCell!
     @IBOutlet weak var anonUsersPermissions: UITableViewCell!
     @IBOutlet weak var authPermissionsLabel: UILabel!
@@ -35,6 +36,35 @@ class SettingsSecurityViewController: UITableViewController {
     }
 
     private func setup() {
+        title = NSLocalizedString("安全", comment: "Security settings title")
+        view.backgroundColor = ClawTheme.background
+        ClawTheme.styleList(tableView, rowHeight: 62)
+        tableView.tableHeaderView = ClawTheme.makeStatusHeader(
+            title: NSLocalizedString("账号已受保护", comment: "Security status title"),
+            detail: NSLocalizedString("密码、访问权限和屏蔽名单均由账号安全中心管理。", comment: "Security status detail"),
+            symbolName: "checkmark.shield")
+        tableView.tableFooterView = makeDeviceInfoFooter()
+        tableView.contentInset.bottom = 24
+
+        authUsersPermissions.textLabel?.text = NSLocalizedString("已登录用户", comment: "Authenticated users")
+        anonUsersPermissions.textLabel?.text = NSLocalizedString("访客用户", comment: "Anonymous users")
+        actionChangePassword.textLabel?.text = NSLocalizedString("修改密码", comment: "Change password")
+        actionBlockedContacts.textLabel?.text = NSLocalizedString("已屏蔽联系人", comment: "Blocked contacts")
+        actionDeleteAccount.textLabel?.text = NSLocalizedString("删除账号", comment: "Delete account")
+
+        ClawTheme.styleTableCell(authUsersPermissions, symbolName: "person.crop.circle")
+        ClawTheme.styleTableCell(anonUsersPermissions, symbolName: "eye.slash")
+        ClawTheme.styleTableCell(actionChangePassword, symbolName: "key")
+        ClawTheme.styleTableCell(actionBlockedContacts, symbolName: "hand.raised")
+        ClawTheme.styleTableCell(actionDeleteAccount, symbolName: "trash", destructive: true)
+
+        // Logout is presented on the account overview screen. Keep the old static
+        // cell connected for backwards-compatible storyboards, but remove it here.
+        actionLogOut.isHidden = true
+        actionLogOut.isUserInteractionEnabled = false
+        authPermissionsLabel.textColor = ClawTheme.muted
+        anonPermissionsLabel.textColor = ClawTheme.muted
+
         self.tinode = Cache.tinode
         self.me = self.tinode.getMeTopic()!
 
@@ -60,6 +90,55 @@ class SettingsSecurityViewController: UITableViewController {
             actionTarget: self)
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let header = tableView.tableHeaderView,
+           header.frame.width != tableView.bounds.width || header.frame.height != 124 {
+            header.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 124)
+            tableView.tableHeaderView = header
+        }
+        if let footer = tableView.tableFooterView,
+           footer.frame.width != tableView.bounds.width || footer.frame.height != 104 {
+            footer.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 104)
+            tableView.tableFooterView = footer
+        }
+    }
+
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        if indexPath.section == 0 && indexPath.row == 1 {
+            return .leastNonzeroMagnitude
+        }
+        return 62
+    }
+
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        switch section {
+        case 0:
+            return NSLocalizedString("账号操作", comment: "Account actions section")
+        case 1:
+            return NSLocalizedString("访问控制", comment: "Access controls section")
+        case 2:
+            return NSLocalizedString("隐私保护", comment: "Privacy protection section")
+        default:
+            return nil
+        }
+    }
+
+    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell,
+                            forRowAt indexPath: IndexPath) {
+        let visibleRows = (0..<tableView.numberOfRows(inSection: indexPath.section)).filter {
+            self.tableView(tableView, heightForRowAt: IndexPath(row: $0, section: indexPath.section)) > 1
+        }
+        ClawTheme.styleGroupedCell(
+            cell,
+            position: ClawTheme.groupedPosition(for: indexPath.row, visibleRows: visibleRows),
+            destructive: cell === actionDeleteAccount)
+        cell.contentView.backgroundColor = .clear
+        cell.textLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        cell.detailTextLabel?.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+        ClawTheme.normalizeIconButtons(in: cell.contentView)
+    }
+
     private func reloadData() {
         // Permissions.
         self.authPermissionsLabel.text = me.defacs?.getAuth() ?? ""
@@ -71,13 +150,13 @@ class SettingsSecurityViewController: UITableViewController {
             // No blocked contacts, disable cell.
             self.actionBlockedContacts.isUserInteractionEnabled = false
             self.actionBlockedContacts.textLabel?.isEnabled = false
-            self.actionBlockedContacts.imageView?.tintColor = UIColor.gray
+            self.actionBlockedContacts.imageView?.tintColor = ClawTheme.muted
             self.actionBlockedContacts.accessoryType = .none
         } else {
             // Some blocked contacts, enable cell.
             self.actionBlockedContacts.isUserInteractionEnabled = true
             self.actionBlockedContacts.textLabel?.isEnabled = true
-            self.actionBlockedContacts.imageView?.tintColor = UIColor.darkText
+            self.actionBlockedContacts.imageView?.tintColor = ClawTheme.primary
             self.actionBlockedContacts.accessoryType = .disclosureIndicator
         }
     }
@@ -114,6 +193,10 @@ class SettingsSecurityViewController: UITableViewController {
     }
 
     @objc func changePasswordClicked(sender: UITapGestureRecognizer) {
+        presentPasswordChangeAlert()
+    }
+
+    private func presentPasswordChangeAlert(initialPassword: String = "", initialConfirmation: String = "") {
         let alert = UIAlertController(title: NSLocalizedString("修改密码", comment: "Alert title"),
                                       message: NSLocalizedString("请输入两遍新密码。", comment: "Alert prompt"),
                                       preferredStyle: .alert)
@@ -121,11 +204,13 @@ class SettingsSecurityViewController: UITableViewController {
         alert.addTextField(configurationHandler: { textField in
             textField.placeholder = NSLocalizedString("新密码", comment: "Alert prompt")
             textField.textContentType = .newPassword
+            textField.text = initialPassword
             textField.showSecureEntrySwitch()
         })
         alert.addTextField(configurationHandler: { textField in
             textField.placeholder = NSLocalizedString("再次输入新密码", comment: "Alert prompt")
             textField.textContentType = .newPassword
+            textField.text = initialConfirmation
             textField.showSecureEntrySwitch()
         })
         alert.addAction(UIAlertAction(
@@ -133,9 +218,112 @@ class SettingsSecurityViewController: UITableViewController {
             handler: { _ in
                 let newPassword = alert.textFields?.first?.text ?? ""
                 let repeatedPassword = alert.textFields?.dropFirst().first?.text ?? ""
-                self.updatePassword(with: newPassword, repeatedPassword: repeatedPassword)
+                self.updatePassword(with: newPassword, repeatedPassword: repeatedPassword,
+                                    retryOnFailure: true)
             }))
         self.present(alert, animated: true)
+    }
+
+    private func makeDeviceInfoFooter() -> UIView {
+        let footer = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 104))
+        let control = UIControl()
+        control.translatesAutoresizingMaskIntoConstraints = false
+        ClawTheme.styleCard(control)
+        control.accessibilityLabel = NSLocalizedString("device_info", comment: "Phone information")
+        control.accessibilityHint = NSLocalizedString("device_info_explained", comment: "Phone information explanation")
+        control.accessibilityIdentifier = "security_device_info"
+        control.addTarget(self, action: #selector(showDeviceInfo), for: .touchUpInside)
+
+        let iconBox = UIView()
+        iconBox.translatesAutoresizingMaskIntoConstraints = false
+        iconBox.backgroundColor = ClawTheme.brandSoft
+        iconBox.layer.cornerRadius = 12
+        iconBox.layer.cornerCurve = .continuous
+
+        let icon = UIImageView(image: ClawTheme.symbol("iphone", pointSize: ClawTheme.iconStandard, weight: .medium))
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.tintColor = ClawTheme.primary
+        icon.contentMode = .center
+        iconBox.addSubview(icon)
+
+        let titleLabel = UILabel()
+        titleLabel.text = NSLocalizedString("device_info", comment: "Phone information")
+        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.textColor = ClawTheme.ink
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = NSLocalizedString("device_info_explained", comment: "Phone information explanation")
+        subtitleLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        subtitleLabel.textColor = ClawTheme.muted
+        subtitleLabel.numberOfLines = 1
+
+        let labels = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
+        labels.translatesAutoresizingMaskIntoConstraints = false
+        labels.axis = .vertical
+        labels.spacing = 3
+
+        let chevron = UIImageView(image: ClawTheme.symbol("chevron.right", pointSize: ClawTheme.iconCompact,
+                                                          weight: .semibold))
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+        chevron.tintColor = ClawTheme.muted
+        chevron.contentMode = .center
+
+        footer.addSubview(control)
+        control.addSubview(iconBox)
+        control.addSubview(labels)
+        control.addSubview(chevron)
+        NSLayoutConstraint.activate([
+            control.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 18),
+            control.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -18),
+            control.topAnchor.constraint(equalTo: footer.topAnchor, constant: 12),
+            control.bottomAnchor.constraint(equalTo: footer.bottomAnchor, constant: -12),
+            iconBox.leadingAnchor.constraint(equalTo: control.leadingAnchor, constant: 14),
+            iconBox.centerYAnchor.constraint(equalTo: control.centerYAnchor),
+            iconBox.widthAnchor.constraint(equalToConstant: 42),
+            iconBox.heightAnchor.constraint(equalToConstant: 42),
+            icon.centerXAnchor.constraint(equalTo: iconBox.centerXAnchor),
+            icon.centerYAnchor.constraint(equalTo: iconBox.centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: 24),
+            icon.heightAnchor.constraint(equalToConstant: 24),
+            labels.leadingAnchor.constraint(equalTo: iconBox.trailingAnchor, constant: 14),
+            labels.centerYAnchor.constraint(equalTo: control.centerYAnchor),
+            labels.trailingAnchor.constraint(lessThanOrEqualTo: chevron.leadingAnchor, constant: -12),
+            chevron.trailingAnchor.constraint(equalTo: control.trailingAnchor, constant: -16),
+            chevron.centerYAnchor.constraint(equalTo: control.centerYAnchor),
+            chevron.widthAnchor.constraint(equalToConstant: 16),
+            chevron.heightAnchor.constraint(equalToConstant: 20)
+        ])
+        return footer
+    }
+
+    @objc private func showDeviceInfo() {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "-"
+        let appVersion = build == "-" ? version : "\(version) (\(build))"
+        let languageIdentifier = Locale.preferredLanguages.first ?? Locale.current.identifier
+        let currentLanguage = Locale.current.localizedString(forIdentifier: languageIdentifier) ?? languageIdentifier
+        let lines = [
+            "\(NSLocalizedString("device_model", comment: "Device model")): \(UIDevice.current.model)",
+            "\(NSLocalizedString("operating_system", comment: "Operating system")): \(UIDevice.current.systemName) \(UIDevice.current.systemVersion)",
+            "\(NSLocalizedString("app_version", comment: "App version")): \(appVersion)",
+            "\(NSLocalizedString("current_language", comment: "Current language")): \(currentLanguage)"
+        ]
+        let copyValue = lines.joined(separator: "\n")
+        let alert = UIAlertController(
+            title: NSLocalizedString("device_info", comment: "Phone information"),
+            message: copyValue + "\n\n" + NSLocalizedString("privacy_device_info", comment: "Privacy note"),
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(
+            title: NSLocalizedString("copy_info", comment: "Copy phone information"),
+            style: .default,
+            handler: { _ in
+                UIPasteboard.general.string = copyValue
+                UiUtils.showToast(
+                    message: NSLocalizedString("device_info_copied", comment: "Device information copied"),
+                    level: .info)
+            }))
+        alert.addAction(UIAlertAction(title: NSLocalizedString("close", comment: "Close"), style: .cancel))
+        present(alert, animated: true)
     }
 
     @objc func logoutClicked(sender: UITapGestureRecognizer) {
@@ -160,48 +348,63 @@ class SettingsSecurityViewController: UITableViewController {
         self.present(alert, animated: true)
     }
 
-    private func currentAccountName() -> String? {
-        if let accountName = AccountNames.fromTags(me.tags), ClawAuthInput.isAccountNameValid(accountName) {
-            return accountName
-        }
-        return nil
-    }
-
-    private func updatePassword(with newPassword: String, repeatedPassword: String) {
-        guard newPassword.count >= ClawAuthInput.minPasswordLength else {
+    private func updatePassword(with newPassword: String, repeatedPassword: String,
+                                retryOnFailure: Bool) {
+        switch ClawAuthFormValidation.validatePasswordChange(password: newPassword, confirmation: repeatedPassword) {
+        case .ok:
+            break
+        case .passwordRequired, .passwordPolicy:
             DispatchQueue.main.async {
                 UiUtils.showToast(message: NSLocalizedString("密码太短", comment: "Error message"))
+                self.presentPasswordChangeAlert(initialPassword: newPassword,
+                                                initialConfirmation: repeatedPassword)
             }
             return
-        }
-        guard newPassword == repeatedPassword else {
+        case .passwordMismatch:
             DispatchQueue.main.async {
                 UiUtils.showToast(message: NSLocalizedString("两次输入的密码不一致", comment: "Error message"))
+                self.presentPasswordChangeAlert(initialPassword: newPassword,
+                                                initialConfirmation: repeatedPassword)
             }
             return
-        }
-        guard let accountName = currentAccountName() else {
-            DispatchQueue.main.async {
-                UiUtils.showToast(message: NSLocalizedString("无法读取账号名，请重新登录后再试", comment: "Error message"))
-            }
+        default:
             return
         }
-        tinode.updateAccountBasic(uid: nil, username: accountName, password: newPassword)
+        guard submissionGate.begin() else { return }
+        actionChangePassword.isUserInteractionEnabled = false
+        tinode.updateAccountBasic(uid: nil, username: nil, password: newPassword)
             .then(onSuccess: { msg in
+                self.finishPasswordSubmission()
                 DispatchQueue.main.async {
                     if let ctrl = msg?.ctrl, 200 <= ctrl.code && ctrl.code < 300 {
                         UiUtils.showToast(message: NSLocalizedString("密码已更新", comment: "Success message"), level: .info)
                     } else {
                         UiUtils.showToast(message: NSLocalizedString("服务端未确认密码修改", comment: "Error message"))
+                        if retryOnFailure {
+                            self.presentPasswordChangeAlert(initialPassword: newPassword,
+                                                            initialConfirmation: repeatedPassword)
+                        }
                     }
                 }
                 return nil
             }, onFailure: { err in
+                self.finishPasswordSubmission()
                 DispatchQueue.main.async {
-                    UiUtils.showToast(message: String(format: NSLocalizedString("修改密码失败：%@", comment: "Error message"), err.localizedDescription))
+                    UiUtils.showToast(message: ClawAuthErrorMessages.passwordChangeMessage(for: err))
+                    if retryOnFailure {
+                        self.presentPasswordChangeAlert(initialPassword: newPassword,
+                                                        initialConfirmation: repeatedPassword)
+                    }
                 }
                 return nil
             })
+    }
+
+    private func finishPasswordSubmission() {
+        submissionGate.finish()
+        DispatchQueue.main.async {
+            self.actionChangePassword.isUserInteractionEnabled = true
+        }
     }
 
     private func logout() {

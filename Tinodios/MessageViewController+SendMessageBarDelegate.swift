@@ -21,11 +21,14 @@ extension MessageViewController: SendMessageBarDelegate {
         interactor?.sendMessage(content: Drafty(content: sendText))
     }
 
-    func sendMessageBar(attachment: Bool) {
-        if attachment {
+    func sendMessageBar(attachment: MessageAttachmentAction) {
+        switch attachment {
+        case .file:
             attachFile()
-        } else {
-            attachImage()
+        case .library:
+            attachImage(source: .photoLibrary)
+        case .camera:
+            attachImage(source: .camera)
         }
     }
     private func attachFile() {
@@ -35,8 +38,12 @@ extension MessageViewController: SendMessageBarDelegate {
         self.present(documentPicker, animated: true, completion: nil)
     }
 
-    private func attachImage() {
-        imagePicker?.present(from: self.view)
+    private func attachImage(source: UIImagePickerController.SourceType) {
+        guard UIImagePickerController.isSourceTypeAvailable(source) else {
+            UiUtils.showToast(message: NSLocalizedString("Camera is not available", comment: "Camera unavailable error"))
+            return
+        }
+        imagePicker?.present(source: source)
     }
 
     func sendMessageBar(textChangedTo text: String) {
@@ -107,19 +114,32 @@ extension MessageViewController: UIDocumentPickerDelegate {
 
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         // Convert file to Data and attach to message
+        guard let url = urls.first else { return }
+        let accessedSecurityScope = url.startAccessingSecurityScopedResource()
+        defer {
+            if accessedSecurityScope {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
         do {
             // See comment in documentPickerWasCancelled().
             (self.inputAccessoryView as? SendMessageBar)?.inputField.becomeFirstResponder()
 
-            let bits = try Data(contentsOf: urls[0], options: .mappedIfSafe)
-            let fname = urls[0].lastPathComponent
-            var mimeType = Utils.mimeForUrl(url: urls[0])
+            let maxAttachmentSize = Cache.tinode.getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: MessageViewController.kMaxAttachmentSize)
+            if let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+               fileSize > maxAttachmentSize {
+                UiUtils.showToast(message: String(format: NSLocalizedString("The file size exceeds the limit %@", comment: "Error message"), UiUtils.bytesToHumanSize(maxAttachmentSize)))
+                return
+            }
+
+            let bits = try Data(contentsOf: url, options: .mappedIfSafe)
+            let fname = url.lastPathComponent
+            var mimeType = Utils.mimeForUrl(url: url)
             if mimeType == "application/json" {
                 // Replace JSON mime type with 'application/octet-stream' to avoid collision with Drafty form responses.
                 // Remove this code in 2026.
                 mimeType = "application/octet-stream"
             }
-            let maxAttachmentSize = Cache.tinode.getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: MessageViewController.kMaxAttachmentSize)
             guard bits.count <= maxAttachmentSize else {
                 UiUtils.showToast(message: String(format: NSLocalizedString("The file size exceeds the limit %@", comment: "Error message"), UiUtils.bytesToHumanSize(maxAttachmentSize)))
                 return
@@ -128,7 +148,7 @@ extension MessageViewController: UIDocumentPickerDelegate {
             let pendingPreview = (self.inputAccessoryView as! SendMessageBar).pendingPreviewText
             let content = FilePreviewContent(
                 data: bits,
-                refUrl: urls[0],
+                refUrl: url,
                 fileName: fname,
                 contentType: mimeType,
                 size: bits.count,

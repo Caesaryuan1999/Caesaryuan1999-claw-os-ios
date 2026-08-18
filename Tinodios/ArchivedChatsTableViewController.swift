@@ -14,6 +14,9 @@ class ArchivedChatsTableViewController: UITableViewController {
     private var topics: [DefaultComTopic] = []
     override func viewDidLoad() {
         super.viewDidLoad()
+        title = NSLocalizedString("已归档会话", comment: "Archived chats title")
+        view.backgroundColor = ClawTheme.background
+        ClawTheme.styleList(chatListTableView)
         self.chatListTableView.register(UINib(nibName: "ChatListViewCell", bundle: nil), forCellReuseIdentifier: "ChatListViewCell")
         self.reloadData()
     }

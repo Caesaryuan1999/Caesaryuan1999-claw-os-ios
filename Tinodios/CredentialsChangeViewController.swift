@@ -65,6 +65,14 @@ class CredentialsChangeViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        title = NSLocalizedString("验证方式", comment: "Credential settings title")
+        view.backgroundColor = ClawTheme.background
+        ClawTheme.styleList(tableView, rowHeight: UITableView.automaticDimension)
+        [currentEmailField, currentTelField, newEmailField, newTelField, confirmationCodeField].forEach {
+            ClawTheme.styleTextField($0)
+        }
+        infoLabel.textColor = ClawTheme.muted
+
         configureTelInputField(currentTelField)
         configureTelInputField(newTelField)
 

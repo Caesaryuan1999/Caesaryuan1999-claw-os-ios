@@ -26,16 +26,28 @@ class CameraManager: NSObject {
     weak var delegate: CameraCaptureDelegate?
 
     var isCapturing = false
+    private var isConfigured = false
 
-    func setupCamera() {
+    @discardableResult
+    func setupCamera() -> Bool {
+        if isConfigured {
+            return true
+        }
         guard let videoCaptureDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front),
-            let videoInput = try? AVCaptureDeviceInput(device: videoCaptureDevice) else { return }
+            let videoInput = try? AVCaptureDeviceInput(device: videoCaptureDevice) else {
+            Cache.log.error("CallVC - Front camera is unavailable")
+            return false
+        }
 
         self.videoCaptureDevice = videoCaptureDevice
+        captureSession.beginConfiguration()
+        defer { captureSession.commitConfiguration() }
 
-        if captureSession.canAddInput(videoInput) {
-            captureSession.addInput(videoInput)
+        guard captureSession.canAddInput(videoInput) else {
+            Cache.log.error("CallVC - Could not add camera input to the session")
+            return false
         }
+        captureSession.addInput(videoInput)
 
         // Cap video camera resolution (best effort).
         // Otherwise, remote video stream may freeze
@@ -51,17 +63,18 @@ class CameraManager: NSObject {
         }
 
         // Add a video data output
-        if captureSession.canAddOutput(videoDataOutput) {
-            captureSession.addOutput(videoDataOutput)
-            videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
-            videoDataOutput.setSampleBufferDelegate(self, queue: dataOutputQueue)
-            videoDataOutput.connection(with: .video)?.videoOrientation = .portrait
-            videoDataOutput.connection(with: .video)?.automaticallyAdjustsVideoMirroring = false
-            videoDataOutput.connection(with: .video)?.isVideoMirrored = true
-        } else {
+        guard captureSession.canAddOutput(videoDataOutput) else {
             Cache.log.error("CallVC - Could not add video data output to the session")
-            captureSession.commitConfiguration()
+            return false
         }
+        captureSession.addOutput(videoDataOutput)
+        videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
+        videoDataOutput.setSampleBufferDelegate(self, queue: dataOutputQueue)
+        videoDataOutput.connection(with: .video)?.videoOrientation = .portrait
+        videoDataOutput.connection(with: .video)?.automaticallyAdjustsVideoMirroring = false
+        videoDataOutput.connection(with: .video)?.isVideoMirrored = true
+        isConfigured = true
+        return true
     }
 
     func startCapture(completion: (() -> Void)? = nil) {
@@ -113,8 +126,10 @@ protocol WebRTCClientDelegate: AnyObject {
     func sendAnswer(withDescription sdp: RTCSessionDescription)
     func sendIceCandidate(_ candidate: RTCIceCandidate)
     func closeCall()
+    func failCall(message: String)
     func canSendOffer() -> Bool
     func markConnectionSetupComplete()
+    func markCallConnected()
     func enableMediaControls()
     // Toggle remote video.
     func toggleRemoteVideo(remoteLive: Bool)
@@ -185,7 +200,7 @@ class WebRTCClient: NSObject {
             self.localPeer?.add(candidate) { err in
                 if let err = err {
                     Cache.log.error("WebRTCClient: could not add ICE candidate: %@", err.localizedDescription)
-                    self.delegate?.closeCall()
+                    self.delegate?.failCall(message: NSLocalizedString("call_connection_failed", comment: "Call connection failed"))
                 }
             }
         } else {
@@ -211,11 +226,14 @@ class WebRTCClient: NSObject {
             self.remoteIceCandidatesCache.removeAll()
         }
         if !success {
-            self.delegate?.closeCall()
+            self.delegate?.failCall(message: NSLocalizedString("call_connection_failed", comment: "Call connection failed"))
         }
     }
 
     func createPeerConnection(withDataChannel dataChannel: Bool) -> Bool {
+        if localPeer != nil {
+            return true
+        }
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
         guard let config = generateRTCConfig() else {
             Cache.log.info("WebRTCClient - missing configuration. Quitting.")
@@ -236,9 +254,19 @@ class WebRTCClient: NSObject {
         }
 
         let stream = WebRTCClient.factory.mediaStream(withStreamId: "ARDAMS")
-        stream.addAudioTrack(self.localAudioTrack!)
-        stream.addVideoTrack(self.localVideoTrack!)
-        localPeer!.add(stream)
+        guard let audioTrack = self.localAudioTrack else {
+            Cache.log.error("WebRTCClient - missing local audio track")
+            return false
+        }
+        stream.addAudioTrack(audioTrack)
+        if !(delegate?.isAudioOnlyCall ?? false) {
+            guard let videoTrack = self.localVideoTrack else {
+                Cache.log.error("WebRTCClient - missing local video track")
+                return false
+            }
+            stream.addVideoTrack(videoTrack)
+        }
+        localPeer?.add(stream)
         return true
     }
 
@@ -253,14 +281,14 @@ class WebRTCClient: NSObject {
                 if let error = error {
                     Cache.log.error("WebRTCClient - failed to make offer SDP %@", error.localizedDescription)
                 }
-                self.delegate?.closeCall()
+                self.delegate?.failCall(message: NSLocalizedString("call_negotiation_failed", comment: "Call negotiation failed"))
                 return
             }
 
             peerConnection.setLocalDescription(sdp, completionHandler: { (error) in
                 if let error = error {
                     Cache.log.error("WebRTCClient - failed to set local SDP (offer) %@", error.localizedDescription)
-                    self.delegate?.closeCall()
+                    self.delegate?.failCall(message: NSLocalizedString("call_negotiation_failed", comment: "Call negotiation failed"))
                     return
                 }
                 self.delegate?.sendOffer(withDescription: sdp)
@@ -278,14 +306,14 @@ class WebRTCClient: NSObject {
                     if let error = error {
                         Cache.log.error("WebRTCClient - failed to make answer SDP %@", error.localizedDescription)
                     }
-                    self?.delegate?.closeCall()
+                    self?.delegate?.failCall(message: NSLocalizedString("call_negotiation_failed", comment: "Call negotiation failed"))
                     return
                 }
 
                 peerConnection.setLocalDescription(sdp, completionHandler: { [weak self](error) in
                     if let error = error {
                         Cache.log.error("WebRTCClient - failed to set local SDP (answer) %@", error.localizedDescription)
-                        self?.delegate?.closeCall()
+                        self?.delegate?.failCall(message: NSLocalizedString("call_negotiation_failed", comment: "Call negotiation failed"))
                         return
                     }
                     self?.delegate?.sendAnswer(withDescription: sdp)
@@ -350,11 +378,12 @@ extension WebRTCClient {
         }
 
         let config = RTCConfiguration()
-        // TODO: planB for now. Need to migrate to unified in the future.
-        config.sdpSemantics = .planB
-        // TCP candidates are only useful when connecting to a server that supports
-        // ICE-TCP.
-        config.tcpCandidatePolicy = .disabled
+        // Keep both clients on Unified Plan. Plan B is deprecated and can produce
+        // incompatible transceivers when Android initiates a video call.
+        config.sdpSemantics = .unifiedPlan
+        // Cellular networks and restricted Wi-Fi often block UDP. TURN/TCP is the
+        // required fallback and remains protected by DTLS/SRTP.
+        config.tcpCandidatePolicy = .enabled
         config.bundlePolicy = .maxBundle
         config.rtcpMuxPolicy = .require
         config.continualGatheringPolicy = .gatherContinually
@@ -365,8 +394,16 @@ extension WebRTCClient {
             guard let vals = v.asDict() else {
                 return nil
             }
-            if let urls = vals["urls"]?.asArray() {
-                let iceStrings = urls.compactMap { $0.asString() }
+            let iceStrings: [String]
+            if let singleUrl = vals["urls"]?.asString(), !singleUrl.isEmpty {
+                iceStrings = [singleUrl]
+            } else if let urls = vals["urls"]?.asArray() {
+                iceStrings = urls.compactMap { $0.asString() }.filter { !$0.isEmpty }
+            } else {
+                iceStrings = []
+            }
+
+            if !iceStrings.isEmpty {
                 var ice: RTCIceServer
                 if let username = vals["username"]?.asString() {
                     let credential = vals["credential"]?.asString()
@@ -378,6 +415,10 @@ extension WebRTCClient {
             } else {
                 Cache.log.info("Invalid ICE server config: no URLs")
             }
+        }
+        guard !config.iceServers.isEmpty else {
+            Cache.log.error("WebRTCClient.generateRTCConfig: No usable ICE servers")
+            return nil
         }
         return config
     }
@@ -425,7 +466,7 @@ extension WebRTCClient {
             guard let self = self else { return }
             if let error = error {
                 Cache.log.error("WebRTCClient.handleRemoteOfferDescription failure: %@", error.localizedDescription)
-                self.delegate?.closeCall()
+                self.delegate?.failCall(message: NSLocalizedString("call_negotiation_failed", comment: "Call negotiation failed"))
                 return
             }
             self.answer(peerConnection)
@@ -437,7 +478,7 @@ extension WebRTCClient {
         self.localPeer?.setRemoteDescription(desc, completionHandler: { (error) in
             if let e = error {
                 Cache.log.error("WebRTCClient.handleRemoteAnswerDescription failure: %@", e.localizedDescription)
-                self.delegate?.closeCall()
+                self.delegate?.failCall(message: NSLocalizedString("call_negotiation_failed", comment: "Call negotiation failed"))
                 return
             }
             self.delegate?.markConnectionSetupComplete()
@@ -476,10 +517,12 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         switch newState {
+        case .connected, .completed:
+            self.delegate?.markCallConnected()
         case .closed:
-            fallthrough
-        case .failed:
             self.delegate?.closeCall()
+        case .failed:
+            self.delegate?.failCall(message: NSLocalizedString("call_connection_failed", comment: "Call connection failed"))
         default:
             break
         }
@@ -501,7 +544,7 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
     func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {
         Cache.log.info("WebRTCClient: opened data channel %@", dataChannel)
         self.localDataChannel = dataChannel
-        self.localDataChannel!.delegate = self
+        self.localDataChannel?.delegate = self
     }
 }
 
@@ -546,10 +589,8 @@ extension RTCIceCandidate {
 /// CallViewController
 class CallViewController: UIViewController {
     private enum Constants {
-        static let kToggleCameraIcon = "vc"
-        static let kToggleMicIcon = "mic"
         static let kDialingAnimationDuration: Double = 1.5
-        static let kDialingAnimationColor = UIColor(red: 33.0/255.0, green: 150.0/255.0, blue: 243.0/255.0, alpha: 1).cgColor
+        static let kDialingAnimationColor = ClawTheme.primary.cgColor
     }
 
     enum CallDirection {
@@ -575,12 +616,7 @@ class CallViewController: UIViewController {
 
     @IBOutlet weak var dialingAnimationContainer: UIView!
 
-    private static func actionButtonIcon(iconName: String, on: Bool) -> UIImage? {
-        let name = "\(iconName)\(on ? "" : ".slash").fill"
-        return UIImage(systemName: name, withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .regular))
-    }
-
-    weak var topic: DefaultComTopic?
+    var topic: DefaultComTopic?
     let cameraManager = CameraManager()
     let webRTCClient = WebRTCClient()
     // Peer messasges listener.
@@ -593,6 +629,16 @@ class CallViewController: UIViewController {
     var isAudioOnlyCall: Bool = false
     // If true, the client has received a remote SDP from the peer and has sent a local SDP to the peer.
     var callInitialSetupComplete = false
+    private var callFailureShown = false
+    private var didStartCallSession = false
+    private var isTerminatingCall = false
+    private var didStopMedia = false
+    private var didRemoveTinodeListener = false
+    private var didSendInitialOffer = false
+    private var didReceiveInitialOffer = false
+    private var didMarkCallConnected = false
+    private var callSetupTimeoutWorkItem: DispatchWorkItem?
+    private let callStatusLabel = UILabel()
     // Audio output destination (.none = default).
     var audioOutput: AVAudioSession.PortOverride = .none
     // Audio route change notification observer.
@@ -628,14 +674,46 @@ class CallViewController: UIViewController {
     }
 
     override func viewDidLoad() {
-        self.videoToggleButton.addBlurEffect()
-        self.micToggleButton.addBlurEffect()
-        self.speakerToggleButton.addBlurEffect()
+        super.viewDidLoad()
+        view.accessibilityIdentifier = "claw.call.screen"
+        speakerToggleButton.accessibilityIdentifier = "claw.call.speaker"
+        micToggleButton.accessibilityIdentifier = "claw.call.microphone"
+        videoToggleButton.accessibilityIdentifier = "claw.call.video"
+        hangUpButton.accessibilityIdentifier = "claw.call.hangup"
+        peerNameLabel.accessibilityIdentifier = "claw.call.peer-name"
+        peerAvatarImageView.accessibilityIdentifier = "claw.call.peer-avatar"
+        callStatusLabel.accessibilityIdentifier = "claw.call.status"
+        view.backgroundColor = ClawTheme.brandSoft
+        remoteView.backgroundColor = ClawTheme.ink
+        localView.backgroundColor = ClawTheme.surfaceMuted
+        localView.layer.cornerRadius = 12
+        localView.layer.cornerCurve = .continuous
+        localView.clipsToBounds = true
+        peerNameLabel.textColor = ClawTheme.ink
+        peerNameRemoteVideoLabel.textColor = .white
+        peerAvatarImageView.layer.borderWidth = 3
+        peerAvatarImageView.layer.borderColor = ClawTheme.surface.cgColor
+        dialingAnimationContainer.backgroundColor = .clear
+        setupCallStatusUI()
+
+        speakerToggleButton.accessibilityLabel = NSLocalizedString("扬声器", comment: "Call speaker control")
+        micToggleButton.accessibilityLabel = NSLocalizedString("麦克风", comment: "Call microphone control")
+        videoToggleButton.accessibilityLabel = NSLocalizedString("摄像头", comment: "Call camera control")
+        hangUpButton.accessibilityLabel = NSLocalizedString("挂断", comment: "End call control")
+
+        ClawTheme.styleCallControl(speakerToggleButton, symbolName: "speaker.wave.2.fill")
+        ClawTheme.styleCallControl(micToggleButton, symbolName: "mic.fill")
+        ClawTheme.styleCallControl(videoToggleButton, symbolName: "video.fill")
+        ClawTheme.styleCallControl(hangUpButton, symbolName: "phone.down.fill",
+                                   backgroundColor: ClawTheme.danger, tintColor: .white)
 
         if self.isAudioOnlyCall {
             self.audioOutput = .none
-            self.videoToggleButton.setImage(UIImage(named: "vc.slash.fill", in: nil, with: UIImage.SymbolConfiguration(pointSize: 16, weight: .regular)), for: .normal)
-            self.speakerToggleButton.setImage(UIImage(systemName: "speaker.wave.1.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .regular)), for: .normal)
+            self.videoToggleButton.setImage(ClawTheme.symbol("video.slash.fill", pointSize: 21), for: .normal)
+            self.videoToggleButton.isEnabled = false
+            self.videoToggleButton.alpha = 0.45
+            self.videoToggleButton.accessibilityHint = NSLocalizedString("语音通话中无法开启摄像头", comment: "Audio call camera control hint")
+            self.speakerToggleButton.setImage(ClawTheme.symbol("speaker.wave.1.fill", pointSize: 21), for: .normal)
         } else {
             self.audioOutput = .speaker
         }
@@ -647,6 +725,30 @@ class CallViewController: UIViewController {
             peerNameRemoteVideoLabel.text = peerNameLabel.text
             peerNameRemoteVideoLabel.sizeToFit()
             peerAvatarImageView.set(pub: topic.pub, id: topic.name, deleted: false)
+        }
+        updateCallStatus(callDirection == .outgoing ? "正在呼叫" : "正在连接中")
+    }
+
+    private func setupCallStatusUI() {
+        callStatusLabel.translatesAutoresizingMaskIntoConstraints = false
+        callStatusLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        callStatusLabel.textColor = ClawTheme.muted
+        callStatusLabel.textAlignment = .center
+        callStatusLabel.numberOfLines = 1
+        view.addSubview(callStatusLabel)
+        NSLayoutConstraint.activate([
+            callStatusLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            callStatusLabel.topAnchor.constraint(equalTo: peerAvatarImageView.bottomAnchor, constant: 14),
+            callStatusLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+            callStatusLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
+            callStatusLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 24)
+        ])
+    }
+
+    private func updateCallStatus(_ status: String) {
+        DispatchQueue.main.async {
+            self.callStatusLabel.text = NSLocalizedString(status, comment: "Call lifecycle status")
+            self.callStatusLabel.accessibilityValue = self.callStatusLabel.text
         }
     }
 
@@ -664,7 +766,7 @@ class CallViewController: UIViewController {
             Cache.log.error("unknown AVAudioSession.PortOverride value: %d", self.audioOutput.rawValue)
             return
         }
-        let newimg = UIImage(systemName: newIconName, withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .regular))
+        let newimg = ClawTheme.symbol(newIconName, pointSize: 21)
         Cache.log.info("User requested overridde audio output port to %d", newOutput.rawValue)
         CallManager.audioSessionChange { session in
             try session.overrideOutputAudioPort(newOutput)
@@ -674,12 +776,13 @@ class CallViewController: UIViewController {
     }
 
     @IBAction func didToggleMic(_ sender: Any) {
-        let img = UIImage(systemName: self.webRTCClient.toggleAudio() ? "mic.fill" : "mic.slash.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .regular))
+        let img = ClawTheme.symbol(self.webRTCClient.toggleAudio() ? "mic.fill" : "mic.slash.fill", pointSize: 21)
         self.micToggleButton.setImage(img, for: .normal)
     }
 
     @IBAction func didToggleCamera(_ sender: Any) {
-        let newimg = UIImage(named: cameraManager.isCapturing ? "vc.slash.fill" : "vc.fill", in: nil, with: UIImage.SymbolConfiguration(pointSize: 16, weight: .regular))
+        guard !self.isAudioOnlyCall else { return }
+        let newimg = ClawTheme.symbol(cameraManager.isCapturing ? "video.slash.fill" : "video.fill", pointSize: 21)
 
         videoToggleButton.isEnabled = false
         if cameraManager.isCapturing {
@@ -689,7 +792,6 @@ class CallViewController: UIViewController {
                     self.webRTCClient.sendOverDataChannel(event: WebRTCClient.kVideoEventMuted)
                     self.videoToggleButton.isEnabled = true
                     self.videoToggleButton.setImage(newimg, for: .normal)
-                    self.videoToggleButton.imageEdgeInsets = UIEdgeInsets(top: 14, left: 14, bottom: 19, right: 15)
                 }
             }
         } else {
@@ -699,7 +801,6 @@ class CallViewController: UIViewController {
                     self.webRTCClient.sendOverDataChannel(event: WebRTCClient.kVideoEventUnmuted)
                     self.videoToggleButton.isEnabled = true
                     self.videoToggleButton.setImage(newimg, for: .normal)
-                    self.videoToggleButton.imageEdgeInsets = UIEdgeInsets(top: 14, left: 15, bottom: 20, right: 15)
                 }
             }
         }
@@ -710,8 +811,23 @@ class CallViewController: UIViewController {
     }
 
     private func setupCaptureSessionAndStartCall() {
-        cameraManager.setupCamera()
-        if (!self.isAudioOnlyCall) {
+        guard !didStartCallSession else { return }
+        guard let topic = self.topic,
+              ContactsManager.isDirectContactId(topic.name) else {
+            UiUtils.showToast(message: NSLocalizedString(
+                "只能向联系人发起一对一通话",
+                comment: "Calls are limited to direct contacts"))
+            handleCallClose()
+            return
+        }
+        if !self.isAudioOnlyCall && !cameraManager.setupCamera() {
+            UiUtils.showToast(message: NSLocalizedString("call_camera_unavailable", comment: "Camera is unavailable"))
+            handleCallClose()
+            return
+        }
+        didStartCallSession = true
+        scheduleCallSetupTimeout()
+        if !self.isAudioOnlyCall {
             cameraManager.startCapture()
         }
         setupViews()
@@ -724,55 +840,49 @@ class CallViewController: UIViewController {
         // Prevent screen from dimming/going to sleep.
         UIApplication.shared.isIdleTimerDisabled = true
 
-        if let topic = self.topic {
-            if !topic.attached {
-                topic.subscribe().then(
-                    onSuccess: { [weak self] msg in
+        if !topic.attached {
+            topic.subscribe().then(
+                onSuccess: { [weak self] msg in
+                    DispatchQueue.main.async {
+                        guard let self = self else { return }
                         if let ctrl = msg?.ctrl, ctrl.code < 300 {
-                            self?.handleCallInvite()
+                            self.handleCallInvite()
                         } else {
-                            self?.handleCallClose()
+                            self.handleCallClose()
                         }
-                        return nil
-                    },
-                    onFailure: { [weak self] err in
-                        self?.handleCallClose()
-                        return nil
-                    })
-            } else {
+                    }
+                    return nil
+                },
+                onFailure: { [weak self] err in
+                    Cache.log.error("CallVC - unable to attach call topic: %@", err.localizedDescription)
+                    DispatchQueue.main.async { self?.handleCallClose() }
+                    return nil
+                })
+        } else {
+            DispatchQueue.main.async {
                 self.handleCallInvite()
             }
-        } else {
-            self.handleCallClose()
         }
     }
 
     private func checkMicPermissions(completion: @escaping ((Bool) -> Void)) {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            if granted {
-                completion(true)  // success
-            } else {
-                completion(false)  // failure
-            }
+            DispatchQueue.main.async { completion(granted) }
         }
     }
 
     private func checkCameraPermissions(completion: @escaping ((Bool) -> Void)) {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            completion(true)  // success
+            DispatchQueue.main.async { completion(true) }
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
-                if granted {
-                    completion(true)  // success
-                } else {
-                    completion(false)  // failure
-                }
+                DispatchQueue.main.async { completion(granted) }
             }
         case .denied, .restricted:
             fallthrough
         @unknown default:
-            completion(false)  // failure
+            DispatchQueue.main.async { completion(false) }
         }
     }
 
@@ -799,6 +909,7 @@ class CallViewController: UIViewController {
     }
 
     override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         self.permissionsCheck { result in
             switch result {
             case .ok:
@@ -806,13 +917,17 @@ class CallViewController: UIViewController {
             case .micDenied:
                 Cache.log.error("No permission to access microphone")
                 DispatchQueue.main.async {
-                    UiUtils.showToast(message: NSLocalizedString("No permission to access microphone", comment: "Error message when call cannot be started due to missing microphone permission"))
+                    UiUtils.showToast(message: NSLocalizedString(
+                        "通话需要麦克风权限，请在系统设置中允许",
+                        comment: "Missing microphone permission"))
                     self.handleCallClose()
                 }
             case .cameraDenied:
                 Cache.log.error("No permission to access camera")
                 DispatchQueue.main.async {
-                    UiUtils.showToast(message: NSLocalizedString("No permission to access camera", comment: "Error message when call cannot be started due to missing camera permission"))
+                    UiUtils.showToast(message: NSLocalizedString(
+                        "视频通话需要相机权限，请在系统设置中允许",
+                        comment: "Missing camera permission"))
                     self.handleCallClose()
                 }
             }
@@ -820,12 +935,19 @@ class CallViewController: UIViewController {
     }
 
     override func viewWillDisappear(_ animated: Bool) {
-        self.handleCallClose()
-        Cache.tinode.removeListener(self.listener)
+        super.viewWillDisappear(animated)
+        let isTerminalTransition = isMovingFromParent || isBeingDismissed ||
+            navigationController?.isBeingDismissed == true
+        if isTerminalTransition && !isTerminatingCall {
+            handleCallClose()
+        }
     }
 
     override func viewDidDisappear(_ animated: Bool) {
-        self.stopMedia()
+        super.viewDidDisappear(animated)
+        if isTerminatingCall {
+            stopMedia()
+        }
     }
 
     @objc func handleRouteChange(notification: Notification) {
@@ -877,6 +999,9 @@ class CallViewController: UIViewController {
     }
 
     func stopMedia() {
+        guard !didStopMedia else { return }
+        didStopMedia = true
+        cancelCallSetupTimeout()
         // Allow screen dimming/going to sleep.
         UIApplication.shared.isIdleTimerDisabled = false
 
@@ -884,27 +1009,47 @@ class CallViewController: UIViewController {
         cameraManager.stopCapture()
         if let observer = self.routeChangeObserver {
             NotificationCenter.default.removeObserver(observer)
+            routeChangeObserver = nil
         }
     }
 
-    func handleCallClose() {
+    func handleCallClose(notifyPeer: Bool = true) {
+        guard !isTerminatingCall else { return }
+        isTerminatingCall = true
+        cancelCallSetupTimeout()
         playSoundEffect(nil)
 
-        Cache.callManager.completeCallInProgress(reportToSystem: true, reportToPeer: false)
-        if self.callSeqId > 0 {
+        updateCallStatus("通话已结束")
+        Cache.callManager.completeActiveCallFromApp(reportToPeer: false)
+        if notifyPeer && self.callSeqId > 0 {
             self.topic?.videoCall(event: "hang-up", seq: self.callSeqId)
         }
         self.callSeqId = -1
+        removeTinodeListenerIfNeeded()
+        stopMedia()
         DispatchQueue.main.async {
             // Dismiss video call VC.
-            self.navigationController?.popViewController(animated: true)
+            if self.navigationController?.topViewController === self {
+                self.navigationController?.popViewController(animated: true)
+            } else if self.presentingViewController != nil {
+                self.dismiss(animated: true)
+            }
         }
+    }
+
+    private func removeTinodeListenerIfNeeded() {
+        guard !didRemoveTinodeListener, listener != nil else { return }
+        didRemoveTinodeListener = true
+        Cache.tinode.removeListener(listener)
     }
 
     func handleCallInvite() {
         switch self.callDirection {
         case .outgoing:
-            guard Cache.callManager.registerOutgoingCall(onTopic: self.topic!.name, isAudioOnly: self.isAudioOnlyCall) else {
+            updateCallStatus("正在呼叫")
+            guard let topic = self.topic, !topic.name.isEmpty,
+                  Cache.callManager.registerOutgoingCall(onTopic: topic.name, isAudioOnly: self.isAudioOnlyCall) else {
+                UiUtils.showToast(message: NSLocalizedString("call_cannot_start", comment: "Call cannot be started"))
                 self.handleCallClose()
                 return
             }
@@ -913,18 +1058,35 @@ class CallViewController: UIViewController {
             self.topic?.publish(content: Drafty.videoCall(),
                                 withExtraHeaders:["webrtc": .string(MsgServerData.WebRTC.kStarted.rawValue),
                                                   "aonly": .bool(self.isAudioOnlyCall)]).then(onSuccess: { msg in
-                guard let ctrl = msg?.ctrl else { return nil }
-                if ctrl.code < 300, let seq = ctrl.getIntParam(for: "seq"), seq > 0 {
-                    // All good. Register the call.
-                    self.callSeqId = seq
-                    Cache.callManager.updateOutgoingCall(withNewSeqId: seq)
-                    return nil
+                DispatchQueue.main.async {
+                    guard let ctrl = msg?.ctrl else {
+                        self.handleOutgoingInviteFailure(NSError(
+                            domain: "app.veilping.clawoschat.call",
+                            code: 500,
+                            userInfo: [NSLocalizedDescriptionKey: NSLocalizedString(
+                                "服务器未返回有效的通话响应",
+                                comment: "Invalid call response")]))
+                        return
+                    }
+                    if ctrl.code < 300, let seq = ctrl.getIntParam(for: "seq"), seq > 0 {
+                        self.callSeqId = seq
+                        Cache.callManager.updateOutgoingCall(withNewSeqId: seq)
+                        self.updateCallStatus("等待对方接听")
+                        return
+                    }
+                    self.handleOutgoingInviteFailure(NSError(
+                        domain: "app.veilping.clawoschat.call",
+                        code: ctrl.code,
+                        userInfo: [NSLocalizedDescriptionKey: ctrl.text]))
                 }
-                self.handleCallClose()
                 return nil
             },
-            onFailure: UiUtils.ToastFailureHandler)
+            onFailure: { [weak self] err in
+                DispatchQueue.main.async { self?.handleOutgoingInviteFailure(err) }
+                return nil
+            })
         case .incoming:
+            updateCallStatus("正在建立安全连接")
             // The callee (we) has accepted the call. Notify the caller.
             self.topic?.videoCall(event: "accept", seq: self.callSeqId)
             if !self.isAudioOnlyCall {
@@ -946,7 +1108,10 @@ class CallViewController: UIViewController {
             return
         }
 
-        let path = Bundle.main.path(forResource: "\(effect).m4a", ofType: nil)!
+        guard let path = Bundle.main.path(forResource: "\(effect).m4a", ofType: nil) else {
+            Cache.log.error("CallVC - Missing sound effect resource '%@'", effect)
+            return
+        }
         let url = URL(fileURLWithPath: path)
 
         do {
@@ -1026,32 +1191,87 @@ extension CallViewController: WebRTCClientDelegate {
     }
 
     func sendIceCandidate(_ candidate: RTCIceCandidate) {
+        guard !isTerminatingCall, callSeqId > 0 else { return }
         self.topic?.videoCall(event: "ice-candidate", seq: self.callSeqId, payload: candidate.serialize())
     }
 
     func closeCall() {
-        self.handleCallClose()
+        self.handleCallClose(notifyPeer: false)
+    }
+
+    func failCall(message: String) {
+        guard !callFailureShown else { return }
+        callFailureShown = true
+        updateCallStatus("通话失败")
+        DispatchQueue.main.async {
+            UiUtils.showToast(message: message)
+            self.handleCallClose()
+        }
+    }
+
+    private func handleOutgoingInviteFailure(_ error: Error) {
+        Cache.log.error("CallVC - failed to publish call invite: %@", error.localizedDescription)
+        DispatchQueue.main.async {
+            UiUtils.showToast(message: NSLocalizedString(
+                "通话发起失败，请检查网络后重试",
+                comment: "Outgoing call invite failure"))
+            self.handleCallClose()
+        }
     }
 
     func handleRemoteStream(_ client: WebRTCClient, receivedStream stream: RTCMediaStream) {
-        client.setupRemoteRenderer(self.remoteRenderer!, withTrack: stream.videoTracks.first)
+        guard let remoteRenderer = self.remoteRenderer else { return }
+        client.setupRemoteRenderer(remoteRenderer, withTrack: stream.videoTracks.first)
     }
 
     func canSendOffer() -> Bool {
-        return self.callDirection != .incoming || self.callInitialSetupComplete
+        guard !isTerminatingCall, callSeqId > 0, callDirection == .outgoing,
+              !didSendInitialOffer else { return false }
+        didSendInitialOffer = true
+        return true
     }
 
     func enableMediaControls() {
         DispatchQueue.main.async {
             self.micToggleButton.isEnabled = true
-            self.videoToggleButton.isEnabled = true
+            self.videoToggleButton.isEnabled = !self.isAudioOnlyCall
+            self.videoToggleButton.alpha = self.isAudioOnlyCall ? 0.45 : 1
             self.speakerToggleButton.isEnabled = true
         }
     }
 
     func markConnectionSetupComplete() {
         self.callInitialSetupComplete = true
+        updateCallStatus("正在建立安全连接")
         self.webRTCClient.drainIceCandidatesCache()
+    }
+
+    func markCallConnected() {
+        guard !didMarkCallConnected else { return }
+        didMarkCallConnected = true
+        cancelCallSetupTimeout()
+        Cache.callManager.markCurrentCallConnected()
+        updateCallStatus("已接通")
+    }
+
+    private func scheduleCallSetupTimeout() {
+        cancelCallSetupTimeout()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self,
+                  !self.didMarkCallConnected,
+                  !self.isTerminatingCall else { return }
+            UiUtils.showToast(message: NSLocalizedString(
+                "通话连接超时，请检查网络后重试",
+                comment: "Call setup timeout"))
+            self.handleCallClose()
+        }
+        callSetupTimeoutWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30, execute: workItem)
+    }
+
+    private func cancelCallSetupTimeout() {
+        callSetupTimeoutWorkItem?.cancel()
+        callSetupTimeoutWorkItem = nil
     }
 
     func toggleRemoteVideo(remoteLive: Bool) {
@@ -1072,7 +1292,9 @@ extension CallViewController: TinodeVideoCallDelegate {
 
     func handleAcceptedMsg() {
         assert(Thread.isMainThread)
+        guard self.callDirection == .outgoing, !isTerminatingCall else { return }
         self.playSoundEffect(nil)
+        updateCallStatus("正在建立安全连接")
 
         // Stop animation, hide peer name & avatar.
         self.dialingAnimation(on: false)
@@ -1083,22 +1305,28 @@ extension CallViewController: TinodeVideoCallDelegate {
         // The callee has informed us (the caller) of the call acceptance.
         guard self.webRTCClient.createPeerConnection(withDataChannel: true) else {
             Cache.log.error("CallVC.handleAcceptedMsg - createPeerConnection failed")
-            self.handleCallClose()
+            self.failCall(message: NSLocalizedString("call_connection_failed", comment: "Call connection failed"))
             return
         }
     }
 
     func handleOfferMsg(with payload: JSONValue?) {
         assert(Thread.isMainThread)
-        guard case let .dict(offer) = payload, let desc = RTCSessionDescription.deserialize(from: offer) else {
-            Cache.log.error("CallVC.handleOfferMsg - invalid offer payload")
-            self.handleCallClose()
+        guard self.callDirection == .incoming, !didReceiveInitialOffer,
+              !isTerminatingCall else {
+            Cache.log.info("CallVC.handleOfferMsg - ignoring duplicate or unexpected offer")
             return
         }
+        guard case let .dict(offer) = payload, let desc = RTCSessionDescription.deserialize(from: offer) else {
+            Cache.log.error("CallVC.handleOfferMsg - invalid offer payload")
+            self.failCall(message: NSLocalizedString("call_negotiation_failed", comment: "Call negotiation failed"))
+            return
+        }
+        didReceiveInitialOffer = true
         // Data channel should be created by the peer. Not creating one.
         guard self.webRTCClient.createPeerConnection(withDataChannel: false) else {
             Cache.log.error("CallVC.handleOfferMsg - createPeerConnection failed")
-            self.handleCallClose()
+            self.failCall(message: NSLocalizedString("call_connection_failed", comment: "Call connection failed"))
             return
         }
         self.webRTCClient.handleRemoteOfferDescription(desc)
@@ -1106,9 +1334,14 @@ extension CallViewController: TinodeVideoCallDelegate {
 
     func handleAnswerMsg(with payload: JSONValue?) {
         assert(Thread.isMainThread)
+        guard self.callDirection == .outgoing, didSendInitialOffer,
+              !callInitialSetupComplete, !isTerminatingCall else {
+            Cache.log.info("CallVC.handleAnswerMsg - ignoring duplicate or unexpected answer")
+            return
+        }
         guard case let .dict(answer) = payload, let desc = RTCSessionDescription.deserialize(from: answer) else {
             Cache.log.error("CallVC.handleAnswerMsg - invalid answer payload")
-            self.handleCallClose()
+            self.failCall(message: NSLocalizedString("call_negotiation_failed", comment: "Call negotiation failed"))
             return
         }
         self.webRTCClient.handleRemoteAnswerDescription(desc)
@@ -1118,7 +1351,7 @@ extension CallViewController: TinodeVideoCallDelegate {
         assert(Thread.isMainThread)
         guard case let .dict(iceDict) = payload, let candidate = RTCIceCandidate.deserialize(from: iceDict) else {
             Cache.log.error("CallVC.handleIceCandidateMsg - invalid ICE candidate payload")
-            self.handleCallClose()
+            self.failCall(message: NSLocalizedString("call_connection_failed", comment: "Call connection failed"))
             return
         }
         self.webRTCClient.handleRemoteIceCandidate(candidate, saveInCache: !self.callInitialSetupComplete)
@@ -1127,12 +1360,14 @@ extension CallViewController: TinodeVideoCallDelegate {
     func handleRemoteHangup() {
         assert(Thread.isMainThread)
         self.playSoundEffect("call-end")
-        self.handleCallClose()
+        updateCallStatus("通话已结束")
+        self.handleCallClose(notifyPeer: false)
     }
 
     func handleRinging() {
         assert(Thread.isMainThread)
         self.dialingAnimation(on: true)
+        updateCallStatus("等待对方接听")
         self.playSoundEffect("call-out", loop: true)
     }
 }

@@ -34,6 +34,8 @@ public class RoundImageView: UIImageView {
     // MARK: - Properties
     public var iconType: IconType = .none {
         didSet {
+            // Placeholder symbols must fit inside the avatar; photos and letter tiles use fill.
+            self.contentMode = .scaleAspectFit
             self.image = RoundImageView.defaultIcon(forType: iconType)
             self.backgroundColor = Constants.kDeletedBackground
         }
@@ -66,6 +68,11 @@ public class RoundImageView: UIImageView {
     }
 
     private var radius: CGFloat?
+
+    public func setFixedCornerRadius(_ radius: CGFloat?) {
+        self.radius = radius
+        setCornerRadius()
+    }
 
     // MARK: - Overridden Properties
     override public var frame: CGRect {
@@ -104,6 +111,7 @@ public class RoundImageView: UIImageView {
         if let icon = pub?.photo?.image {
             // Use thumbnail, if present.
             // Clean up.
+            self.contentMode = .scaleAspectFill
             self.backgroundColor = nil
             self.initials = nil
             // Avatar image provided.
@@ -121,6 +129,7 @@ public class RoundImageView: UIImageView {
 
             if let title = pub?.fn, !title.isEmpty {
                 // No avatar image but have avatar name, show initial.
+                self.contentMode = .scaleAspectFill
                 self.letterTileFont = UIFont.preferredFont(forTextStyle: .title2)
                 if deleted {
                     self.backgroundColor = .tertiaryLabel
@@ -131,6 +140,7 @@ public class RoundImageView: UIImageView {
                 self.initials = String(title[title.startIndex]).uppercased()
             } else {
                 // Blank name, show placeholder image.
+                self.contentMode = .scaleAspectFit
                 self.image = RoundImageView.defaultIcon(forType: iconType)
                 self.backgroundColor = Constants.kDeletedBackground
             }
@@ -147,6 +157,7 @@ public class RoundImageView: UIImageView {
             KingfisherManager.shared.retrieveImage(with: url.downloadURL, options: [.requestModifier(modifier)], completionHandler: { result in
                 if case .success(let value) = result {
                     self.initials = nil
+                    self.contentMode = .scaleAspectFill
                     self.backgroundColor = nil
                     self.image = deleted ? value.image.noir : value.image
                 }
@@ -170,6 +181,7 @@ public class RoundImageView: UIImageView {
 
     private func setImageFrom(initials: String?) {
         guard let initials = initials else { return }
+        contentMode = .scaleAspectFill
         self.image = letterTileImage(initials: initials)
     }
 
@@ -225,7 +237,7 @@ public class RoundImageView: UIImageView {
     }
 
     private func prepareView() {
-        contentMode = .scaleAspectFill
+        contentMode = .scaleAspectFit
         layer.masksToBounds = true
         clipsToBounds = true
         setCornerRadius()
@@ -245,11 +257,14 @@ public class RoundImageView: UIImageView {
         default:
             icon =  UIImage(systemName: "questionmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 32, weight: .medium, scale: .large))!
         }
-        return icon.withTintColor(.link).withInset(6)!
+        // Keep the symbol's original bounds. Expanding its canvas before placing it in a
+        // clipped circular view makes the placeholder look cut off on narrow avatars.
+        return icon.withTintColor(.secondaryLabel, renderingMode: .alwaysOriginal)
     }
 
     private func setCornerRadius() {
-        layer.cornerRadius = min(bounds.width, bounds.height)/2
+        layer.cornerRadius = radius ?? min(bounds.width, bounds.height)/2
+        layer.cornerCurve = .continuous
         layer.borderColor = UIColor.black.cgColor
         layer.borderWidth = 0.1
     }

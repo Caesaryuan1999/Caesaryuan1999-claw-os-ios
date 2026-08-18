@@ -11,21 +11,21 @@
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="ChatListViewCell" customModule="Tinodios" customModuleProvider="target"/>
         <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
-        <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="ChatListViewCell" rowHeight="60" id="AM8-MA-3P8" userLabel="ChatListViewCell" customClass="ChatListViewCell" customModule="Tinodios" customModuleProvider="target">
-            <rect key="frame" x="0.0" y="0.0" width="414" height="60"/>
+        <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="ChatListViewCell" rowHeight="76" id="AM8-MA-3P8" userLabel="ChatListViewCell" customClass="ChatListViewCell" customModule="Tinodios" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="414" height="76"/>
             <autoresizingMask key="autoresizingMask"/>
             <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="AM8-MA-3P8" id="R21-i3-9ML">
-                <rect key="frame" x="0.0" y="0.0" width="414" height="60"/>
+                <rect key="frame" x="0.0" y="0.0" width="414" height="76"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <view userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="epv-Q0-yKc" userLabel="Icon" customClass="AvatarWithOnlineIndicator" customModule="Tinodios" customModuleProvider="target">
-                        <rect key="frame" x="20" y="10" width="40" height="40"/>
+                        <rect key="frame" x="20" y="11" width="54" height="54"/>
                         <accessibility key="accessibilityConfiguration" identifier="icon">
                             <accessibilityTraits key="traits" image="YES"/>
                         </accessibility>
                         <constraints>
-                            <constraint firstAttribute="width" constant="40" id="Xwl-Wv-LEn"/>
-                            <constraint firstAttribute="height" constant="40" id="oid-ph-s3J"/>
+                            <constraint firstAttribute="width" constant="54" id="Xwl-Wv-LEn"/>
+                            <constraint firstAttribute="height" constant="54" id="oid-ph-s3J"/>
                         </constraints>
                     </view>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Title" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wDJ-YF-7hy">
@@ -148,7 +148,7 @@
                     <constraint firstItem="DSQ-ow-mzk" firstAttribute="leading" secondItem="8zw-ko-8Ep" secondAttribute="trailing" id="Dvy-y5-fDa"/>
                     <constraint firstItem="epv-Q0-yKc" firstAttribute="leading" secondItem="R21-i3-9ML" secondAttribute="leading" constant="20" id="Gbe-pN-Eiv"/>
                     <constraint firstItem="8zw-ko-8Ep" firstAttribute="leading" secondItem="FaT-ra-R9w" secondAttribute="trailing" id="H0a-fR-ZZD"/>
-                    <constraint firstItem="wDJ-YF-7hy" firstAttribute="top" secondItem="R21-i3-9ML" secondAttribute="top" constant="8" id="JeW-ZW-PLw"/>
+                    <constraint firstItem="wDJ-YF-7hy" firstAttribute="top" secondItem="R21-i3-9ML" secondAttribute="top" constant="14" id="JeW-ZW-PLw"/>
                     <constraint firstItem="NFW-FC-rPZ" firstAttribute="top" secondItem="R21-i3-9ML" secondAttribute="top" constant="12" id="Pw7-nC-SUG"/>
                     <constraint firstItem="FaT-ra-R9w" firstAttribute="top" secondItem="R21-i3-9ML" secondAttribute="top" constant="10" id="SRZ-zr-jmr"/>
                     <constraint firstItem="8zw-ko-8Ep" firstAttribute="top" secondItem="R21-i3-9ML" secondAttribute="top" constant="10" id="TbS-WN-bxr"/>

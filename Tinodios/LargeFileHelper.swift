@@ -6,6 +6,57 @@
 
 import TinodeSDK
 
+enum AttachmentUploadPolicy {
+    static let maxAttempts = 3
+
+    enum FailureKind: Equatable {
+        case transient
+        case terminal
+        case cancelled
+    }
+
+    enum Outcome {
+        case success
+        case retry
+        case failedRetryable
+        case failedTerminal
+        case cancelled
+    }
+
+    static func isRetryable(statusCode: Int) -> Bool {
+        return statusCode == 408 || statusCode == 425 || statusCode == 429 || statusCode >= 500
+    }
+
+    static func shouldRetry(statusCode: Int?, error: Error?, attempt: Int) -> Bool {
+        guard attempt < maxAttempts else { return false }
+        return classify(statusCode: statusCode, error: error) == .transient
+    }
+
+    static func classify(statusCode: Int?, error: Error?) -> FailureKind {
+        if let error = error as NSError? {
+            if error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled {
+                return .cancelled
+            }
+            return error.domain == NSURLErrorDomain ? .transient : .terminal
+        }
+        if let statusCode = statusCode {
+            return isRetryable(statusCode: statusCode) ? .transient : .terminal
+        }
+        // A missing response is treated as transient until the retry budget is
+        // exhausted; the caller then records it as a terminal failure.
+        return .transient
+    }
+
+    static func shouldDeleteTemporarySource(outcome: Outcome) -> Bool {
+        switch outcome {
+        case .success, .cancelled, .failedTerminal:
+            return true
+        case .retry, .failedRetryable:
+            return false
+        }
+    }
+}
+
 public class Upload {
     enum UploadError: Error {
         case invalidState(String)
@@ -23,6 +74,9 @@ public class Upload {
     fileprivate var finalCb: ((ServerMessage?, Error?) -> Void)?
 
     fileprivate var task: URLSessionUploadTask?
+    fileprivate var request: URLRequest?
+    fileprivate var localURL: URL?
+    fileprivate var attempt = 1
 
     public var id: String {
         return "\(topicId)-\(msgId)-\(filename)"
@@ -55,8 +109,26 @@ public class Upload {
     }
 
     public func finished(msg: ServerMessage?, err: Error?) {
+        self.isUploading = false
         self.finalCb?(msg, err)
         self.finalCb = nil
+    }
+
+    fileprivate func prepareForRetry() {
+        self.responseData.removeAll(keepingCapacity: true)
+        self.progress = 0
+    }
+
+    fileprivate func cleanupTemporaryFile() {
+        guard let localURL = localURL else { return }
+        do {
+            try FileManager.default.removeItem(at: localURL)
+        } catch let error as CocoaError where error.code == .fileNoSuchFile {
+            // The system may already have removed an old temporary file.
+        } catch {
+            Cache.log.error("Could not remove upload temporary file: %@", error.localizedDescription)
+        }
+        self.localURL = nil
     }
 }
 
@@ -145,20 +217,25 @@ public class LargeFileHelper: NSObject {
 
         let localFileName = UUID().uuidString
         let localURL = tempDir.appendingPathComponent("throwaway-\(localFileName)")
-        try? newData.write(to: localURL)
+        do {
+            try newData.write(to: localURL, options: .atomic)
+        } catch {
+            completionCallback(nil, error)
+            return
+        }
 
         let uploadKey = LargeFileHelper.taskID(forTopic: topicId, msgId: msgId, filename: filename)
         Cache.log.info("Starting upload (id='%@', topic='%@', dbMsgId=%lld): file name = %@", uploadKey, topicId, msgId, filename, mimetype)
-        upload.task = urlSession.uploadTask(with: request, fromFile: localURL)
-        upload.task!.taskDescription = uploadKey
         upload.isUploading = true
         upload.topicId = topicId
         upload.msgId = msgId
         upload.filename = filename
         upload.progressCb = progressCallback
         upload.finalCb = completionCallback
+        upload.request = request
+        upload.localURL = localURL
         activeUploads[uploadKey] = upload
-        upload.task!.resume()
+        retry(upload: upload, taskId: uploadKey)
     }
 
     public func startAvatarUpload(mimetype: String, data payload: Data, topicId: String, completionCallback: @escaping (ServerMessage?, Error?) -> Void) {
@@ -177,6 +254,7 @@ public class LargeFileHelper: NSObject {
         for k in keys {
             if let upload = activeUploads.removeValue(forKey: k) {
                 upload.task?.cancel()
+                upload.cleanupTemporaryFile()
                 upload.finished(msg: nil, err: Upload.UploadError.cancelledByUser)
             }
         }
@@ -189,6 +267,20 @@ public class LargeFileHelper: NSObject {
 
     public func uploadFinished(for taskId: String) {
         self.activeUploads.removeValue(forKey: taskId)
+    }
+
+    private func retry(upload: Upload, taskId: String) {
+        guard let request = upload.request, let localURL = upload.localURL else {
+            uploadFinished(for: taskId)
+            upload.cleanupTemporaryFile()
+            upload.finished(msg: nil, err: Upload.UploadError.invalidState("Missing upload request data"))
+            return
+        }
+        upload.prepareForRetry()
+        let task = urlSession.uploadTask(with: request, fromFile: localURL)
+        task.taskDescription = taskId
+        upload.task = task
+        task.resume()
     }
 
     public func startDownload(from url: URL, completion: ((Error?) -> Void)? = nil) {
@@ -231,10 +323,23 @@ extension LargeFileHelper: URLSessionTaskDelegate {
         guard let taskId = task.taskDescription, let upload = self.getActiveUpload(for: taskId) else {
             return
         }
+        let statusCode = (task.response as? HTTPURLResponse)?.statusCode
+        if AttachmentUploadPolicy.shouldRetry(statusCode: statusCode, error: didCompleteWithError, attempt: upload.attempt) {
+            upload.attempt += 1
+            Cache.log.info("Retrying upload (id=%@), attempt %d of %d", taskId, upload.attempt, AttachmentUploadPolicy.maxAttempts)
+            retry(upload: upload, taskId: taskId)
+            return
+        }
         self.uploadFinished(for: taskId)
         var serverMsg: ServerMessage?
         var uploadError: Error? = didCompleteWithError
+        var outcome: AttachmentUploadPolicy.Outcome =
+            AttachmentUploadPolicy.classify(statusCode: statusCode, error: didCompleteWithError) == .cancelled
+                ? .cancelled : .failedTerminal
         defer {
+            if AttachmentUploadPolicy.shouldDeleteTemporarySource(outcome: outcome) {
+                upload.cleanupTemporaryFile()
+            }
             upload.finished(msg: serverMsg, err: uploadError)
         }
         guard uploadError == nil else {
@@ -254,6 +359,7 @@ extension LargeFileHelper: URLSessionTaskDelegate {
         }
         do {
             serverMsg = try Tinode.jsonDecoder.decode(ServerMessage.self, from: upload.getResponse())
+            outcome = .success
         } catch {
             uploadError = error
             return

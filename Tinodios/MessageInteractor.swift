@@ -474,12 +474,12 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             return
         }
         var seqIds: [Int] = []
-        var changedLocalDraft = false
+        var localDbMessageIds = Set<Int64>()
+        var localSeqIds = Set<Int>()
         if let replSeq = message.replacesSeq, let versionSeqIds = topic.store?.getAllMsgVersions(fromTopic: topic, forSeq: replSeq, limit: nil) {
             for seq in versionSeqIds {
                 if TopicDb.isUnsentSeq(seq: seq) {
-                    store.msgDiscard(topic: topic, seqId: seq)
-                    changedLocalDraft = true
+                    localSeqIds.insert(seq)
                 } else {
                     seqIds.append(seq)
                 }
@@ -488,16 +488,22 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         if message.isSynced {
             seqIds.append(message.seqId)
         } else {
-            store.msgDiscard(topic: topic, dbMessageId: message.msgId)
-            changedLocalDraft = true
+            localDbMessageIds.insert(message.msgId)
         }
-        guard !seqIds.isEmpty else {
-            if changedLocalDraft {
-                self.loadMessagesFromCache()
+
+        let uniqueSeqIds = Array(Set(seqIds)).sorted()
+        guard !uniqueSeqIds.isEmpty else {
+            let committed = commitLocalDeletes(
+                store: store, topic: topic,
+                dbMessageIds: localDbMessageIds, seqIds: localSeqIds)
+            loadMessagesFromCache()
+            if !committed {
+                DispatchQueue.main.async {
+                    UiUtils.showToast(message: NSLocalizedString("操作失败", comment: "Message deletion failure"))
+                }
             }
             return
         }
-        let uniqueSeqIds = Array(Set(seqIds)).sorted()
         if uniqueSeqIds.contains(where: { deleteSeqIdsInFlight.contains($0) }) {
             DispatchQueue.main.async {
                 UiUtils.showToast(message: NSLocalizedString("正在删除，请稍候", comment: "Message delete in progress"))
@@ -506,11 +512,25 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         }
         deleteSeqIdsInFlight.formUnion(uniqueSeqIds)
 
+        let remoteSeqSet = Set(uniqueSeqIds)
+        let visibleMessages = messages.filter {
+            !remoteSeqSet.contains($0.seqId) && !localDbMessageIds.contains($0.msgId)
+        }
+        messages = visibleMessages
+        presenter?.presentMessages(messages: visibleMessages, false)
+
         topic.delMessages(ids: uniqueSeqIds, hard: hard).then(
             onSuccess: { [weak self] _ in
+                guard let self = self else { return nil }
+                let committed = self.commitLocalDeletes(
+                    store: store, topic: topic,
+                    dbMessageIds: localDbMessageIds, seqIds: localSeqIds)
                 DispatchQueue.main.async {
-                    self?.deleteSeqIdsInFlight.subtract(uniqueSeqIds)
-                    self?.loadMessagesFromCache()
+                    self.deleteSeqIdsInFlight.subtract(uniqueSeqIds)
+                    self.loadMessagesFromCache()
+                    if !committed {
+                        UiUtils.showToast(message: NSLocalizedString("操作失败", comment: "Message deletion failure"))
+                    }
                 }
                 return nil
             },
@@ -522,6 +542,18 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 }
                 return nil
             })
+    }
+
+    private func commitLocalDeletes(store: Storage, topic: DefaultComTopic,
+                                    dbMessageIds: Set<Int64>, seqIds: Set<Int>) -> Bool {
+        var succeeded = true
+        for dbMessageId in dbMessageIds {
+            succeeded = store.msgDiscard(topic: topic, dbMessageId: dbMessageId) && succeeded
+        }
+        for seqId in seqIds {
+            succeeded = store.msgDiscard(topic: topic, seqId: seqId) && succeeded
+        }
+        return succeeded
     }
 
     func deleteFailedMessages() {
@@ -591,7 +623,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         guard let topicName = topicName else { return nil }
         var result: MessageInteractor?
         DispatchQueue.main.sync {
-            guard let window = (UIApplication.shared.delegate as! AppDelegate).window, let navVC = window.rootViewController as? UINavigationController else {
+            guard let navVC = UiUtils.messagesNavigationController() else {
                 return
             }
             for controller in navVC.viewControllers {
@@ -737,16 +769,21 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 let error = attachmentResult.error
                 let interactor = self ?? MessageInteractor.existingInteractor(for: topic.name)
                 var success = false
+                var cancelled = false
                 defer {
                     if !success {
-                        _ = topic.store?.msgDiscard(topic: topic, dbMessageId: msg.msgId)
+                        if cancelled {
+                            _ = topic.store?.msgDiscard(topic: topic, dbMessageId: msg.msgId)
+                        } else {
+                            _ = topic.store?.msgFailed(topic: topic, dbMessageId: msg.msgId)
+                        }
                     }
                     interactor?.loadMessagesFromCache()
                 }
                 guard error == nil else {
                     switch error! {
                     case Upload.UploadError.cancelledByUser:
-                        // Upload was cancelled by user. Do nothing.
+                        cancelled = true
                         Cache.log.info("Upload cancelled by user: file '%@'", filename)
                     default:
                         DispatchQueue.main.async {

@@ -3,7 +3,8 @@
 from pathlib import Path
 
 
-source = Path("TinodeSDK/WebSocket.swift").read_text(encoding="utf-8")
+ROOT = Path(__file__).resolve().parents[2]
+source = (ROOT / "TinodeSDK" / "WebSocket.swift").read_text(encoding="utf-8")
 
 for forbidden in (
     "URLCredential(trust:",

@@ -84,6 +84,12 @@ open class ImagePicker: NSObject {
         self.presentationController?.present(alertController, animated: false)
     }
 
+    public func present(source: UIImagePickerController.SourceType) {
+        guard UIImagePickerController.isSourceTypeAvailable(source) else { return }
+        pickerController.sourceType = source
+        presentationController?.present(pickerController, animated: true)
+    }
+
     private func pickerController(_ controller: UIImagePickerController, didSelect media: ImagePickerMediaType?) {
         controller.dismiss(animated: true, completion: nil)
         self.delegate?.didSelect(media: media)

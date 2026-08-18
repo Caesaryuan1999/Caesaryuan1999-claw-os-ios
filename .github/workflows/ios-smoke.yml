@@ -130,6 +130,18 @@ jobs:
       - name: Verify device information privacy policy
         run: python3 Scripts/ci/test_device_info_policy.py
 
+      - name: Verify secondary UI policy
+        run: python3 Scripts/ci/test_premium_secondary_ui_policy.py
+
+      - name: Verify active contacts layout policy
+        run: python3 Scripts/ci/test_active_contacts_layout_policy.py
+
+      - name: Verify notification settings policy
+        run: python3 Scripts/ci/test_notification_settings_policy.py
+
+      - name: Verify push notification policy
+        run: python3 Scripts/ci/test_push_notification_policy.py
+
       - name: Build and launch simulator app
         run: |
           set -euo pipefail
@@ -184,6 +196,9 @@ jobs:
             echo "${RECENT_CRASHES}"
             exit 1
           fi
+
+          mkdir -p build/screenshots
+          xcrun simctl io "${DEVICE_ID}" screenshot build/screenshots/launch.png
 
       - name: Run push configuration policy tests
         run: |
@@ -246,6 +261,7 @@ jobs:
             build/LoginRegression.xcresult
             sim-launch.log
             sim-processes.txt
+            build/screenshots/*.png
             $HOME/Library/Logs/DiagnosticReports/*.crash
           if-no-files-found: ignore
           retention-days: 7

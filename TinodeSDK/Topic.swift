@@ -356,13 +356,21 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
     public var latestMessage: Message? {
         get { return latestMessageValue }
         set {
-            guard let newLM = newValue else { return }
+            guard let newLM = newValue else {
+                latestMessageValue = nil
+                return
+            }
             if (latestMessageValue == nil) ||
                 (!newLM.isPending && latestMessageValue!.isPending) ||
                 (newLM.seqId > latestMessageValue!.seqId) {
                 latestMessageValue = newLM
             }
         }
+    }
+
+    private func refreshLatestMessageFromStore() {
+        latestMessageValue = store?.getMessagePage(
+            topic: self, from: Int.max, limit: 1, forward: false)?.first
     }
 
     public var topicType: TopicType {
@@ -908,6 +916,7 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
     }
     private func routeMetaDel(clear: Int, delseq: [MsgRange]) {
         store?.msgDelete(topic: self, delete: clear, deleteAllIn: delseq)
+        refreshLatestMessageFromStore()
         self.maxDel = clear
         listener?.onData(data: nil)
     }
@@ -1451,6 +1460,7 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
                             s.clear = id
                             s.maxDel = id
                             _ = s.store?.msgDelete(topic: s, delete: id, deleteAllIn: pendingDeletes)
+                            s.refreshLatestMessageFromStore()
                         }
                         return nil
                     })
@@ -1466,6 +1476,7 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
                         s.clear = delId
                         s.maxDel = delId
                         s.store?.msgDelete(topic: s, delete: delId, deleteFrom: fromId, deleteTo: toId)
+                        s.refreshLatestMessageFromStore()
                     }
                     return nil
                 })
@@ -1488,6 +1499,7 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
                             s.maxDel = delId
                         }
                         s.store?.msgDelete(topic: s, delete: delId, deleteAllIn: ranges)
+                        s.refreshLatestMessageFromStore()
                     }
                     return nil
                 })

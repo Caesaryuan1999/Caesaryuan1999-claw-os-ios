@@ -13,7 +13,7 @@ protocol FindBusinessLogic: AnyObject {
     var fndTopic: DefaultFndTopic? { get }
     func loadAndPresentContacts(searchQuery: String?)
     func updateAndPresentRemoteContacts()
-    func saveRemoteTopic(from remoteContact: RemoteContactHolder) -> Bool
+    func saveRemoteTopic(from remoteContact: RemoteContactHolder, completion: @escaping (Error?) -> Void)
     func setup()
     func cleanup()
     func attachToFndTopic()
@@ -77,7 +77,9 @@ class FindInteractor: FindBusinessLogic {
             let localIds = Set(self.localContacts?.compactMap { $0.uniqueId } ?? [])
             if let subs = self.fndTopic?.getSubscriptions(), !(self.searchQuery?.isEmpty ?? true) {
                 self.remoteContacts = subs.compactMap { sub in
-                    guard let uniqueId = sub.uniqueId, !localIds.contains(uniqueId) else {
+                    guard let uniqueId = sub.uniqueId,
+                          ContactsManager.isDirectContactId(uniqueId),
+                          !localIds.contains(uniqueId) else {
                         return nil
                     }
                     let accountName = AccountNames.fromTags(sub.priv)
@@ -95,7 +97,10 @@ class FindInteractor: FindBusinessLogic {
     }
 
     func fetchLocalContacts() -> [ContactHolder] {
-        return self.contactsManager.fetchContacts() ?? []
+        return (self.contactsManager.fetchContacts() ?? []).filter {
+            ContactsManager.isDirectContactId($0.uniqueId)
+                && !($0.uniqueId.map { Cache.tinode.isMe(uid: $0) } ?? true)
+        }
     }
 
     static let kSingleTagTest = try! NSRegularExpression(pattern: #"[\s,:]"#)
@@ -150,30 +155,64 @@ class FindInteractor: FindBusinessLogic {
         }
     }
 
-    func saveRemoteTopic(from remoteContact: RemoteContactHolder) -> Bool {
+    func saveRemoteTopic(from remoteContact: RemoteContactHolder, completion: @escaping (Error?) -> Void) {
         guard let topicName = remoteContact.uniqueId, let sub = remoteContact.sub else {
-            return false
+            completion(NSError(domain: "CLAWOS.Find", code: 1,
+                               userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Failed to save group and contact info.", comment: "Error message")]))
+            return
         }
         let tinode = Cache.tinode
         var topic: DefaultComTopic?
         if !tinode.isTopicTracked(topicName: topicName) {
             topic = tinode.newTopic(for: topicName) as? DefaultComTopic
             topic?.pub = sub.pub
-            topic?.persist()
         } else {
             topic = tinode.getTopic(topicName: topicName) as? DefaultComTopic
         }
-        guard let topicUnwrapped = topic else { return false }
-        if topicUnwrapped.isP2PType {
-            contactsManager.processSubscription(sub: sub)
-            queue.async {
-                self.localContacts = self.fetchLocalContacts()
-                self.remoteContacts?.removeAll { $0.uniqueId == topicName }
-                self.presenter?.presentLocalContacts(
-                    contacts: self.matchingLocalContacts(searchQuery: self.searchQuery))
-                self.presenter?.presentRemoteContacts(contacts: self.remoteContacts ?? [])
-            }
+        guard let topicUnwrapped = topic else {
+            completion(NSError(domain: "CLAWOS.Find", code: 2,
+                               userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Failed to save group and contact info.", comment: "Error message")]))
+            return
         }
-        return true
+
+        guard topicUnwrapped.isP2PType else {
+            completion(NSError(domain: "CLAWOS.Find", code: 3,
+                               userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Only user contacts can be added.", comment: "Error message")]))
+            return
+        }
+        if topicUnwrapped.attached {
+            completeRemoteTopicSave(topic: topicUnwrapped, subscription: sub, topicName: topicName, completion: completion)
+            return
+        }
+        topicUnwrapped.subscribe().then(
+            onSuccess: { [weak self] _ in
+                self?.completeRemoteTopicSave(
+                    topic: topicUnwrapped,
+                    subscription: sub,
+                    topicName: topicName,
+                    completion: completion)
+                return nil
+            },
+            onFailure: { error in
+                completion(error)
+                return nil
+            })
+    }
+
+    private func completeRemoteTopicSave(
+        topic: DefaultComTopic,
+        subscription: SubscriptionProto,
+        topicName: String,
+        completion: @escaping (Error?) -> Void) {
+        topic.persist()
+        contactsManager.processSubscription(sub: subscription)
+        queue.async {
+            self.localContacts = self.fetchLocalContacts()
+            self.remoteContacts?.removeAll { $0.uniqueId == topicName }
+            self.presenter?.presentLocalContacts(
+                contacts: self.matchingLocalContacts(searchQuery: self.searchQuery))
+            self.presenter?.presentRemoteContacts(contacts: self.remoteContacts ?? [])
+        }
+        completion(nil)
     }
 }

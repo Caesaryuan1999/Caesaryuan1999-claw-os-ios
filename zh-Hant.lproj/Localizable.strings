@@ -509,6 +509,9 @@ Menu item: video call */
 "Group created. Some members could not be added; retry from Group settings." = "群組已建立，部分成員加入失敗，可在群組設定中重試。";
 "Invalid member selection. Try again." = "成員選擇無效，請重試。";
 "Added to contacts" = "已加入聯絡人";
+"Search contacts" = "搜尋聯絡人、使用者名稱或帳號名稱";
+"Group name" = "群組名稱";
+"Account settings" = "帳號設定";
 
 /* CLAW OS 附件流程 */
 "Photo or video" = "照片或影片";
@@ -516,6 +519,7 @@ Menu item: video call */
 "Take photo or video" = "拍攝照片或影片";
 "Take photo" = "拍照";
 "Choose photo or video" = "從相簿選擇照片或影片";
+"Send content" = "傳送內容";
 "Choose photo" = "從相簿選擇照片";
 "Video caption" = "新增影片說明";
 "Invalid video" = "影片無效";
@@ -532,3 +536,36 @@ Menu item: video call */
 "close" = "關閉";
 "privacy_device_info" = "不包含手機號碼、IMEI 或序號。";
 "device_info_copied" = "手機資訊已複製";
+
+/* CLAW OS 通知設定 */
+"notification_settings_title" = "通知";
+"notification_status_enabled" = "通知已啟用";
+"notification_status_disabled" = "通知未啟用";
+"notification_status_enabled_summary" = "聲音、標記和鎖定畫面提示";
+"notification_status_disabled_summary" = "點一下以在設定中啟用通知";
+"message_notifications" = "訊息通知";
+"private_messages" = "私人訊息";
+"private_messages_summary" = "新訊息抵達時提醒";
+"group_messages" = "群組訊息";
+"group_messages_summary" = "群組與頻道訊息提醒";
+"call_reminders" = "通話提醒";
+"call_reminders_summary" = "語音與視訊來電提醒";
+"message_preview" = "訊息預覽";
+"message_preview_summary" = "在通知中顯示訊息內容";
+"alert_style" = "提醒方式";
+"notification_sound" = "通知聲音";
+"notification_sound_value" = "CLAW";
+"in_app_vibration" = "App 內震動";
+"in_app_vibration_summary" = "收到新訊息時提供觸覺回饋";
+"privacy_and_receipts" = "隱私與回條";
+"incognito_mode" = "隱身模式";
+"incognito_mode_summary" = "不向聯絡人顯示上線狀態";
+"read_receipts" = "已讀回條";
+"read_receipts_summary" = "讓對方知道您已讀取訊息";
+"typing_status" = "輸入狀態";
+"typing_status_summary" = "讓對方知道您正在輸入";
+"account_status_not_ready" = "帳號狀態尚未就緒";
+"new_message" = "新訊息";
+"new_message_hidden" = "您收到一則新訊息";
+"call_camera_unavailable" = "相機不可用，無法發起視訊通話";
+"call_cannot_start" = "目前無法發起通話，請確認帳號已登入並稍後重試";

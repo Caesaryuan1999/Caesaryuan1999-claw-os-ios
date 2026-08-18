@@ -9,6 +9,28 @@ import UIKit
 import TinodeSDK
 import TinodiosDB
 
+enum MessageBubbleLayoutPolicy {
+    // Content-sized bubbles with a conservative ceiling for long messages.
+    // This keeps short messages compact and lets Dynamic Type wrap naturally.
+    static let maxTextWidth: CGFloat = 320
+    static let viewportFraction: CGFloat = 0.78
+    static let baseVoiceWidth: CGFloat = 68
+    static let voiceSecondsIncrement: CGFloat = 2
+    static let maxVoiceWidth: CGFloat = 96
+
+    static func maxContentWidth(availableWidth: CGFloat) -> CGFloat {
+        guard availableWidth > 0 else { return maxTextWidth }
+        return min(maxTextWidth, availableWidth * viewportFraction)
+    }
+
+    static func voiceWidth(durationMs: Int?, maxWidth: CGFloat) -> CGFloat {
+        let seconds = CGFloat(max(durationMs ?? 0, 0)) / 1000
+        let desired = min(maxVoiceWidth,
+                          max(baseVoiceWidth, baseVoiceWidth + seconds * voiceSecondsIncrement))
+        return min(desired, max(maxWidth, 0))
+    }
+}
+
 protocol MessageDisplayLogic: AnyObject {
     func switchTopic(topic: String?)
     func updateTitleBar(pub: TheCard?, online: Bool?, deleted: Bool)
@@ -66,18 +88,15 @@ class MessageViewController: UIViewController {
         static let kProgressBarLeftPadding: CGFloat = 10
         static let kProgressBarRightPadding: CGFloat = 25
 
-        // Light/dark gray color: outgoing messages
-        static let kOutgoingBubbleColorLight = UIColor(red: 244/255, green: 244/255, blue: 244/255, alpha: 1)
-        static let kOutgoingBubbleColorDark = UIColor(red: 51/255, green: 51/255, blue: 51/255, alpha: 1)
-        // And corresponding text color
-        static let kOutgoingTextColorLight = UIColor.darkText
-        static let kOutgoingTextColorDark = UIColor.lightText
-        // Bright/dark green color
-        static let kIncomingBubbleColorLight = UIColor(red: 69/255, green: 193/255, blue: 89/255, alpha: 1)
-        static let kIncomingBubbleColorDark = UIColor(red: 40/255, green: 120/255, blue: 60/255, alpha: 1)
-        // And corresponding font color
-        static let kIncomingTextColorLight = UIColor.white
-        static let kIncomingTextColorDark = UIColor.lightText
+        // Figma 26:6: sent messages use CLAW teal; received messages use muted surface.
+        static let kOutgoingBubbleColorLight = ClawTheme.primary
+        static let kOutgoingBubbleColorDark = ClawTheme.primary
+        static let kOutgoingTextColorLight = UIColor.white
+        static let kOutgoingTextColorDark = UIColor.white
+        static let kIncomingBubbleColorLight = ClawTheme.surfaceMuted
+        static let kIncomingBubbleColorDark = ClawTheme.surface
+        static let kIncomingTextColorLight = ClawTheme.ink
+        static let kIncomingTextColorDark = ClawTheme.ink
         // Meta-messages, such as "Content deleted".
         static let kDeletedMessageBubbleColorLight = UIColor(fromHexCode: 0xffe3f2fd)
         static let kDeletedMessageBubbleColorDark = UIColor(fromHexCode: 0xff263238)
@@ -91,7 +110,8 @@ class MessageViewController: UIViewController {
         static let kNewDateFont = UIFont.boldSystemFont(ofSize: 10)
         static let kNewDateLabelHeight: CGFloat = 24
         // Vertical spacing between messages from the same user
-        static let kVerticalCellSpacing: CGFloat = 2
+        static let kVerticalCellSpacing: CGFloat = 6
+        static let kMediaCellSpacing: CGFloat = 8
         // Additional vertical spacing between messages from different users in P2P topics.
         static let kAdditionalP2PVerticalCellSpacing: CGFloat = 4
         static let kMinimumCellWidth: CGFloat = 94
@@ -109,13 +129,17 @@ class MessageViewController: UIViewController {
         static let kOutgoingContainerPadding = UIEdgeInsets(top: 0, left: Constants.kFarSideHorizontalSpacing, bottom: 0, right: 0)
 
         // Insets around content inside the message bubble.
-        static let kIncomingMessageContentInset = UIEdgeInsets(top: 4, left: 18, bottom: 13, right: 14)
-        static let kOutgoingMessageContentInset = UIEdgeInsets(top: 4, left: 14, bottom: 13, right: 18)
+        static let kIncomingMessageContentInset = UIEdgeInsets(top: 4, left: 12, bottom: 8, right: 12)
+        static let kOutgoingMessageContentInset = UIEdgeInsets(top: 4, left: 12, bottom: 8, right: 12)
         static let kDeletedMessageContentInset = UIEdgeInsets(top: 4, left: 14, bottom: 0, right: 14)
+        static let kMediaMessageContentInset = UIEdgeInsets(top: 0, left: 0, bottom: 20, right: 0)
+        static let kMediaCornerRadius: CGFloat = 14
 
         // Carve out for timestamp and delivery marker in the bottom-right corner.
         static let kIncomingMetadataCarveout = "     "
         static let kOutgoingMetadataCarveout = "       "
+        static let kExternalMetadataGap: CGFloat = 2
+        static let kExternalMetadataHeight: CGFloat = 18
 
         // Thresholds for tracking update batch stats/UI refresh.
         // When too many messages (batch) come in a quick succession,
@@ -162,7 +186,11 @@ class MessageViewController: UIViewController {
 
     /// Call button in NavBar
     lazy var navBarCallBtn: UIBarButtonItem = {
-        return UIBarButtonItem(image: UIImage(systemName: "phone", withConfiguration:UIImage.SymbolConfiguration(pointSize: 16, weight: .light)), style: .plain, target: self, action: #selector(navBarCallTapped(sender:)))
+        return UIBarButtonItem(
+            image: ClawTheme.symbol("phone.fill", pointSize: 20, weight: .medium),
+            style: .plain,
+            target: self,
+            action: #selector(navBarCallTapped(sender:)))
     }()
 
     /// Pointer to the view holding messages.
@@ -513,13 +541,19 @@ class MessageViewController: UIViewController {
 
         // Setup "Go to latest message" button.
         let buttonGoToLatest = UIButton(type: .custom)
-        buttonGoToLatest.backgroundColor = .secondarySystemBackground
-        buttonGoToLatest.imageView?.tintColor = .secondaryLabel
-        buttonGoToLatest.setImage(UIImage(systemName: "chevron.down", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .bold)), for: .normal)
-        buttonGoToLatest.sizeToFit()
+        buttonGoToLatest.backgroundColor = ClawTheme.surface
+        buttonGoToLatest.layer.borderWidth = 1
+        buttonGoToLatest.layer.borderColor = ClawTheme.border.cgColor
+        ClawTheme.styleIconButton(
+            buttonGoToLatest,
+            symbolName: "chevron.down",
+            pointSize: 16,
+            tintColor: ClawTheme.primary)
         buttonGoToLatest.layer.cornerRadius = 22
-        buttonGoToLatest.layer.shadowOpacity = 0.25
-        buttonGoToLatest.layer.shadowOffset = CGSize()
+        buttonGoToLatest.layer.shadowColor = UIColor.black.cgColor
+        buttonGoToLatest.layer.shadowOpacity = 0.12
+        buttonGoToLatest.layer.shadowRadius = 8
+        buttonGoToLatest.layer.shadowOffset = CGSize(width: 0, height: 3)
         buttonGoToLatest.addTarget(self, action: #selector(self.goToLastMessage), for: .touchUpInside)
 
         view.addSubview(buttonGoToLatest)
@@ -550,7 +584,6 @@ class MessageViewController: UIViewController {
         self.setInterfaceColors()
 
         if self.interactor?.setup(topicName: self.topicName, sendReadReceipts: self.sendReadReceipts) ?? false {
-            self.interactor?.deleteFailedMessages()
             self.interactor?.loadMessagesFromCache(scrollToMostRecentMessage: true)
         }
     }
@@ -637,6 +670,18 @@ class MessageViewController: UIViewController {
 
     private func sendVideoAttachment(withContent content: VideoPreviewContent) {
         guard case let VideoPreviewContent.VideoSource.local(url, poster) = content.videoSrc else { return }
+        let maxAttachmentSize = Cache.tinode.getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: MessageViewController.kMaxAttachmentSize)
+        do {
+            if let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+               fileSize > maxAttachmentSize {
+                UiUtils.showToast(message: String(format: NSLocalizedString("The file size exceeds the limit %@", comment: "Error message"), UiUtils.bytesToHumanSize(maxAttachmentSize)))
+                return
+            }
+        } catch {
+            Cache.log.error("MessageVC - failed to inspect video file: %@", error.localizedDescription)
+            UiUtils.showToast(message: NSLocalizedString("Unable to read video", comment: "Video attachment read error"))
+            return
+        }
         let previewMime = "image/png"
         let preview = poster?.pixelData(forMimeType: previewMime)
         let maxInbandSize = self.maxInbandSize
@@ -649,7 +694,7 @@ class MessageViewController: UIViewController {
 
         let data: Data
         do {
-            data = try Data(contentsOf: url)
+            data = try Data(contentsOf: url, options: .mappedIfSafe)
         } catch {
             Cache.log.error("MessageVC - failed to read video file: %@", error.localizedDescription)
             UiUtils.showToast(message: NSLocalizedString("Unable to read video", comment: "Video attachment read error"))
@@ -749,25 +794,24 @@ class MessageViewController: UIViewController {
     }
 
     private func setInterfaceColors() {
-        if traitCollection.userInterfaceStyle == .dark {
-            view.backgroundColor = .black
-        } else {
-            view.backgroundColor = .white
-        }
+        view.backgroundColor = ClawTheme.background
+        collectionView?.backgroundColor = ClawTheme.background
+        goToLatestButton?.backgroundColor = ClawTheme.surface
+        goToLatestButton?.layer.borderColor = ClawTheme.border.cgColor
     }
 
     @objc func navBarCallTapped(sender: UIMenuController) {
         switch self.topicType {
         case .p2p:
-            let alert = UIAlertController(title: NSLocalizedString("Call", comment: "Menu title for selecting type of call"), message: nil, preferredStyle: .actionSheet)
+            let alert = UIAlertController(title: "发起通话", message: nil, preferredStyle: .actionSheet)
             alert.modalPresentationStyle = .popover
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Audio-only", comment: "Menu item: audio-only call"), style: .default, handler: { audioCall in
+            alert.addAction(UIAlertAction(title: "语音通话", style: .default, handler: { audioCall in
                 self.performSegue(withIdentifier: "Messages2Call", sender: Constants.kAudioOnlyCall)
             }))
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Video", comment: "Menu item: video call"), style: .default, handler: { videoCall in
+            alert.addAction(UIAlertAction(title: "视频通话", style: .default, handler: { videoCall in
                 self.performSegue(withIdentifier: "Messages2Call", sender: Constants.kVideoCall)
             }))
-            alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: "Alert action"), style: .cancel, handler: nil))
+            alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: nil))
             if let presentation = alert.popoverPresentationController {
                 presentation.barButtonItem = navBarCallBtn
             }
@@ -848,13 +892,18 @@ extension MessageViewController: UICollectionViewDataSource {
         // Content: RichTextLabel.
         cell.content.frame = attributes.contentFrame
 
-        cell.deliveryMarker.frame = attributes.deliveryMarkerFrame
+        let metadataOffset = CGAffineTransform(translationX: attributes.containerFrame.minX,
+                                                y: attributes.containerFrame.minY)
+        cell.deliveryMarker.frame = attributes.deliveryMarkerFrame == .zero
+            ? .zero : attributes.deliveryMarkerFrame.applying(metadataOffset)
 
         cell.timestampLabel.sizeToFit()
-        cell.timestampLabel.frame = attributes.timestampFrame
+        cell.timestampLabel.frame = attributes.timestampFrame == .zero
+            ? .zero : attributes.timestampFrame.applying(metadataOffset)
 
         cell.editedMarker.sizeToFit()
-        cell.editedMarker.frame = attributes.editedMarkerFrame
+        cell.editedMarker.frame = attributes.editedMarkerFrame == .zero
+            ? .zero : attributes.editedMarkerFrame.applying(metadataOffset)
 
         cell.newDateLabel.frame = attributes.newDateFrame
 
@@ -869,6 +918,8 @@ extension MessageViewController: UICollectionViewDataSource {
         cell.seqId = message.seqId
         cell.isDeleted = message.isDeleted
         cell.timeStamp = message.ts
+        let storedMessage = message as! StoredMessage
+        let isVisualMedia = storedMessage.isVisualMedia
 
         cell.content.backgroundColor = nil
         if message.isDeleted {
@@ -878,13 +929,16 @@ extension MessageViewController: UICollectionViewDataSource {
                 cell.containerView.backgroundColor = Constants.kDeletedMessageBubbleColorLight
             }
             cell.content.textColor = Constants.kDeletedMessageTextColor
+        } else if isVisualMedia {
+            cell.containerView.backgroundColor = .clear
+            cell.content.textColor = ClawTheme.ink
         } else if isFromCurrentSender(message: message) {
             if traitCollection.userInterfaceStyle == .dark {
                 cell.containerView.backgroundColor = Constants.kOutgoingBubbleColorDark
                 cell.content.textColor = Constants.kOutgoingTextColorDark
             } else {
                 cell.containerView.backgroundColor = Constants.kOutgoingBubbleColorLight
-                cell.content.textColor = Constants.kOutgoingTextColorDark
+                cell.content.textColor = Constants.kOutgoingTextColorLight
             }
         } else {
             if traitCollection.userInterfaceStyle == .dark {
@@ -898,11 +952,8 @@ extension MessageViewController: UICollectionViewDataSource {
 
         cell.content.font = Constants.kContentFont
 
-        let storedMessage = message as! StoredMessage
         if let attributedText = storedMessage.cachedContent {
-            let carveout = (isFromCurrentSender(message: message) ? Constants.kOutgoingMetadataCarveout : Constants.kIncomingMetadataCarveout)
             let text = NSMutableAttributedString(attributedString: attributedText)
-            text.append(NSAttributedString(string: carveout, attributes: [.font: Constants.kContentFont]))
             cell.content.attributedText = text
         }
 
@@ -910,11 +961,12 @@ extension MessageViewController: UICollectionViewDataSource {
             cell.deliveryMarker.image = image
             cell.deliveryMarker.tintColor = tint
         }
-        let markerTextColor = isFromCurrentSender(message: message) ? UIColor.gray : UIColor.lightText
+        let markerTextColor = ClawTheme.muted
         if let ts = message.ts {
             cell.timestampLabel.text = RelativeDateFormatter.shared.timeOnly(from: ts)
             cell.timestampLabel.textColor = markerTextColor
         }
+        cell.deliveryMarker.tintColor = markerTextColor
         cell.editedMarker.text = editedMarkerText(forMessage: message)
         cell.editedMarker.textColor = markerTextColor
         cell.newDateLabel.attributedText = newDateLabel(for: message, at: indexPath)
@@ -961,6 +1013,7 @@ extension MessageViewController: UICollectionViewDataSource {
     func bubbleDecorator(for message: Message, at indexPath: IndexPath) -> (UIView) -> Void {
         let isIncoming = !isFromCurrentSender(message: message)
         let isDeleted = message.isDeleted
+        let isVisualMedia = (message as? StoredMessage)?.isVisualMedia == true
 
         let breakBefore = !isPreviousMessageSameSender(at: indexPath) || !isPreviousMessageSameDate(at: indexPath)
         let breakAfter = !isNextMessageSameSender(at: indexPath) || !isNextMessageSameDate(at: indexPath)
@@ -978,6 +1031,13 @@ extension MessageViewController: UICollectionViewDataSource {
         }
 
         return { view in
+            view.layer.mask = nil
+            if isVisualMedia && !isDeleted {
+                view.layer.cornerRadius = Constants.kMediaCornerRadius
+                view.layer.masksToBounds = true
+                return
+            }
+            view.layer.cornerRadius = 0
             let path = !isDeleted ?
                 MessageBubbleDecorator.draw(view.bounds, isIncoming: isIncoming, style: style) :
                 MessageBubbleDecorator.drawDeleted(view.bounds)
@@ -1082,7 +1142,9 @@ extension MessageViewController: MessageViewLayoutDelegate {
         let containerSize = calcContainerSize(for: message, avatarsVisible: hasAvatars, progressVisible: showUploadProgress)
         // Get cell size.
         let cellSize = !isDeleted ? calcCellSize(forItemAt: indexPath) : containerSize
-        attr.cellSpacing = Constants.kVerticalCellSpacing
+        attr.cellSpacing = (message as? StoredMessage)?.isVisualMedia == true
+            ? Constants.kMediaCellSpacing
+            : Constants.kVerticalCellSpacing
 
         // Height of the field with the current date above the first message of the day.
         let newDateLabelHeight = !isDeleted ? calcNewDateLabelHeight(at: indexPath) : 0
@@ -1111,12 +1173,11 @@ extension MessageViewController: MessageViewLayoutDelegate {
         attr.containerFrame = CGRect(origin: CGPoint(x: originX, y: newDateLabelHeight + containerPadding.top), size: containerSize)
 
         // Content: RichTextLabel.
-        let contentInset =
-            isDeleted ? Constants.kDeletedMessageContentInset :
-            isOutgoing ? Constants.kOutgoingMessageContentInset : Constants.kIncomingMessageContentInset
+        let contentInset = contentInsets(for: message)
         attr.contentFrame = CGRect(x: contentInset.left, y: contentInset.top, width: attr.containerFrame.width - contentInset.left - contentInset.right, height: attr.containerFrame.height - contentInset.top - contentInset.bottom - (showUploadProgress ? Constants.kProgressViewHeight : 0))
 
-        var rightEdge = CGPoint(x: attr.containerFrame.width - Constants.kDeliveryMarkerPadding, y: attr.containerFrame.height - Constants.kDeliveryMarkerSize)
+        let metadataY = attr.containerFrame.height + Constants.kExternalMetadataGap
+        var rightEdge = CGPoint(x: attr.containerFrame.width - Constants.kDeliveryMarkerPadding, y: metadataY)
         if isOutgoing {
             rightEdge.x -= Constants.kDeliveryMarkerSize
             attr.deliveryMarkerFrame = CGRect(x: rightEdge.x, y: rightEdge.y, width: Constants.kDeliveryMarkerSize, height: Constants.kDeliveryMarkerSize)
@@ -1179,7 +1240,10 @@ extension MessageViewController: MessageViewLayoutDelegate {
         let newDateLabelHeight: CGFloat = calcNewDateLabelHeight(at: indexPath)
         let avatarHeight = hasAvatars ? Constants.kAvatarSize : 0
 
-        let totalLabelHeight: CGFloat = newDateLabelHeight + containerHeight + senderNameLabelHeight + (progressVisible ? Constants.kProgressViewHeight : 0)
+        let metadataHeight = message.isDeleted
+            ? 0
+            : Constants.kExternalMetadataGap + Constants.kExternalMetadataHeight
+        let totalLabelHeight: CGFloat = newDateLabelHeight + containerHeight + metadataHeight + senderNameLabelHeight + (progressVisible ? Constants.kProgressViewHeight : 0)
         return max(avatarHeight, totalLabelHeight)
     }
 
@@ -1198,27 +1262,29 @@ extension MessageViewController: MessageViewLayoutDelegate {
     // Calculate maximum width of content inside message bubble
     func calcMaxContentWidth(for message: Message, avatarsVisible: Bool) -> CGFloat {
 
-        let insets = isFromCurrentSender(message: message) ? Constants.kOutgoingMessageContentInset : Constants.kIncomingMessageContentInset
+        let insets = contentInsets(for: message)
 
         let avatarWidth = avatarsVisible ? Constants.kAvatarSize : 0
 
         let padding = isFromCurrentSender(message: message) ? Constants.kOutgoingContainerPadding : Constants.kIncomingContainerPadding
 
-        return calcCellWidth() - avatarWidth - padding.left - padding.right - insets.left - insets.right
+        let availableWidth = calcCellWidth() - avatarWidth - padding.left - padding.right - insets.left - insets.right
+        return MessageBubbleLayoutPolicy.maxContentWidth(availableWidth: availableWidth)
     }
 
     /// Calculate size of the view which holds message content.
     func calcContainerSize(for message: Message, avatarsVisible: Bool, progressVisible: Bool) -> CGSize {
         let maxWidth = calcMaxContentWidth(for: message, avatarsVisible: avatarsVisible)
-        let insets =
-            message.isDeleted ? Constants.kDeletedMessageContentInset :
-            isFromCurrentSender(message: message) ? Constants.kOutgoingMessageContentInset : Constants.kIncomingMessageContentInset
+        let insets = contentInsets(for: message)
+        let isVisualMedia = (message as? StoredMessage)?.isVisualMedia == true
 
         var size = calcContentSize(for: message, maxWidth: maxWidth)
 
         size.width += insets.left + insets.right
-        size.width = max(size.width,
-                         message.isEdited ? Constants.kMinimumEditedCellWidth : Constants.kMinimumCellWidth)
+        if !isVisualMedia {
+            size.width = max(size.width,
+                             message.isEdited ? Constants.kMinimumEditedCellWidth : Constants.kMinimumCellWidth)
+        }
         size.height += insets.top + insets.bottom
         if progressVisible {
             size.height += Constants.kProgressViewHeight
@@ -1230,8 +1296,6 @@ extension MessageViewController: MessageViewLayoutDelegate {
     /// Calculate size of message content.
     func calcContentSize(for message: Message, maxWidth: CGFloat) -> CGSize {
         let attributedText = NSMutableAttributedString()
-
-        let carveout = isFromCurrentSender(message: message) ? Constants.kOutgoingMetadataCarveout : Constants.kIncomingMetadataCarveout
 
         let textColor: UIColor
         if message.isDeleted {
@@ -1248,8 +1312,6 @@ extension MessageViewController: MessageViewLayoutDelegate {
         } else {
             attributedText.append(NSAttributedString(string: "none", attributes: [.font: Constants.kContentFont]))
         }
-        attributedText.append(NSAttributedString(string: carveout, attributes: [.font: Constants.kContentFont]))
-
         // FIXME: storedMessage may contain an image surrounded by text. In such cases,
         // size calculations may be wrong. Handle it.
         return storedMessage.isVisualMedia ?
@@ -1257,6 +1319,18 @@ extension MessageViewController: MessageViewLayoutDelegate {
                                         options: [.usesLineFragmentOrigin, .usesFontLeading],
                                         context: nil).integral.size :
             textSizeHelper.computeSize(for: attributedText, within: maxWidth)
+    }
+
+    private func contentInsets(for message: Message) -> UIEdgeInsets {
+        if message.isDeleted {
+            return Constants.kDeletedMessageContentInset
+        }
+        if (message as? StoredMessage)?.isVisualMedia == true {
+            return Constants.kMediaMessageContentInset
+        }
+        return isFromCurrentSender(message: message)
+            ? Constants.kOutgoingMessageContentInset
+            : Constants.kIncomingMessageContentInset
     }
 }
 

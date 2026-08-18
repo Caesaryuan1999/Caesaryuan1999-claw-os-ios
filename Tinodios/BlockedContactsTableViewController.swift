@@ -15,6 +15,9 @@ class BlockedContactsTableViewController: UITableViewController {
     private var topics: [DefaultComTopic] = []
     override func viewDidLoad() {
         super.viewDidLoad()
+        title = NSLocalizedString("已屏蔽联系人", comment: "Blocked contacts title")
+        view.backgroundColor = ClawTheme.background
+        ClawTheme.styleList(chatListTableView)
         self.tableView.tableFooterView = UIView(frame: .zero)
         self.chatListTableView.register(UINib(nibName: "ChatListViewCell", bundle: nil), forCellReuseIdentifier: "ChatListViewCell")
         self.reloadData()

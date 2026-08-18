@@ -51,6 +51,12 @@ class PermissionsEditViewController: UIViewController, UITableViewDelegate, UITa
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.28)
+        ClawTheme.styleCard(alertView)
+        ClawTheme.styleList(tableView, rowHeight: 52)
+        ClawTheme.stylePrimaryButton(okButton)
+        ClawTheme.styleSecondaryButton(cancelButton)
+
         cancelButton.addBorder(side: .top, color: PermissionsEditViewController.buttonBorderColor, width: 1)
         cancelButton.addBorder(side: .right, color: PermissionsEditViewController.buttonBorderColor, width: 1)
         okButton.addBorder(side: .top, color: PermissionsEditViewController.buttonBorderColor, width: 1)
@@ -74,7 +80,8 @@ class PermissionsEditViewController: UIViewController, UITableViewDelegate, UITa
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell")!
-        cell.backgroundColor = .systemGroupedBackground
+        cell.backgroundColor = ClawTheme.surface
+        cell.textLabel?.textColor = ClawTheme.ink
 
         let x = visiblePermissions[indexPath.row]
         cell.textLabel?.text = PermissionsEditViewController.kPermissions[x]

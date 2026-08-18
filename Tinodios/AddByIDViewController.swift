@@ -24,12 +24,23 @@ class AddByIDViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Do any additional setup after loading the view.
+        navigationItem.title = NSLocalizedString("查找联系人", comment: "Find contacts title")
+        view.backgroundColor = ClawTheme.background
+        titleLabel.textColor = ClawTheme.ink
+        titleLabel.font = .systemFont(ofSize: 20, weight: .semibold)
+        ClawTheme.styleTextField(idTextField)
+        ClawTheme.stylePrimaryButton(okayButton)
+        ClawTheme.styleRoundedIconButton(showCodeButton, symbolName: "qrcode", selected: true)
+        ClawTheme.styleRoundedIconButton(scanCodeButton, symbolName: "viewfinder")
+        ClawTheme.styleCard(qrcodeImageView)
+        cameraPreviewView.layer.cornerRadius = ClawTheme.cardRadius
+        cameraPreviewView.layer.cornerCurve = .continuous
+        cameraPreviewView.clipsToBounds = true
+
         self.idTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
         self.tinode = Cache.tinode
         UiUtils.dismissKeyboardForTaps(onView: self.view)
 
-        showCodeButton.tintColor = UIColor.label.inverted
         idTextField.placeholder = NSLocalizedString("用户名或账号名", comment: "Placeholder for contact lookup")
         idTextField.autocorrectionType = .no
         idTextField.autocapitalizationType = .none
@@ -54,11 +65,8 @@ class AddByIDViewController: UIViewController {
     }
 
     private func setInterfaceColors() {
-        if traitCollection.userInterfaceStyle == .dark {
-            self.view.backgroundColor = .black
-        } else {
-            self.view.backgroundColor = .white
-        }
+        self.view.backgroundColor = ClawTheme.background
+        titleLabel.textColor = ClawTheme.ink
     }
 
     @objc func textFieldDidChange(_ textField: UITextField) {
@@ -84,10 +92,8 @@ class AddByIDViewController: UIViewController {
         titleLabel.text = NSLocalizedString("CLAW OS", comment: "Title for displaying app QR Code")
 
 
-        showCodeButton.tintColor = UIColor.label.inverted
-        showCodeButton.backgroundColor = UIColor.link
-        scanCodeButton.tintColor = UIColor.link
-        scanCodeButton.backgroundColor = UIColor.systemBackground
+        ClawTheme.styleRoundedIconButton(showCodeButton, symbolName: "qrcode", selected: true)
+        ClawTheme.styleRoundedIconButton(scanCodeButton, symbolName: "viewfinder")
     }
 
     @IBAction func scanCodePressed(_ sender: Any) {
@@ -98,10 +104,8 @@ class AddByIDViewController: UIViewController {
 
         titleLabel.text = NSLocalizedString("扫描二维码", comment: "Title for camera preview when scanning a QR code")
 
-        showCodeButton.tintColor = UIColor.link
-        showCodeButton.backgroundColor = UIColor.systemBackground
-        scanCodeButton.tintColor = UIColor.label.inverted
-        scanCodeButton.backgroundColor = UIColor.link
+        ClawTheme.styleRoundedIconButton(showCodeButton, symbolName: "qrcode")
+        ClawTheme.styleRoundedIconButton(scanCodeButton, symbolName: "viewfinder", selected: true)
     }
 
     private func normalizeLookupInput(_ value: String) -> String {

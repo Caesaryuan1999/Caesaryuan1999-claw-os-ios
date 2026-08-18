@@ -32,10 +32,6 @@ class ImagePreviewController: UIViewController, UIScrollViewDelegate {
 
     @IBOutlet weak var scrollView: UIScrollView!
     @IBOutlet weak var imageView: UIImageView!
-    @IBOutlet weak var contentTypeLabel: UILabel!
-    @IBOutlet weak var fileNameLabel: UILabel!
-    @IBOutlet weak var sizeLabel: UILabel!
-    @IBOutlet weak var imageDetailsPanel: UIStackView!
 
     var previewContent: ImagePreviewContent?
     var replyPreviewDelegate: PendingMessagePreviewDelegate?
@@ -58,8 +54,6 @@ class ImagePreviewController: UIViewController, UIScrollViewDelegate {
             sendImageBar.togglePreviewBar(with: content.pendingMessagePreview)
             // Hide [Save image] button.
             navigationItem.rightBarButtonItem = nil
-            // Hide image details panel.
-            imageDetailsPanel.bounds = CGRect()
         case .rawdata(let bits, let ref):
             let errorImage = UiUtils.placeholderImage(
                 named: "image-broken", withBackground: nil,
@@ -67,20 +61,6 @@ class ImagePreviewController: UIViewController, UIScrollViewDelegate {
             // Viewing received image.
 
             imageView.image = bits != nil ? UIImage(data: bits!) : errorImage
-
-            // Fill out details panel for the received image.
-            fileNameLabel.text = content.fileName ?? NSLocalizedString("undefined", comment: "Placeholder for missing file name")
-            contentTypeLabel.text = content.contentType ?? NSLocalizedString("undefined", comment: "Placeholder for missing file type")
-            var sizeString = "?? KB"
-            if let size = content.size {
-                sizeString = UiUtils.bytesToHumanSize(size)
-            }
-            if let width = content.width, let height = content.height {
-                sizeString += "; \(width)×\(height)"
-            } else {
-                sizeString += "; ??×??"
-            }
-            sizeLabel.text = sizeString
 
             // If we have a reference, kick off the download.
             if let ref = ref, let url = URL(string: ref, relativeTo: Cache.tinode.baseURL(useWebsocketProtocol: false)) {
@@ -125,11 +105,9 @@ class ImagePreviewController: UIViewController, UIScrollViewDelegate {
     }
 
     private func setInterfaceColors() {
-        if traitCollection.userInterfaceStyle == .dark {
-            self.view.backgroundColor = .black
-        } else {
-            self.view.backgroundColor = .white
-        }
+        view.backgroundColor = .black
+        scrollView.backgroundColor = .black
+        imageView.backgroundColor = .black
     }
 
     func viewForZooming(in: UIScrollView) -> UIView? {

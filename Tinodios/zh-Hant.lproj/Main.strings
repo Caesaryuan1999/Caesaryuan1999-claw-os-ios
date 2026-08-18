@@ -625,3 +625,27 @@
 /* Class = "UILabel"; text = "Permissions, block or report chat"; ObjectID = "zz2-fg-2IG"; */
 "zz2-fg-2IG.text" = "許可權、阻止或報告聊天";
 
+/* CLAW OS contact and group management */
+"Done" = "完成";
+"Done (%d)" = "完成（%d）";
+"Cancel" = "取消";
+"Selected members (%d)" = "已選成員（%d）";
+"Saving changes" = "正在儲存變更";
+"Search contacts" = "搜尋聯絡人";
+"Added to contacts" = "已加入通訊錄";
+"Only user contacts can be added." = "只能加入使用者聯絡人。";
+"Failed to save group and contact info." = "儲存聯絡人失敗。";
+"Change permissions" = "修改權限";
+"Make owner" = "轉讓群主";
+"Remove" = "移出群聊";
+"Block" = "移出並禁止加入";
+
+/* CLAW OS attachment sheet */
+"Send content" = "傳送內容";
+"Choose photo or video" = "照片或影片";
+"Take photo or video" = "拍攝";
+"Choose photo" = "選擇照片";
+"Take photo" = "拍照";
+"File" = "檔案";
+"Camera is not available" = "目前裝置無法使用相機";
+
