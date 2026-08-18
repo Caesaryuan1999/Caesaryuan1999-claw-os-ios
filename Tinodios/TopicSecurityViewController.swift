@@ -507,7 +507,9 @@ extension TopicSecurityViewController {
             leading: securityRowLeadingInset,
             bottom: 0,
             trailing: securityRowTrailingInset)
-        configuration.imageProperties.reservedLayoutSize = securityRowIconColumnWidth
+        configuration.imageProperties.reservedLayoutSize = CGSize(
+            width: securityRowIconColumnWidth,
+            height: securityRowIconSize.height)
         configuration.imageProperties.maximumSize = securityRowIconSize
         configuration.imageProperties.preferredSymbolConfiguration = UIImage.SymbolConfiguration(
             pointSize: 24,
