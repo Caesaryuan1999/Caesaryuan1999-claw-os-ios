@@ -105,6 +105,9 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
             logo.widthAnchor.constraint(equalToConstant: 32),
             logo.heightAnchor.constraint(equalToConstant: 32)
         ])
+        // The storyboard provides a legacy navigation-item title. Clear it so the
+        // custom logo-and-name view is the only brand shown in this header.
+        navigationItem.title = nil
         navigationItem.titleView = nil
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: brand)
     }

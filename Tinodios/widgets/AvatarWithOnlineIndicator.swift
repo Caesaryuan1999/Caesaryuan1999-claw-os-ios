@@ -75,4 +75,12 @@ class AvatarWithOnlineIndicator: UIView {
 
         self.deletedIndicator.isHidden = !deleted
     }
+
+    /// Use the product logo for the local CLAW file assistant while preserving
+    /// the same avatar container and dimensions as a normal user avatar.
+    public func setBrandingIcon() {
+        avatar.setBrandingIcon()
+        onlineIndicator.isHidden = true
+        deletedIndicator.isHidden = true
+    }
 }

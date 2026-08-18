@@ -60,6 +60,8 @@ class TopicInfoViewController: UITableViewController {
         view.accessibilityIdentifier = "claw.settings.topic.info.screen"
         tableView.accessibilityIdentifier = "claw.settings.topic.info.list"
         ClawTheme.styleList(tableView, rowHeight: 64)
+        navigationItem.title = NSLocalizedString("用户设置", comment: "User settings title")
+        tableView.separatorStyle = .none
         avatarImage.layer.borderWidth = 2
         avatarImage.layer.borderColor = ClawTheme.brandSoft.cgColor
         topicTitleLabel.textColor = ClawTheme.ink
@@ -111,7 +113,7 @@ class TopicInfoViewController: UITableViewController {
         }
 
         topicTitleLabel.text = isSlf ?
-            NSLocalizedString("已保存消息", comment: "Title for slf topic") :
+            NSLocalizedString("CLAW文件助手", comment: "Title of the CLAW file assistant") :
             (topic.isP2PType ?
                 AccountNames.contactDisplayName(displayName: topic.pub?.fn, accountName: topic.alias, userId: topic.name) :
                 topic.pub?.fn ?? NSLocalizedString("未命名会话", comment: "Placeholder for missing user name"))
@@ -147,6 +149,9 @@ class TopicInfoViewController: UITableViewController {
         }
 
         avatarImage.set(pub: topic.pub, id: topic.name, deleted: topic.deleted)
+        if topic.isSlfType {
+            avatarImage.setBrandingIcon()
+        }
         avatarImage.letterTileFont = self.avatarImage.letterTileFont.withSize(CGFloat(50))
 
         mutedSwitch.isOn = topic.isMuted
@@ -440,6 +445,14 @@ extension TopicInfoViewController {
         cell.contentView.backgroundColor = .clear
         cell.textLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         cell.detailTextLabel?.font = .systemFont(ofSize: 13, weight: .regular)
+        cell.textLabel?.numberOfLines = 1
+        cell.detailTextLabel?.numberOfLines = 1
+        cell.imageView?.tintColor = ClawTheme.primary
+        cell.imageView?.contentMode = .scaleAspectFit
+        cell.imageView?.preferredSymbolConfiguration = UIImage.SymbolConfiguration(
+            pointSize: ClawTheme.iconStandard,
+            weight: .medium,
+            scale: .medium)
         ClawTheme.normalizeIconButtons(in: cell.contentView)
     }
 

@@ -365,7 +365,7 @@ private final class ClawGroupedCellBackgroundView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        fillView.frame = bounds.inset(by: UIEdgeInsets(top: 0.5, left: 18, bottom: 0.5, right: 18))
+        fillView.frame = bounds.inset(by: UIEdgeInsets(top: 0, left: 18, bottom: 0, right: 18))
         fillView.layer.cornerRadius = (position == .middle) ? 0 : ClawTheme.cardRadius
         switch position {
         case .single:

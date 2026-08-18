@@ -692,37 +692,50 @@ class MessageViewController: UIViewController {
         let videoHeight = max(content.height ?? posterHeight, 1)
         let duration = max(content.duration, 0)
 
-        let data: Data
-        do {
-            data = try Data(contentsOf: url, options: .mappedIfSafe)
-        } catch {
-            Cache.log.error("MessageVC - failed to read video file: %@", error.localizedDescription)
-            UiUtils.showToast(message: NSLocalizedString("Unable to read video", comment: "Video attachment read error"))
-            return
-        }
-
-        let previewSize = preview?.count ?? 0
-        if data.count < previewSize {
-            // Image poster is greater than video itself. This is not currently supported.
-            Cache.log.error("MessageVC - preview size (%lld bytes) is greater than video (%lld bytes)", previewSize, data.count)
-            return
-        }
-
-        let mime = content.contentType ?? Utils.mimeForUrl(url: url, ifMissing: "video/mp4")
+        let mimeCandidate = content.contentType ?? Utils.mimeForUrl(url: url, ifMissing: "video/mp4")
+        let mime = mimeCandidate.hasPrefix("video/")
+            ? mimeCandidate
+            : Utils.mimeForUrl(url: url, ifMissing: "video/mp4")
         let fileName = content.fileName ?? (url.lastPathComponent.isEmpty ? Utils.uniqueFilename(forMime: mime) : url.lastPathComponent)
-        if data.count + previewSize > maxInbandSize {
-            self.interactor?.uploadVideo(UploadDef(caption: content.caption, filename: fileName,
-                                                   mimeType: mime, data: data,
-                                                   width: CGFloat(videoWidth),
-                                                   height: CGFloat(videoHeight),
-                                                   duration: duration, preview: preview, previewMime: previewMime,
-                                                   previewOutOfBand: previewSize > Constants.kMaxPosterSize))
-        } else {
-            if let drafty = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: data, refurl: nil, duration: duration, width: videoWidth, height: videoHeight, fname: fileName, size: data.count, preMime: previewMime, preview: preview, previewRef: nil) {
-                if let caption = content.caption {
-                    _ = drafty.appendLineBreak().append(Drafty(plainText: caption))
+        Cache.log.info("MessageVC - sending video attachment topic=%@ file=%@ mime=%@", self.topicName ?? "", fileName, mime)
+
+        // Reading a camera-library movie synchronously on the main thread can
+        // make the send action look dead for several seconds. Keep the UI
+        // responsive and perform the actual message/upload operation on the
+        // main thread after the file has been read.
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            do {
+                let data = try Data(contentsOf: url, options: .mappedIfSafe)
+                let previewSize = preview?.count ?? 0
+                guard data.count >= previewSize else {
+                    Cache.log.error("MessageVC - preview size (%lld bytes) is greater than video (%lld bytes)", previewSize, data.count)
+                    DispatchQueue.main.async {
+                        UiUtils.showToast(message: NSLocalizedString("Unable to read video", comment: "Video attachment read error"))
+                    }
+                    return
                 }
-                _ = interactor?.sendMessage(content: drafty)
+
+                DispatchQueue.main.async {
+                    if data.count + previewSize > maxInbandSize {
+                        self.interactor?.uploadVideo(UploadDef(caption: content.caption, filename: fileName,
+                                                               mimeType: mime, data: data,
+                                                               width: CGFloat(videoWidth),
+                                                               height: CGFloat(videoHeight),
+                                                               duration: duration, preview: preview, previewMime: previewMime,
+                                                               previewOutOfBand: previewSize > Constants.kMaxPosterSize))
+                    } else if let drafty = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: data, refurl: nil, duration: duration, width: videoWidth, height: videoHeight, fname: fileName, size: data.count, preMime: previewMime, preview: preview, previewRef: nil) {
+                        if let caption = content.caption {
+                            _ = drafty.appendLineBreak().append(Drafty(plainText: caption))
+                        }
+                        _ = self.interactor?.sendMessage(content: drafty)
+                    }
+                }
+            } catch {
+                Cache.log.error("MessageVC - failed to read video file: %@", error.localizedDescription)
+                DispatchQueue.main.async {
+                    UiUtils.showToast(message: NSLocalizedString("Unable to read video", comment: "Video attachment read error"))
+                }
             }
         }
     }

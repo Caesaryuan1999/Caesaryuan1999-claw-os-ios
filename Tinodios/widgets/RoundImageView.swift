@@ -74,6 +74,14 @@ public class RoundImageView: UIImageView {
         setCornerRadius()
     }
 
+    /// Use the product logo without changing the avatar view's size or corner radius.
+    public func setBrandingIcon() {
+        initials = nil
+        contentMode = .scaleAspectFill
+        backgroundColor = nil
+        image = UIImage(named: "logo-ios")
+    }
+
     // MARK: - Overridden Properties
     override public var frame: CGRect {
         didSet {

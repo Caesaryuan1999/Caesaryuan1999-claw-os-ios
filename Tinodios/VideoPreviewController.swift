@@ -43,6 +43,7 @@ class VideoPreviewController: UIViewController {
 
     private let player = VLCMediaPlayer()
     private let thumbnailer = ThumbnailFetcher()
+    private var didSubmitVideo = false
 
     var previewContent: VideoPreviewContent?
     var replyPreviewDelegate: PendingMessagePreviewDelegate?
@@ -150,6 +151,10 @@ class VideoPreviewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setup()
+        // A custom inputAccessoryView is only installed after the controller
+        // becomes first responder. Without this, the video preview opens but
+        // the send bar is missing on iOS.
+        DispatchQueue.main.async { self.becomeFirstResponder() }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -335,7 +340,11 @@ extension VideoPreviewController: SendImageBarDelegate {
     func sendImageBar(caption: String?) {
         guard let originalContent = self.previewContent,
               case .local(let url, _) = originalContent.videoSrc,
-              let media = player.media else { return }
+              let media = player.media,
+              !didSubmitVideo else { return }
+
+        didSubmitVideo = true
+        sendVideoBar.sendButton.isEnabled = false
 
         let size = player.videoSize
         let width = Int(size.width) > 0 ? Int(size.width) : max(originalContent.width ?? 0, 1)

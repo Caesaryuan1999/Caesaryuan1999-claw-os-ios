@@ -51,6 +51,10 @@ class TopicSecurityViewController: UITableViewController {
     private var topic: DefaultComTopic!
     private var tinode: Tinode!
     private var isDeletingMessages = false
+    private let securityRowLeadingInset: CGFloat = 18
+    private let securityRowTrailingInset: CGFloat = 18
+    private let securityRowIconColumnWidth: CGFloat = 40
+    private let securityRowIconSize = CGSize(width: 24, height: 24)
 
     // Show row with Peer's permissions (p2p topic)
     private var showPeerPermissions: Bool = false
@@ -66,6 +70,7 @@ class TopicSecurityViewController: UITableViewController {
         actionLeaveGroup.accessibilityIdentifier = "claw.settings.topic.security.leave-group"
         actionLeaveConversation.accessibilityIdentifier = "claw.settings.topic.security.leave-conversation"
         ClawTheme.styleList(tableView, rowHeight: 62)
+        tableView.separatorStyle = .none
         tableView.tableHeaderView = ClawTheme.makeStatusHeader(
             title: NSLocalizedString("会话安全设置", comment: "Topic security status title"),
             detail: NSLocalizedString("管理消息、成员权限以及会话的安全操作。", comment: "Topic security status detail"),
@@ -485,9 +490,45 @@ extension TopicSecurityViewController {
             position: ClawTheme.groupedPosition(for: indexPath.row, visibleRows: visibleRows),
             destructive: isDanger)
         cell.contentView.backgroundColor = .clear
-        cell.textLabel?.font = .systemFont(ofSize: 16, weight: .medium)
-        cell.detailTextLabel?.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
-        ClawTheme.normalizeIconButtons(in: cell.contentView)
+        configureSecurityRow(cell, destructive: isDanger)
+    }
+
+    private func configureSecurityRow(_ cell: UITableViewCell, destructive: Bool) {
+        let title = cell.textLabel?.text ?? ""
+        let detail = cell.detailTextLabel?.text
+        let image = cell.imageView?.image
+
+        var configuration = UIListContentConfiguration.valueCell()
+        configuration.text = title
+        configuration.secondaryText = detail
+        configuration.image = image
+        configuration.directionalLayoutMargins = NSDirectionalEdgeInsets(
+            top: 0,
+            leading: securityRowLeadingInset,
+            bottom: 0,
+            trailing: securityRowTrailingInset)
+        configuration.imageProperties.reservedLayoutSize = securityRowIconColumnWidth
+        configuration.imageProperties.maximumSize = securityRowIconSize
+        configuration.imageProperties.preferredSymbolConfiguration = UIImage.SymbolConfiguration(
+            pointSize: 24,
+            weight: .medium,
+            scale: .medium)
+        configuration.imageProperties.tintColor = destructive ? ClawTheme.danger : ClawTheme.primary
+        configuration.textProperties.font = .systemFont(ofSize: 16, weight: .medium)
+        configuration.textProperties.color = destructive ? ClawTheme.danger : ClawTheme.ink
+        configuration.textProperties.adjustsFontForContentSizeCategory = true
+        configuration.secondaryTextProperties.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+        configuration.secondaryTextProperties.color = ClawTheme.muted
+        configuration.secondaryTextProperties.adjustsFontForContentSizeCategory = true
+
+        // Prevent UIKit's legacy imageView/textLabel layout from competing with
+        // the fixed card insets and moving the icon or text between rows.
+        cell.imageView?.isHidden = true
+        cell.textLabel?.isHidden = true
+        cell.detailTextLabel?.isHidden = true
+        cell.contentConfiguration = configuration
+        cell.accessibilityLabel = title
+        cell.accessibilityValue = detail
     }
 
     override func tableView(_ tableView: UITableView, indentationLevelForRowAt indexPath: IndexPath) -> Int {

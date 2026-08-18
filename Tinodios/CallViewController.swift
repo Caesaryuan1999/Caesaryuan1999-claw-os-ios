@@ -122,6 +122,7 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCapture
 /// Methods for dispatching local events to the peer.
 protocol WebRTCClientDelegate: AnyObject {
     func handleRemoteStream(_ client: WebRTCClient, receivedStream stream: RTCMediaStream)
+    func handleRemoteVideoTrack(_ client: WebRTCClient, track: RTCVideoTrack)
     func sendOffer(withDescription sdp: RTCSessionDescription)
     func sendAnswer(withDescription sdp: RTCSessionDescription)
     func sendIceCandidate(_ candidate: RTCIceCandidate)
@@ -253,20 +254,24 @@ class WebRTCClient: NSObject {
             self.localDataChannel?.delegate = self
         }
 
-        let stream = WebRTCClient.factory.mediaStream(withStreamId: "ARDAMS")
         guard let audioTrack = self.localAudioTrack else {
             Cache.log.error("WebRTCClient - missing local audio track")
             return false
         }
-        stream.addAudioTrack(audioTrack)
+        guard localPeer?.add(audioTrack, streamIds: ["ARDAMS"]) != nil else {
+            Cache.log.error("WebRTCClient - failed to add local audio track")
+            return false
+        }
         if !(delegate?.isAudioOnlyCall ?? false) {
             guard let videoTrack = self.localVideoTrack else {
                 Cache.log.error("WebRTCClient - missing local video track")
                 return false
             }
-            stream.addVideoTrack(videoTrack)
+            guard localPeer?.add(videoTrack, streamIds: ["ARDAMS"]) != nil else {
+                Cache.log.error("WebRTCClient - failed to add local video track")
+                return false
+            }
         }
-        localPeer?.add(stream)
         return true
     }
 
@@ -501,6 +506,21 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
     func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {
         Cache.log.info("WebRTCClient: Received remote stream %@", stream)
         self.delegate?.handleRemoteStream(self, receivedStream: stream)
+    }
+
+    // Unified Plan delivers remote media through RTP receivers. Keep the
+    // legacy stream callback above for older peers, but also attach the video
+    // track delivered by current WebRTC builds.
+    func peerConnection(_ peerConnection: RTCPeerConnection, didAdd rtpReceiver: RTCRtpReceiver, streams: [RTCMediaStream]) {
+        guard let videoTrack = rtpReceiver.track as? RTCVideoTrack else { return }
+        Cache.log.info("WebRTCClient: Received remote video track %@", videoTrack.trackId)
+        self.delegate?.handleRemoteVideoTrack(self, track: videoTrack)
+    }
+
+    func peerConnection(_ peerConnection: RTCPeerConnection, didStartReceivingOn transceiver: RTCRtpTransceiver) {
+        guard let videoTrack = transceiver.receiver.track as? RTCVideoTrack else { return }
+        Cache.log.info("WebRTCClient: Started receiving remote video track %@", videoTrack.trackId)
+        self.delegate?.handleRemoteVideoTrack(self, track: videoTrack)
     }
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {
@@ -827,18 +847,23 @@ class CallViewController: UIViewController {
         }
         didStartCallSession = true
         scheduleCallSetupTimeout()
-        if !self.isAudioOnlyCall {
-            cameraManager.startCapture()
-        }
+        // Install delegates and WebRTC tracks before starting AVCapture.
+        // Starting the session first races the first frames against the
+        // renderer/source setup and can leave a video call audio-only.
+        webRTCClient.delegate = self
+        cameraManager.delegate = self
         setupViews()
+        Cache.log.info("CallVC - video media initialized audioOnly=%d", self.isAudioOnlyCall ? 1 : 0)
 
         routeChangeObserver = NotificationCenter.default.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: nil, using: handleRouteChange)
 
-        webRTCClient.delegate = self
-        cameraManager.delegate = self
         Cache.tinode.addListener(self.listener)
         // Prevent screen from dimming/going to sleep.
         UIApplication.shared.isIdleTimerDisabled = true
+
+        if !self.isAudioOnlyCall {
+            cameraManager.startCapture()
+        }
 
         if !topic.attached {
             topic.subscribe().then(
@@ -1222,6 +1247,11 @@ extension CallViewController: WebRTCClientDelegate {
     func handleRemoteStream(_ client: WebRTCClient, receivedStream stream: RTCMediaStream) {
         guard let remoteRenderer = self.remoteRenderer else { return }
         client.setupRemoteRenderer(remoteRenderer, withTrack: stream.videoTracks.first)
+    }
+
+    func handleRemoteVideoTrack(_ client: WebRTCClient, track: RTCVideoTrack) {
+        guard let remoteRenderer = self.remoteRenderer else { return }
+        track.add(remoteRenderer)
     }
 
     func canSendOffer() -> Bool {

@@ -158,7 +158,7 @@ class ChatListViewCell: UITableViewCell {
     }
 
     public func fillFromTopic(topic: DefaultComTopic) {
-        title.text = topic.isSlfType ? NSLocalizedString("已保存消息", comment: "Title of the slf topic") :
+        title.text = topic.isSlfType ? NSLocalizedString("CLAW文件助手", comment: "Title of the CLAW file assistant") :
             topic.pub?.fn ?? NSLocalizedString("Unknown or unnamed", comment: "Topic title when it has no name")
         var latestTimestamp = topic.touched
         if let msg = topic.latestMessage as? StoredMessage {
@@ -236,6 +236,9 @@ class ChatListViewCell: UITableViewCell {
 
         // Avatar image
         icon.set(pub: topic.pub, id: topic.name, online: (topic.isChannel || topic.isSlfType) ? nil : topic.online, deleted: topic.deleted)
+        if topic.isSlfType {
+            icon.setBrandingIcon()
+        }
 
         accessibilityLabel = [title.text, subtitle.attributedText?.string ?? subtitle.text,
                               messageTimeLabel.text]

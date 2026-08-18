@@ -119,7 +119,7 @@ class TopicGeneralViewController: UITableViewController {
     private func reloadData() {
         // Title
         if topic.isSlfType {
-            topicTitleTextField.text = NSLocalizedString("已保存消息", comment: "Title of slf topic")
+            topicTitleTextField.text = NSLocalizedString("CLAW文件助手", comment: "Title of the CLAW file assistant")
         } else {
             topicTitleTextField.text = topic.pub!.fn
         }
@@ -148,6 +148,9 @@ class TopicGeneralViewController: UITableViewController {
         }
 
         avatarImage.set(pub: topic.pub, id: topic.name, deleted: topic.deleted)
+        if topic.isSlfType {
+            avatarImage.setBrandingIcon()
+        }
         avatarImage.letterTileFont = self.avatarImage.letterTileFont.withSize(CGFloat(50))
     }
 

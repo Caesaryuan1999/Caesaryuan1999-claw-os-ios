@@ -46,12 +46,15 @@ extension MessageViewController: MessageDisplayLogic {
         assert(Thread.isMainThread)
         let isSlf = self.topic?.isSlfType ?? false
         let title = isSlf ?
-            NSLocalizedString("已保存消息", comment: "Title of the slf topic") :
+            NSLocalizedString("CLAW文件助手", comment: "Title of the CLAW file assistant") :
             pub?.fn ?? NSLocalizedString("未命名", comment: "Undefined chat name")
         if !bulkSelectionMode {
             self.navigationItem.title = title
         }
         navBarAvatarView.set(pub: pub, id: topicName, online: isSlf ? nil : online, deleted: deleted)
+        if isSlf {
+            navBarAvatarView.setBrandingIcon()
+        }
         navBarAvatarView.bounds = CGRect(x: 0, y: 0, width: Constants.kNavBarAvatarSmallState, height: Constants.kNavBarAvatarSmallState)
 
         navBarAvatarView.translatesAutoresizingMaskIntoConstraints = false
