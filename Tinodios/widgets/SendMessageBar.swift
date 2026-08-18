@@ -325,6 +325,7 @@ class SendMessageBar: UIView {
         inputField.backgroundColor = ClawTheme.surfaceMuted
         inputField.textColor = ClawTheme.ink
         inputField.tintColor = ClawTheme.primary
+        inputField.placeholderText = NSLocalizedString("请输入", comment: "Message input placeholder")
         inputField.layer.borderWidth = 1
         inputField.layer.borderColor = ClawTheme.border.cgColor
         inputField.layer.cornerRadius = ClawTheme.cardRadius

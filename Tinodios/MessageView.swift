@@ -20,11 +20,7 @@ class MessageView: UICollectionView {
 
     public override init(frame: CGRect, collectionViewLayout layout: UICollectionViewLayout) {
         super.init(frame: frame, collectionViewLayout: layout)
-        if traitCollection.userInterfaceStyle == .dark {
-            backgroundColor = .black
-        } else {
-            backgroundColor = .white
-        }
+        backgroundColor = ClawTheme.background
 
         // Reusable message cells
         register(MessageCell.self, forCellWithReuseIdentifier: String(describing: MessageCell.self))
@@ -39,10 +35,20 @@ class MessageView: UICollectionView {
 
     required public init?(coder aDecoder: NSCoder) {
         super.init(frame: .zero, collectionViewLayout: MessageViewLayout())
+        backgroundColor = ClawTheme.background
     }
 
     public convenience init() {
         self.init(frame: .zero, collectionViewLayout: MessageViewLayout())
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle else { return }
+        backgroundColor = ClawTheme.background
+        visibleCells
+            .compactMap { $0 as? MessageCell }
+            .forEach { $0.applyThemeBackground() }
     }
 
     // MARK: - Methods
