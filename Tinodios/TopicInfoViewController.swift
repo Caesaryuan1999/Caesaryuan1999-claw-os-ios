@@ -60,7 +60,7 @@ class TopicInfoViewController: UITableViewController {
         view.accessibilityIdentifier = "claw.settings.topic.info.screen"
         tableView.accessibilityIdentifier = "claw.settings.topic.info.list"
         ClawTheme.styleList(tableView, rowHeight: 64)
-        navigationItem.title = NSLocalizedString("用户设置", comment: "User settings title")
+        navigationItem.title = NSLocalizedString("聊天信息", comment: "Chat information title")
         tableView.separatorStyle = .none
         avatarImage.layer.borderWidth = 2
         avatarImage.layer.borderColor = ClawTheme.brandSoft.cgColor

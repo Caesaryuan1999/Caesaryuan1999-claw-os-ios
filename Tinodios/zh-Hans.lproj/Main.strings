@@ -335,7 +335,7 @@
 "K4E-ne-sW4.ibShadowedToolTip" = "此评论仅您可见";
 
 /* Class = "UITextField"; placeholder = "Optional comment (private)"; ObjectID = "K4E-ne-sW4"; */
-"K4E-ne-sW4.placeholder" = "可选评论 (私人)";
+"K4E-ne-sW4.placeholder" = "备注（仅自己可见）";
 
 /* Class = "UITextField"; placeholder = "Name of the group"; ObjectID = "kDN-bf-JDL"; */
 "kDN-bf-JDL.placeholder" = "群组名称";
@@ -620,7 +620,7 @@
 "zW8-KF-N8J.headerTitle" = "默认权限";
 
 /* Class = "UINavigationItem"; title = "Editing"; ObjectID = "zww-h7-9s0"; */
-"zww-h7-9s0.title" = "设置";
+"zww-h7-9s0.title" = "聊天资料";
 
 /* Class = "UILabel"; text = "Permissions, block or report chat"; ObjectID = "zz2-fg-2IG"; */
 "zz2-fg-2IG.text" = "权限、阻止或报告聊天";
