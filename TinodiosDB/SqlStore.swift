@@ -15,7 +15,7 @@ enum SqlStoreError: Error {
 public class SqlStore: Storage {
     public var initializationError: String? {
         guard let database = dbh else { return BaseDb.unavailableMessage }
-        return database.initializationError
+        return recoveryBlocked ? BaseDb.unavailableMessage : database.initializationError
     }
 
     public var myUid: String? {
@@ -23,6 +23,7 @@ public class SqlStore: Storage {
             return self.dbh?.uid
         }
         set {
+            accountLock.lock(); defer { accountLock.unlock() }
             self.dbh?.setUid(uid: newValue, credMethods: nil)
         }
     }
@@ -32,23 +33,27 @@ public class SqlStore: Storage {
         set { self.dbh?.accountDb?.saveDeviceToken(token: newValue) }
     }
     var dbh: BaseDb?
-    var myId: Int64 = -1
+    private let accountLock = NSRecursiveLock()
+    private var recoveryBlocked = false
 
     init(dbh: BaseDb) {
         self.dbh = dbh
     }
 
     public func logout() {
+        accountLock.lock(); defer { accountLock.unlock() }
         self.dbh?.logout()
     }
 
     public func deleteAccount(_ uid: String) {
+        accountLock.lock(); defer { accountLock.unlock() }
         if !(self.dbh?.deleteUid(uid) ?? true) {
             BaseDb.log.info("Account deletion did not succeed. Uid [%@]", uid)
         }
     }
 
     public func setMyUid(uid: String, credMethods: [String]?) {
+        accountLock.lock(); defer { accountLock.unlock() }
         self.dbh?.setUid(uid: uid, credMethods: credMethods)
     }
 
@@ -184,7 +189,8 @@ public class SqlStore: Storage {
     }
 
     public func msgReceived(topic: TopicProto, sub: SubscriptionProto?, msg: MsgServerData?) -> Message? {
-        guard let msg = msg else { return nil }
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard initializationError == nil, ownedTopicId(topic) != nil, let msg = msg else { return nil }
 
         var topicId: Int64 = -1
         var userId: Int64 = -1
@@ -218,10 +224,11 @@ public class SqlStore: Storage {
         do {
             try dbh?.db?.savepoint(savepointName) {
                 sm.msgId = self.dbh?.messageDb?.insert(topic: topic, msg: sm) ?? -1
-                if sm.msgId <= 0 || !(self.dbh?.topicDb?.msgReceived(topic: topic, ts: sm.ts ?? Date(), seq: sm.seqId) ?? false) {
+                if sm.msgId <= 0 || !(self.dbh?.topicDb?.msgReceived(topic: topic, ts: sm.ts ?? Date(), seq: sm.seqId, updateCache: false) ?? false) {
                     throw SqlStoreError.dbError("Could not handle received message: msgId = \(sm.msgId), topicId = \(topicId), userId = \(userId)")
                 }
             }
+            self.dbh?.topicDb?.commitMessageCache(topic: topic, ts: sm.ts ?? Date(), seq: sm.seqId)
             return sm
         } catch {
             dbh?.db?.releaseSavepoint(withName: savepointName)
@@ -230,6 +237,8 @@ public class SqlStore: Storage {
         }
     }
     private func insertMessage(topic: TopicProto, data: Drafty, head: [String: JSONValue]?, initialStatus: BaseDb.Status) -> Message? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard initializationError == nil, let topicId = ownedTopicId(topic), let uid = myUid else { return nil }
         let msg = StoredMessage()
         msg.topic = topic.name
         msg.from = myUid
@@ -237,12 +246,10 @@ public class SqlStore: Storage {
         msg.seq = 0
         msg.dbStatus = initialStatus
         msg.content = data
-        msg.head = head
-        msg.topicId = (topic.payload as? StoredTopic)?.id ?? -1
-        if myId < 0 {
-            myId = self.dbh?.userDb?.getId(for: msg.from) ?? -1
-        }
-        msg.userId = myId
+        msg.head = C3PublishPolicy.newHeaders(head, content: data)
+        msg.topicId = topicId
+        // Resolve under the account lock; no cached user row can leak across logout.
+        msg.userId = self.dbh?.userDb?.getId(for: uid) ?? -1
         let id = self.dbh?.messageDb?.insert(topic: topic, msg: msg) ?? -1
         return id > 0 ? msg : nil
     }
@@ -256,6 +263,8 @@ public class SqlStore: Storage {
     }
 
     public func msgDraftUpdate(topic: TopicProto, dbMessageId: Int64, data: Drafty) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownsMessage(topic, id: dbMessageId) else { return false }
         return self.dbh?.messageDb?.updateStatusAndContent(
             msgId: dbMessageId,
             status: .undefined,
@@ -263,6 +272,8 @@ public class SqlStore: Storage {
     }
 
     public func msgReady(topic: TopicProto, dbMessageId: Int64, data: Drafty) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownsMessage(topic, id: dbMessageId) else { return false }
         return self.dbh?.messageDb?.updateStatusAndContent(
             msgId: dbMessageId,
             status: .queued,
@@ -270,26 +281,58 @@ public class SqlStore: Storage {
     }
 
     public func msgSyncing(topic: TopicProto, dbMessageId: Int64, sync: Bool) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard initializationError == nil, let topicId = ownedTopicId(topic),
+              let account = dbh?.account, let db = dbh?.db, ownsMessage(topic, id: dbMessageId) else { return false }
         if sync {
-            return self.dbh?.messageDb?.transitionStatus(
-                msgId: dbMessageId, from: .queued, to: .sending) ?? false
+            return MessageDb.claimC3(in: db, msgId: dbMessageId, topicId: topicId, accountId: account.id, uid: account.uid)
         }
         return self.dbh?.messageDb?.transitionStatus(
-            msgId: dbMessageId, from: .sending, to: .queued) ?? false
+            msgId: dbMessageId, from: .sendingC3, to: .queued) ?? false
     }
 
     public func msgUnconfirmed(topic: TopicProto, dbMessageId: Int64) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownsMessage(topic, id: dbMessageId) else { return false }
         return self.dbh?.messageDb?.transitionStatus(
-            msgId: dbMessageId, from: .sending, to: .unconfirmed) ?? false
+            msgId: dbMessageId, from: .sendingC3, to: .unconfirmedC3) ?? false
     }
 
     // Called by the main app before it constructs a new SDK instance, never by NSE init.
     public func recoverInterruptedPublishes() -> Bool {
-        return self.dbh?.messageDb?.recoverInterruptedPublishes() ?? false
+        let recovered = self.dbh?.messageDb?.recoverInterruptedPublishes() ?? false
+        recoveryBlocked = !recovered
+        return recovered
     }
 
     public func msgFailed(topic: TopicProto, dbMessageId: Int64) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownsMessage(topic, id: dbMessageId) else { return false }
         return self.dbh?.messageDb?.markPendingFailed(msgId: dbMessageId) ?? false
+    }
+
+    public func msgRejected(topic: TopicProto, dbMessageId: Int64) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownsMessage(topic, id: dbMessageId) else { return false }
+        return self.dbh?.messageDb?.transitionStatus(msgId: dbMessageId, from: .sendingC3, to: .failed) ?? false
+    }
+
+    public func msgDiscardDraft(topic: TopicProto, dbMessageId: Int64) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownsMessage(topic, id: dbMessageId) else { return false }
+        return self.dbh?.messageDb?.delete(msgId: dbMessageId, onlyDraft: true) ?? false
+    }
+
+    private func ownedTopicId(_ topic: TopicProto) -> Int64? {
+        guard let id = (topic.payload as? StoredTopic)?.id, id > 0,
+              dbh?.topicDb?.getId(topic: topic.name) == id else { return nil }
+        return id
+    }
+
+    private func ownsMessage(_ topic: TopicProto, id: Int64) -> Bool {
+        guard let topicId = ownedTopicId(topic), let message = dbh?.messageDb?.query(msgId: id, previewLen: -1),
+              message.topicId == topicId, message.from == myUid else { return false }
+        return true
     }
 
     public func msgPruneFailed(topic: TopicProto) -> Bool {
@@ -298,25 +341,32 @@ public class SqlStore: Storage {
     }
 
     public func msgDiscard(topic: TopicProto, dbMessageId: Int64) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard let topicId = ownedTopicId(topic),
+              dbh?.messageDb?.query(msgId: dbMessageId, previewLen: -1)?.topicId == topicId else { return false }
         return self.dbh?.messageDb?.delete(msgId: dbMessageId) ?? false
     }
 
     public func msgDiscard(topic: TopicProto, seqId: Int) -> Bool {
-        guard let st = topic.payload as? StoredTopic, let topicId = st.id else { return false }
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard let topicId = ownedTopicId(topic) else { return false }
         return self.dbh?.messageDb?.delete(inTopic: topicId, seqId: seqId) ?? false
     }
 
     public func msgDelivered(topic: TopicProto, dbMessageId: Int64, timestamp: Date, seq: Int) -> Bool {
-        guard dbh?.isStoreAvailable == true else { return false }
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard initializationError == nil, let topicId = ownedTopicId(topic), let uid = myUid,
+              ownsMessage(topic, id: dbMessageId) else { return false }
         let savepointName = "SqlStore.msgDelivered"
         do {
             try dbh?.db?.savepoint(savepointName) {
-                let messageDbSuccessful = self.dbh?.messageDb?.delivered(msgId: dbMessageId, ts: timestamp, seq: seq) ?? false
-                let topicDbSuccessful = self.dbh?.topicDb?.msgReceived(topic: topic, ts: timestamp, seq: seq) ?? false
+                let messageDbSuccessful = self.dbh?.messageDb?.delivered(msgId: dbMessageId, topicId: topicId, sender: uid, ts: timestamp, seq: seq) ?? false
+                let topicDbSuccessful = self.dbh?.topicDb?.msgReceived(topic: topic, ts: timestamp, seq: seq, updateCache: false) ?? false
                 if !(messageDbSuccessful && topicDbSuccessful) {
                     throw SqlStoreError.dbError("messageDb = \(messageDbSuccessful), topicDb = \(topicDbSuccessful)")
                 }
             }
+            self.dbh?.topicDb?.commitMessageCache(topic: topic, ts: timestamp, seq: seq)
             return true
         } catch {
             dbh?.db?.releaseSavepoint(withName: savepointName)
@@ -388,7 +438,7 @@ public class SqlStore: Storage {
     }
 
     private func messageById(dbId: Int64, previewLen: Int = -1) -> Message? {
-        return BaseDb.sharedInstance.messageDb?.query(msgId: dbId, previewLen: previewLen)
+        return dbh?.messageDb?.query(msgId: dbId, previewLen: previewLen)
     }
 
     public func getMessageById(dbMessageId: Int64) -> Message? {
@@ -402,7 +452,8 @@ public class SqlStore: Storage {
     public func getQueuedMessages(topic: TopicProto) -> [Message]? {
         guard let st = topic.payload as? StoredTopic else { return nil }
         guard let id = st.id, id > 0 else { return nil }
-        return BaseDb.sharedInstance.messageDb?.queryUnsent(topicId: id)
+        guard ownedTopicId(topic) == id else { return nil }
+        return dbh?.messageDb?.queryUnsent(topicId: id)
     }
 
     public func getQueuedMessageDeletes(topic: TopicProto, hard: Bool) -> [MsgRange]? {

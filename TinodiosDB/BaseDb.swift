@@ -24,9 +24,13 @@ public class BaseDb {
         case queued = 20
         // Object is in the process of being sent to the server.
         case sending = 30
+        // Claimed under the C3 capability with a persisted client message UUID.
+        case sendingC3 = 31
         // Dispatched but not confirmed. Never eligible for automatic queued replay.
         // Keep schema version unchanged: adding this raw value does not alter tables.
         case unconfirmed = 35
+        // Only this unknown state carries durable C3 retry eligibility.
+        case unconfirmedC3 = 36
         // Sending failed
         case failed = 40
         // Object is received by the server.
@@ -252,6 +256,9 @@ extension BaseDb {
     static let migrationReadSQL = "SELECT completed FROM claw_local_migrations WHERE rule='C2-L1-20260918'"
     static let migrationQuarantineSQL = "UPDATE messages SET status=35 WHERE status IN (20,30)"
     static let migrationWriteSQL = "INSERT INTO claw_local_migrations(rule,completed) VALUES ('C2-L1-20260918',1)"
+    static let c3MigrationReadSQL = "SELECT completed FROM claw_local_migrations WHERE rule='C3-20260918'"
+    static let c3MigrationQuarantineSQL = "UPDATE messages SET status=35 WHERE status IN (20,30,31,36)"
+    static let c3MigrationWriteSQL = "INSERT INTO claw_local_migrations(rule,completed) VALUES ('C3-20260918',1)"
 
     // Matches the existing v113 table builders. No destructive version fallback.
     static let schema113SQL = """
@@ -321,6 +328,13 @@ extension BaseDb {
                 try database.run(migrationQuarantineSQL)
                 try database.run(migrationWriteSQL)
             }
+            if let value = try database.scalar(c3MigrationReadSQL) {
+                guard value as? Int64 == 1 else { throw OpenError.invalidMarker }
+            } else {
+                // A pre-existing UUID does not prove an earlier C3 dispatch.
+                try database.run(c3MigrationQuarantineSQL)
+                try database.run(c3MigrationWriteSQL)
+            }
         }
         // Subsequent startup recovery of 30 is main-app-only, in Cache. NSE must
         // not turn a concurrently running main app's newly claimed 30 into 35.
@@ -388,7 +402,7 @@ extension BaseDb {
             guard rows.count == 2,
                   rows[0][1] as? String == "rule", rows[0][2] as? String == "TEXT", rows[0][3] as? Int64 == 1, rows[0][5] as? Int64 == 1,
                   rows[1][1] as? String == "completed", rows[1][2] as? String == "INTEGER", rows[1][3] as? Int64 == 1, rows[1][5] as? Int64 == 0,
-                  try database.scalar("SELECT COUNT(*) FROM claw_local_migrations WHERE rule<>'C2-L1-20260918' OR completed<>1") as? Int64 == 0 else {
+                  try database.scalar("SELECT COUNT(*) FROM claw_local_migrations WHERE rule NOT IN ('C2-L1-20260918','C3-20260918') OR completed<>1") as? Int64 == 0 else {
                 throw OpenError.invalidMarker
             }
         }

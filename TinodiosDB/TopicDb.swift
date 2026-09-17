@@ -314,7 +314,7 @@ public class TopicDb {
         }
         return false
     }
-    func msgReceived(topic: TopicProto, ts: Date, seq: Int) -> Bool {
+    func msgReceived(topic: TopicProto, ts: Date, seq: Int, updateCache: Bool = true) -> Bool {
         guard let st = topic.payload as? StoredTopic, let recordId = st.id else {
             return false
         }
@@ -342,16 +342,25 @@ public class TopicDb {
             let record = self.table.filter(self.id == recordId)
             do {
                 if try self.db.run(record.update(setters)) > 0 {
+                    if !updateCache { return true }
                     if updateLastUsed { st.lastUsed = ts }
                     if updateMinLocalSeq { st.minLocalSeq = seq }
                     if updateMaxLocalSeq { st.maxLocalSeq = seq }
-                }
+                } else { return false }
             } catch {
                 BaseDb.log.error("TopicDb - msgReceived failed: topicId = %@, error = %@", recordId, error.localizedDescription)
                 return false
             }
-        }
+        } else if (try? self.db.pluck(self.table.filter(self.id == recordId))) == nil { return false }
         return true
+    }
+
+    // Called only after the enclosing message transaction has committed.
+    func commitMessageCache(topic: TopicProto, ts: Date, seq: Int) {
+        guard let st = topic.payload as? StoredTopic else { return }
+        if let previous = st.lastUsed, previous < ts { st.lastUsed = ts }
+        if seq > 0 && (st.minLocalSeq == 0 || seq < (st.minLocalSeq ?? Int.max)) { st.minLocalSeq = seq }
+        if seq > (st.maxLocalSeq ?? -1) { st.maxLocalSeq = seq }
     }
     func msgDeleted(topic: TopicProto, delId: Int, from loId: Int, to hiId: Int) -> Bool {
         guard let st = topic.payload as? StoredTopic, let recordId = st.id else {

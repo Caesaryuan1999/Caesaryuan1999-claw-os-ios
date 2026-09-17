@@ -1359,11 +1359,9 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
     private func processDelivery(ctrl: MsgServerCtrl?, id: Int64) throws {
         let seq = try PublishConfirmation.sequence(from: ctrl)
         guard let ctrl = ctrl else { return } // Validated above.
-        if id > 0, let s = store {
-            guard s.msgDelivered(topic: self, dbMessageId: id,
+        guard id > 0, let s = store, s.msgDelivered(topic: self, dbMessageId: id,
                                  timestamp: ctrl.ts, seq: seq) else {
-                throw TinodeError.requestOutcomeUnknown("Server accepted the message but local confirmation could not be saved")
-            }
+            throw TinodeError.requestOutcomeUnknown("Server accepted the message but local confirmation could not be saved")
         }
         setSeq(seq: seq)
         touched = ctrl.ts
@@ -1376,42 +1374,53 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
         }
     }
 
-    private func publishInternal(content: Drafty, head: [String: JSONValue]?, msgId: Int64) -> PromisedReply<ServerMessage> {
-        guard let tinode = tinode, let store = store,
+    private func publishInternal(msgId: Int64) -> PromisedReply<ServerMessage> {
+        guard let tinode = tinode, tinode.isConnected else {
+            return PromisedReply(error: TinodeError.notConnected("Connection is not open"))
+        }
+        guard tinode.supportsDurablePublish else {
+            return PromisedReply(error: TinodeError.requestNotSent(C3PublishPolicy.upgradeRequired))
+        }
+        guard let store = store, let message = store.getMessageById(dbMessageId: msgId),
+              message.isReady, message.from == tinode.myUid,
+              let content = message.content, C3PublishPolicy.clientMessageId(in: message.head) != nil,
               store.msgSyncing(topic: self, dbMessageId: msgId, sync: true) else {
             return PromisedReply(error: TinodeError.requestNotSent("该消息已在处理，或无法保存发送状态。请核对会话记录。"))
         }
-        var headers = head
-        var attachments: [String]?
-        if !content.isPlain {
-            if headers == nil {
-                headers = [:]
-            }
-            // Set "x-drafty" mime header (except video call messages).
-            headers!["mime"] = .string(Drafty.kMimeType)
-            attachments = content.entReferences
-        } else {
-            // Plain text content should not have "mime" header. Clear it.
-            headers?.removeValue(forKey: "mime")
-        }
-
-        return tinode.publish(topic: name, head: headers, content: content, attachments: attachments)
+        // Always dispatch the frozen persisted payload, including its original UUID.
+        return tinode.publish(topic: name, head: message.head, content: content,
+                              attachments: content.isPlain ? nil : content.entReferences,
+                              onLateAcknowledgement: { [weak self] ctrl in
+                                  do { try self?.processDelivery(ctrl: ctrl, id: msgId) }
+                                  catch { /* The persisted C3 unknown row remains retryable. */ }
+                              })
             .thenApply({ [weak self] msg in
-                try self?.processDelivery(ctrl: msg?.ctrl, id: msgId)
+                guard let self = self else {
+                    throw TinodeError.requestOutcomeUnknown("Message confirmation owner is no longer available")
+                }
+                try self.processDelivery(ctrl: msg?.ctrl, id: msgId)
                 return nil
             }).thenCatch({ [weak self] err in
-                if let self = self {
-                    switch PublishFailureDisposition.forError(err) {
-                    case .queued:
-                        self.store?.msgSyncing(topic: self, dbMessageId: msgId, sync: false)
-                    case .failed:
-                        self.store?.msgFailed(topic: self, dbMessageId: msgId)
-                    case .unconfirmed:
-                        self.store?.msgUnconfirmed(topic: self, dbMessageId: msgId)
-                    }
-                }
+                self?.restorePublishFailure(err, msgId: msgId, wasUnconfirmed: message.isUnconfirmed)
                 throw err
             })
+    }
+
+    // The persisted pre-claim state distinguishes a new send from an uncertain retry.
+    // A failed second capability gate cannot erase an earlier dispatch of raw36.
+    func restorePublishFailure(_ error: Error, msgId: Int64, wasUnconfirmed: Bool) {
+        switch PublishFailureDisposition.forError(error) {
+        case .queued:
+            if wasUnconfirmed {
+                store?.msgUnconfirmed(topic: self, dbMessageId: msgId)
+            } else {
+                store?.msgSyncing(topic: self, dbMessageId: msgId, sync: false)
+            }
+        case .failed:
+            store?.msgRejected(topic: self, dbMessageId: msgId)
+        case .unconfirmed:
+            store?.msgUnconfirmed(topic: self, dbMessageId: msgId)
+        }
     }
 
     /// Publish content to topic.
@@ -1446,7 +1455,7 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
             return PromisedReply(error: TinodeError.requestNotSent("无法保存消息，请检查设备存储后重试。"))
         }
         if attached {
-            return publishInternal(content: content, head: head, msgId: id)
+            return publishInternal(msgId: id)
         } else {
             return subscribe()
                 .thenCatch({ error in
@@ -1457,7 +1466,7 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
                     throw TinodeError.requestNotSent("无法进入会话：\(error.localizedDescription)")
                 })
                 .thenApply({ [weak self] _ in
-                    return self?.publishInternal(content: content, head: head, msgId: id)
+                    return self?.publishInternal(msgId: id)
                 })
         }
     }
@@ -1555,8 +1564,8 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
         if m.isDeleted {
             return tinode!.delMessage(topicName: name, msgId: m.seqId, hard: m.isDeleted(hard: true))
         }
-        if m.isReady, let content = m.content {
-            return self.publishInternal(content: content, head: m.head, msgId: msgId)
+        if m.isReady {
+            return self.publishInternal(msgId: msgId)
         }
         return PromisedReply<ServerMessage>(value: ServerMessage())
     }
@@ -1577,12 +1586,12 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
         }
         for msg in pendingMsgs {
             let msgId = msg.msgId
-            if msg.head?["webrtc"]?.asString() != nil {
+            if !msg.isUnconfirmed && msg.head?["webrtc"]?.asString() != nil {
                 // Drop unsent video call messages.
                 self.store?.msgDiscard(topic: self, dbMessageId: msgId)
                 continue
             }
-            result = self.publishInternal(content: msg.content!, head: msg.head, msgId: msgId)
+            result = self.publishInternal(msgId: msgId)
         }
         return result
     }

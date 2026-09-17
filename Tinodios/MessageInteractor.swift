@@ -366,13 +366,17 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 self?.loadMessagesFromCache()
                 if PublishFailureDisposition.forError(err) == .unconfirmed {
                     DispatchQueue.main.async {
-                        UiUtils.showToast(message: "发送结果未确认，消息已保留。请核对会话记录，重新发送可能产生重复消息。")
+                        UiUtils.showToast(message: "消息可能已发送，请先查看最新聊天记录。")
                     }
                     return nil
                 }
                 if let e = err as? TinodeError {
                     if case .requestNotSent(let reason) = e {
                         DispatchQueue.main.async { UiUtils.showToast(message: reason) }
+                        return nil
+                    }
+                    if case .serverResponseError = e {
+                        DispatchQueue.main.async { UiUtils.showToast(message: e.localizedDescription) }
                         return nil
                     }
                     if case .notConnected(_) = e {
@@ -484,10 +488,10 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         guard let topic = topic, let store = topic.store else {
             return
         }
-        if message.isUnconfirmed || message.status == BaseDb.Status.sending.rawValue {
+        if message.isUnconfirmed || message.status == BaseDb.Status.sending.rawValue || message.status == BaseDb.Status.sendingC3.rawValue {
             // A local draft ID cannot retract a possibly accepted server message.
             DispatchQueue.main.async {
-                UiUtils.showToast(message: "发送结果未确认，暂不能删除或撤回。请先核对会话记录，原消息已保留。")
+                UiUtils.showToast(message: "消息可能已发送，请先查看最新聊天记录。暂不能删除或撤回。")
             }
             return
         }
@@ -791,7 +795,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 defer {
                     if !success {
                         if cancelled {
-                            _ = topic.store?.msgDiscard(topic: topic, dbMessageId: msg.msgId)
+                            _ = topic.store?.msgDiscardDraft(topic: topic, dbMessageId: msg.msgId)
                         } else {
                             _ = topic.store?.msgFailed(topic: topic, dbMessageId: msg.msgId)
                         }
@@ -834,13 +838,17 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 }
 
                 if let content = draft {
-                    _ = topic.store?.msgReady(topic: topic, dbMessageId: msg.msgId, data: content)
+                    guard topic.store?.msgReady(topic: topic, dbMessageId: msg.msgId, data: content) == true else { return }
                     topic.syncOne(msgId: msg.msgId)
                         .thenCatch({ error in
                             if PublishFailureDisposition.forError(error) == .unconfirmed {
                                 DispatchQueue.main.async {
-                                    UiUtils.showToast(message: "发送结果未确认，附件消息已保留。请核对会话记录，重新发送可能产生重复消息。")
+                                    UiUtils.showToast(message: "消息可能已发送，请先查看最新聊天记录。")
                                 }
+                            } else if case TinodeError.requestNotSent(let reason) = error {
+                                DispatchQueue.main.async { UiUtils.showToast(message: reason) }
+                            } else {
+                                DispatchQueue.main.async { UiUtils.showToast(message: error.localizedDescription) }
                             }
                             throw error
                         })

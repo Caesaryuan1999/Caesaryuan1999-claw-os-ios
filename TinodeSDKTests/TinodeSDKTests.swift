@@ -28,7 +28,7 @@ class TinodeSDKTests: XCTestCase {
 
     func testDraftOrSubscriptionFailureDoesNotClaimAnUnknownServerOutcome() {
         XCTAssertEqual(PublishFailureDisposition.forError(
-            TinodeError.requestNotSent("draft could not be saved")), .failed)
+            TinodeError.requestNotSent("draft could not be saved")), .queued)
     }
 
     func testExplicitPermissionRejectionIsFailedAndNotQueued() {
@@ -59,6 +59,36 @@ class TinodeSDKTests: XCTestCase {
         let json = "{\"ctrl\":{\"id\":\"7\",\"code\":202,\"text\":\"accepted\",\"ts\":\"2026-09-17T12:00:00Z\",\"params\":{\"seq\":42}}}"
         let packet = try Tinode.jsonDecoder.decode(ServerMessage.self, from: Data(json.utf8))
         XCTAssertEqual(try PublishConfirmation.sequence(from: packet.ctrl), 42)
+    }
+
+    func testC3UUIDIsFreshLowercaseV4AndOverridesForwardedIdentity() {
+        let old: [String: JSONValue] = ["clientmsgid": .string("abcdefab-1111-4111-8111-abcdefabcdef"), "reply": .int(7)]
+        let first = C3PublishPolicy.newHeaders(old, content: Drafty(plainText: "copy"))
+        let second = C3PublishPolicy.newHeaders(old, content: Drafty(plainText: "copy"))
+        XCTAssertNotNil(C3PublishPolicy.clientMessageId(in: first))
+        XCTAssertNotEqual(C3PublishPolicy.clientMessageId(in: first), C3PublishPolicy.clientMessageId(in: old))
+        XCTAssertNotEqual(C3PublishPolicy.clientMessageId(in: first), C3PublishPolicy.clientMessageId(in: second))
+        XCTAssertEqual(first["reply"]?.asInt(), 7)
+        XCTAssertNil(C3PublishPolicy.clientMessageId(in: ["clientmsgid": .string("ABCDEFAB-1111-4111-8111-ABCDEFABCDEF")]))
+    }
+
+    func testC3ConflictReasonDecodedFromWirePreservesOther409Context() throws {
+        for reason in ["clientmsgid_conflict", "must_attach_first"] {
+            let json = "{\"ctrl\":{\"id\":\"7\",\"code\":409,\"text\":\"must attach first\",\"ts\":\"2026-09-18T01:00:00Z\",\"params\":{\"reason\":\"\(reason)\",\"what\":\"pub\"}}}"
+            let packet = try Tinode.jsonDecoder.decode(ServerMessage.self, from: Data(json.utf8))
+            let ctrl = try XCTUnwrap(packet.ctrl)
+            let error = TinodeError.serverResponseError(ctrl.code, C3PublishPolicy.rejectionText(ctrl), ctrl.getStringParam(for: "what"))
+            XCTAssertEqual(PublishFailureDisposition.forError(error), .failed)
+            if reason == "clientmsgid_conflict" { XCTAssertTrue(error.localizedDescription.contains("内容已变化")) }
+            else { XCTAssertTrue(error.localizedDescription.contains("must attach first")) }
+        }
+    }
+
+    func testC3DirectPublishWithoutCurrentCapabilityRejectsBeforeTransport() {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture", persistDataIn: nil)
+        XCTAssertFalse(sdk.supportsDurablePublish)
+        let result = sdk.publish(topic: "grpFixtureA", head: nil, content: Drafty(plainText: "keep local"), attachments: nil)
+        XCTAssertTrue(result.isRejected)
     }
 
     func testLateFailureCannotChangeAResolvedRequest() throws {
