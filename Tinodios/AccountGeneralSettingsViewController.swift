@@ -18,7 +18,7 @@ class AccountGeneralSettingsViewController: UITableViewController {
     private static let kSectionPersonal = 0
     // Avatar = 0
     private static let kPersonalName = 1
-    // Legacy alias is hidden. CLAW OS account names are immutable and managed by backend tags.
+    // Keep the legacy editing outlet hidden. Public CLAW号 is a separate read-only row.
     private static let kPersonalAlias = 2
     private static let kPersonalDescription = 3
 
@@ -32,7 +32,10 @@ class AccountGeneralSettingsViewController: UITableViewController {
     @IBOutlet weak var avatarImage: RoundImageView!
     @IBOutlet weak var loadAvatarButton: UIButton!
 
-    private var aliasTesterTimer: Timer?
+    private let publicIdentifier = UILabel()
+    private let phoneIdentity = UILabel()
+    private let emailIdentity = UILabel()
+    private let saveProfileButton = UIButton(type: .system)
 
     weak var tinode: Tinode!
     weak var me: DefaultMeTopic!
@@ -63,7 +66,7 @@ class AccountGeneralSettingsViewController: UITableViewController {
         ClawTheme.styleTextField(aliasTextField)
         aliasTextField.delegate = self
         aliasTextField.tag = AccountGeneralSettingsViewController.kPersonalAlias
-        aliasTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
+        aliasTextField.isEnabled = false
         aliasTextField.isHidden = true
 
         ClawTheme.styleTextView(descriptionTextView)
@@ -75,14 +78,124 @@ class AccountGeneralSettingsViewController: UITableViewController {
         ClawTheme.styleRoundedIconButton(loadAvatarButton, symbolName: "camera.fill")
 
         self.imagePicker = ImagePicker(presentationController: self, delegate: self, editable: true)
+        installProfileForm()
+    }
+
+    private func installProfileForm() {
+        navigationItem.largeTitleDisplayMode = .never
+        navigationItem.rightBarButtonItem = nil
+        tableView.separatorStyle = .none
+        view.accessibilityIdentifier = "claw.profile.screen"
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 650))
+        header.backgroundColor = ClawTheme.background
+        // Retain the real storyboard inputs and their delegates while moving them into the adaptive form.
+        let nameInput: UITextField = nameTextField
+        let noteInput: UITextView = descriptionTextView
+        let avatar: RoundImageView = avatarImage
+        let avatarButton: UIButton = loadAvatarButton
+        for control in [nameInput, noteInput, avatar, avatarButton] as [UIView] {
+            control.removeFromSuperview()
+            NSLayoutConstraint.deactivate(control.constraints.filter {
+                $0.firstAttribute == .height || $0.firstAttribute == .width
+            })
+            control.translatesAutoresizingMaskIntoConstraints = false
+        }
+        nameInput.font = ClawTheme.font(16)
+        nameInput.adjustsFontForContentSizeCategory = true
+        nameInput.accessibilityLabel = "昵称"
+        nameInput.accessibilityIdentifier = "claw.profile.nickname"
+        nameInput.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
+        noteInput.font = ClawTheme.font(16)
+        noteInput.adjustsFontForContentSizeCategory = true
+        noteInput.accessibilityLabel = "个人简介"
+        noteInput.isScrollEnabled = false
+        noteInput.heightAnchor.constraint(greaterThanOrEqualToConstant: 88).isActive = true
+        avatar.widthAnchor.constraint(equalToConstant: 48).isActive = true
+        avatar.heightAnchor.constraint(equalToConstant: 48).isActive = true
+        avatarButton.setImage(nil, for: .normal)
+        avatarButton.setTitle("更换头像", for: .normal)
+        avatarButton.backgroundColor = .clear
+        avatarButton.titleLabel?.font = ClawTheme.font(13)
+        avatarButton.titleLabel?.adjustsFontForContentSizeCategory = true
+        avatarButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 88).isActive = true
+        avatarButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
+        avatarButton.accessibilityLabel = "更换头像"
+        let avatarRow = UIStackView(arrangedSubviews: [
+            ClawProfileLayout.label("头像", size: 16, color: ClawTheme.ink), UIView(), avatar, avatarButton
+        ])
+        avatarRow.alignment = .center
+        avatarRow.spacing = 8
+        avatarRow.backgroundColor = ClawTheme.surface
+        avatarRow.layer.cornerRadius = 12
+        avatarRow.isLayoutMarginsRelativeArrangement = true
+        avatarRow.layoutMargins = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 12)
+
+        let publicRow = ClawProfileLayout.valueRow(title: "CLAW号", value: publicIdentifier)
+        publicRow.isUserInteractionEnabled = true
+        publicRow.isAccessibilityElement = true
+        publicRow.accessibilityTraits = .button
+        publicRow.accessibilityLabel = "CLAW号，点按复制"
+        publicRow.accessibilityIdentifier = "claw.profile.public-id"
+        publicRow.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(copyPublicIdentifier)))
+        let phoneRow = ClawProfileLayout.valueRow(title: "手机号", value: phoneIdentity)
+        let emailRow = ClawProfileLayout.valueRow(title: "邮箱", value: emailIdentity)
+        for row in [phoneRow, emailRow] {
+            row.accessibilityHint = "更换手机号或邮箱暂未开放"
+        }
+        ClawTheme.stylePrimaryButton(saveProfileButton)
+        saveProfileButton.setTitle("保存资料", for: .normal)
+        saveProfileButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
+        saveProfileButton.accessibilityIdentifier = "claw.profile.save"
+        saveProfileButton.addTarget(self, action: #selector(doneEditingClicked(_:)), for: .touchUpInside)
+        let stack = UIStackView(arrangedSubviews: [
+            avatarRow, ClawProfileLayout.label("昵称", size: 16, color: ClawTheme.ink), nameInput,
+            ClawProfileLayout.label("让联系人更容易认出你", size: 12), publicRow, phoneRow, emailRow,
+            ClawProfileLayout.label("手机号与邮箱用于登录，不会在公开资料中显示。更换手机号或邮箱暂未开放。", size: 14),
+            ClawProfileLayout.label("个人简介", size: 16, color: ClawTheme.ink), noteInput, saveProfileButton
+        ])
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 24),
+            stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -24),
+            stack.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -24)
+        ])
+        tableView.tableHeaderView = header
+        ClawProfileLayout.fitHeader(in: tableView)
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        ClawProfileLayout.fitHeader(in: tableView)
+    }
+
+    @objc private func copyPublicIdentifier() {
+        guard let value = AccountNames.fromTags(me.tags) else {
+            UiUtils.showToast(message: "暂未设置 CLAW号"); return
+        }
+        UIPasteboard.general.string = value
+        UiUtils.showToast(message: "CLAW号已复制", level: .info)
+    }
+
+    private func identitySummary(method: String) -> String {
+        guard let credential = me.creds?.first(where: { $0.meth == method && $0.isDone }) ??
+                me.creds?.first(where: { $0.meth == method }),
+              let value = credential.val, !value.isEmpty else { return "未绑定" }
+        return value + (credential.isDone ? " · 已验证" : " · 未验证")
     }
 
     private func reloadData() {
         // Title.
         self.nameTextField.text = me.pub?.fn
 
-        // Keep legacy alias hidden: account name is immutable and stored as a backend basic tag.
         aliasTextField.text = nil
+        publicIdentifier.text = AccountNames.fromTags(me.tags) ?? "暂未设置"
+        publicIdentifier.superview?.accessibilityValue = publicIdentifier.text
+        phoneIdentity.text = identitySummary(method: "tel")
+        emailIdentity.text = identitySummary(method: "email")
 
         // Description (note)
         if let note = me.pub?.note {
@@ -95,7 +208,7 @@ class AccountGeneralSettingsViewController: UITableViewController {
 
         // Avatar.
         self.avatarImage.set(pub: me.pub, id: self.tinode.myUid, deleted: false)
-        self.avatarImage.letterTileFont = self.avatarImage.letterTileFont.withSize(CGFloat(50))
+        self.avatarImage.letterTileFont = self.avatarImage.letterTileFont.withSize(CGFloat(20))
 
         // Note: tableView.reloadSections() would be better but
         // it makes the [Add another] contact button disappear.
@@ -108,53 +221,9 @@ class AccountGeneralSettingsViewController: UITableViewController {
     }
 
 
-    @objc
-    func textFieldDidChange(_ textField: UITextField) {
-        let text = textField.text ?? ""
-        if Tinode.isValidTagValueFormat(tag: text) {
-            textField.clearErrorSign()
-            if !text.isEmpty {
-                if let timer = aliasTesterTimer {
-                    timer.invalidate()
-                }
-                aliasTesterTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(checkAliasValidity), userInfo: nil, repeats: false)
-            }
-        } else {
-            textField.markAsError()
-        }
-    }
-
-    // This method is called for every keystroke, but validity is checked 1 second after the typing has stopped.
-    @objc
-    func checkAliasValidity() {
-        guard let alias = self.aliasTextField.text, let caller = Cache.tinode.myUid else {
-            return
-        }
-        // Check if alias is already taken.
-        guard let fnd = self.tinode?.getOrCreateFndTopic() else {
-            // Unable to check: say "all is fine".
-            return
-        }
-        fnd.checkTagUniqueness(tag: "\(Tinode.kTagAlias)\(alias)", caller: caller)
-            .thenApply { ok in
-                DispatchQueue.main.async { [weak self] in
-                    if ok ?? false {
-                        self?.aliasTextField.clearErrorSign()
-                    } else {
-                        self?.aliasTextField.markAsError()
-                    }
-                }
-                return nil
-            }
-            .thenCatch { err in
-                DispatchQueue.main.async { [weak self] in
-                    self?.aliasTextField.markAsError()
-                }
-                return nil
-            }
-    }
-
     @IBAction func doneEditingClicked(_ sender: Any) {
+        guard saveProfileButton.isEnabled else { return }
+        view.endEditing(true)
         var pub: TheCard? = nil
         if let name = nameTextField.text, name != me.pub?.fn {
             pub = TheCard(fn: name)
@@ -175,13 +244,22 @@ class AccountGeneralSettingsViewController: UITableViewController {
             return
         }
 
+        saveProfileButton.isEnabled = false
+        saveProfileButton.setTitle("正在保存…", for: .normal)
         self.me.setMeta(meta: MsgSetMeta(desc: pub != nil ? MetaSetDesc(pub: pub, priv: nil) : nil, tags: nil))
             .then(onSuccess: { _ in
                 DispatchQueue.main.async {
                     _ = self.navigationController?.popViewController(animated: true)
                 }
                 return nil
-            }, onFailure: UiUtils.ToastFailureHandler)
+            }, onFailure: { [weak self] error in
+                DispatchQueue.main.async {
+                    self?.saveProfileButton.isEnabled = true
+                    self?.saveProfileButton.setTitle("保存资料", for: .normal)
+                    UiUtils.showToast(message: "资料未能保存，请检查连接后重试。")
+                }
+                return nil
+            })
     }
 }
 
@@ -199,96 +277,26 @@ extension AccountGeneralSettingsViewController: ImagePickerDelegate {
     }
 }
 
-// UITableViewController
+// The storyboard still owns the inputs; the D1 header is now their visible container.
 extension AccountGeneralSettingsViewController {
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == AccountGeneralSettingsViewController.kSectionContacts {
-            return me.creds?.count ?? 0
-        }
-        return super.tableView(tableView, numberOfRowsInSection: section)
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { 0 }
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        CGFloat.leastNonzeroMagnitude
     }
-
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        if indexPath.section != AccountGeneralSettingsViewController.kSectionContacts {
-            return super.tableView(tableView, cellForRowAt: indexPath)
-        }
-
-        // Cells with contacts.
-        let cell = tableView.dequeueReusableCell(withIdentifier: "defaultCell") ?? UITableViewCell(style: .value1, reuseIdentifier: "defaultCell")
-
-        let cred = me.creds![indexPath.row]
-
-        var contact = cred.val
-        if cred.meth == "tel", let tel = contact {
-            if let number = try? Utils.phoneNumberKit.parse(tel) {
-                contact = Utils.phoneNumberKit.format(number, toType: .international)
-            }
-        }
-        cell.textLabel?.text = contact
-        cell.accessoryType = .none
-        cell.selectionStyle = .none
-        cell.textLabel?.sizeToFit()
-
-        cell.detailTextLabel?.text = cred.isDone ? "已验证" : "未验证"
-        cell.accessibilityHint = "更换手机号或邮箱暂未开放"
-        return cell
+    override func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
+        CGFloat.leastNonzeroMagnitude
     }
-
-    override func tableView(_ tableView: UITableView, indentationLevelForRowAt indexPath: IndexPath) -> Int {
-        if indexPath.section == AccountGeneralSettingsViewController.kSectionContacts {
-            return 0
-        }
-        return super.tableView(tableView, indentationLevelForRowAt: indexPath)
-    }
-
-    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        if indexPath.section == AccountGeneralSettingsViewController.kSectionContacts {
-            return tableView.rowHeight
-        }
-        if indexPath.section == AccountGeneralSettingsViewController.kSectionPersonal &&
-            indexPath.row == AccountGeneralSettingsViewController.kPersonalAlias {
-            return 0
-        }
-
-        return super.tableView(tableView, heightForRowAt: indexPath)
-    }
-
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "Settings2CredChange", let container = sender as? CredentialContainer {
-            let destVC = segue.destination as! CredentialsChangeViewController
-            destVC.currentCredential = container.currentCred
-            destVC.newCred = container.newCred?.val
-        }
-    }
-
-    // Handle tap on a row with contact
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if indexPath.section != AccountGeneralSettingsViewController.kSectionContacts {
-            // Don't call super.tableView.
-            return
-        }
-
-        tableView.deselectRow(at: indexPath, animated: true)
-
-        UiUtils.showToast(message: "更换手机号或邮箱暂未开放")
-    }
-
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? { nil }
+    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? { nil }
     override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool { false }
-
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         // No legacy credential deletion, including stale swipe callbacks.
     }
-
-    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
-        if section == AccountGeneralSettingsViewController.kSectionContacts { return "更换手机号或邮箱暂未开放" }
-        return super.tableView(tableView, titleForFooterInSection: section)
-    }
-
 }
 
 extension AccountGeneralSettingsViewController: UITextFieldDelegate {
     func textFieldDidEndEditing(_ textField: UITextField) {
-        debugPrint("textFieldDidEndEditing \(textField.text ?? "")")
+        // Profile input is never written to the debug log.
     }
 
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {

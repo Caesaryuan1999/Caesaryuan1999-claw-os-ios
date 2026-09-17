@@ -31,17 +31,17 @@ def main() -> None:
     assert "enum ActiveContactsLayoutMetrics" in UI_UTILS
     assert "ActiveContactsLayoutMetrics.itemWidth" in CHAT_LIST
     assert "ActiveContactsLayoutMetrics.contentWidth" in CHAT_LIST
-    assert "ActiveContactsLayoutMetrics.itemWidth" in CONTACTS
     assert "ActiveContactsLayoutMetrics.stripHeight" in CHAT_LIST
-    assert "ActiveContactsLayoutMetrics.stripHeight" in CONTACTS
     assert "static let baseStripHeight: CGFloat = 164" in UI_UTILS
     assert "static var stripHeight: CGFloat" in UI_UTILS
     assert "static var scaledMinimumItemWidth" in UI_UTILS
     assert "hasActiveContacts ? 104 + activeStripHeight + 38 : 104" in CHAT_LIST
-    assert "static var height: CGFloat { 98 + ActiveContactsLayoutMetrics.stripHeight }" in CONTACTS
+    # R3.D1 contacts replaced the strip with separate actions; the chat strip remains covered above.
+    assert "ClawActiveContactCell" not in CONTACTS
+    assert "premiumHeader.onAddContact" in CONTACTS
+    assert "premiumHeader.onCreateGroup" in CONTACTS
+    assert "ClawProfileLayout.fitHeader(in: tableView)" in CONTACTS
     assert "name.numberOfLines = 2" in CHAT_LIST
-    assert "nameLabel.numberOfLines = 2" in CONTACTS
-    assert "nameLabel.adjustsFontSizeToFitWidth = false" in CONTACTS
     assert "floor(availableWidth / 5)" not in CONTACTS
 
     wide_width = item_width(430, 16, 8, 82)

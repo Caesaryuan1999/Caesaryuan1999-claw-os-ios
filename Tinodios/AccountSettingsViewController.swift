@@ -56,8 +56,13 @@ class AccountSettingsViewController: UITableViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-
+        navigationController?.navigationBar.prefersLargeTitles = true
         reloadData()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.navigationBar.prefersLargeTitles = false
     }
 
     private func setup() {
@@ -66,146 +71,78 @@ class AccountSettingsViewController: UITableViewController {
     }
 
     private func installPremiumHeader() {
-        let width = max(tableView.bounds.width, UIScreen.main.bounds.width)
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 620))
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 650))
         header.backgroundColor = ClawTheme.background
+        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationItem.largeTitleDisplayMode = .always
 
         premiumAvatar.translatesAutoresizingMaskIntoConstraints = false
         premiumAvatar.contentMode = .scaleAspectFill
         premiumAvatar.clipsToBounds = true
-        premiumAvatar.layer.borderWidth = 2
-        premiumAvatar.layer.borderColor = ClawTheme.brandSoft.cgColor
-
-        premiumDisplayName.translatesAutoresizingMaskIntoConstraints = false
-        premiumDisplayName.font = ClawTheme.font(24, weight: .semibold, style: .title2)
+        premiumAvatar.widthAnchor.constraint(equalToConstant: 64).isActive = true
+        premiumAvatar.heightAnchor.constraint(equalToConstant: 64).isActive = true
+        premiumDisplayName.font = ClawTheme.font(20, weight: .semibold, style: .title2)
         premiumDisplayName.textColor = ClawTheme.ink
         premiumDisplayName.textAlignment = .center
         premiumDisplayName.numberOfLines = 0
         premiumDisplayName.adjustsFontForContentSizeCategory = true
 
-        premiumIdentityCaption.translatesAutoresizingMaskIntoConstraints = false
-        premiumIdentityCaption.text = NSLocalizedString("CLAW 号用于查找和添加，与登录手机号或邮箱分开", comment: "Public identity explanation")
-        premiumIdentityCaption.font = ClawTheme.font(13, style: .footnote)
-        premiumIdentityCaption.adjustsFontForContentSizeCategory = true
-        premiumIdentityCaption.numberOfLines = 0
-        premiumIdentityCaption.textColor = ClawTheme.muted
-        premiumIdentityCaption.textAlignment = .center
+        let edit = UIButton(type: .system)
+        ClawTheme.styleSecondaryButton(edit)
+        edit.setTitle("编辑个人资料", for: .normal)
+        edit.titleLabel?.font = ClawTheme.font(13)
+        edit.heightAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
+        edit.addTarget(self, action: #selector(openGeneralSettings), for: .touchUpInside)
+        edit.accessibilityIdentifier = "claw.settings.account.profile"
+        let avatarRow = UIStackView(arrangedSubviews: [premiumAvatar])
+        avatarRow.axis = .vertical
+        avatarRow.alignment = .center
+        let publicRow = makeIdentityRow(title: "CLAW号", valueLabel: premiumAccountName, copyTag: 1)
+        let profile = UIStackView(arrangedSubviews: [avatarRow, premiumDisplayName, edit, publicRow])
+        profile.axis = .vertical
+        profile.spacing = 8
+        profile.isLayoutMarginsRelativeArrangement = true
+        profile.layoutMargins = UIEdgeInsets(top: 20, left: 16, bottom: 12, right: 16)
+        profile.backgroundColor = ClawTheme.surface
+        profile.layer.cornerRadius = 20
 
-        let card = UIView()
-        card.translatesAutoresizingMaskIntoConstraints = false
-        ClawTheme.styleCard(card)
-
-        let accountRow = makeIdentityRow(
-            title: NSLocalizedString("CLAW 号", comment: "Public account identifier"),
-            valueLabel: premiumAccountName,
-            copyTag: 1)
-        let rows = UIStackView(arrangedSubviews: [accountRow])
-        rows.translatesAutoresizingMaskIntoConstraints = false
-        rows.axis = .vertical
-
-        let settingsCard = UIView()
-        settingsCard.translatesAutoresizingMaskIntoConstraints = false
-        ClawTheme.styleCard(settingsCard)
-
-        let generalRow = makeSettingsMenuRow(
-            title: NSLocalizedString("个人资料", comment: "Profile settings"),
-            symbolName: "person.crop.circle",
-            action: #selector(openGeneralSettings))
-        let notificationsRow = makeSettingsMenuRow(
-            title: NSLocalizedString("通知", comment: "Notification settings"),
-            symbolName: "bell",
-            action: #selector(openNotifications))
-        let securityRow = makeSettingsMenuRow(
-            title: NSLocalizedString("账号与安全", comment: "Security settings"),
-            symbolName: "shield",
-            action: #selector(openSecurity))
-        let helpRow = makeSettingsMenuRow(
-            title: NSLocalizedString("帮助", comment: "Help settings"),
-            symbolName: "questionmark.circle",
-            action: #selector(openHelp))
-        let settingsRows = UIStackView(arrangedSubviews: [generalRow, notificationsRow, securityRow, helpRow])
-        settingsRows.translatesAutoresizingMaskIntoConstraints = false
-        settingsRows.axis = .vertical
-        settingsRows.distribution = .fillEqually
-
+        let notificationsRow = makeSettingsMenuRow(title: "消息通知", symbolName: "bell", action: #selector(openNotifications))
+        let securityRow = makeSettingsMenuRow(title: "账号安全", symbolName: "shield", action: #selector(openSecurity))
+        let helpRow = makeSettingsMenuRow(title: "关于 CLAW OS", symbolName: "questionmark.circle", action: #selector(openHelp))
+        let appearance = UILabel()
+        appearance.text = "跟随系统"
+        let appearanceRow = ClawProfileLayout.valueRow(title: "外观", value: appearance)
+        appearanceRow.accessibilityHint = "当前跟随系统外观，可在系统设置中更改"
         let logoutButton = UIButton(type: .system)
-        logoutButton.translatesAutoresizingMaskIntoConstraints = false
-        logoutButton.setTitle(NSLocalizedString("退出登录", comment: "Log out"), for: .normal)
+        logoutButton.setTitle("退出登录", for: .normal)
         logoutButton.setTitleColor(ClawTheme.danger, for: .normal)
-        logoutButton.titleLabel?.font = ClawTheme.font(16, weight: .semibold)
-        logoutButton.setImage(
-            ClawTheme.symbol("rectangle.portrait.and.arrow.right", pointSize: ClawTheme.iconStandard,
-                             weight: .medium),
-            for: .normal)
-        logoutButton.tintColor = ClawTheme.danger
-        logoutButton.contentHorizontalAlignment = .center
+        logoutButton.titleLabel?.font = ClawTheme.font(15, weight: .medium)
         logoutButton.titleLabel?.adjustsFontForContentSizeCategory = true
-        logoutButton.backgroundColor = ClawTheme.surface
-        logoutButton.layer.cornerRadius = ClawTheme.buttonRadius
-        logoutButton.layer.cornerCurve = .continuous
-        logoutButton.layer.borderWidth = 1
-        logoutButton.layer.borderColor = ClawTheme.danger.withAlphaComponent(0.22).cgColor
-        logoutButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: -5, bottom: 0, right: 5)
-        logoutButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: 5, bottom: 0, right: -5)
+        logoutButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
         logoutButton.addTarget(self, action: #selector(confirmLogout), for: .touchUpInside)
 
-        header.addSubview(premiumAvatar)
-        header.addSubview(premiumDisplayName)
-        header.addSubview(premiumIdentityCaption)
-        header.addSubview(card)
-        header.addSubview(settingsCard)
-        header.addSubview(logoutButton)
-        card.addSubview(rows)
-        settingsCard.addSubview(settingsRows)
-
-        NSLayoutConstraint.activate([
-            premiumAvatar.topAnchor.constraint(equalTo: header.topAnchor, constant: 24),
-            premiumAvatar.centerXAnchor.constraint(equalTo: header.centerXAnchor),
-            premiumAvatar.widthAnchor.constraint(equalToConstant: 88),
-            premiumAvatar.heightAnchor.constraint(equalToConstant: 88),
-
-            premiumDisplayName.topAnchor.constraint(equalTo: premiumAvatar.bottomAnchor, constant: 18),
-            premiumDisplayName.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 24),
-            premiumDisplayName.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -24),
-
-            premiumIdentityCaption.topAnchor.constraint(equalTo: premiumDisplayName.bottomAnchor, constant: 8),
-            premiumIdentityCaption.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 24),
-            premiumIdentityCaption.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -24),
-
-            card.topAnchor.constraint(equalTo: premiumIdentityCaption.bottomAnchor, constant: 30),
-            card.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
-            card.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 84),
-
-            rows.leadingAnchor.constraint(equalTo: card.leadingAnchor),
-            rows.trailingAnchor.constraint(equalTo: card.trailingAnchor),
-            rows.topAnchor.constraint(equalTo: card.topAnchor),
-            rows.bottomAnchor.constraint(equalTo: card.bottomAnchor),
-
-            settingsCard.topAnchor.constraint(equalTo: card.bottomAnchor, constant: 18),
-            settingsCard.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
-            settingsCard.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-            settingsRows.leadingAnchor.constraint(equalTo: settingsCard.leadingAnchor),
-            settingsRows.trailingAnchor.constraint(equalTo: settingsCard.trailingAnchor),
-            settingsRows.topAnchor.constraint(equalTo: settingsCard.topAnchor),
-            settingsRows.bottomAnchor.constraint(equalTo: settingsCard.bottomAnchor),
-
-            logoutButton.topAnchor.constraint(equalTo: settingsCard.bottomAnchor, constant: 14),
-            logoutButton.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
-            logoutButton.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-            logoutButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 52),
-            logoutButton.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -24)
+        let stack = UIStackView(arrangedSubviews: [
+            profile, ClawProfileLayout.label("偏好设置", size: 12), notificationsRow, appearanceRow,
+            ClawProfileLayout.label("账号与帮助", size: 12), securityRow, helpRow, logoutButton
         ])
-        header.frame.size.height = ceil(header.systemLayoutSizeFitting(
-            CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
-            withHorizontalFittingPriority: .required,
-            verticalFittingPriority: .fittingSizeLevel).height)
+        stack.axis = .vertical
+        stack.spacing = 10
+        stack.setCustomSpacing(24, after: profile)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 12),
+            stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -20),
+            stack.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -24)
+        ])
         tableView.tableHeaderView = header
+        ClawProfileLayout.fitHeader(in: tableView)
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        premiumAvatar.layer.cornerRadius = premiumAvatar.bounds.width / 2
+        premiumAvatar.layer.cornerRadius = 22
         guard let header = tableView.tableHeaderView else { return }
         tableView.contentInset.bottom = max(24, view.safeAreaInsets.bottom + 24)
         header.frame.size.width = tableView.bounds.width
@@ -282,58 +219,30 @@ class AccountSettingsViewController: UITableViewController {
 
     private func makeSettingsMenuRow(title: String, symbolName: String, action: Selector) -> UIControl {
         let row = UIControl()
-        row.translatesAutoresizingMaskIntoConstraints = false
+        row.backgroundColor = ClawTheme.surface
+        row.layer.cornerRadius = 12
         row.addTarget(self, action: action, for: .touchUpInside)
         row.isAccessibilityElement = true
         row.accessibilityLabel = title
         row.accessibilityTraits = .button
-
-        let icon = UIImageView(image: ClawTheme.symbol(
-            symbolName, pointSize: ClawTheme.iconStandard, weight: .medium))
-        icon.translatesAutoresizingMaskIntoConstraints = false
-        icon.tintColor = ClawTheme.primary
-        icon.contentMode = .center
-
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = title
-        label.textColor = ClawTheme.ink
-        label.font = ClawTheme.font(16)
-        label.numberOfLines = 0
-        label.adjustsFontForContentSizeCategory = true
-
-        let chevron = UIImageView(image: ClawTheme.symbol(
-            "chevron.right", pointSize: ClawTheme.iconCompact, weight: .semibold))
-        chevron.translatesAutoresizingMaskIntoConstraints = false
+        let label = ClawProfileLayout.label(title, size: 16, color: ClawTheme.ink)
+        let chevron = UIImageView(image: ClawTheme.symbol("chevron.right", pointSize: 16, weight: .regular))
         chevron.tintColor = ClawTheme.muted
         chevron.contentMode = .center
-
-        let divider = UIView()
-        divider.translatesAutoresizingMaskIntoConstraints = false
-        divider.backgroundColor = ClawTheme.border
-
-        row.addSubview(icon)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        chevron.translatesAutoresizingMaskIntoConstraints = false
         row.addSubview(label)
         row.addSubview(chevron)
-        row.addSubview(divider)
         NSLayoutConstraint.activate([
-            icon.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 18),
-            icon.centerYAnchor.constraint(equalTo: row.centerYAnchor),
-            icon.widthAnchor.constraint(equalToConstant: 24),
-            icon.heightAnchor.constraint(equalToConstant: 24),
-            label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 16),
-            row.heightAnchor.constraint(greaterThanOrEqualToConstant: 60),
+            row.heightAnchor.constraint(greaterThanOrEqualToConstant: 56),
+            label.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 16),
             label.topAnchor.constraint(equalTo: row.topAnchor, constant: 16),
             label.bottomAnchor.constraint(equalTo: row.bottomAnchor, constant: -16),
             label.trailingAnchor.constraint(lessThanOrEqualTo: chevron.leadingAnchor, constant: -12),
-            chevron.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -18),
+            chevron.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -16),
             chevron.centerYAnchor.constraint(equalTo: row.centerYAnchor),
-            chevron.widthAnchor.constraint(equalToConstant: 16),
-            chevron.heightAnchor.constraint(equalToConstant: 20),
-            divider.leadingAnchor.constraint(equalTo: label.leadingAnchor),
-            divider.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -18),
-            divider.bottomAnchor.constraint(equalTo: row.bottomAnchor),
-            divider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+            chevron.widthAnchor.constraint(equalToConstant: 20),
+            chevron.heightAnchor.constraint(equalToConstant: 20)
         ])
         return row
     }
@@ -405,19 +314,18 @@ class AccountSettingsViewController: UITableViewController {
         self.userNameLabel.text = AccountNames.contactDisplayName(displayName: me.pub?.fn,
                                                                   accountName: accountName,
                                                                   userId: self.tinode.myUid)
-        premiumDisplayName.text = me.pub?.fn ?? accountName ?? NSLocalizedString("未设置昵称", comment: "Missing display name")
+        premiumDisplayName.text = AccountNames.contactDisplayName(displayName: me.pub?.fn, accountName: accountName, userId: self.tinode.myUid, genericDefaultName: "未设置昵称")
 
         // Avatar.
         self.avatarImageView.set(pub: me.pub, id: self.tinode.myUid, deleted: false)
         premiumAvatar.set(pub: me.pub, id: self.tinode.myUid, deleted: false)
         self.avatarImageView.letterTileFont = self.avatarImageView.letterTileFont.withSize(CGFloat(50))
 
-        self.descriptionLabel.text = me.creds?.first(where: { $0.meth == ClawAuthInput.inviteCredentialMethod })?.val ??
-            NSLocalizedString("邀请码不可用", comment: "Placeholder for missing invite code")
-
-        // Retain the legacy storyboard outlet; the hidden row is not public profile UI.
-        self.myUIDLabel.text = self.tinode.myUid
-        self.myUIDLabel.sizeToFit()
+        // Retain storyboard connections without exposing internal UID or obsolete invite credentials.
+        self.descriptionLabel.text = nil
+        self.myUIDLabel.text = nil
+        self.descriptionLabel.accessibilityElementsHidden = true
+        self.myUIDLabel.accessibilityElementsHidden = true
 
         self.aliasLabel.text = accountName ?? NSLocalizedString("未设置", comment: "Placeholder for missing account name")
         premiumAccountName.text = aliasLabel.text
@@ -457,6 +365,7 @@ class AccountSettingsViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        cell.accessibilityElementsHidden = true
         if indexPath.section == AccountSettingsViewController.kSectionBasic {
             // Hide separator lines in the top sections.
             cell.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: UIScreen.main.bounds.width)

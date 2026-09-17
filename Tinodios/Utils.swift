@@ -981,6 +981,50 @@ final class ClawSubmissionGate {
     }
 }
 
+/// D1 profile rows share the same labels, spacing and adaptive table-header sizing.
+enum ClawProfileLayout {
+    static func label(_ text: String, size: CGFloat = 13, color: UIColor = ClawTheme.muted) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.font = ClawTheme.font(size)
+        label.textColor = color
+        label.numberOfLines = 0
+        label.adjustsFontForContentSizeCategory = true
+        return label
+    }
+
+    static func valueRow(title: String, value: UILabel) -> UIStackView {
+        let caption = label(title, size: 16, color: ClawTheme.ink)
+        caption.setContentHuggingPriority(.required, for: .horizontal)
+        value.font = ClawTheme.font(13)
+        value.textColor = ClawTheme.muted
+        value.numberOfLines = 0
+        value.adjustsFontForContentSizeCategory = true
+        value.textAlignment = .right
+        let row = UIStackView(arrangedSubviews: [caption, value])
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 12
+        row.isLayoutMarginsRelativeArrangement = true
+        row.layoutMargins = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+        row.backgroundColor = ClawTheme.surface
+        row.layer.cornerRadius = 12
+        row.heightAnchor.constraint(greaterThanOrEqualToConstant: 56).isActive = true
+        return row
+    }
+
+    static func fitHeader(in table: UITableView) {
+        guard let header = table.tableHeaderView, table.bounds.width > 0 else { return }
+        let height = ceil(header.systemLayoutSizeFitting(
+            CGSize(width: table.bounds.width, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel).height)
+        if abs(header.frame.width - table.bounds.width) > 0.5 || abs(header.frame.height - height) > 0.5 {
+            header.frame = CGRect(x: 0, y: 0, width: table.bounds.width, height: height)
+            table.tableHeaderView = header
+        }
+    }
+}
+
 enum AccountNames {
     static let basicTagPrefix = "basic:"
 

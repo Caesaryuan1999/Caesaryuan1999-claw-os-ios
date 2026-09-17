@@ -24,6 +24,41 @@ class ContactViewCell: UITableViewCell {
 
     override func awakeFromNib() {
         super.awakeFromNib()
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        let card = UIView()
+        card.backgroundColor = ClawTheme.surface
+        card.layer.cornerRadius = 16
+        backgroundView = card
+        let selectedCard = UIView()
+        selectedCard.backgroundColor = ClawTheme.brandSoft
+        selectedCard.layer.cornerRadius = 16
+        selectedBackgroundView = selectedCard
+        selectionStyle = .default
+        title.font = ClawTheme.font(16, weight: .medium)
+        title.textColor = ClawTheme.ink
+        title.numberOfLines = 0
+        title.adjustsFontForContentSizeCategory = true
+        subtitle.font = ClawTheme.font(13)
+        subtitle.textColor = ClawTheme.muted
+        subtitle.numberOfLines = 0
+        subtitle.adjustsFontForContentSizeCategory = true
+        avatar.contentMode = .scaleAspectFill
+        for label in statusLabels {
+            label.font = ClawTheme.font(12)
+            label.adjustsFontForContentSizeCategory = true
+            if label.isHidden { label.text = nil }
+        }
+        accessibilityTraits = .button
+    }
+
+    override func layoutSubviews() {
+        for label in statusLabels where label.isHidden { label.text = nil }
+        super.layoutSubviews()
+        let cardFrame = bounds.inset(by: UIEdgeInsets(top: 5, left: 20, bottom: 5, right: 20))
+        backgroundView?.frame = cardFrame
+        selectedBackgroundView?.frame = cardFrame
+        avatar.layer.cornerRadius = 16
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {

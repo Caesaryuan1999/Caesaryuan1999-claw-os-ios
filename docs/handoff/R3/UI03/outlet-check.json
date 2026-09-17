@@ -1,0 +1,16 @@
+{
+  "contact_outlets_preserved": true,
+  "profile_outlets": [
+    "aliasTextField",
+    "avatarImage",
+    "descriptionTextView",
+    "loadAvatarButton",
+    "nameTextField"
+  ],
+  "profile_actions": [
+    "loadAvatarClicked",
+    "doneEditingClicked"
+  ],
+  "xib_xml_valid": true,
+  "evidence": "Static XML/source linkage only; UIKit NOT_RUN"
+}

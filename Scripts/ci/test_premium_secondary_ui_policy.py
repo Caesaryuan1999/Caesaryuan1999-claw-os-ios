@@ -28,10 +28,11 @@ assert "ClawTheme.styleSearchBar(searchController.searchBar)" in contacts
 assert "ClawTheme.styleList(tableView, rowHeight: 84)" in contacts
 for marker in [
     "ClawContactsHeaderView",
-    "ClawActiveContactCell",
-    "UICollectionViewDelegateFlowLayout",
-    "ActiveContactsLayoutMetrics.itemWidth",
-    "static var height: CGFloat { 98 + ActiveContactsLayoutMetrics.stripHeight }",
+    "premiumHeader.onAddContact",
+    "premiumHeader.onCreateGroup",
+    "claw.contacts.create-group",
+    'storyboard.instantiateViewController(withIdentifier: "NewGroup")',
+    "searchController.isActive = true",
     "发起群聊",
     "查找联系人",
     "邀请朋友",
@@ -89,8 +90,8 @@ for marker in [
 
 assert "ClawTheme.styleList(tableView, rowHeight: 72)" in account
 for marker in [
-    "ClawTheme.styleCard(settingsCard)",
-    "premiumAvatar.heightAnchor.constraint(equalToConstant: 88)",
+    'ClawProfileLayout.label("偏好设置", size: 12)',
+    "premiumAvatar.heightAnchor.constraint(equalToConstant: 64)",
     "logoutButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 52)",
     "AccountSettings2General",
     "SettingsNotificationsViewController(style: .insetGrouped)",

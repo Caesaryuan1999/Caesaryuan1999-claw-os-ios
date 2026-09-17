@@ -80,19 +80,9 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         }
 
         premiumHeader.install(searchBar: searchController.searchBar)
-        premiumHeader.collectionView.dataSource = self
-        premiumHeader.collectionView.delegate = self
-        premiumHeader.collectionView.register(
-            ClawActiveContactCell.self,
-            forCellWithReuseIdentifier: ClawActiveContactCell.reuseIdentifier)
-        premiumHeader.onViewAll = { [weak self] in
-            guard let self = self, !self.localContacts.isEmpty else { return }
-            self.tableView.scrollToRow(
-                at: IndexPath(row: 0, section: FindViewController.kLocalContactsSection),
-                at: .top,
-                animated: true)
-        }
-        premiumHeader.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: ClawContactsHeaderView.height)
+        premiumHeader.onAddContact = { [weak self] in self?.activateContactSearch() }
+        premiumHeader.onCreateGroup = { [weak self] in self?.openNewGroup() }
+        premiumHeader.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 210)
         self.tableView.tableHeaderView = premiumHeader
         self.tableView.register(UINib(nibName: "ContactViewCell", bundle: nil), forCellReuseIdentifier: "ContactViewCell")
 
@@ -111,6 +101,8 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         self.updateSearchBarPlaceholder(authStatus: ContactsSynchronizer.default.authStatus)
 
         navigationItem.title = NSLocalizedString("通讯录", comment: "Contacts screen title")
+        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationItem.largeTitleDisplayMode = .always
         inviteActionButtonItem.image = ClawTheme.symbol("person.badge.plus", pointSize: ClawTheme.iconCompact, weight: .medium)
         inviteActionButtonItem.tintColor = ClawTheme.primary
         inviteActionButtonItem.accessibilityLabel = NSLocalizedString("添加联系人", comment: "Add contact action")
@@ -120,7 +112,10 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         inviteActionButtonItem.accessibilityIdentifier = "claw.contacts.add"
         ClawTheme.styleSearchBar(searchController.searchBar)
         ClawTheme.styleList(tableView, rowHeight: 84)
-        tableView.backgroundColor = ClawTheme.surface
+        tableView.backgroundColor = ClawTheme.background
+        tableView.separatorStyle = .none
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 94
         if #available(iOS 15.0, *) {
             tableView.sectionHeaderTopPadding = 0
         }
@@ -135,7 +130,6 @@ class FindViewController: UITableViewController, FindDisplayLogic {
     func displayLocalContacts(contacts newContacts: [ContactHolder]) {
         assert(Thread.isMainThread)
         self.localContacts = newContacts
-        self.premiumHeader.collectionView.reloadData()
         self.tableView.reloadData()
     }
 
@@ -168,17 +162,30 @@ class FindViewController: UITableViewController, FindDisplayLogic {
     }
 
     private func updateHeaderLayout() {
-        guard premiumHeader.frame.width != tableView.bounds.width else {
-            premiumHeader.collectionView.collectionViewLayout.invalidateLayout()
-            return
+        ClawProfileLayout.fitHeader(in: tableView)
+    }
+
+    private func activateContactSearch() {
+        searchController.isActive = true
+        DispatchQueue.main.async { [weak self] in
+            self?.searchController.searchBar.searchTextField.becomeFirstResponder()
         }
-        premiumHeader.frame = CGRect(
-            x: 0,
-            y: 0,
-            width: tableView.bounds.width,
-            height: ClawContactsHeaderView.height)
-        tableView.tableHeaderView = premiumHeader
-        premiumHeader.collectionView.collectionViewLayout.invalidateLayout()
+    }
+
+    private func openNewGroup() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let controller = storyboard.instantiateViewController(withIdentifier: "NewGroup")
+        navigationController?.pushViewController(controller, animated: true)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.navigationBar.prefersLargeTitles = true
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.navigationBar.prefersLargeTitles = false
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -187,7 +194,7 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         self.interactor?.setup()
         self.interactor?.attachToFndTopic()
         self.interactor?.loadAndPresentContacts(searchQuery: nil)
-        self.navigationItem.rightBarButtonItem = inviteActionButtonItem
+        self.navigationItem.rightBarButtonItem = nil
     }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
@@ -199,17 +206,10 @@ class FindViewController: UITableViewController, FindDisplayLogic {
     @IBAction func inviteActionClicked(_ sender: Any) {
         let alert = UIAlertController(title: NSLocalizedString("新增", comment: "Contacts add menu title"), message: nil, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: NSLocalizedString("发起群聊", comment: "Start a group chat"), style: .default, handler: { [weak self] _ in
-            guard let self = self else { return }
-            let storyboard = UIStoryboard(name: "Main", bundle: nil)
-            let controller = storyboard.instantiateViewController(withIdentifier: "NewGroup")
-            self.navigationController?.pushViewController(controller, animated: true)
+            self?.openNewGroup()
         }))
         alert.addAction(UIAlertAction(title: NSLocalizedString("查找联系人", comment: "Find contacts"), style: .default, handler: { [weak self] _ in
-            guard let self = self else { return }
-            self.searchController.isActive = true
-            DispatchQueue.main.async {
-                self.searchController.searchBar.searchTextField.becomeFirstResponder()
-            }
+            self?.activateContactSearch()
         }))
         alert.addAction(UIAlertAction(title: NSLocalizedString("邀请朋友", comment: "Invite a friend"), style: .default, handler: { [weak self] _ in
             self?.presentInviteOptions()
@@ -284,9 +284,10 @@ class FindViewController: UITableViewController, FindDisplayLogic {
                 cell.title.text = AccountNames.contactDisplayName(displayName: contact.pub?.fn,
                                                                    accountName: contact.accountName,
                                                                    userId: contact.uniqueId)
-                let subtitle = contact.subtitle ?? AccountNames.contactListSecondary(accountName: contact.accountName)
-                cell.subtitle.text = subtitle ?? ""
-                cell.subtitle.isHidden = subtitle == nil
+                let publicName = AccountNames.contactListSecondary(accountName: contact.accountName)
+                let subtitle = publicName.map { "CLAW号：" + $0 } ?? contact.subtitle
+                cell.subtitle.text = subtitle ?? "暂未设置 CLAW号"
+                cell.subtitle.isHidden = false
             }
             cell.title.sizeToFit()
             cell.subtitle.sizeToFit()
@@ -523,132 +524,18 @@ extension FindViewController: MFMessageComposeViewControllerDelegate {
     }
 }
 
-// MARK: - CLAW OS premium contacts header
-
-extension FindViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
-    private var activeContacts: [ContactHolder] {
-        let activeCallTopic = Cache.callManager.callInProgress?.topic
-        return localContacts.sorted { lhs, rhs in
-            let lhsInCall = lhs.uniqueId == activeCallTopic
-            let rhsInCall = rhs.uniqueId == activeCallTopic
-            if lhsInCall != rhsInCall {
-                return lhsInCall && !rhsInCall
-            }
-            let lhsOnline = contactOnlineStatus(lhs)
-            let rhsOnline = contactOnlineStatus(rhs)
-            if lhsOnline != rhsOnline {
-                return lhsOnline && !rhsOnline
-            }
-            let lhsName = AccountNames.contactDisplayName(
-                displayName: lhs.pub?.fn,
-                accountName: lhs.accountName,
-                userId: lhs.uniqueId)
-            let rhsName = AccountNames.contactDisplayName(
-                displayName: rhs.pub?.fn,
-                accountName: rhs.accountName,
-                userId: rhs.uniqueId)
-            return lhsName.localizedCaseInsensitiveCompare(rhsName) == .orderedAscending
-        }
-    }
-
-    private func contactOnlineStatus(_ contact: ContactHolder) -> Bool {
-        guard let topicName = contact.uniqueId,
-              let topic = Cache.tinode.getTopic(topicName: topicName) as? DefaultComTopic else {
-            return false
-        }
-        return topic.online
-    }
-
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        let count = activeContacts.count
-        let visibleCount = ActiveContactsLayoutMetrics.visibleCount(
-            viewportWidth: collectionView.bounds.width,
-            horizontalInset: 20)
-        collectionView.alwaysBounceHorizontal = count > visibleCount
-        return count
-    }
-
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(
-            withReuseIdentifier: ClawActiveContactCell.reuseIdentifier,
-            for: indexPath) as? ClawActiveContactCell else {
-            return UICollectionViewCell()
-        }
-        let contact = activeContacts[indexPath.item]
-        let inCall = contact.uniqueId == Cache.callManager.callInProgress?.topic
-        let online = contactOnlineStatus(contact)
-        cell.configure(
-            pub: contact.pub,
-            id: contact.uniqueId,
-            name: AccountNames.contactDisplayName(
-                displayName: contact.pub?.fn,
-                accountName: contact.accountName,
-                userId: contact.uniqueId),
-            status: inCall
-                ? NSLocalizedString("通话中", comment: "Contact is currently in a call")
-                : online
-                    ? NSLocalizedString("在线", comment: "Online contact status")
-                    : NSLocalizedString("最近活跃", comment: "Recently active contact status"),
-            online: online,
-            inCall: inCall)
-        return cell
-    }
-
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard indexPath.item < activeContacts.count,
-              let id = activeContacts[indexPath.item].uniqueId else { return }
-        openSelectedContact(id: id)
-    }
-
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(
-            width: ActiveContactsLayoutMetrics.itemWidth(
-                viewportWidth: collectionView.bounds.width,
-                horizontalInset: 20),
-            height: ActiveContactsLayoutMetrics.stripHeight)
-    }
-
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return 8
-    }
-
-    func collectionView(
-        _ collectionView: UICollectionView,
-        layout collectionViewLayout: UICollectionViewLayout,
-        insetForSectionAt section: Int) -> UIEdgeInsets {
-        return UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
-    }
-}
-
+// MARK: - R3.D1 contacts actions
 private final class ClawContactsHeaderView: UIView {
-    static var height: CGFloat { 98 + ActiveContactsLayoutMetrics.stripHeight }
-
-    let collectionView: UICollectionView
-    var onViewAll: (() -> Void)?
+    var onAddContact: (() -> Void)?
+    var onCreateGroup: (() -> Void)?
     private let searchContainer = UIView()
-    private let sectionTitle = UILabel()
-    private let viewAllButton = UIButton(type: .system)
 
     override init(frame: CGRect) {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .horizontal
-        layout.minimumInteritemSpacing = 0
-        layout.minimumLineSpacing = 8
-        collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         super.init(frame: frame)
         setupViews()
     }
 
     required init?(coder: NSCoder) {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .horizontal
-        collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         super.init(coder: coder)
         setupViews()
     }
@@ -666,177 +553,58 @@ private final class ClawContactsHeaderView: UIView {
     }
 
     private func setupViews() {
-        backgroundColor = ClawTheme.surface
-        searchContainer.translatesAutoresizingMaskIntoConstraints = false
-        sectionTitle.translatesAutoresizingMaskIntoConstraints = false
-        viewAllButton.translatesAutoresizingMaskIntoConstraints = false
-        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        backgroundColor = ClawTheme.background
+        let brand = ClawProfileLayout.label("CLAW OS", size: 12, color: ClawTheme.primary)
+        let add = UIButton(type: .system)
+        ClawTheme.styleSecondaryButton(add)
+        add.setTitle("添加联系人", for: .normal)
+        add.titleLabel?.numberOfLines = 0
+        add.accessibilityIdentifier = "claw.contacts.add"
+        add.backgroundColor = ClawTheme.brandSoft
+        add.layer.cornerRadius = 12
+        add.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+        add.heightAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
+        add.addTarget(self, action: #selector(addTapped), for: .touchUpInside)
+        let top = UIStackView(arrangedSubviews: [brand, UIView(), add])
+        top.alignment = .center
+        top.spacing = 12
 
-        sectionTitle.text = NSLocalizedString("活跃联系人", comment: "Active contacts section title")
-        sectionTitle.font = .systemFont(ofSize: 14, weight: .semibold)
-        sectionTitle.textColor = ClawTheme.ink
-
-        viewAllButton.setTitle(NSLocalizedString("查看全部", comment: "View all contacts"), for: .normal)
-        viewAllButton.titleLabel?.font = .systemFont(ofSize: 12, weight: .medium)
-        viewAllButton.tintColor = ClawTheme.primary
-        viewAllButton.setTitleColor(ClawTheme.primary, for: .normal)
-        viewAllButton.addTarget(self, action: #selector(viewAllTapped), for: .touchUpInside)
-
-        collectionView.backgroundColor = ClawTheme.surface
-        collectionView.showsHorizontalScrollIndicator = false
-        collectionView.alwaysBounceHorizontal = false
-
-        addSubview(searchContainer)
-        addSubview(sectionTitle)
-        addSubview(viewAllButton)
-        addSubview(collectionView)
-
+        let group = UIButton(type: .system)
+        ClawTheme.styleSecondaryButton(group)
+        group.setTitle("发起群聊", for: .normal)
+        group.titleLabel?.numberOfLines = 0
+        let chevron = UIImageView(image: ClawTheme.symbol("chevron.right", pointSize: 16, weight: .regular))
+        chevron.tintColor = ClawTheme.muted
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+        group.addSubview(chevron)
         NSLayoutConstraint.activate([
-            searchContainer.topAnchor.constraint(equalTo: topAnchor, constant: 6),
-            searchContainer.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 18),
-            searchContainer.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
-            searchContainer.heightAnchor.constraint(equalToConstant: 52),
+            chevron.trailingAnchor.constraint(equalTo: group.trailingAnchor, constant: -16),
+            chevron.centerYAnchor.constraint(equalTo: group.centerYAnchor),
+            chevron.widthAnchor.constraint(equalToConstant: 20),
+            chevron.heightAnchor.constraint(equalToConstant: 20)
+        ])
+        group.accessibilityIdentifier = "claw.contacts.create-group"
+        group.backgroundColor = ClawTheme.surface
+        group.layer.cornerRadius = 12
+        group.contentHorizontalAlignment = .leading
+        group.contentEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 48)
+        group.heightAnchor.constraint(greaterThanOrEqualToConstant: 56).isActive = true
+        group.addTarget(self, action: #selector(groupTapped), for: .touchUpInside)
 
-            sectionTitle.topAnchor.constraint(equalTo: searchContainer.bottomAnchor, constant: 12),
-            sectionTitle.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            sectionTitle.heightAnchor.constraint(equalToConstant: 22),
-
-            viewAllButton.centerYAnchor.constraint(equalTo: sectionTitle.centerYAnchor),
-            viewAllButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            viewAllButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
-
-            collectionView.topAnchor.constraint(equalTo: sectionTitle.bottomAnchor, constant: 2),
-            collectionView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4)
+        searchContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
+        let stack = UIStackView(arrangedSubviews: [top, searchContainer, group])
+        stack.axis = .vertical
+        stack.spacing = 10
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
         ])
     }
 
-    @objc private func viewAllTapped() {
-        onViewAll?()
-    }
-}
-
-private final class ClawActiveContactCell: UICollectionViewCell {
-    static let reuseIdentifier = "ClawActiveContactCell"
-
-    private let avatar = RoundImageView()
-    private let onlineDot = UIView()
-    private let callBadge = UIView()
-    private let callIcon = UIImageView()
-    private let nameLabel = UILabel()
-    private let statusLabel = UILabel()
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupViews()
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setupViews()
-    }
-
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        nameLabel.text = nil
-        statusLabel.text = nil
-        onlineDot.isHidden = true
-        callBadge.isHidden = true
-    }
-
-    func configure(pub: TheCard?, id: String?, name: String, status: String, online: Bool, inCall: Bool) {
-        avatar.set(pub: pub, id: id, deleted: false)
-        nameLabel.text = name
-        statusLabel.text = status
-        statusLabel.textColor = (inCall || online) ? ClawTheme.primary : ClawTheme.muted
-        onlineDot.isHidden = inCall || !online
-        callBadge.isHidden = !inCall
-    }
-
-    private func setupViews() {
-        avatar.translatesAutoresizingMaskIntoConstraints = false
-        avatar.contentMode = .scaleAspectFill
-        avatar.clipsToBounds = true
-
-        onlineDot.translatesAutoresizingMaskIntoConstraints = false
-        onlineDot.backgroundColor = ClawTheme.success
-        onlineDot.layer.cornerRadius = 6
-        onlineDot.layer.borderWidth = 2
-        onlineDot.layer.borderColor = ClawTheme.surface.cgColor
-
-        callBadge.translatesAutoresizingMaskIntoConstraints = false
-        callBadge.backgroundColor = ClawTheme.accent
-        callBadge.layer.cornerRadius = 9
-        callBadge.layer.cornerCurve = .continuous
-        callBadge.isHidden = true
-
-        callIcon.translatesAutoresizingMaskIntoConstraints = false
-        callIcon.image = ClawTheme.symbol("phone.fill", pointSize: 11, weight: .semibold)
-        callIcon.tintColor = .white
-        callIcon.contentMode = .scaleAspectFit
-
-        nameLabel.translatesAutoresizingMaskIntoConstraints = false
-        nameLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        nameLabel.adjustsFontForContentSizeCategory = true
-        nameLabel.textColor = ClawTheme.ink
-        nameLabel.textAlignment = .center
-        nameLabel.numberOfLines = 2
-        nameLabel.adjustsFontSizeToFitWidth = false
-        nameLabel.lineBreakMode = .byTruncatingTail
-
-        statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        statusLabel.font = .systemFont(ofSize: 10, weight: .regular)
-        statusLabel.adjustsFontForContentSizeCategory = true
-        statusLabel.textColor = ClawTheme.muted
-        statusLabel.textAlignment = .center
-        statusLabel.numberOfLines = 1
-
-        contentView.addSubview(avatar)
-        contentView.addSubview(onlineDot)
-        contentView.addSubview(callBadge)
-        callBadge.addSubview(callIcon)
-        contentView.addSubview(nameLabel)
-        contentView.addSubview(statusLabel)
-
-        NSLayoutConstraint.activate([
-            avatar.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 2),
-            avatar.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            avatar.widthAnchor.constraint(equalToConstant: 54),
-            avatar.heightAnchor.constraint(equalToConstant: 54),
-
-            onlineDot.widthAnchor.constraint(equalToConstant: 12),
-            onlineDot.heightAnchor.constraint(equalToConstant: 12),
-            onlineDot.trailingAnchor.constraint(equalTo: avatar.trailingAnchor, constant: 1),
-            onlineDot.bottomAnchor.constraint(equalTo: avatar.bottomAnchor, constant: 1),
-
-            callBadge.centerXAnchor.constraint(equalTo: avatar.centerXAnchor),
-            callBadge.bottomAnchor.constraint(equalTo: avatar.bottomAnchor, constant: 6),
-            callBadge.widthAnchor.constraint(equalToConstant: 36),
-            callBadge.heightAnchor.constraint(equalToConstant: 18),
-            callIcon.centerXAnchor.constraint(equalTo: callBadge.centerXAnchor),
-            callIcon.centerYAnchor.constraint(equalTo: callBadge.centerYAnchor),
-            callIcon.widthAnchor.constraint(equalToConstant: 14),
-            callIcon.heightAnchor.constraint(equalToConstant: 12),
-
-            nameLabel.topAnchor.constraint(equalTo: avatar.bottomAnchor, constant: 5),
-            nameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            nameLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            nameLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
-
-            statusLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 1),
-            statusLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            statusLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            statusLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 22),
-            statusLabel.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -4)
-        ])
-    }
-}
-
-// UISearchBar.searchTextField is only available in iOS 13+.
-// Needed so we can change placeholder font size in the search bar.
-extension UISearchBar {
-    var textField: UITextField? {
-        return self.searchTextField
-    }
+    @objc private func addTapped() { onAddContact?() }
+    @objc private func groupTapped() { onCreateGroup?() }
 }
