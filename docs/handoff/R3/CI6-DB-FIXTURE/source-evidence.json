@@ -1,0 +1,25 @@
+{
+  "parent_group_note_commit": "f46c9f085528db4c99acc2d35f7f13e2fa1f3db8",
+  "production_delta": 0,
+  "rounds": 12,
+  "concurrent_initializers_per_round": 2,
+  "total_initializer_calls": 24,
+  "method_count_change": 0,
+  "expected_sdk_methods": 30,
+  "expected_storage_methods": 105,
+  "expected_native_total": 135,
+  "per_round_assertions": [
+    "both initializers available == 2",
+    "marker count == 2",
+    "status35 count == 5"
+  ],
+  "original_error_checks": [
+    "primary .error case",
+    "code == 19 == originalCode",
+    "message equals originalMessage in memory only",
+    "nullable statement identity",
+    "statement == nil",
+    "live extended == 2067"
+  ],
+  "native_sha256": "49bc5017e289a5d94587952258e4c7e1a4ae10f321bdcb3c3d97f62bc858670e"
+}

@@ -418,20 +418,25 @@ final class LocalMigrationTests: XCTestCase {
     }
 
     func testTwoConcurrentInitializersCommitOnlyOneMarker() throws {
-        try withFixture { file, database in
-            let lock = NSLock()
-            var available = [Bool]()
-            var diagnostics = [String]()
-            DispatchQueue.concurrentPerform(iterations: 2) { _ in
-                let opened = BaseDb(databasePath: file.path)
-                lock.lock()
-                available.append(opened.isStoreAvailable)
-                diagnostics.append(opened.initializationDiagnostic?.summary ?? "available")
-                lock.unlock()
+        // Each round owns a distinct UUID fixture: 24 real initializations, not
+        // retries against one failed open. All rounds must independently pass.
+        for round in 1...12 {
+            try withFixture { file, database in
+                let lock = NSLock()
+                var available = [Bool]()
+                var diagnostics = [String]()
+                DispatchQueue.concurrentPerform(iterations: 2) { _ in
+                    let opened = BaseDb(databasePath: file.path)
+                    lock.lock()
+                    available.append(opened.isStoreAvailable)
+                    diagnostics.append(opened.initializationDiagnostic?.summary ?? "available")
+                    lock.unlock()
+                }
+                let context = "round=\(round) " + diagnostics.joined(separator: " | ")
+                XCTAssertEqual(available.filter { $0 }.count, 2, context)
+                XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 2, context)
+                XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE status=35") as? Int64, 5, context)
             }
-            XCTAssertEqual(available.filter { $0 }.count, 2, diagnostics.joined(separator: " | "))
-            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 2)
-            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE status=35") as? Int64, 5)
         }
     }
 
@@ -503,13 +508,17 @@ final class LocalMigrationTests: XCTestCase {
         try database.run("INSERT INTO diagnostic_fixture VALUES ('synthetic-private-value')")
         var diagnostic: BaseDb.InitializationDiagnostic?
         var originalStatement: SQLite.Statement?
+        var originalMessage: String?
+        var originalCode: Int32?
         do {
             try BaseDb.withInitializationFailureDiagnostics(in: database, stage: { .migrationBegin },
                 onFailure: { diagnostic = $0 }) {
                 do {
                     try database.run("INSERT INTO diagnostic_fixture VALUES ('synthetic-private-value')")
                 } catch {
-                    if case let SQLite.Result.error(_, _, statement) = error {
+                    if case let SQLite.Result.error(message, code, statement) = error {
+                        originalMessage = message
+                        originalCode = code
                         originalStatement = statement
                     }
                     throw error
@@ -517,12 +526,17 @@ final class LocalMigrationTests: XCTestCase {
             }
             XCTFail("Expected the original UNIQUE failure")
         } catch {
-            guard case let SQLite.Result.error(_, code, statement) = error else {
+            guard case let SQLite.Result.error(message, code, statement) = error else {
                 return XCTFail("Diagnostic must preserve the original primary-error case")
             }
             XCTAssertEqual(code, 19)
+            XCTAssertEqual(code, originalCode)
+            // Compare error text only in memory: assertion output cannot expose it.
+            XCTAssertTrue(message == originalMessage)
             XCTAssertTrue(statement === originalStatement)
-            XCTAssertNotNil(statement)
+            // SQLite.swift 0.15.4 Statement.step calls check without statement:self.
+            // This real step failure therefore legitimately has no Statement.
+            XCTAssertNil(statement)
         }
         let captured = try XCTUnwrap(diagnostic)
         XCTAssertEqual(captured.stage, .migrationBegin)
