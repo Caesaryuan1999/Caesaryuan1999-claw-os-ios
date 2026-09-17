@@ -43,7 +43,9 @@ class SettingsNotificationsViewController: UITableViewController {
     }
 
     private weak var me: DefaultMeTopic?
-    private var notificationsAuthorized = false
+    private var authorization: ClawNotificationAuthorization?
+    private var authorizationRequestPending = false
+    private var authorizationReadGeneration = 0
 
     private func text(_ key: String) -> String {
         NSLocalizedString(key, comment: "CLAW OS notification settings")
@@ -56,8 +58,20 @@ class SettingsNotificationsViewController: UITableViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        refreshAuthorizationStatus()
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshAuthorizationStatus),
+                                               name: UIApplication.didBecomeActiveNotification, object: nil)
         tableView.reloadData()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        refreshAuthorizationStatus()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
+        authorizationReadGeneration += 1
     }
 
     private func setup() {
@@ -133,7 +147,7 @@ class SettingsNotificationsViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        indexPath.section == Section.status.rawValue ? 90 : 67
+        indexPath.section == Section.status.rawValue ? UITableView.automaticDimension : 67
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -170,20 +184,37 @@ class SettingsNotificationsViewController: UITableViewController {
     }
 
     private func statusCell() -> UITableViewCell {
-        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
-        cell.backgroundColor = ClawTheme.brandSoft
-        cell.textLabel?.text = notificationsAuthorized ? text("notification_status_enabled") : text("notification_status_disabled")
-        cell.textLabel?.textColor = ClawTheme.ink
-        cell.textLabel?.font = .systemFont(ofSize: 17, weight: .bold)
-        cell.detailTextLabel?.text = notificationsAuthorized ? text("notification_status_enabled_summary") : text("notification_status_disabled_summary")
-        cell.detailTextLabel?.textColor = ClawTheme.muted
-        cell.detailTextLabel?.font = .systemFont(ofSize: 12)
-        cell.imageView?.image = ClawTheme.symbol(notificationsAuthorized ? "bell.badge.fill" : "bell.slash.fill",
-                                                pointSize: 22, weight: .semibold)
-        cell.imageView?.tintColor = ClawTheme.primary
-        cell.accessoryType = .disclosureIndicator
-        cell.accessibilityTraits.insert(.button)
-        cell.accessibilityLabel = [cell.textLabel?.text, cell.detailTextLabel?.text].compactMap { $0 }.joined(separator: ", ")
+        let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+        cell.backgroundColor = ClawTheme.surface
+        cell.selectionStyle = .none
+        let heading = UILabel()
+        heading.text = authorization?.title ?? "正在检查通知设置"
+        heading.font = .preferredFont(forTextStyle: .headline)
+        heading.textColor = ClawTheme.ink
+        heading.numberOfLines = 0
+        let detail = UILabel()
+        detail.text = authorization?.summary
+        detail.font = .preferredFont(forTextStyle: .subheadline)
+        detail.textColor = ClawTheme.muted
+        detail.numberOfLines = 0
+        let button = UIButton(type: .system)
+        ClawTheme.stylePrimaryButton(button)
+        button.setTitle(authorization?.buttonTitle ?? "正在检查", for: .normal)
+        button.accessibilityLabel = button.title(for: .normal)
+        button.isEnabled = authorization != nil && !authorizationRequestPending
+        button.addTarget(self, action: #selector(statusActionClicked), for: .touchUpInside)
+        button.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
+        let stack = UIStackView(arrangedSubviews: [heading, detail, button])
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        cell.contentView.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -20),
+            stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 20),
+            stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -20)
+        ])
         return cell
     }
 
@@ -218,7 +249,7 @@ class SettingsNotificationsViewController: UITableViewController {
         }
 
         if sender.isOn && (tag == .privateMessages || tag == .groupMessages || tag == .calls) {
-            requestSystemAuthorization()
+            performAuthorizationAction(forStatusButton: false)
         }
     }
 
@@ -247,45 +278,63 @@ class SettingsNotificationsViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
         guard let section = Section(rawValue: indexPath.section) else { return }
         if section == .status {
-            notificationsAuthorized ? openSystemSettings() : requestSystemAuthorization()
+            performAuthorizationAction(forStatusButton: true)
         } else if section == .delivery && indexPath.row == 0 {
             openSystemSettings()
         }
     }
 
-    private func refreshAuthorizationStatus() {
+    @objc private func statusActionClicked() {
+        performAuthorizationAction(forStatusButton: true)
+    }
+
+    private func readAuthorization(completion: ((ClawNotificationAuthorization) -> Void)? = nil) {
+        authorizationReadGeneration += 1
+        let generation = authorizationReadGeneration
         UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
-            let enabled = Self.hasUsableMessageAuthorization(settings)
+            let state = ClawNotificationAuthorization(status: settings.authorizationStatus,
+                alertsEnabled: settings.alertSetting == .enabled,
+                notificationCenterEnabled: settings.notificationCenterSetting == .enabled)
             DispatchQueue.main.async {
-                self?.notificationsAuthorized = enabled
-                self?.tableView.reloadSections(IndexSet(integer: Section.status.rawValue), with: .none)
+                guard let self = self, self.authorizationReadGeneration == generation,
+                      self.viewIfLoaded?.window != nil else { return }
+                self.authorization = state
+                self.tableView.reloadSections(IndexSet(integer: Section.status.rawValue), with: .none)
+                completion?(state)
             }
         }
     }
 
-    private static func hasUsableMessageAuthorization(_ settings: UNNotificationSettings) -> Bool {
-        let authorizationGranted: Bool
-        switch settings.authorizationStatus {
-        case .authorized, .provisional, .ephemeral:
-            authorizationGranted = true
-        default:
-            authorizationGranted = false
-        }
-        guard authorizationGranted else { return false }
+    @objc private func refreshAuthorizationStatus() {
+        readAuthorization()
+    }
 
-        // Authorization alone is not enough: users can keep permission granted
-        // while disabling the actual alert/banner channel in iOS Settings.
-        return settings.alertSetting == .enabled
-            && settings.notificationCenterSetting == .enabled
+    private func performAuthorizationAction(forStatusButton: Bool) {
+        guard !authorizationRequestPending else { return }
+        // Re-read the OS decision at the moment of action; a previous denial never re-prompts.
+        readAuthorization { [weak self] state in
+            guard let self = self else { return }
+            switch state.action(forStatusButton: forStatusButton) {
+            case .request: self.requestSystemAuthorization()
+            case .settings: self.openSystemSettings()
+            case .none: break
+            }
+        }
     }
 
     private func requestSystemAuthorization() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { [weak self] granted, _ in
+        guard authorization?.status == .notDetermined, !authorizationRequestPending else { return }
+        authorizationRequestPending = true
+        tableView.reloadSections(IndexSet(integer: Section.status.rawValue), with: .none)
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { [weak self] granted, error in
             DispatchQueue.main.async {
-                if granted {
-                    UIApplication.shared.registerForRemoteNotifications()
+                guard let self = self else { return }
+                self.authorizationRequestPending = false
+                if granted { UIApplication.shared.registerForRemoteNotifications() }
+                if error != nil, self.viewIfLoaded?.window != nil {
+                    UiUtils.showToast(message: "暂时无法获取通知权限，请稍后重试或前往系统设置。")
                 }
-                self?.refreshAuthorizationStatus()
+                self.refreshAuthorizationStatus()
             }
         }
     }

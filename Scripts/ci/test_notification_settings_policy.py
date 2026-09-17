@@ -24,7 +24,6 @@ def main() -> None:
         assert key in SETTINGS, f"settings screen does not expose {key}"
 
     for localization_key in (
-        "notification_status_enabled",
         "private_messages",
         "group_messages",
         "call_reminders",
@@ -35,7 +34,8 @@ def main() -> None:
         assert f'text("{localization_key}")' in SETTINGS, f"missing notification UI row: {localization_key}"
 
     assert "UNUserNotificationCenter.current().getNotificationSettings" in SETTINGS
-    assert "hasUsableMessageAuthorization" in SETTINGS
+    assert "ClawNotificationAuthorization(status: settings.authorizationStatus" in SETTINGS
+    assert "authorization?.status == .notDetermined" in SETTINGS
     assert "settings.alertSetting == .enabled" in SETTINGS
     assert "settings.notificationCenterSetting == .enabled" in SETTINGS
     assert "requestAuthorization(options: [.alert, .badge, .sound])" in SETTINGS
