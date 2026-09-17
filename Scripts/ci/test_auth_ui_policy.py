@@ -39,7 +39,7 @@ def main() -> None:
     assert "session.user == http.user" in flow and "self.commitSession(confirmed)" in flow
     assert "self.registeredUser == http.user" in flow
     assert "snapshotIsCurrent()" in flow and "self.generation == generation" in flow
-    assert "Cache.ifCurrent(owner)" in utils and "owner.loginToken(token: http.token)" in utils
+    assert "Cache.ifCurrent(owner)" in utils and "owner.loginToken(token: http.token, creds: nil)" in utils
     assert "注册已完成，暂时无法登录" in utils and "返回登录" in utils
     assert "completionHandler(nil)" in service
     assert 'request.setValue("no-store"' in service

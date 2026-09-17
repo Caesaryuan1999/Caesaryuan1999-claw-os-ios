@@ -1,0 +1,13 @@
+diff --git a/Tinodios/Utils.swift b/Tinodios/Utils.swift
+index 76323ee..6a0b7ae 100644
+--- a/Tinodios/Utils.swift
++++ b/Tinodios/Utils.swift
+@@ -1137,7 +1181,7 @@ final class ClawIdentityCoordinator {
+                         guard current(), owner.hostURL(useWebsocketProtocol: false) == origin else {
+                             throw ClawIdentityError.ended
+                         }
+-                        return owner.loginToken(token: http.token)
++                        return owner.loginToken(token: http.token, creds: nil)
+                     }.then(onSuccess: { response in
+                         guard current(), let code = response?.ctrl?.code, (200..<300).contains(code),
+                               owner.isConnectionAuthenticated, let uid = owner.myUid,

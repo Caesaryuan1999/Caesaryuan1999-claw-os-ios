@@ -1137,7 +1137,7 @@ final class ClawIdentityCoordinator {
                         guard current(), owner.hostURL(useWebsocketProtocol: false) == origin else {
                             throw ClawIdentityError.ended
                         }
-                        return owner.loginToken(token: http.token)
+                        return owner.loginToken(token: http.token, creds: nil)
                     }.then(onSuccess: { response in
                         guard current(), let code = response?.ctrl?.code, (200..<300).contains(code),
                               owner.isConnectionAuthenticated, let uid = owner.myUid,
