@@ -1,0 +1,38 @@
+{
+  "production_files": [
+    "Tinodios/ClawSecondaryUIState.swift",
+    "Tinodios/ImagePreviewController.swift",
+    "Tinodios/FilePreviewController.swift",
+    "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+    "Tinodios/Base.lproj/Main.storyboard"
+  ],
+  "hashes": {
+    "Tinodios/ClawSecondaryUIState.swift": "2e41152f29c530a9a562af91611f10e112f9266f2c6e939d869b230a07448f9a",
+    "Tinodios/ImagePreviewController.swift": "6978fae4de75e45d9d940fb220805c52123ac4f8ae4f41ef91d4d096fedcaafa",
+    "Tinodios/FilePreviewController.swift": "e022774a34079508be26de7cda06aad6f68328753c7fedff2fe459c4c240dca0",
+    "Tinodios/MessageViewController+SendMessageBarDelegate.swift": "a1d3d6825743b3c1b71b58bdcd951290f4c20b4c603d25200d2fa858304fadee",
+    "Tinodios/Base.lproj/Main.storyboard": "25c6ab0a1b42cdac37e3fb5f26063de7271219e827a2c22da70bd2453537510c",
+    "TinodiosUITests/SecondaryUIStateTests.swift": "038ab1a6be63f875be424254d5540f831bb2c9eaff894bd37fc16011555005f0",
+    "Scripts/ci/test_secondary_ui_policy.py": "9ec152213cb2eb76c2d4311ed4841e03ebe08daf29fce22e7eb4e52892c7dbc9"
+  },
+  "secondary_test_methods": [
+    "testNotificationNotDeterminedRequestsPermission",
+    "testNotificationDeniedOpensSettingsInsteadOfRequestingAgain",
+    "testNotificationAuthorizedWithDisabledAlertOrCenterNeedsSettings",
+    "testNotificationGrantedModesKeepUsablePreferencesWithoutReprompt",
+    "testNotificationReturnFromSettingsUsesNewSnapshot",
+    "testInlineImageRequiresActualDecodeBeforeSharing",
+    "testImageReferenceLoadingFailureAndRetryNeverSharePlaceholder",
+    "testImageForbiddenRemovesPreviouslyReadyExport",
+    "testMediaSessionRejectsLogoutAccountSwapAndOldGeneration",
+    "testMediaCacheKeySeparatesAccountsAndOriginsWithoutPlaintext",
+    "testActualKingfisherMemoryCacheIgnoresLegacyAndOtherAccountKeys",
+    "testPNGExportsUseDistinctSafeDirectoriesForRemoteNames",
+    "testFileReadUsesActualFoundationDataAndReportsMissingFile"
+  ],
+  "secondary_method_count": 13,
+  "new_media_methods": 8,
+  "expected_native_total": 148,
+  "native_run_here": "NOT_RUN",
+  "storyboard_unique_ids": true
+}

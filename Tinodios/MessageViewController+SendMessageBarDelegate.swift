@@ -132,7 +132,7 @@ extension MessageViewController: UIDocumentPickerDelegate {
                 return
             }
 
-            let bits = try Data(contentsOf: url, options: .mappedIfSafe)
+            let bits = try ClawMediaFiles.read(url)
             let fname = url.lastPathComponent
             var mimeType = Utils.mimeForUrl(url: url)
             if mimeType == "application/json" {
@@ -152,11 +152,13 @@ extension MessageViewController: UIDocumentPickerDelegate {
                 fileName: fname,
                 contentType: mimeType,
                 size: bits.count,
+                destinationName: topic?.pub?.fn,
                 pendingMessagePreview: pendingPreview
             )
             performSegue(withIdentifier: "ShowFilePreview", sender: content)
         } catch {
-            Cache.log.error("MessageVC - failed to read file: %@", error.localizedDescription)
+            Cache.log.error("attachment_read_failed")
+            UiUtils.showToast(message: ClawMediaFiles.readRecovery)
         }
     }
 }

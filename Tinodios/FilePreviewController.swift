@@ -14,6 +14,7 @@ struct FilePreviewContent {
     let fileName: String?
     let contentType: String?
     let size: Int?
+    var destinationName: String? = nil
 
     // ReplyTo preview (the user is replying to another message with a file).
     let pendingMessagePreview: NSAttributedString?
@@ -23,6 +24,9 @@ class FilePreviewController: UIViewController, UIScrollViewDelegate {
 
     var previewContent: FilePreviewContent?
     var replyPreviewDelegate: PendingMessagePreviewDelegate?
+    private var sending = false
+    @IBOutlet weak var sendButton: UIButton!
+    @IBOutlet weak var cancelButton: UIButton!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -38,9 +42,16 @@ class FilePreviewController: UIViewController, UIScrollViewDelegate {
     @IBOutlet weak var previewViewHeight: NSLayoutConstraint!
 
     @IBAction func sendFileAttachment(_ sender: UIButton) {
-        // This notification is received by the MessageViewController.
-        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: previewContent)
+        guard let content = previewContent, !sending else { return }
+        sending = true
+        sendButton.isEnabled = false
+        // The existing message flow owns upload and publish state.
+        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content)
         // Return to MessageViewController.
+        navigationController?.popViewController(animated: true)
+    }
+
+    @IBAction func cancelFilePreview(_ sender: UIButton) {
         navigationController?.popViewController(animated: true)
     }
 
@@ -50,7 +61,17 @@ class FilePreviewController: UIViewController, UIScrollViewDelegate {
     }
 
     private func setup() {
-        guard let content = self.previewContent else { return }
+        title = "发送文件"
+        ClawTheme.stylePrimaryButton(sendButton)
+        ClawTheme.styleSecondaryButton(cancelButton)
+        sendButton.setTitle("发送文件", for: .normal)
+        sendButton.accessibilityLabel = "发送文件"
+        cancelButton.setTitle("取消", for: .normal)
+        cancelButton.accessibilityLabel = "取消发送文件"
+        guard let content = self.previewContent else {
+            sendButton.isEnabled = false
+            return
+        }
 
         // Set icon appropriate for mime type
         imageView.image = UIImage(named: FilePreviewController.iconFromMime(previewContent?.contentType))
@@ -64,7 +85,24 @@ class FilePreviewController: UIViewController, UIScrollViewDelegate {
         }
         sizeLabel.text = sizeString
         self.togglePreviewBar(with: content.pendingMessagePreview)
-
+        fileNameLabel.numberOfLines = 0
+        fileNameLabel.lineBreakMode = .byWordWrapping
+        if let details = fileNameLabel.superview?.superview as? UIStackView {
+            details.distribution = .fill
+            let destination = UILabel()
+            destination.numberOfLines = 0
+            destination.font = .preferredFont(forTextStyle: .subheadline)
+            destination.textColor = ClawTheme.ink
+            destination.text = content.destinationName.flatMap { $0.isEmpty ? nil : "将发送到「" + $0 + "」" }
+                ?? "将发送到当前会话"
+            let explanation = UILabel()
+            explanation.numberOfLines = 0
+            explanation.font = .preferredFont(forTextStyle: .footnote)
+            explanation.textColor = ClawTheme.muted
+            explanation.text = "发送前请确认文件内容。需要上传的文件会先完成上传，再提交消息。"
+            details.addArrangedSubview(destination)
+            details.addArrangedSubview(explanation)
+        }
         setInterfaceColors()
     }
 
@@ -76,11 +114,11 @@ class FilePreviewController: UIViewController, UIScrollViewDelegate {
     }
 
     private func setInterfaceColors() {
-        if traitCollection.userInterfaceStyle == .dark {
-            self.view.backgroundColor = .black
-        } else {
-            self.view.backgroundColor = .white
-        }
+        view.backgroundColor = ClawTheme.background
+        fileNameLabel.textColor = ClawTheme.ink
+        contentTypeLabel.textColor = ClawTheme.muted
+        sizeLabel.textColor = ClawTheme.muted
+        imageView.tintColor = ClawTheme.primary
     }
 
     // Get icon name from mime type.
