@@ -72,4 +72,3 @@ if __name__ == "__main__":
     parser.add_argument("--evidence-dir", type=Path, required=True)
     args = parser.parse_args()
     prepare(args.source, args.destination, args.evidence_dir)
-
