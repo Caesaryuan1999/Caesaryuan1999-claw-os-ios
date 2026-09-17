@@ -644,7 +644,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         // Must be called on main thread.
         guard let topicName = topicName else { return nil }
         var result: MessageInteractor?
-        DispatchQueue.main.sync {
+        let find = {
             guard let navVC = UiUtils.messagesNavigationController() else {
                 return
             }
@@ -655,6 +655,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 }
             }
         }
+        if Thread.isMainThread { find() } else { DispatchQueue.main.sync(execute: find) }
         return result
     }
 
@@ -676,6 +677,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
 
     private func uploadMessageAttachment(type: AttachmentType, _ def: UploadDef) {
         guard let topic = topic else { return }
+        let owner = Cache.tinode
         let mimeType = def.mimeType ?? {
             switch type {
             case .video:
@@ -786,7 +788,8 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                     dg.leave()
                 })
 
-            dg.notify(queue: DispatchQueue.global(qos: .userInteractive)) { [weak self] in
+            dg.notify(queue: DispatchQueue.main) { [weak self] in
+                guard Cache.isCurrent(owner) else { return }
                 let serverMessage = attachmentResult.result
                 let error = attachmentResult.error
                 let interactor = self ?? MessageInteractor.existingInteractor(for: topic.name)

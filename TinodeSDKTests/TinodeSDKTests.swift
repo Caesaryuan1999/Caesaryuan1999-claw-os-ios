@@ -11,6 +11,90 @@ import XCTest
 // TODO: add tests for Tinode here.
 class TinodeSDKTests: XCTestCase {
 
+    func testLogoutRetiresLocalSessionWithoutNetworkAndClearsCredentials() throws {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        sdk.myUid = "usrA"
+        sdk.authToken = "synthetic-token"
+        sdk.authTokenExpires = Date().addingTimeInterval(60)
+        sdk.deviceToken = "synthetic-device"
+        sdk.isConnectionAuthenticated = true
+        sdk.setAutoLoginWithToken(token: "synthetic-token")
+        let topic = DefaultComTopic(tinode: sdk, name: "grpA")
+        sdk.startTrackingTopic(topic: topic)
+        sdk.logout()
+        XCTAssertFalse(sdk.isSessionActive)
+        XCTAssertFalse(sdk.isConnectionAuthenticated)
+        XCTAssertNil(sdk.myUid)
+        XCTAssertNil(sdk.authToken)
+        XCTAssertNil(sdk.authTokenExpires)
+        XCTAssertNil(sdk.deviceToken)
+        XCTAssertNil(sdk.getTopic(topicName: "grpA"))
+        XCTAssertFalse(sdk.reconnectNow(interactively: true, reset: true))
+        XCTAssertThrowsError(try sdk.connect(to: "127.0.0.1:9", useTLS: false, inBackground: false))
+        XCTAssertThrowsError(try sdk.loginToken(token: "synthetic", creds: nil).getResult())
+        XCTAssertThrowsError(try sdk.setDeviceToken(token: "late-device").getResult())
+        var oldCallbackRan = false
+        sdk.withActiveSession { oldCallbackRan = true }
+        XCTAssertFalse(oldCallbackRan)
+        sdk.logout() // Repeated stale logout is inert.
+    }
+
+    func testSessionGateSerializesInFlightCallbackBeforeLogout() {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        let entered = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        let completed = expectation(description: "guarded callback ends")
+        DispatchQueue.global().async {
+            sdk.withActiveSession {
+                entered.signal()
+                _ = release.wait(timeout: .now() + 3)
+                sdk.authToken = "synthetic-before-logout"
+            }
+            completed.fulfill()
+        }
+        XCTAssertEqual(entered.wait(timeout: .now() + 3), .success)
+        release.signal()
+        sdk.logout()
+        wait(for: [completed], timeout: 3)
+        XCTAssertNil(sdk.authToken)
+        XCTAssertNil(sdk.withActiveSession { "stale" })
+    }
+
+    func testQueuedConsumerCallbackIsSuppressedAfterSessionRetirement() {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        let queue = DispatchQueue(label: "fixture.consumer")
+        queue.suspend()
+        let stale = expectation(description: "stale callback cannot run")
+        stale.isInverted = true
+        sdk.dispatchIfActive(on: queue) { stale.fulfill() }
+        sdk.logout()
+        queue.resume()
+        wait(for: [stale], timeout: 0.1)
+    }
+
+    func testConsumerCallbackRunsOnMainWithoutHoldingSDKSessionLock() {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        let complete = expectation(description: "consumer and concurrent logout finish")
+        sdk.dispatchIfActive {
+            XCTAssertTrue(Thread.isMainThread)
+            let loggedOut = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async { sdk.logout(); loggedOut.signal() }
+            // Would deadlock/time out if the callback still owned the SDK lock.
+            XCTAssertEqual(loggedOut.wait(timeout: .now() + 2), .success)
+            complete.fulfill()
+        }
+        wait(for: [complete], timeout: 3)
+    }
+
+    func testCleanupBoundaryRemainsAvailableForRetiredSession() {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        sdk.logout()
+        var cleaned = false
+        sdk.withSessionLock { cleaned = true }
+        XCTAssertTrue(cleaned)
+        XCTAssertNil(sdk.withActiveSession { true })
+    }
+
     func testPublishTimeoutNeverReturnsToAutomaticQueue() {
         XCTAssertEqual(PublishFailureDisposition.forError(
             TinodeError.requestOutcomeUnknown("reply timed out")), .unconfirmed)

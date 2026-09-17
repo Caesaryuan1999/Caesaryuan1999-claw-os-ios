@@ -31,7 +31,11 @@ def main() -> None:
     assert '"CLAW OS: \\(tinodeErr.description)"' not in login
     assert "validateSignUp" in signup and "submissionGate.begin()" in signup
     assert "submissionGate.finish()" in signup
-    assert "guard let connection = try Cache.tinode.connectDefault" in signup
+    assert "guard let connection = try tinode.connectDefault" in signup
+    for source in [login, signup]:
+        assert "let tinode = Cache.tinode" in source
+        assert "Cache.ifCurrent(tinode)" in source
+        assert "routeToChatListVC(for: tinode)" in source
     assert "ClawAuthErrorMessages.signUpMessage" in signup
     assert 'NSLocalizedString("注册失败：%@"' not in signup
     for marker in [

@@ -251,13 +251,14 @@ class UiUtils {
         }
 
         guard !appDelegate.pushNotificationsConfigured else {
+            let owner = Cache.tinode
             Messaging.messaging().token { (token, error) in
                 if let error = error {
                     Cache.log.error("FCM token fetch failed: %@", error.localizedDescription)
                 } else if let token = token {
                     Cache.log.info("FCM token fetched: token=%@ length=%d",
                                    ClawNotificationDiagnostics.redactedToken(token), token.count)
-                    Cache.tinode.setDeviceToken(token: token)
+                    Cache.ifCurrent(owner) { owner.setDeviceToken(token: token) }
                 }
             }
             return
@@ -334,45 +335,53 @@ class UiUtils {
             PromisedReply<ServerMessage>(value: ServerMessage())
     }
 
-    public static func logoutAndRouteToLoginVC() {
+    public static func logoutAndRouteToLoginVC(ifCurrent owner: Tinode? = nil) {
         Cache.log.info("UiUtils - Invalidating cache and logging out.")
-        SharedUtils.removeAuthToken()
-        Cache.invalidate()
-        UiUtils.routeToLoginVC()
+        guard Cache.invalidate(ifCurrent: owner) else { return }
+        let generation = Cache.sessionGeneration
+        routeToLoginVC(generation: generation)
     }
 
-    private static func routeToLoginVC(completion: (() -> (Void))? = nil) {
-        DispatchQueue.main.async {
+    private static func routeToLoginVC(generation: UInt64, completion: (() -> (Void))? = nil) {
+        let show = {
+            guard Cache.isLoggedOut(generation: generation) else { return }
             let storyboard = UIStoryboard(name: "Main", bundle: nil)
             let destinationVC = storyboard.instantiateViewController(withIdentifier: "StartNavigator") as! UINavigationController
-
             if let window = (UIApplication.shared.delegate as! AppDelegate).window {
                 window.rootViewController = destinationVC
             }
             completion?()
         }
+        // A local user logout clears the old account's display before returning.
+        if Thread.isMainThread { show() } else { DispatchQueue.main.async(execute: show) }
     }
 
-    public static func routeToCredentialsVC(in navVC: UINavigationController?, verifying meth: String?) {
+    public static func routeToCredentialsVC(in navVC: UINavigationController?, verifying meth: String?, for owner: Tinode? = nil) {
         guard let navVC = navVC else { return }
-        // +1 second to let the spinning wheel dismiss.
+        let tinode = owner ?? Cache.tinode
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
-            let storyboard = UIStoryboard(name: "Main", bundle: nil)
-            let destinationVC = storyboard.instantiateViewController(withIdentifier: "CredentialsViewController") as! CredentialsViewController
-            destinationVC.meth = meth
-            navVC.pushViewController(destinationVC, animated: true)
+            Cache.ifCurrent(tinode) {
+                let storyboard = UIStoryboard(name: "Main", bundle: nil)
+                let destinationVC = storyboard.instantiateViewController(withIdentifier: "CredentialsViewController") as! CredentialsViewController
+                destinationVC.meth = meth
+                navVC.pushViewController(destinationVC, animated: true)
+            }
         }
     }
 
-    public static func routeToChatListVC() {
+    public static func routeToChatListVC(for owner: Tinode? = nil) {
+        let tinode = owner ?? Cache.tinode
         DispatchQueue.main.async {
-            let storyboard = UIStoryboard(name: "Main", bundle: nil)
-            let initialViewController = ClawMainTabBarController.make(storyboard: storyboard)
-            if let window = (UIApplication.shared.delegate as! AppDelegate).window {
-                window.rootViewController = initialViewController
-                window.makeKeyAndVisible()
+            Cache.ifCurrent(tinode) {
+                guard tinode.myUid != nil, SharedUtils.getAuthToken() != nil else { return }
+                let storyboard = UIStoryboard(name: "Main", bundle: nil)
+                let initialViewController = ClawMainTabBarController.make(storyboard: storyboard)
+                if let window = (UIApplication.shared.delegate as! AppDelegate).window {
+                    window.rootViewController = initialViewController
+                    window.makeKeyAndVisible()
+                }
+                UiUtils.setUpPushNotifications()
             }
-            UiUtils.setUpPushNotifications()
         }
     }
 
@@ -413,7 +422,12 @@ class UiUtils {
     }
 
     public static func routeToMessageVC(forTopic topicId: String, completion: ((MessageViewController?) -> (Void))? = nil) {
+        let owner = Cache.tinode
         DispatchQueue.main.async {
+            guard Cache.isCurrent(owner), owner.myUid != nil, SharedUtils.getAuthToken() != nil else {
+                completion?(nil)
+                return
+            }
             Cache.log.info("Routing to MessageVC for topic=%@", topicId)
             guard let keyWindow = (UIApplication.shared.delegate as! AppDelegate).window else {
                 Cache.log.info("Cannot route to MessageVC [topic: %@]: no app window", topicId)
@@ -725,8 +739,10 @@ class UiUtils {
         }
     }
 
-    public static func presentFileSharingVC(for fileUrl: URL) {
+    public static func presentFileSharingVC(for fileUrl: URL, for owner: Tinode? = nil) {
+        let tinode = owner ?? Cache.tinode
         DispatchQueue.main.async {
+            guard Cache.isCurrent(tinode) else { return }
             let filesToShare = [fileUrl]
             let activityViewController = UIActivityViewController(activityItems: filesToShare, applicationActivities: nil)
             let topVC = UiUtils.topViewController(

@@ -473,6 +473,140 @@ final class LocalMigrationTests: XCTestCase {
         return try XCTUnwrap(store.msgSend(topic: topic, data: Drafty(plainText: "frozen"), head: nil))
     }
 
+    func testLogoutPreservesOutboundIdentityAndReactivation() throws {
+        try withC3Store { base, db, store, topic in
+            let queued = try self.newC3Message(store, topic)
+            let unknown = try self.newC3Message(store, topic)
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: unknown.msgId, sync: true))
+            XCTAssertTrue(store.msgUnconfirmed(topic: topic, dbMessageId: unknown.msgId))
+            let before = try self.preservedData(db).filter { !$0.hasPrefix("accounts:") }
+            let sequence = try db.scalar("SELECT seq FROM sqlite_sequence WHERE name='messages'") as? Int64
+            let sdk = Tinode(for: "fixture", authenticateWith: "fixture", persistDataIn: store)
+            sdk.authToken = "synthetic"
+            sdk.isConnectionAuthenticated = true
+            sdk.logout()
+            XCTAssertNil(store.myUid)
+            XCTAssertFalse(store.isReady)
+            XCTAssertNil(sdk.authToken)
+            XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM accounts WHERE last_active=1") as? Int64, 0)
+            XCTAssertEqual(try self.preservedData(db).filter { !$0.hasPrefix("accounts:") }, before)
+            XCTAssertEqual(try db.scalar("SELECT seq FROM sqlite_sequence WHERE name='messages'") as? Int64, sequence)
+            store.myUid = "usrFixtureA"
+            XCTAssertEqual(store.getMessageById(dbMessageId: queued.msgId)?.head?["clientmsgid"]?.asString(),
+                           queued.head?["clientmsgid"]?.asString())
+            XCTAssertEqual(store.getMessageById(dbMessageId: unknown.msgId)?.head?["clientmsgid"]?.asString(),
+                           unknown.head?["clientmsgid"]?.asString())
+            XCTAssertTrue(store.getMessageById(dbMessageId: unknown.msgId)?.isUnconfirmed == true)
+            XCTAssertTrue(base.isStoreAvailable)
+        }
+    }
+
+    func testStaleSDKLogoutAndDeviceFailureCannotDeactivateNewAccount() throws {
+        try withC3Store { _, db, store, _ in
+            let old = Tinode(for: "fixture", authenticateWith: "fixture", persistDataIn: store)
+            old.authToken = "synthetic-A"
+            old.logout()
+            store.myUid = "usrFixtureB"
+            store.deviceToken = "synthetic-device-B"
+            old.logout()
+            XCTAssertThrowsError(try old.setDeviceToken(token: "old-device").getResult())
+            XCTAssertThrowsError(try old.loginToken(token: "old-token", creds: nil).getResult())
+            XCTAssertEqual(store.myUid, "usrFixtureB")
+            XCTAssertEqual(store.deviceToken, "synthetic-device-B")
+            XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages") as? Int64, 9)
+        }
+    }
+
+    func testLogoutCommitFailureDetachesAndBlocksWithoutClearingData() throws {
+        try withC3Store { base, db, store, _ in
+            let before = try self.preservedData(db)
+            enum LogoutFailure: Error { case commit }
+            db.commitHook { throw LogoutFailure.commit }
+            store.logout()
+            db.commitHook(nil)
+            XCTAssertNil(store.myUid)
+            XCTAssertFalse(store.isReady)
+            XCTAssertNotNil(store.initializationError)
+            XCTAssertEqual(try self.preservedData(db), before)
+            store.myUid = "usrFixtureB"
+            XCTAssertNil(store.myUid)
+            XCTAssertFalse(base.isStoreAvailable)
+        }
+    }
+
+    func testAnonymousRetainedStoreCannotReadOrModifyMessages() throws {
+        try withC3Store { _, db, store, topic in
+            let draft = try XCTUnwrap(store.msgDraft(topic: topic, data: Drafty(plainText: "private"), head: nil))
+            store.logout()
+            let before = try self.preservedData(db)
+            XCTAssertNil(store.getMessageById(dbMessageId: draft.msgId))
+            XCTAssertNil(store.getMessagePreviewById(dbMessageId: draft.msgId))
+            XCTAssertNil(store.getLatestMessagePreviews())
+            XCTAssertNil(store.getMessagePage(topic: topic, from: 0, limit: 30, forward: true))
+            XCTAssertNil(store.getMessage(fromTopic: topic, byEffectiveSeqId: 6))
+            XCTAssertNil(store.getAllMsgVersions(fromTopic: topic, forSeq: 6, limit: nil))
+            XCTAssertNil(store.getQueuedMessages(topic: topic))
+            XCTAssertNil(store.getQueuedMessageDeletes(topic: topic, hard: false))
+            XCTAssertNil(store.topicGetAll(from: nil))
+            XCTAssertNil(store.topicGet(from: nil, withName: topic.name))
+            XCTAssertNil(store.userGet(uid: "usrFixtureA"))
+            XCTAssertNil(store.getSubscriptions(topic: topic))
+            XCTAssertFalse(store.msgReady(topic: topic, dbMessageId: draft.msgId, data: Drafty(plainText: "late")))
+            XCTAssertFalse(store.topicDelete(topic: topic, hard: true))
+            XCTAssertFalse(store.setRead(topic: topic, read: 99))
+            XCTAssertEqual(try self.preservedData(db), before)
+        }
+    }
+
+    func testDifferentAccountsSameTopicNameNeverSharePreviewsOrRowLookups() throws {
+        try withC3Store { _, db, store, oldTopic in
+            try db.run("UPDATE topics SET topic='grpFixtureA' WHERE id=2")
+            store.logout()
+            store.myUid = "usrFixtureB"
+            let topicB = try XCTUnwrap(store.topicGet(from: nil, withName: "grpFixtureA"))
+            XCTAssertNil(store.getMessageById(dbMessageId: 6))
+            XCTAssertNil(store.getMessagePage(topic: oldTopic, from: 0, limit: 30, forward: true))
+            XCTAssertNotNil(store.getMessageById(dbMessageId: 7))
+            let previews = try XCTUnwrap(store.getLatestMessagePreviews())
+            XCTAssertEqual(previews.count, 1)
+            XCTAssertEqual(previews.first?.msgId, 7)
+            XCTAssertEqual(previews.first?.topic, topicB.name)
+            XCTAssertFalse(store.topicDelete(topic: oldTopic, hard: true))
+            XCTAssertFalse(store.setRead(topic: oldTopic, read: 100))
+            XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages") as? Int64, 9)
+        }
+    }
+
+    func testLateDraftAndAcknowledgementForAccountACannotChangeAccountB() throws {
+        try withC3Store { _, db, store, oldTopic in
+            let draft = try XCTUnwrap(store.msgDraft(topic: oldTopic, data: Drafty(plainText: "draft"), head: nil))
+            let pending = try self.newC3Message(store, oldTopic)
+            XCTAssertTrue(store.msgClaim(topic: oldTopic, message: try XCTUnwrap(store.getMessageById(dbMessageId: pending.msgId))))
+            store.logout()
+            store.myUid = "usrFixtureB"
+            let before = try self.preservedData(db)
+            XCTAssertFalse(store.msgReady(topic: oldTopic, dbMessageId: draft.msgId, data: Drafty(plainText: "late")))
+            XCTAssertFalse(store.msgFailed(topic: oldTopic, dbMessageId: draft.msgId))
+            XCTAssertFalse(store.msgDiscardDraft(topic: oldTopic, dbMessageId: draft.msgId))
+            XCTAssertFalse(store.msgDelivered(topic: oldTopic, dbMessageId: pending.msgId, timestamp: Date(), seq: 100))
+            XCTAssertEqual(try self.preservedData(db), before)
+            store.logout()
+            store.myUid = "usrFixtureA"
+            XCTAssertNotNil(store.getMessageById(dbMessageId: pending.msgId))
+        }
+    }
+
+    func testExternallyDeactivatedAccountBlocksCachedHandleReads() throws {
+        try withC3Store { _, db, store, topic in
+            try db.run("UPDATE accounts SET last_active=0 WHERE id=1")
+            XCTAssertFalse(store.isReady)
+            XCTAssertNil(store.getMessageById(dbMessageId: 6))
+            XCTAssertNil(store.getLatestMessagePreviews())
+            XCTAssertNil(store.getMessagePage(topic: topic, from: 0, limit: 30, forward: true))
+            XCTAssertNil(store.msgDraft(topic: topic, data: Drafty(plainText: "blocked"), head: nil))
+        }
+    }
+
     func testC3BoundaryDoesNotTrustInheritedUUIDOr31And36() throws {
         try withFixture { file, db in
             try db.run(BaseDb.migrationCreateSQL)

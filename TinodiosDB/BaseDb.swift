@@ -122,23 +122,6 @@ public class BaseDb {
         }
     }
 
-    private func clearSequences() {
-        let table = Table("sqlite_sequence")
-        try! self.db!.run(table.delete())
-    }
-
-    private func clearDb() {
-        BaseDb.log.info("Clearing local store (SQLite db).")
-        try! self.db!.transaction {
-            self.messageDb?.truncateTable()
-            self.subscriberDb?.truncateTable()
-            self.topicDb?.truncateTable()
-            self.userDb?.truncateTable()
-            self.accountDb?.truncateTable()
-            self.clearSequences()
-        }
-    }
-
     public static var sharedInstance: BaseDb {
         return BaseDb.accessQueue.sync {
             if let instance = BaseDb.default {
@@ -173,19 +156,24 @@ public class BaseDb {
             self.account = nil
         }
     }
+    static let deactivateAccountSQL = "UPDATE accounts SET last_active=0,device_id=NULL WHERE id=? AND uid=?"
+
     public func logout() {
-        // Drop database altogether.
-        // Db will be recreated when the user logs back in.
-        //
-        // Data can also be retained by deactivating the account:
-        //
-        // _ = try? self.accountDb?.deactivateAll()
-        // self.setUid(uid: nil, credMethods: nil)
         BaseDb.accessQueue.sync {
-            guard self.isStoreAvailable else { return }
-            self.setUid(uid: nil, credMethods: nil)
-            self.clearDb()
-            BaseDb.default = nil
+            let previousAccount = self.account
+            // Detach even if an unavailable/corrupt store cannot be written.
+            self.account = nil
+            guard self.isStoreAvailable, let previousAccount = previousAccount, let db = self.db else { return }
+            do {
+                try db.transaction(.immediate) {
+                    try db.run(Self.deactivateAccountSQL,
+                               previousAccount.id, previousAccount.uid)
+                }
+            } catch {
+                // Preserve file/WAL and block reopening the old active account in this process.
+                self.initializationError = BaseDb.unavailableMessage
+                BaseDb.log.error("Could not deactivate local account; store is blocked")
+            }
         }
     }
 
