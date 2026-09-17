@@ -41,6 +41,8 @@ def main() -> None:
     assert "premiumHeader.onAddContact" in CONTACTS
     assert "premiumHeader.onCreateGroup" in CONTACTS
     assert "ClawProfileLayout.fitHeader(in: tableView)" in CONTACTS
+    assert "searchBar.searchTextField.attributedPlaceholder" in CONTACTS
+    assert "searchBar.textField" not in CONTACTS
     assert "name.numberOfLines = 2" in CHAT_LIST
     assert "floor(availableWidth / 5)" not in CONTACTS
 

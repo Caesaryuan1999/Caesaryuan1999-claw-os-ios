@@ -1,0 +1,23 @@
+{
+  "ci4_run": 35280802910,
+  "ci4_job": 105402023476,
+  "ci4_commit": "fd7d0c52fffedde0e773c6a97521daa59181b91f",
+  "real_ci4": "SDK26 PASS; storage/app compile failed before DB diagnostics",
+  "only_production_expression_changed": true,
+  "old_source_has_missing_api": true,
+  "new_source_has_supported_api": true,
+  "deployment_targets": [
+    "14.0",
+    "14.0",
+    "14.0",
+    "14.0",
+    "14.0",
+    "14.0",
+    "14.0",
+    "14.0"
+  ],
+  "apple_introduced_ios": "13.0",
+  "apple_source": "https://developer.apple.com/tutorials/data/documentation/uikit/uisearchbar/searchtextfield.json",
+  "native_expected": 130,
+  "current_native_execution": "NOT_RUN_WINDOWS"
+}

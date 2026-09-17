@@ -51,7 +51,7 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         let placeholderFontSize: CGFloat
         placeholderText = NSLocalizedString("搜索联系人", comment: "Contacts search placeholder")
         placeholderFontSize = 15
-        searchController.searchBar.textField?.attributedPlaceholder =
+        searchController.searchBar.searchTextField.attributedPlaceholder =
             NSAttributedString(
                 string: placeholderText,
                 attributes: [NSAttributedString.Key.font: UIFont.systemFont(ofSize: placeholderFontSize),
