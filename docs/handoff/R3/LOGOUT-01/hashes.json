@@ -1,0 +1,6 @@
+{
+  "Tinodios/AccountSettingsViewController.swift": "6ec6da9df5b5afb1363d6bc90156fe12d62da58e6300d3ab96c48fa8fe7fccc4",
+  "Tinodios/SettingsSecurityViewController.swift": "2cb6746ac8d6b7abe6f376e21aeb1b854b146eac85aed0dee41e56dad68d062f",
+  "Scripts/ci/test_logout_owner_policy.py": "2707a34ba65fbfe69008ab8aeb6447e350aaa267fcbdd7453523cb385e41c1ca",
+  "Scripts/ci/test_auth_ui_policy.py": "75e9eb5b8ca936e9b7f823a59385b67a4a87bf225b1a1f3b79cb2a54d52af75b"
+}

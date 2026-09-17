@@ -273,25 +273,27 @@ class AccountSettingsViewController: UITableViewController {
     }
 
     @objc private func confirmLogout() {
+        guard let owner = tinode, Cache.isCurrent(owner) else { return }
+        let uid = owner.myUid
+        let generation = Cache.sessionGeneration
         let alert = UIAlertController(
             title: NSLocalizedString("退出登录", comment: "Log out"),
-            message: NSLocalizedString("退出后需重新登录。本机待发与待确认消息将保留。", comment: "Warning in logout alert"),
+            message: NSLocalizedString("退出后需重新登录。本机待发送和发送结果待确认的消息将保留。", comment: "Warning in logout alert"),
             preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Cancel"), style: .cancel))
         alert.addAction(UIAlertAction(
             title: NSLocalizedString("退出登录", comment: "Confirm logout"),
             style: .destructive,
-            handler: { _ in self.logout() }))
+            handler: { [weak self] _ in self?.logout(owner: owner, uid: uid, generation: generation) }))
         present(alert, animated: true)
     }
 
-    private func logout() {
-        guard Cache.tinode != nil else {
-            UiUtils.showToast(message: NSLocalizedString("退出登录失败，请重试", comment: "Logout failure"))
-            return
+    private func logout(owner: Tinode, uid: String?, generation: UInt64) {
+        guard Cache.sessionGeneration == generation, owner.myUid == uid, Cache.isCurrent(owner) else { return }
+        UiUtils.logoutAndRouteToLoginVC(ifCurrent: owner)
+        if Cache.isLoggedOut(generation: generation &+ 1) {
+            UiUtils.showToast(message: NSLocalizedString("已退出登录", comment: "Logout success"), level: .info)
         }
-        UiUtils.logoutAndRouteToLoginVC()
-        UiUtils.showToast(message: NSLocalizedString("已退出登录", comment: "Logout success"), level: .info)
     }
 
     private func reloadData() {

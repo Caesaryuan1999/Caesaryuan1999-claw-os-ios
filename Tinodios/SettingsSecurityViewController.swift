@@ -378,25 +378,30 @@ class SettingsSecurityViewController: UITableViewController {
     }
 
     @objc func logoutClicked(sender: UITapGestureRecognizer) {
-        let alert = UIAlertController(title: nil, message: NSLocalizedString("确定要登出？", comment: "Warning in logout alert"), preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: ""), style: .cancel, handler: nil))
-        alert.addAction(UIAlertAction(
-            title: NSLocalizedString("确定", comment: ""), style: .default,
-            handler: { _ in
-                self.logout()
-            }))
-        self.present(alert, animated: true)
+        guard let owner = tinode, Cache.isCurrent(owner) else { return }
+        let uid = owner.myUid
+        let generation = Cache.sessionGeneration
+        let alert = UIAlertController(title: "退出登录",
+            message: "退出后需重新登录。本机待发送和发送结果待确认的消息将保留。", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "退出登录", style: .destructive, handler: { [weak self] _ in
+            self?.logout(owner: owner, uid: uid, generation: generation)
+        }))
+        present(alert, animated: true)
     }
 
     @objc func deleteAccountClicked(sender: UITapGestureRecognizer) {
+        guard let owner = tinode, Cache.isCurrent(owner) else { return }
+        let uid = owner.myUid
+        let generation = Cache.sessionGeneration
         let alert = UIAlertController(title: nil, message: NSLocalizedString("确定要删除账号？此操作无法撤销。", comment: "Warning in delete account alert"), preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: ""), style: .cancel, handler: nil))
         alert.addAction(UIAlertAction(
             title: NSLocalizedString("删除", comment: "Alert action"), style: .default,
-            handler: { _ in
-                self.deleteAccount()
+            handler: { [weak self] _ in
+                self?.deleteAccount(owner: owner, uid: uid, generation: generation)
             }))
-        self.present(alert, animated: true)
+        present(alert, animated: true)
     }
 
     private func updatePassword(with newPassword: String, repeatedPassword: String,
@@ -479,18 +484,30 @@ class SettingsSecurityViewController: UITableViewController {
         }
     }
 
-    private func logout() {
+    private func logout(owner: Tinode, uid: String?, generation: UInt64) {
+        guard Cache.sessionGeneration == generation, owner.myUid == uid, Cache.isCurrent(owner) else { return }
         Cache.log.info("SettingsSecurityVC - logging out")
-        UiUtils.logoutAndRouteToLoginVC()
+        UiUtils.logoutAndRouteToLoginVC(ifCurrent: owner)
     }
 
-    private func deleteAccount() {
+    private func deleteAccount(owner: Tinode, uid: String?, generation: UInt64) {
+        guard Cache.sessionGeneration == generation, owner.myUid == uid, Cache.isCurrent(owner) else { return }
         Cache.log.info("SettingsSecurityVC - deleting account")
-        tinode.delCurrentUser(hard: true)
+        owner.delCurrentUser(hard: true)
             .thenApply { _ in
-                UiUtils.logoutAndRouteToLoginVC()
+                DispatchQueue.main.async {
+                    // The SDK already retires owner on successful deletion.
+                    // Slot identity, not active state or a new Cache.tinode, controls cleanup.
+                    UiUtils.logoutAndRouteToLoginVC(ifCurrent: owner)
+                }
                 return nil
             }
-            .thenCatch(UiUtils.ToastFailureHandler)
+            .thenCatch { error in
+                DispatchQueue.main.async {
+                    guard Cache.sessionGeneration == generation, owner.myUid == uid, Cache.isCurrent(owner) else { return }
+                    UiUtils.ToastFailureHandler(err: error)
+                }
+                return nil
+            }
     }
 }

@@ -1,0 +1,17 @@
+{
+  "level": "source_wiring_not_UIKit",
+  "ref": "working-tree",
+  "passed": 9,
+  "total": 9,
+  "checks": {
+    "account-dialog-captures-owner-uid-generation": true,
+    "security-dialog-captures-owner-uid-generation": true,
+    "both-logout-actions-use-original-owner": true,
+    "both-execute-gate-offline-without-auth": true,
+    "both-clear-with-ifCurrent-not-current-sdk": true,
+    "both-copy-and-destructive-action": true,
+    "delete-dispatch-bound-to-confirmed-owner": true,
+    "delete-success-can-clear-retired-original-owner": true,
+    "delete-failure-cannot-toast-new-owner": true
+  }
+}
