@@ -201,7 +201,21 @@ final class IdentityFlowTests: XCTestCase {
     func testDisabledCapabilitiesAndLegalGateDoNotSubmitChallenge() throws {
         IdentityProtocol.respond { [self] _ in reply(capabilities.replacingOccurrences(of: #""enabled":true"#, with: #""enabled":false"#)) }
         XCTAssertThrowsError(try awaitResult { flow.prepare($0) }.get())
+        XCTAssertEqual(flow.capabilities?.enabled, false)
+        var sent = 0
+        IdentityProtocol.respond { [self] _ in sent += 1; return reply(capabilities) }
+        // A decoded refusal remains authoritative for this flow. Replacing a
+        // transport fixture must not silently enable a cached disabled service.
+        XCTAssertThrowsError(try awaitResult { flow.prepare($0) }.get())
+        XCTAssertThrowsError(try awaitResult { flow.requestCode(method: .email, input: "a@b.com",
+            legalResourcesAvailable: true, termsAccepted: true, completion: $0) }.get())
+        XCTAssertThrowsError(try awaitResult { flow.requestCode(method: .email, input: "a@b.com",
+            legalResourcesAvailable: false, termsAccepted: true, completion: $0) }.get())
+        XCTAssertEqual(sent, 0)
+    }
+    func testSupportedCapabilitiesStillRequireAvailableLegalResources() throws {
         try prepare()
+        XCTAssertEqual(flow.capabilities?.supported, true)
         var sent = 0
         IdentityProtocol.respond { [self] _ in sent += 1; return reply(accepted, 202) }
         XCTAssertThrowsError(try awaitResult { flow.requestCode(method: .email, input: "a@b.com",
