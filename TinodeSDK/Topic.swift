@@ -1401,18 +1401,26 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
                 try self.processDelivery(ctrl: msg?.ctrl, id: msgId)
                 return nil
             }).thenCatch({ [weak self] err in
-                if let self = self {
-                    switch PublishFailureDisposition.forError(err) {
-                    case .queued:
-                        self.store?.msgSyncing(topic: self, dbMessageId: msgId, sync: false)
-                    case .failed:
-                        self.store?.msgRejected(topic: self, dbMessageId: msgId)
-                    case .unconfirmed:
-                        self.store?.msgUnconfirmed(topic: self, dbMessageId: msgId)
-                    }
-                }
+                self?.restorePublishFailure(err, msgId: msgId, wasUnconfirmed: message.isUnconfirmed)
                 throw err
             })
+    }
+
+    // The persisted pre-claim state distinguishes a new send from an uncertain retry.
+    // A failed second capability gate cannot erase an earlier dispatch of raw36.
+    func restorePublishFailure(_ error: Error, msgId: Int64, wasUnconfirmed: Bool) {
+        switch PublishFailureDisposition.forError(error) {
+        case .queued:
+            if wasUnconfirmed {
+                store?.msgUnconfirmed(topic: self, dbMessageId: msgId)
+            } else {
+                store?.msgSyncing(topic: self, dbMessageId: msgId, sync: false)
+            }
+        case .failed:
+            store?.msgRejected(topic: self, dbMessageId: msgId)
+        case .unconfirmed:
+            store?.msgUnconfirmed(topic: self, dbMessageId: msgId)
+        }
     }
 
     /// Publish content to topic.

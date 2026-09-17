@@ -609,6 +609,44 @@ final class LocalMigrationTests: XCTestCase {
         }
     }
 
+    func testC3RetrySecondGateFailureRestoresUnknownRatherThanNewQueue() throws {
+        for error in [TinodeError.requestNotSent(C3PublishPolicy.upgradeRequired), .notConnected("connection changed")] {
+            try withC3Store { _, db, store, topic in
+                let message = try newC3Message(store, topic)
+                XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+                XCTAssertTrue(store.msgUnconfirmed(topic: topic, dbMessageId: message.msgId))
+                let beforeClaim = try XCTUnwrap(store.getMessageById(dbMessageId: message.msgId))
+                XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+                topic.restorePublishFailure(error, msgId: message.msgId, wasUnconfirmed: beforeClaim.isUnconfirmed)
+                XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, 36)
+                XCTAssertFalse(store.msgDiscard(topic: topic, dbMessageId: message.msgId))
+            }
+        }
+    }
+
+    func testC3NewSendSecondGateFailureReturnsToNewQueue() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            topic.restorePublishFailure(TinodeError.requestNotSent(C3PublishPolicy.upgradeRequired),
+                                        msgId: message.msgId, wasUnconfirmed: message.isUnconfirmed)
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, 20)
+        }
+    }
+
+    func testC3LateSecondGateFailureCannotDowngradeCommittedAck() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            XCTAssertTrue(store.msgDelivered(topic: topic, dbMessageId: message.msgId, timestamp: Date(), seq: 10))
+            for previousUnknown in [false, true] {
+                topic.restorePublishFailure(TinodeError.notConnected("late disconnect"),
+                                            msgId: message.msgId, wasUnconfirmed: previousUnknown)
+            }
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, 50)
+        }
+    }
+
     func testC3HistoryBeforeAckPreservesLocalIdAndOneServerSequence() throws {
         try withC3Store { _, db, store, topic in
             let message = try newC3Message(store, topic)
