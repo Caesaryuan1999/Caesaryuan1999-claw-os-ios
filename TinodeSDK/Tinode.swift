@@ -778,7 +778,8 @@ public class Tinode {
             throw TinodeError.notConnected("Attempted to send msg to a closed connection.")
         }
         let jsonData = try Tinode.jsonEncoder.encode(msg)
-        Tinode.log.debug("out: %@", String(decoding: jsonData, as: UTF8.self))
+        // Login credentials and message content must not enter Debug logs either.
+        Tinode.log.debug("packet_out")
         conn.send(payload: jsonData)
     }
 
