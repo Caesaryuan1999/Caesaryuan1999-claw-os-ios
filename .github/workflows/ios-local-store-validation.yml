@@ -1,0 +1,48 @@
+name: iOS Local Store Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-local-store-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Inspect Xcode and simulator availability
+        run: |
+          xcodebuild -version
+          xcrun simctl list devices available
+      - name: Install CocoaPods if absent
+        env:
+          COCOAPODS_DISABLE_STATS: "true"
+        run: |
+          if ! command -v pod >/dev/null; then
+            gem install cocoapods --no-document
+          fi
+      - name: Run SDK and production SQLite migration tests without signing
+        env:
+          COCOAPODS_DISABLE_STATS: "true"
+        run: bash Scripts/ci/verify_publish_outcomes_macos.sh
+      - name: Preserve test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-local-store-${{ github.sha }}
+          path: |
+            build/ios-01-a-*/static.json
+            build/ios-01-a-*/sdk.log
+            build/ios-01-a-*/storage.log
+            build/ios-01-a-*/sdk.xcresult
+            build/ios-01-a-*/storage.xcresult
+          if-no-files-found: warn
+          retention-days: 7
