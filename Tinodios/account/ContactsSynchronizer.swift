@@ -136,15 +136,25 @@ class ContactsSynchronizer {
     }
     private func synchronizeInternal() {
         var success = false
+        // Bind credentials to this exact session before contact enumeration can
+        // yield to logout or account replacement.
+        let tinode = Cache.tinode
+        guard let token = Cache.ifCurrent(tinode, { SharedUtils.getAuthToken() }) ?? nil,
+              !token.isEmpty else { return }
         let contactsManager = ContactsManager.default
-        let t0 = SharedUtils.getAuthToken()
-        if let token = t0, !token.isEmpty, let contacts = self.fetchContacts(), !contacts.isEmpty {
+        if let contacts = self.fetchContacts(), !contacts.isEmpty {
             Cache.log.info("ContactsSynchronizer - starting sync.")
             let contacts: String = contactsToQueryString(contacts: contacts)
             var lastSyncMarker = self.serverSyncMarker
-            let tinode = Cache.tinode
-            do {
+            // Revalidate after the potentially slow enumeration; never fetch a
+            // replacement SDK with the old session's token.
+            guard Cache.ifCurrent(tinode, {
                 tinode.setAutoLoginWithToken(token: token)
+                return true
+            }) == true else { return }
+            do {
+                // Wait outside the session/Cache locks. The captured SDK rejects
+                // further operations if logout retires it between these calls.
                 _ = try tinode.connectDefault(inBackground: true)?.getResult()
 
                 _ = try tinode.loginToken(token: token, creds: nil).getResult()
@@ -156,19 +166,24 @@ class ContactsSynchronizer {
                 let meta = MsgGetMeta(sub: MetaGetSub(ims: lastSyncMarker))
                 let future = tinode.getMeta(topic: Tinode.kTopicFnd, query: meta)
                 if try future.waitResult() {
-                    let pkt = try! future.getResult()
+                    let pkt = try future.getResult()
                     guard let subs = pkt?.meta?.sub else { return }
-                    for sub in subs {
-                        if Tinode.topicTypeByName(name: sub.user) == .p2p {
-                            if (lastSyncMarker ?? Date.distantPast) < (sub.updated ?? Date.distantPast) {
-                                lastSyncMarker = sub.updated
+                    // A completed old request must not write contacts or the
+                    // sync marker under a later account.
+                    guard Cache.ifCurrent(tinode, {
+                        for sub in subs {
+                            if Tinode.topicTypeByName(name: sub.user) == .p2p {
+                                if (lastSyncMarker ?? Date.distantPast) < (sub.updated ?? Date.distantPast) {
+                                    lastSyncMarker = sub.updated
+                                }
+                                contactsManager.processSubscription(sub: sub)
                             }
-                            contactsManager.processSubscription(sub: sub)
                         }
-                    }
-                    if lastSyncMarker != nil {
-                        serverSyncMarker = lastSyncMarker
-                    }
+                        if lastSyncMarker != nil {
+                            serverSyncMarker = lastSyncMarker
+                        }
+                        return true
+                    }) == true else { return }
                 }
 
                 success = true
