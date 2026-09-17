@@ -496,6 +496,55 @@ final class LocalMigrationTests: XCTestCase {
         }
     }
 
+    func testLiveInitializationDiagnosticPreservesOriginalSQLiteError() throws {
+        let database = try SQLite.Connection(.inMemory)
+        XCTAssertFalse(database.usesExtendedErrorCodes)
+        try database.run("CREATE TABLE diagnostic_fixture(value TEXT UNIQUE)")
+        try database.run("INSERT INTO diagnostic_fixture VALUES ('synthetic-private-value')")
+        var diagnostic: BaseDb.InitializationDiagnostic?
+        var originalStatement: SQLite.Statement?
+        do {
+            try BaseDb.withInitializationFailureDiagnostics(in: database, stage: { .migrationBegin },
+                onFailure: { diagnostic = $0 }) {
+                do {
+                    try database.run("INSERT INTO diagnostic_fixture VALUES ('synthetic-private-value')")
+                } catch {
+                    if case let SQLite.Result.error(_, _, statement) = error {
+                        originalStatement = statement
+                    }
+                    throw error
+                }
+            }
+            XCTFail("Expected the original UNIQUE failure")
+        } catch {
+            guard case let SQLite.Result.error(_, code, statement) = error else {
+                return XCTFail("Diagnostic must preserve the original primary-error case")
+            }
+            XCTAssertEqual(code, 19)
+            XCTAssertTrue(statement === originalStatement)
+            XCTAssertNotNil(statement)
+        }
+        let captured = try XCTUnwrap(diagnostic)
+        XCTAssertEqual(captured.stage, .migrationBegin)
+        XCTAssertEqual(captured.primaryCode, 19)
+        XCTAssertEqual(captured.extendedCode, 2067)
+        XCTAssertEqual(captured.liveErrorState, .matched)
+        XCTAssertNotNil(captured.systemErrno)
+        XCTAssertGreaterThan(captured.sqliteVersionNumber ?? 0, 3_000_000)
+        XCTAssertEqual(captured.journalMode, .memory)
+        XCTAssertFalse(captured.summary.contains("synthetic-private-value"))
+        XCTAssertFalse(captured.summary.contains("INSERT"))
+        XCTAssertFalse(database.usesExtendedErrorCodes)
+        // The diagnostic PRAGMA has reset the live error. It must not be used to
+        // invent an errno/extended code for an earlier exception.
+        let stale = BaseDb.liveInitializationDiagnostic(
+            SQLite.Result.error(message: "synthetic-private-value", code: 19, statement: nil),
+            stage: .migrationBegin, in: database)
+        XCTAssertEqual(stale.liveErrorState, .mismatched)
+        XCTAssertNil(stale.extendedCode)
+        XCTAssertNil(stale.systemErrno)
+    }
+
     func testUnsupportedWalDatabaseBytesSurviveBlockedOpenAndLogout() throws {
         try withFixture { file, database in
             try database.run("PRAGMA journal_mode=WAL")

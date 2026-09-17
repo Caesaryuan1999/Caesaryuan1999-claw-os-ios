@@ -259,10 +259,24 @@ extension BaseDb {
         let stage: OpenStage
         let category: String
         let primaryCode: Int32?
-        let extendedCode: Int32?
+        var extendedCode: Int32?
+        var systemErrno: Int32?
+        var sqliteVersionNumber: Int32?
+        var journalMode: JournalMode?
+        var liveErrorState: LiveErrorState?
         var summary: String {
-            "\(stage.rawValue):\(category):primary=\(primaryCode.map { String($0) } ?? "none"):extended=\(extendedCode.map { String($0) } ?? "none")"
+            let base = "\(stage.rawValue):\(category):primary=\(primaryCode.map { String($0) } ?? "none"):extended=\(extendedCode.map { String($0) } ?? "none")"
+            guard let liveErrorState = liveErrorState else { return base }
+            return base + ":live=\(liveErrorState.rawValue):errno=\(systemErrno.map { String($0) } ?? "none"):sqlite=\(sqliteVersionNumber.map { String($0) } ?? "none"):journal=\(journalMode?.rawValue ?? "unknown")"
         }
+    }
+
+    enum JournalMode: String {
+        case delete, truncate, persist, memory, wal, off, unknown
+    }
+
+    enum LiveErrorState: String {
+        case matched, mismatched
     }
 
     // Do not use Error.description, localizedDescription, SQL statements or NSError userInfo.
@@ -286,6 +300,44 @@ extension BaseDb {
             }
         }
         return InitializationDiagnostic(stage: stage, category: category, primaryCode: primary, extendedCode: extended)
+    }
+
+    // The connection is still owned by its original scope. Snapshot error codes
+    // before any SQL: a diagnostic PRAGMA can overwrite SQLite's last error.
+    static func liveInitializationDiagnostic(_ error: Error, stage: OpenStage,
+                                             in database: SQLite.Connection) -> InitializationDiagnostic {
+        var diagnostic = safeInitializationDiagnostic(error, stage: stage)
+        guard diagnostic.category == "sqlite" else { return diagnostic }
+        let extended = sqlite3_extended_errcode(database.handle)
+        let systemError = sqlite3_system_errno(database.handle)
+        if let primary = diagnostic.primaryCode, extended != SQLITE_OK, extended & 0xff == primary {
+            diagnostic.extendedCode = extended
+            diagnostic.systemErrno = systemError
+            diagnostic.liveErrorState = .matched
+        } else {
+            // A rollback may already have overwritten the connection's code.
+            // Never attribute a mismatching live code/errno to the original error.
+            diagnostic.liveErrorState = .mismatched
+        }
+        diagnostic.sqliteVersionNumber = sqlite3_libversion_number()
+        let mode = (try? database.scalar("PRAGMA main.journal_mode")) as? String
+        diagnostic.journalMode = mode.flatMap { JournalMode(rawValue: $0) } ?? .unknown
+        return diagnostic
+    }
+
+    // Catch in the live connection's scope, without changing its successful path,
+    // error type, transaction policy, or return value.
+    static func withInitializationFailureDiagnostics<Value>(
+        in database: SQLite.Connection, stage: () -> OpenStage,
+        onFailure: (InitializationDiagnostic) -> Void,
+        _ operation: () throws -> Value
+    ) rethrows -> Value {
+        do {
+            return try operation()
+        } catch {
+            onFailure(liveInitializationDiagnostic(error, stage: stage(), in: database))
+            throw error
+        }
     }
 
     static let migrationCreateSQL = "CREATE TABLE IF NOT EXISTS claw_local_migrations (rule TEXT NOT NULL PRIMARY KEY, completed INTEGER NOT NULL CHECK(completed=1))"
@@ -341,6 +393,7 @@ extension BaseDb {
                                      onFailure: ((InitializationDiagnostic) -> Void)? = nil,
                                      observeStage: ((OpenStage) -> Void)? = nil) throws -> SQLite.Connection {
         var stage = OpenStage.readOnlyOpen
+        var failureDiagnostic: InitializationDiagnostic?
         func advance(_ value: OpenStage) {
             stage = value
             observeStage?(value)
@@ -350,23 +403,29 @@ extension BaseDb {
                 advance(.readOnlyOpen)
                 let readOnly = try SQLite.Connection(path, readonly: true)
                 readOnly.busyTimeout = 5
-                // All schema reads observe one snapshot during concurrent migration.
-                advance(.readOnlyBegin)
-                try readOnly.transaction(.deferred) {
-                    advance(.readOnlySchema)
-                    _ = try validateSchema(in: readOnly)
-                    advance(.readOnlyCommit)
+                try withInitializationFailureDiagnostics(in: readOnly, stage: { stage },
+                    onFailure: { failureDiagnostic = $0 }) {
+                    // All schema reads observe one snapshot during concurrent migration.
+                    advance(.readOnlyBegin)
+                    try readOnly.transaction(.deferred) {
+                        advance(.readOnlySchema)
+                        _ = try validateSchema(in: readOnly)
+                        advance(.readOnlyCommit)
+                    }
                 }
             }
             advance(.writableOpen)
             let database = try SQLite.Connection(path)
             database.busyTimeout = 5
-            advance(.foreignKeys)
-            try database.run("PRAGMA foreign_keys = ON")
-            try prepareDatabase(in: database, observeStage: advance)
+            try withInitializationFailureDiagnostics(in: database, stage: { stage },
+                onFailure: { failureDiagnostic = $0 }) {
+                advance(.foreignKeys)
+                try database.run("PRAGMA foreign_keys = ON")
+                try prepareDatabase(in: database, observeStage: advance)
+            }
             return database
         } catch {
-            onFailure?(safeInitializationDiagnostic(error, stage: stage))
+            onFailure?(failureDiagnostic ?? safeInitializationDiagnostic(error, stage: stage))
             throw error
         }
     }

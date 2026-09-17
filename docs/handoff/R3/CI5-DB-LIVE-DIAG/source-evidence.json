@@ -1,0 +1,19 @@
+{
+  "baseline": "f3043d923aa0f0c996b6a2967a9d2c33acefb435",
+  "production_files": 1,
+  "native_test_files": 1,
+  "new_native_methods": 1,
+  "expected_native_total": 131,
+  "migration_sql_schema_validation_exactly_preserved": true,
+  "original_concurrent_assertion_preserved": true,
+  "classes_in_storage_file": {
+    "PublishStorageTests": 4,
+    "LocalMigrationTests": 50,
+    "TinodiosUITests": 5
+  },
+  "files": {
+    "TinodiosDB/BaseDb.swift": "d27775a34f851274ba8ca2d91c7f027563e6067460842899c2c8f4b15f27eab2",
+    "TinodiosUITests/TinodiosUITests.swift": "5d2ef755b91b9df452e8b3b8816a0dad964d109c71d89e6cf005add9c73bab16",
+    "Scripts/ci/test_db_live_diagnostics_policy.py": "c480bb447e79b29114c2086be3ef7b46273b0781dfd9fc47e1f660cfbb2f2780"
+  }
+}
