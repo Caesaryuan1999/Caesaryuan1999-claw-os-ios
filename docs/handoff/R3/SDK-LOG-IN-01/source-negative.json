@@ -1,0 +1,18 @@
+{
+  "level": "exact_source_entry_not_runtime_logs",
+  "only_production_log_expression_changed": true,
+  "checks": [
+    {
+      "source": "a02c61c",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\Scripts\\ci\\test_sdk_inbound_log_policy.py\", line 12, in <module>\n    assert debug == ['Log.default.debug(\"packet_in\")'], \"Inbound packet log must be one fixed event\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Inbound packet log must be one fixed event\n"
+    },
+    {
+      "source": "working-tree",
+      "exit_code": 0,
+      "stdout": "Inbound log source entry PASS; runtime log interception NOT_RUN\n",
+      "stderr": ""
+    }
+  ]
+}

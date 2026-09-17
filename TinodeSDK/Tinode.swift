@@ -1280,7 +1280,7 @@ public class Tinode {
             })
         }
         func onMessage(with message: String) {
-            Log.default.debug("in: %@", message)
+            Log.default.debug("packet_in")
             do {
                 try tinode.dispatch(message)
             } catch {
