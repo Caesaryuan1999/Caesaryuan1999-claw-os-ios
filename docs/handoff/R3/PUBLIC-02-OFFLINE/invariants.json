@@ -1,0 +1,6 @@
+{
+  "find_outside_local_fetch_unchanged": true,
+  "expected_native_total": 130,
+  "new_native_methods": 2,
+  "actual_native_execution": "NOT_RUN_WINDOWS"
+}

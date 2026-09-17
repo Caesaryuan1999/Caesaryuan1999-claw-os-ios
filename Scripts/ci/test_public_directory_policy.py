@@ -27,6 +27,11 @@ assert "lookup.invalidate()" in add
 assert "self.presentChatReplacingCurrentVC(with: returnedUID)" in add
 scanner = add.split("extension AddByIDViewController: QRScannerDelegate", 1)[1]
 assert "handleCodeEntered" not in scanner
+local_read = find.split("func fetchLocalContacts()", 1)[1].split("private func matchingLocalContacts", 1)[0]
+assert "ClawLocalContactRead.read" in local_read and "Cache.ifCurrent(owner)" in local_read
+assert "isConnectionAuthenticated" not in local_read
+assert find.count("owner.isConnectionAuthenticated") == 2
+assert utils.count("owner.store?.myUid == uid") == 2
 assert "CLAW_PUBLIC_DIRECTORY_TESTS" in project
 assert "PublicDirectoryTests.swift in Sources" in project
 assert "-only-testing:TinodiosUITests/PublicDirectoryTests" in ci

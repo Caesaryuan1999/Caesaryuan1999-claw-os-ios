@@ -967,6 +967,73 @@ final class LocalMigrationTests: XCTestCase {
         return try JSONDecoder().decode(FndSubscription.self, from: data)
     }
 
+    func testOfflineLocalContactsUseRetainedAccountAndDisappearAfterLogout() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let users = try XCTUnwrap(base.userDb)
+            let store = try XCTUnwrap(base.sqlStore)
+            XCTAssertGreaterThan(users.insert(sub: try publicContact(["alias:claw_contact_a"], uid: "usrContactA")), 0)
+            let owner = Tinode(for: "fixture", authenticateWith: "fixture", persistDataIn: store)
+            owner.isConnectionAuthenticated = true
+            let listener = Tinode.TinodeConnectionListener(tinode: owner)
+            listener.onDisconnect(isServerOriginated: false, code: .abnormalClosure, reason: "synthetic offline")
+            XCTAssertFalse(owner.isConnectionAuthenticated)
+            XCTAssertEqual(store.myUid, "usrFixtureA")
+            var reads = 0
+            func read() -> [String] {
+                ClawLocalContactRead.read(active: true, owner: owner, slotIsCurrent: { true }) {
+                    reads += 1
+                    return (users.readAll(for: owner.myUid) ?? []).compactMap { $0.uid }
+                }
+            }
+            XCTAssertEqual(read(), ["usrContactA"])
+            XCTAssertEqual(reads, 1)
+            store.logout()
+            XCTAssertNil(store.myUid)
+            XCTAssertTrue(read().isEmpty)
+            XCTAssertEqual(reads, 1, "Logged-out account must be rejected before querying records")
+        }
+    }
+
+    func testLocalContactReadRejectsReplacementAndMidReadAccountSwitch() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let users = try XCTUnwrap(base.userDb)
+            let store = try XCTUnwrap(base.sqlStore)
+            XCTAssertGreaterThan(users.insert(sub: try publicContact(["alias:claw_contact_a"], uid: "usrContactA")), 0)
+            let ownerA = Tinode(for: "fixture", authenticateWith: "fixture", persistDataIn: store)
+            var slot: Tinode = ownerA
+            var reads = 0
+            func read(_ owner: Tinode, active: Bool = true) -> [String] {
+                ClawLocalContactRead.read(active: active, owner: owner, slotIsCurrent: { slot === owner }) {
+                    reads += 1
+                    return (users.readAll(for: owner.myUid) ?? []).compactMap { $0.uid }
+                }
+            }
+            XCTAssertEqual(read(ownerA), ["usrContactA"])
+            let rejectedDuringRead: [String] = ClawLocalContactRead.read(active: true, owner: ownerA,
+                slotIsCurrent: { slot === ownerA }) {
+                // Exercise the after-read gate with a real local account switch.
+                let records = (users.readAll(for: ownerA.myUid) ?? []).compactMap { $0.uid }
+                store.logout()
+                store.myUid = "usrFixtureB"
+                return records
+            }
+            XCTAssertTrue(rejectedDuringRead.isEmpty)
+            XCTAssertGreaterThan(users.insert(sub: try publicContact(["alias:claw_contact_b"], uid: "usrContactB")), 0)
+            let ownerB = Tinode(for: "fixture", authenticateWith: "fixture", persistDataIn: store)
+            XCTAssertFalse(ownerB.isConnectionAuthenticated)
+            XCTAssertTrue(read(ownerA).isEmpty, "Old owner cannot read newly active B data")
+            slot = ownerB
+            XCTAssertTrue(read(ownerA).isEmpty, "Replaced SDK cannot consume local results")
+            XCTAssertEqual(read(ownerB), ["usrContactB"])
+            XCTAssertTrue(read(ownerB, active: false).isEmpty)
+            XCTAssertEqual(reads, 2, "Only valid current-account reads reach the real UserDb")
+            ownerB.logout()
+            XCTAssertTrue(read(ownerB).isEmpty)
+        }
+    }
+
     func testPublicAliasFirstInsertAndReopenPreservesPublicIdentifier() throws {
         try withFixture { file, database in
             let base = BaseDb(databasePath: file.path)

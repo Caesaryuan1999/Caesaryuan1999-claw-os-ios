@@ -104,11 +104,13 @@ class FindInteractor: FindBusinessLogic {
     }
 
     func fetchLocalContacts() -> [ContactHolder] {
-        guard active, let owner = owner, Cache.isCurrent(owner), owner.isConnectionAuthenticated else { return [] }
+        guard let owner = owner else { return [] }
         return Cache.ifCurrent(owner) {
-            (contactsManager.fetchContacts() ?? []).filter {
-                ContactsManager.isDirectContactId($0.uniqueId)
-                    && !($0.uniqueId.map { owner.isMe(uid: $0) } ?? true)
+            ClawLocalContactRead.read(active: active, owner: owner, slotIsCurrent: { Cache.isCurrent(owner) }) {
+                (contactsManager.fetchContacts() ?? []).filter {
+                    ContactsManager.isDirectContactId($0.uniqueId)
+                        && !($0.uniqueId.map { owner.isMe(uid: $0) } ?? true)
+                }
             }
         } ?? []
     }

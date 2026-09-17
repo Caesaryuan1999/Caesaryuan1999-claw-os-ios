@@ -1120,6 +1120,20 @@ enum AccountNames {
     }
 }
 
+/// Local contacts belong to the retained account, independently of network authentication.
+/// Production calls this inside Cache.ifCurrent(owner); both UID checks also reject a store switch during the read.
+enum ClawLocalContactRead {
+    static func read<Value>(active: Bool, owner: Tinode, slotIsCurrent: () -> Bool,
+                            records: () -> [Value]) -> [Value] {
+        guard active, owner.isSessionActive, slotIsCurrent(),
+              let uid = owner.myUid, owner.store?.myUid == uid else { return [] }
+        let result = records()
+        guard owner.isSessionActive, slotIsCurrent(), owner.myUid == uid,
+              owner.store?.myUid == uid else { return [] }
+        return result
+    }
+}
+
 /// Binds a directory response and its later selection to one manual query and SDK owner.
 /// UI callers serialize input changes and consumption on the main queue. No callback runs under this lock.
 final class ClawPublicDirectoryLookup {
