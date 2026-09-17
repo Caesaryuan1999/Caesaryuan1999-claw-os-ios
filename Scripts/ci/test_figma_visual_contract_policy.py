@@ -31,8 +31,8 @@ for marker in [
 
 for marker in [
     "kOutgoingBubbleColorLight = ClawTheme.primary",
-    "kOutgoingTextColorLight = UIColor.white",
-    "kIncomingBubbleColorLight = ClawTheme.surfaceMuted",
+    "kOutgoingTextColorLight = ClawTheme.onBrand",
+    "kIncomingBubbleColorLight = ClawTheme.surface",
     "kIncomingTextColorLight = ClawTheme.ink",
 ]:
     assert marker in messages, f"missing Figma message color contract: {marker}"

@@ -13,5 +13,5 @@ assert "backgroundColor = .white" not in MESSAGE_VIEW
 assert "backgroundColor = .black" not in MESSAGE_VIEW
 assert "func applyThemeBackground()" in MESSAGE_CELL
 assert "contentView.backgroundColor = .clear" in MESSAGE_CELL
-assert "inputField.placeholderText = NSLocalizedString(\"请输入\"" in SEND_BAR
-assert 'keyPath="placeholderText" value="请输入"' in SEND_BAR_XIB
+assert "inputField.placeholderText = NSLocalizedString(\"输入消息\"" in SEND_BAR
+assert 'keyPath="placeholderText" value="输入消息"' in SEND_BAR_XIB

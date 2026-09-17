@@ -1,0 +1,39 @@
+{
+  "base": "7a0966ae6401d529f63a21708059f12bb838c8d0",
+  "evidence_level": "windows_source_and_xml_only",
+  "checks": {
+    "exact_3_production_files": true,
+    "no_sdk_db_c3_auth_or_interactor_diff": true,
+    "send_and_attachment_actions_byte_equivalent": true,
+    "all_sendbar_delegate_calls_preserved_in_order": true,
+    "all_nib_outlets_actions_and_ids_preserved": true,
+    "bubble_shape_18_unchanged": true,
+    "only_existing_offset_preserving_reload_used": true
+  },
+  "files": [
+    {
+      "path": "Scripts/ci/test_compact_message_layout_policy.py",
+      "sha256": "450bfd71e9d9b41e58d571be6f433d4d83c3057206eddabf94871213a3957274"
+    },
+    {
+      "path": "Scripts/ci/test_figma_visual_contract_policy.py",
+      "sha256": "c4d2f6036f8a820fb8f1cb44941a89ecfa4c92a4d770d7ba94aef3d8a9ea6da7"
+    },
+    {
+      "path": "Scripts/ci/test_message_background_policy.py",
+      "sha256": "65a1966d2b819eeed2e3f097e43debfefd704db7886e63e75cf5b250832f8893"
+    },
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "sha256": "4be2a32bce065fd433dd31f99d4eea23668c89f7602f4c49871c3898605f4b8a"
+    },
+    {
+      "path": "Tinodios/widgets/SendMessageBar.swift",
+      "sha256": "1350d0e9fcec3b7668cfdc5ce862b37ffcafbab7145bf67e39fcc51956eab8c8"
+    },
+    {
+      "path": "Tinodios/widgets/SendMessageBar.xib",
+      "sha256": "f92fbfdc3cad5622a6d64f642351eb5ce3452510f4de193d9144a365dcd9eee1"
+    }
+  ]
+}

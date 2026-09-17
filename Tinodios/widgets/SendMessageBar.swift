@@ -53,7 +53,7 @@ class SendMessageBar: UIView {
     private enum Constants {
         static let maxLines: CGFloat = 4
         static let inputFieldInsetLeading: CGFloat = 4
-        static let inputFieldInsetTrailing: CGFloat = 40
+        static let inputFieldInsetTrailing: CGFloat = 60
         static let peerMessagingDisabledHeight: CGFloat = 30
         static let kPreviewCancelButtonMaxWidth: CGFloat = 36
 
@@ -64,12 +64,10 @@ class SendMessageBar: UIView {
         static let kSendButtonSizePressed: CGFloat = 54
 
         // Initial input text weight.
-        static let kInitialInputFieldHeight: CGFloat = 48
+        static let kInitialInputFieldHeight: CGFloat = 56
 
         static let kSendButtonImageWave = ClawTheme.symbol("mic.fill", pointSize: Constants.kSendButtonPointsNormal, weight: .medium)!
         static let kSendButtonImageWavePressed = ClawTheme.symbol("mic.circle.fill", pointSize: Constants.kSendButtonPointsPressed, weight: .medium)!
-        static let kSendButtonImageArrow = ClawTheme.symbol("arrow.up.circle.fill", pointSize: Constants.kSendButtonPointsNormal, weight: .semibold)!
-        static let kSendButtonImageEditCheck = ClawTheme.symbol("checkmark.circle.fill", pointSize: Constants.kSendButtonPointsNormal, weight: .semibold)
         static let kWaveInsetsShort = UIEdgeInsets(top: 2, left: 6, bottom: 2, right: 88)
         static let kWaveInsetsLong = UIEdgeInsets(top: 2, left: 6, bottom: 2, right: 52)
     }
@@ -126,15 +124,6 @@ class SendMessageBar: UIView {
     public var pendingPreviewText: NSAttributedString? {
         get { return previewView.attributedText.length != .zero ? previewView.attributedText : nil }
         set { previewView.attributedText = newValue }
-    }
-
-    private var sendButtonTextImage: UIImage? {
-        switch pendingPreviewAction {
-        case .edit:
-            return Constants.kSendButtonImageEditCheck
-        default:
-            return Constants.kSendButtonImageArrow
-        }
     }
 
     var previewMaxWidth: CGFloat {
@@ -218,8 +207,7 @@ class SendMessageBar: UIView {
             self.sendButtonLocation = CGPoint(x: loc.x, y: loc.y)
             UIView.animate(withDuration: 0.2, delay: 0, options: UIView.AnimationOptions.curveEaseIn, animations: {
                 self.showAudioBar(.short)
-                self.sendButtonSize.constant = Constants.kSendButtonSizePressed
-                self.sendButton.setImage(Constants.kSendButtonImageWavePressed, for: .normal)
+                self.updateSendButtonAppearance(sending: false, recording: true)
                 self.verticalSliderView.isHidden = false
                 self.horizontalSliderView.isHidden = false
                 self.layoutIfNeeded()
@@ -325,7 +313,9 @@ class SendMessageBar: UIView {
         inputField.backgroundColor = ClawTheme.surfaceMuted
         inputField.textColor = ClawTheme.ink
         inputField.tintColor = ClawTheme.primary
-        inputField.placeholderText = NSLocalizedString("请输入", comment: "Message input placeholder")
+        inputField.font = ClawTheme.font(16)
+        inputField.adjustsFontForContentSizeCategory = true
+        inputField.placeholderText = NSLocalizedString("输入消息", comment: "Message input placeholder")
         inputField.layer.borderWidth = 1
         inputField.layer.borderColor = ClawTheme.border.cgColor
         inputField.layer.cornerRadius = ClawTheme.cardRadius
@@ -347,6 +337,14 @@ class SendMessageBar: UIView {
         sendButton.contentVerticalAlignment = .center
         sendButton.imageEdgeInsets = .zero
         sendButton.contentEdgeInsets = .zero
+        sendButton.layer.cornerRadius = ClawTheme.buttonRadius
+        sendButton.layer.cornerCurve = .continuous
+        sendButton.accessibilityIdentifier = "claw.chat.send"
+        inputField.accessibilityIdentifier = "claw.chat.input"
+        deleteAudioButton.accessibilityLabel = NSLocalizedString("删除录音", comment: "Discard recording")
+        stopAudioRecordingButton.accessibilityLabel = NSLocalizedString("停止录音", comment: "Stop recording")
+        playAudioButton.accessibilityLabel = NSLocalizedString("播放录音", comment: "Play recording")
+        pauseAudioButton.accessibilityLabel = NSLocalizedString("暂停录音", comment: "Pause recording")
 
         if let font = inputField.font {
             inputFieldMaxHeight = font.lineHeight * Constants.maxLines
@@ -358,6 +356,75 @@ class SendMessageBar: UIView {
         togglePendingPreviewBar(withMessage: nil)
 
         showAudioBar(.hidden)
+    }
+
+    // Presentation only: existing send/record delegates retain their original semantics.
+    private func updateSendButtonAppearance(sending: Bool, recording: Bool = false) {
+        let font = ClawTheme.font(16, weight: .semibold)
+        sendButton.titleLabel?.font = font
+        let label = pendingPreviewAction == .edit && !audioLocked
+            ? NSLocalizedString("保存", comment: "Save edited message")
+            : NSLocalizedString("发送", comment: "Send message")
+        let width: CGFloat
+        let height: CGFloat
+        if sending {
+            sendButton.setImage(nil, for: .normal)
+            sendButton.setTitle(label, for: .normal)
+            sendButton.setTitleColor(ClawTheme.onBrand, for: .normal)
+            sendButton.backgroundColor = ClawTheme.primary
+            sendButton.accessibilityLabel = label
+            sendButton.accessibilityHint = nil
+            width = max(64, ceil((label as NSString).size(withAttributes: [.font: font]).width) + 20)
+            height = max(48, ceil(font.lineHeight) + 16)
+        } else {
+            sendButton.setTitle(nil, for: .normal)
+            sendButton.setImage(recording ? Constants.kSendButtonImageWavePressed : Constants.kSendButtonImageWave,
+                                for: .normal)
+            sendButton.backgroundColor = .clear
+            sendButton.tintColor = ClawTheme.primary
+            sendButton.accessibilityLabel = NSLocalizedString("录音", comment: "Record audio")
+            sendButton.accessibilityHint = NSLocalizedString("按住录音，松开发送；向左滑动取消", comment: "Record gesture")
+            width = recording ? Constants.kSendButtonSizePressed : 48
+            height = width
+        }
+        sendButtonSize.constant = width
+        sendButton.constraints.first(where: { $0.firstAttribute == .height })?.constant = height
+        if !recording {
+            sendButtonHorizontal.constant = -width / 2 - 4
+            sendButtonVertical.constant = -height / 2 - 4
+        }
+        inputField.textContainerInset.right = width + 12
+        if !inputField.isHidden {
+            inputFieldHeight.constant = max(inputFieldHeight.constant, height + 8)
+        }
+        if !audioView.isHidden {
+            audioViewHeight.constant = max(40, height + 8)
+        }
+    }
+
+    private func resizeInputField() {
+        let font = inputField.font ?? ClawTheme.font(16)
+        let buttonHeight = sendButton.constraints.first(where: { $0.firstAttribute == .height })?.constant ?? 48
+        let minimumHeight = max(Constants.kInitialInputFieldHeight, buttonHeight + 8)
+        inputFieldMaxHeight = max(minimumHeight, ceil(font.lineHeight) * Constants.maxLines
+                                  + inputField.textContainerInset.top + inputField.textContainerInset.bottom)
+        let fitting = inputField.sizeThatFits(CGSize(width: max(1, inputField.bounds.width),
+                                                      height: .greatestFiniteMagnitude))
+        inputFieldHeight.constant = inputField.actualText.isEmpty ? minimumHeight
+            : max(minimumHeight, min(inputFieldMaxHeight, ceil(fitting.height)))
+        inputField.isScrollEnabled = fitting.height > inputFieldMaxHeight
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard inputField != nil else { return }
+        inputField.layer.borderColor = ClawTheme.border.cgColor
+        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory,
+           audioView.isHidden {
+            inputField.font = ClawTheme.font(16)
+            updateSendButtonAppearance(sending: !inputField.actualText.isEmpty)
+            resizeInputField()
+        }
     }
 
     // MARK: - Subviews handling
@@ -429,7 +496,7 @@ class SendMessageBar: UIView {
             wavePreviewImageView.reset()
             audioViewHeight.constant = CGFloat.leastNonzeroMagnitude
             audioView.isHidden = true
-            sendButton.setImage(Constants.kSendButtonImageWave, for: .normal)
+            updateSendButtonAppearance(sending: !inputField.actualText.isEmpty)
         } else {
             // Long or short bar visible.
             inputField.resignFirstResponder() // Otherwise it does not hide
@@ -439,14 +506,17 @@ class SendMessageBar: UIView {
             audioDurationLabel.show(true, height: 40)
             audioDurationLabel.sizeToFit()
             audioView.isHidden = false
-            audioViewHeight.constant = 40
+            let buttonHeight = sendButton.constraints.first(where: { $0.firstAttribute == .height })?.constant ?? 48
+            audioViewHeight.constant = max(40, buttonHeight + 8)
             wavePreviewImageView.isHidden = false
             if state == .short {
                 wavePreviewLeading.constant = 8
                 wavePreviewImageView.waveInsets = Constants.kWaveInsetsShort
             } else {
                 wavePreviewLeading.constant = 40
-                wavePreviewImageView.waveInsets = Constants.kWaveInsetsLong
+                var insets = Constants.kWaveInsetsLong
+                insets.right = max(insets.right, sendButtonSize.constant + 8)
+                wavePreviewImageView.waveInsets = insets
             }
         }
 
@@ -461,10 +531,9 @@ class SendMessageBar: UIView {
             self.horizontalSliderView.isHidden = true
             self.sendButtonSize.constant = Constants.kButtonSizeNormal
             if state == .lock {
-                self.sendButton.setImage(self.sendButtonTextImage, for: .normal)
+                self.updateSendButtonAppearance(sending: true)
                 self.showAudioBar(.longInitial)
             } else {
-                self.sendButton.setImage(Constants.kSendButtonImageWave, for: .normal)
                 self.showAudioBar(.hidden)
             }
             self.layoutIfNeeded()
@@ -502,20 +571,8 @@ class SendMessageBar: UIView {
 extension SendMessageBar: UITextViewDelegate {
     func textViewDidChange(_ textView: UITextView) {
         delegate?.sendMessageBar(textChangedTo: textView.text)
-
-        if inputField.actualText.isEmpty {
-            inputFieldHeight.constant = Constants.kInitialInputFieldHeight
-
-            self.sendButton.setImage(Constants.kSendButtonImageWave, for: .normal)
-        } else {
-            let size = CGSize(width: frame.width - Constants.inputFieldInsetLeading - Constants.inputFieldInsetTrailing, height: .greatestFiniteMagnitude)
-            let fittingSize = inputField.sizeThatFits(size)
-            if fittingSize.height <= inputFieldMaxHeight {
-                inputFieldHeight.constant = fittingSize.height + 2 // Not sure why but it seems to be off by 2
-            }
-
-            self.sendButton.setImage(self.sendButtonTextImage, for: .normal)
-        }
+        updateSendButtonAppearance(sending: !inputField.actualText.isEmpty)
+        resizeInputField()
     }
 }
 
@@ -572,7 +629,7 @@ private final class ClawAttachmentSheetController: UIViewController {
         title.translatesAutoresizingMaskIntoConstraints = false
         title.text = NSLocalizedString("Send content", comment: "Attachment sheet title")
         title.textColor = ClawTheme.ink
-        title.font = .systemFont(ofSize: 18, weight: .semibold)
+        title.font = ClawTheme.font(20, weight: .semibold, style: .headline)
         title.adjustsFontForContentSizeCategory = true
 
         let close = UIButton(type: .system)
@@ -619,10 +676,11 @@ private final class ClawAttachmentSheetController: UIViewController {
             header.topAnchor.constraint(equalTo: panel.topAnchor, constant: 8),
             header.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 20),
             header.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -8),
-            header.heightAnchor.constraint(equalToConstant: 48),
+            header.heightAnchor.constraint(greaterThanOrEqualToConstant: 48),
 
             title.leadingAnchor.constraint(equalTo: header.leadingAnchor),
-            title.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            title.topAnchor.constraint(equalTo: header.topAnchor, constant: 8),
+            title.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8),
             title.trailingAnchor.constraint(lessThanOrEqualTo: close.leadingAnchor, constant: -8),
             close.trailingAnchor.constraint(equalTo: header.trailingAnchor),
             close.centerYAnchor.constraint(equalTo: header.centerYAnchor),
@@ -671,6 +729,7 @@ private final class ClawAttachmentTileControl: UIControl {
         self.action = action
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
+        isAccessibilityElement = true
         accessibilityLabel = title
         accessibilityTraits = .button
 
@@ -692,10 +751,8 @@ private final class ClawAttachmentTileControl: UIControl {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = title
         label.textColor = ClawTheme.ink
-        label.font = .systemFont(ofSize: 12, weight: .medium)
+        label.font = ClawTheme.font(13, weight: .medium, style: .footnote)
         label.adjustsFontForContentSizeCategory = true
-        label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.82
         label.textAlignment = .center
         label.numberOfLines = 2
         label.isUserInteractionEnabled = false

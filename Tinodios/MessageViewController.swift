@@ -12,8 +12,8 @@ import TinodiosDB
 enum MessageBubbleLayoutPolicy {
     // Content-sized bubbles with a conservative ceiling for long messages.
     // This keeps short messages compact and lets Dynamic Type wrap naturally.
-    static let maxTextWidth: CGFloat = 320
-    static let viewportFraction: CGFloat = 0.78
+    static let maxTextWidth: CGFloat = 360
+    static let viewportFraction: CGFloat = 0.76
     static let baseVoiceWidth: CGFloat = 68
     static let voiceSecondsIncrement: CGFloat = 2
     static let maxVoiceWidth: CGFloat = 96
@@ -79,7 +79,7 @@ class MessageViewController: UIViewController {
         // Horizontal space between delivery marker and timestamp
         static let kTimestampPadding: CGFloat = 0
         // Approximate width of the timestamp
-        static let kTimestampWidth: CGFloat = 50
+        static var kTimestampWidth: CGFloat { max(50, ceil(("00:00 PM" as NSString).size(withAttributes: [.font: kTimestampFont]).width) + 8) }
         // Approximate width of edited marker
         static let kEditedMarkerWidth: CGFloat = 70
         // Horizontal space between timestamp and edited marker
@@ -88,27 +88,27 @@ class MessageViewController: UIViewController {
         static let kProgressBarLeftPadding: CGFloat = 10
         static let kProgressBarRightPadding: CGFloat = 25
 
-        // Figma 26:6: sent messages use CLAW teal; received messages use muted surface.
+        // R3.D1: semantic colors keep both sides legible in light and dark appearance.
         static let kOutgoingBubbleColorLight = ClawTheme.primary
         static let kOutgoingBubbleColorDark = ClawTheme.primary
-        static let kOutgoingTextColorLight = UIColor.white
-        static let kOutgoingTextColorDark = UIColor.white
-        static let kIncomingBubbleColorLight = ClawTheme.surfaceMuted
+        static let kOutgoingTextColorLight = ClawTheme.onBrand
+        static let kOutgoingTextColorDark = ClawTheme.onBrand
+        static let kIncomingBubbleColorLight = ClawTheme.surface
         static let kIncomingBubbleColorDark = ClawTheme.surface
         static let kIncomingTextColorLight = ClawTheme.ink
         static let kIncomingTextColorDark = ClawTheme.ink
         // Meta-messages, such as "Content deleted".
-        static let kDeletedMessageBubbleColorLight = UIColor(fromHexCode: 0xffe3f2fd)
-        static let kDeletedMessageBubbleColorDark = UIColor(fromHexCode: 0xff263238)
-        static let kDeletedMessageTextColor = UIColor.gray
+        static let kDeletedMessageBubbleColorLight = ClawTheme.brandSoft
+        static let kDeletedMessageBubbleColorDark = ClawTheme.brandSoft
+        static let kDeletedMessageTextColor = ClawTheme.muted
 
-        static let kContentFont = UIFont.preferredFont(forTextStyle: .body)
+        static var kContentFont: UIFont { ClawTheme.font(16) }
 
-        static let kSenderNameFont = UIFont.preferredFont(forTextStyle: .caption2)
-        static let kTimestampFont = UIFont.preferredFont(forTextStyle: .caption2)
-        static let kSenderNameLabelHeight: CGFloat = 16
-        static let kNewDateFont = UIFont.boldSystemFont(ofSize: 10)
-        static let kNewDateLabelHeight: CGFloat = 24
+        static var kSenderNameFont: UIFont { ClawTheme.font(12, style: .caption1) }
+        static var kTimestampFont: UIFont { ClawTheme.font(12, style: .caption1) }
+        static var kSenderNameLabelHeight: CGFloat { ceil(kSenderNameFont.lineHeight) + 4 }
+        static var kNewDateFont: UIFont { ClawTheme.font(12, weight: .medium, style: .caption1) }
+        static var kNewDateLabelHeight: CGFloat { max(24, ceil(kNewDateFont.lineHeight) + 8) }
         // Vertical spacing between messages from the same user
         static let kVerticalCellSpacing: CGFloat = 6
         static let kMediaCellSpacing: CGFloat = 8
@@ -129,8 +129,8 @@ class MessageViewController: UIViewController {
         static let kOutgoingContainerPadding = UIEdgeInsets(top: 0, left: Constants.kFarSideHorizontalSpacing, bottom: 0, right: 0)
 
         // Insets around content inside the message bubble.
-        static let kIncomingMessageContentInset = UIEdgeInsets(top: 4, left: 12, bottom: 8, right: 12)
-        static let kOutgoingMessageContentInset = UIEdgeInsets(top: 4, left: 12, bottom: 8, right: 12)
+        static let kIncomingMessageContentInset = UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 14)
+        static let kOutgoingMessageContentInset = UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 14)
         static let kDeletedMessageContentInset = UIEdgeInsets(top: 4, left: 14, bottom: 0, right: 14)
         static let kMediaMessageContentInset = UIEdgeInsets(top: 0, left: 0, bottom: 20, right: 0)
         static let kMediaCornerRadius: CGFloat = 14
@@ -139,7 +139,7 @@ class MessageViewController: UIViewController {
         static let kIncomingMetadataCarveout = "     "
         static let kOutgoingMetadataCarveout = "       "
         static let kExternalMetadataGap: CGFloat = 2
-        static let kExternalMetadataHeight: CGFloat = 18
+        static var kExternalMetadataHeight: CGFloat { max(18, ceil(kTimestampFont.lineHeight)) }
 
         // Thresholds for tracking update batch stats/UI refresh.
         // When too many messages (batch) come in a quick succession,
@@ -607,10 +607,15 @@ class MessageViewController: UIViewController {
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
         guard UIApplication.shared.applicationState == .active else {
             return
         }
         self.setInterfaceColors()
+        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory {
+            // Reuse the existing offset-preserving redraw; no history or send operation.
+            deviceRotated()
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -974,6 +979,8 @@ extension MessageViewController: UICollectionViewDataSource {
             cell.deliveryMarker.image = image
             cell.deliveryMarker.tintColor = tint
         }
+        cell.timestampLabel.font = Constants.kTimestampFont
+        cell.editedMarker.font = Constants.kTimestampFont
         let markerTextColor = ClawTheme.muted
         if let ts = message.ts {
             cell.timestampLabel.text = RelativeDateFormatter.shared.timeOnly(from: ts)
@@ -996,7 +1003,7 @@ extension MessageViewController: UICollectionViewDataSource {
 
     func newDateLabel(for message: Message, at indexPath: IndexPath) -> NSAttributedString? {
         if isNewDateLabelVisible(at: indexPath) {
-            return NSAttributedString(string: RelativeDateFormatter.shared.dateOnly(from: message.ts), attributes: [NSAttributedString.Key.font: Constants.kNewDateFont, NSAttributedString.Key.foregroundColor: UIColor.darkGray])
+            return NSAttributedString(string: RelativeDateFormatter.shared.dateOnly(from: message.ts), attributes: [NSAttributedString.Key.font: Constants.kNewDateFont, NSAttributedString.Key.foregroundColor: ClawTheme.muted])
         }
         return nil
     }
@@ -1013,7 +1020,7 @@ extension MessageViewController: UICollectionViewDataSource {
 
         return NSAttributedString(string: senderName!, attributes: [
             NSAttributedString.Key.font: Constants.kSenderNameFont,
-            NSAttributedString.Key.foregroundColor: UIColor.gray
+            NSAttributedString.Key.foregroundColor: ClawTheme.muted
             ])
     }
 
@@ -1198,11 +1205,11 @@ extension MessageViewController: MessageViewLayoutDelegate {
             attr.deliveryMarkerFrame = .zero
         }
 
-        attr.timestampFrame = !message.isDeleted ? CGRect(x: rightEdge.x - Constants.kTimestampWidth - Constants.kTimestampPadding, y: rightEdge.y, width: Constants.kTimestampWidth, height: Constants.kDeliveryMarkerSize) : .zero
+        attr.timestampFrame = !message.isDeleted ? CGRect(x: rightEdge.x - Constants.kTimestampWidth - Constants.kTimestampPadding, y: rightEdge.y, width: Constants.kTimestampWidth, height: Constants.kExternalMetadataHeight) : .zero
 
         if isEdited {
             let x = attr.timestampFrame.origin != .zero ? attr.timestampFrame.origin.x - Constants.kEditedMarkerWidth - Constants.kEditedMarkerPadding : rightEdge.x
-            attr.editedMarkerFrame = CGRect(x: x, y: rightEdge.y, width: Constants.kEditedMarkerWidth, height: Constants.kDeliveryMarkerSize)
+            attr.editedMarkerFrame = CGRect(x: x, y: rightEdge.y, width: Constants.kEditedMarkerWidth, height: Constants.kExternalMetadataHeight)
         } else {
             attr.editedMarkerFrame = .zero
         }
@@ -1281,8 +1288,10 @@ extension MessageViewController: MessageViewLayoutDelegate {
 
         let padding = isFromCurrentSender(message: message) ? Constants.kOutgoingContainerPadding : Constants.kIncomingContainerPadding
 
-        let availableWidth = calcCellWidth() - avatarWidth - padding.left - padding.right - insets.left - insets.right
-        return MessageBubbleLayoutPolicy.maxContentWidth(availableWidth: availableWidth)
+        let availableWidth = calcCellWidth() - avatarWidth - padding.left - padding.right
+        // The design ceiling includes the bubble's padding, not just its text.
+        return max(0, MessageBubbleLayoutPolicy.maxContentWidth(availableWidth: availableWidth)
+                   - insets.left - insets.right)
     }
 
     /// Calculate size of the view which holds message content.
