@@ -1,0 +1,5 @@
+{
+  "Tinodios/Utils.swift": "ba12a7260fa45b5d42631d9d7390a58563b6f1d23644480c636fb589b1fadc93",
+  "TinodiosUITests/PublicDirectoryTests.swift": "c8929a8bd1551ea09e6b1f1e99822d85b40d6be50fdae210b082547852240950",
+  "Scripts/ci/test_public_directory_policy.py": "b03af18ed031e5a9eb4fb01f925284cbe12b048aa02bb72930cc24b8211aab13"
+}

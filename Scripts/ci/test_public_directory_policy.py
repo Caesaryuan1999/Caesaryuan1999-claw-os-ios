@@ -30,5 +30,5 @@ assert "handleCodeEntered" not in scanner
 assert "CLAW_PUBLIC_DIRECTORY_TESTS" in project
 assert "PublicDirectoryTests.swift in Sources" in project
 assert "-only-testing:TinodiosUITests/PublicDirectoryTests" in ci
-assert tests.count("func test") == 12
-print("PUBLIC02 wiring PASS; 12 native methods NOT_RUN on Windows")
+assert tests.count("func test") == 13
+print("PUBLIC02 wiring PASS; 13 native methods NOT_RUN on Windows")

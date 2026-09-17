@@ -24,6 +24,19 @@ final class PublicDirectoryTests: XCTestCase {
         XCTAssertFalse(AccountNames.matchesPublicSearchName(tags: ["alice", "alias:alice2"], query: "alice"))
     }
 
+    func testLegacyBasicAndAliasLengthsMatchPublicDirectoryContract() {
+        for length in [1, 2, 3, 24, 25, 32, 33] {
+            let value = String(repeating: "a", count: length)
+            var terms: [String] = []
+            if (4...24).contains(length) { terms.append("alias:" + value) }
+            if (2...32).contains(length) { terms.append("basic:" + value) }
+            XCTAssertEqual(AccountNames.directorySearchQuery(value), terms.isEmpty ? nil : terms.joined(separator: ","), "length=\(length)")
+        }
+        XCTAssertNil(AccountNames.directorySearchQuery("usr"))
+        XCTAssertEqual(AccountNames.directorySearchQuery("usrx"), "alias:usrx")
+        XCTAssertNil(AccountNames.directorySearchQuery("usr" + String(repeating: "a", count: 22)))
+    }
+
     func testAdvancedExpressionsAndPrivateIdentitySyntaxCannotPassThrough() {
         for value in ["alice bob", "alice,bob", "alias:alice", "basic:alice", "a@example.com",
                       "+8613800138000", "alice\nbob", "@ alice", "用户abcd", "alice|bob"] {

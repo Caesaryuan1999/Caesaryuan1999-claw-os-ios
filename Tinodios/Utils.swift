@@ -1064,7 +1064,7 @@ enum AccountNames {
             return validAlias ? [Tinode.kTagAlias + value] : []
         }
         var terms = validAlias ? [Tinode.kTagAlias + value] : []
-        if value.range(of: #"^[a-z0-9]+$"#, options: .regularExpression) != nil {
+        if value.range(of: #"^[a-z0-9]{2,32}$"#, options: .regularExpression) != nil {
             terms.append(basicTagPrefix + value)
         }
         return terms
