@@ -25,7 +25,8 @@ public class SqlStore: Storage {
         }
         set {
             accountLock.lock(); defer { accountLock.unlock() }
-            self.dbh?.setUid(uid: newValue, credMethods: nil)
+            if newValue == nil { self.dbh?.logout() }
+            else { self.dbh?.setUid(uid: newValue, credMethods: nil) }
         }
     }
 
@@ -67,12 +68,20 @@ public class SqlStore: Storage {
     }
 
     public func setTimeAdjustment(adjustment: TimeInterval) {
+        accountLock.lock(); defer { accountLock.unlock() }
         self.timeAdjustment = adjustment
     }
     var timeAdjustment: TimeInterval = TimeInterval(0)
-    public var isReady: Bool { get { return self.dbh?.isReady ?? false }}
+    public var isReady: Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard let account = dbh?.account, let db = dbh?.db else { return false }
+        let active = (try? db.scalar("SELECT COUNT(*) FROM accounts WHERE id=? AND uid=? AND last_active=1", account.id, account.uid)) as? Int64
+        return active == 1 && (dbh?.isReady ?? false)
+    }
 
     public func topicGetAll(from tinode: Tinode?) -> [TopicProto]? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard isReady, tinode == nil || tinode?.myUid == myUid else { return nil }
         guard let tdb = self.dbh?.topicDb, let rows = tdb.query() else {
             return nil
         }
@@ -86,22 +95,30 @@ public class SqlStore: Storage {
     }
 
     public func topicGet(from tinode: Tinode?, withName name: String?) -> TopicProto? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard isReady, tinode == nil || tinode?.myUid == myUid else { return nil }
         guard let tdb = self.dbh?.topicDb else { return nil }
         return tdb.readOne(for: tinode, withName: name)
     }
 
     public func topicAdd(topic: TopicProto) -> Int64 {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard isReady else { return 0 }
         if let st = topic.payload as? StoredTopic {
-            return st.id ?? 0
+            return ownedTopicId(topic) == st.id ? (st.id ?? 0) : 0
         }
         return self.dbh?.topicDb?.insert(topic: topic) ?? 0
     }
 
     public func topicUpdate(topic: TopicProto) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         return self.dbh?.topicDb?.update(topic: topic) ?? false
     }
 
     public func topicDelete(topic: TopicProto, hard: Bool) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard dbh?.isStoreAvailable == true else { return false }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else { return false }
         let savepointName = "SqlStore.topicDelete"
@@ -124,33 +141,45 @@ public class SqlStore: Storage {
     }
 
     public func msgIsCached(topic: TopicProto, ranges: [MsgRange]) -> [MsgRange] {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return [] }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else { return [] }
         return self.dbh?.messageDb?.getCachedRanges(topicId: topicId, ranges: ranges) ?? []
     }
 
     public func getCachedMessagesRange(topic: TopicProto) -> MsgRange? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return nil }
         guard let st = topic.payload as? StoredTopic else { return nil }
         return MsgRange(low: st.minLocalSeq ?? 0, hi: (st.maxLocalSeq ?? 0) + 1)
     }
 
     public func getMissingRanges(topic: TopicProto, startFrom: Int, pageSize: Int, newer: Bool) -> [MsgRange] {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return [] }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else { return [] }
         return self.dbh?.messageDb?.getMissingRanges(topicId: topicId, startFrom: startFrom, pageSize: pageSize, newer: newer) ?? []
     }
 
     public func setRead(topic: TopicProto, read: Int) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard let st = topic.payload as? StoredTopic,
             let topicId = st.id, topicId > 0 else { return false }
         return self.dbh?.topicDb?.updateRead(for: topicId, with: read) ?? false
     }
 
     public func setRecv(topic: TopicProto, recv: Int) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard let st = topic.payload as? StoredTopic,
             let topicId = st.id, topicId > 0 else { return false }
         return self.dbh?.topicDb?.updateRecv(for: topicId, with: recv) ?? false
     }
 
     public func subAdd(topic: TopicProto, sub: SubscriptionProto) -> Int64 {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return 0 }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else {
             return 0
         }
@@ -158,13 +187,18 @@ public class SqlStore: Storage {
     }
 
     public func subUpdate(topic: TopicProto, sub: SubscriptionProto) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard let ss = sub.payload as? StoredSubscription, let subId = ss.id, subId > 0 else {
             return false
         }
+        guard ss.topicId == ownedTopicId(topic) else { return false }
         return self.dbh?.subscriberDb?.update(using: sub) ?? false
     }
 
     public func subNew(topic: TopicProto, sub: SubscriptionProto) -> Int64 {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return 0 }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else {
             return 0
         }
@@ -172,13 +206,18 @@ public class SqlStore: Storage {
     }
 
     public func subDelete(topic: TopicProto, sub: SubscriptionProto) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard let ss = sub.payload as? StoredSubscription, let subId = ss.id, subId > 0 else {
             return false
         }
+        guard ss.topicId == ownedTopicId(topic) else { return false }
         return self.dbh?.subscriberDb?.delete(recordId: subId) ?? false
     }
 
     public func getSubscriptions(topic: TopicProto) -> [SubscriptionProto]? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return nil }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else {
             return nil
         }
@@ -186,14 +225,22 @@ public class SqlStore: Storage {
     }
 
     public func userGet(uid: String) -> UserProto? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard isReady else { return nil }
         return self.dbh?.userDb?.readOne(uid: uid)
     }
 
     public func userAdd(user: UserProto) -> Int64 {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard isReady else { return 0 }
         return self.dbh?.userDb?.insert(user: user) ?? 0
     }
 
     public func userUpdate(user: UserProto) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard isReady else { return false }
+        guard let stored = user.payload as? StoredUser,
+              stored.id == self.dbh?.userDb?.getId(for: user.uid) else { return false }
         return self.dbh?.userDb?.update(user: user) ?? false
     }
 
@@ -204,6 +251,7 @@ public class SqlStore: Storage {
         var topicId: Int64 = -1
         var userId: Int64 = -1
         if let ss = sub?.payload as? StoredSubscription {
+            guard ss.topicId == ownedTopicId(topic) else { return nil }
             topicId = ss.topicId ?? -1
             userId = ss.userId ?? -1
         } else if let st = topic.payload as? StoredTopic {
@@ -264,10 +312,12 @@ public class SqlStore: Storage {
     }
 
     public func msgSend(topic: TopicProto, data: Drafty, head: [String: JSONValue]?) -> Message? {
+        accountLock.lock(); defer { accountLock.unlock() }
         return self.insertMessage(topic: topic, data: data, head: head, initialStatus: .undefined)
     }
 
     public func msgDraft(topic: TopicProto, data: Drafty, head: [String: JSONValue]?) -> Message? {
+        accountLock.lock(); defer { accountLock.unlock() }
         return self.insertMessage(topic: topic, data: data, head: head, initialStatus: .draft)
     }
 
@@ -321,6 +371,7 @@ public class SqlStore: Storage {
 
     // Called by the main app before it constructs a new SDK instance, never by NSE init.
     public func recoverInterruptedPublishes() -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
         let recovered = self.dbh?.messageDb?.recoverInterruptedPublishes() ?? false
         recoveryBlocked = !recovered
         return recovered
@@ -344,19 +395,29 @@ public class SqlStore: Storage {
         return self.dbh?.messageDb?.delete(msgId: dbMessageId, onlyDraft: true) ?? false
     }
 
+    static let ownedTopicSQL = "SELECT COUNT(*) FROM topics t JOIN accounts a ON a.id=t.account_id WHERE t.id=? AND a.id=? AND a.uid=? AND a.last_active=1"
+
+    private func ownsTopicId(_ id: Int64?) -> Bool {
+        guard isReady, initializationError == nil, let id = id, let account = dbh?.account, let db = dbh?.db else { return false }
+        return ((try? db.scalar(Self.ownedTopicSQL, id, account.id, account.uid)) as? Int64) == 1
+    }
+
     private func ownedTopicId(_ topic: TopicProto) -> Int64? {
-        guard let id = (topic.payload as? StoredTopic)?.id, id > 0,
+        guard let id = (topic.payload as? StoredTopic)?.id, id > 0, ownsTopicId(id),
               dbh?.topicDb?.getId(topic: topic.name) == id else { return nil }
         return id
     }
 
     private func ownsMessage(_ topic: TopicProto, id: Int64) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
         guard let topicId = ownedTopicId(topic), let message = dbh?.messageDb?.query(msgId: id, previewLen: -1),
               message.topicId == topicId, message.from == myUid else { return false }
         return true
     }
 
     public func msgPruneFailed(topic: TopicProto) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else { return false }
         return self.dbh?.messageDb?.deleteFailed(forTopic: topicId) ?? false
     }
@@ -397,17 +458,23 @@ public class SqlStore: Storage {
     }
 
     public func msgMarkToDelete(topic: TopicProto, from idLo: Int, to idHi: Int, markAsHard: Bool) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else { return false }
         return self.dbh?.messageDb?.deleteOrMarkDeleted(topicId: topicId, delId: nil, from: idLo, to: idHi, hard: markAsHard) ?? false
     }
 
     public func msgMarkToDelete(topic: TopicProto, ranges: [MsgRange]?, markAsHard: Bool) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id,
             let ranges = ranges, !ranges.isEmpty else { return false }
         return self.dbh?.messageDb?.deleteOrMarkDeleted(topicId: topicId, delId: nil, inRanges: ranges, hard: markAsHard) ?? false
     }
 
     public func msgDelete(topic: TopicProto, delete delId: Int, deleteFrom idLo: Int, deleteTo idHi: Int) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else { return false }
         let idHi = idHi <= 0 ? (st.maxLocalSeq ?? 0) + 1 : idHi
         var success = false
@@ -425,6 +492,8 @@ public class SqlStore: Storage {
     }
 
     public func msgDelete(topic: TopicProto, delete delId: Int, deleteAllIn ranges: [MsgRange]?) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return false }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id,
             let ranges = ranges, !ranges.isEmpty else { return false }
         let collapsedRanges = MsgRange.collapse(ranges)
@@ -445,32 +514,43 @@ public class SqlStore: Storage {
     }
 
     public func msgRecvByRemote(sub: SubscriptionProto, recv: Int?) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
         guard let ss = sub.payload as? StoredSubscription, let sid = ss.id, sid > 0, let recv = recv else {
             return false
         }
-        return BaseDb.sharedInstance.subscriberDb?.updateRecv(for: sid, with: recv) ?? false
+        guard ownsTopicId(ss.topicId) else { return false }
+        return dbh?.subscriberDb?.updateRecv(for: sid, with: recv) ?? false
     }
 
     public func msgReadByRemote(sub: SubscriptionProto, read: Int?) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
         guard let ss = sub.payload as? StoredSubscription, let sid = ss.id, sid > 0, let read = read else {
             return false
         }
-        return BaseDb.sharedInstance.subscriberDb?.updateRead(for: sid, with: read) ?? false
+        guard ownsTopicId(ss.topicId) else { return false }
+        return dbh?.subscriberDb?.updateRead(for: sid, with: read) ?? false
     }
 
     private func messageById(dbId: Int64, previewLen: Int = -1) -> Message? {
-        return dbh?.messageDb?.query(msgId: dbId, previewLen: previewLen)
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard isReady else { return nil }
+        guard let message = dbh?.messageDb?.query(msgId: dbId, previewLen: previewLen),
+              ownsTopicId(message.topicId) else { return nil }
+        return message
     }
 
     public func getMessageById(dbMessageId: Int64) -> Message? {
+        accountLock.lock(); defer { accountLock.unlock() }
         return messageById(dbId: dbMessageId)
     }
 
     public func getMessagePreviewById(dbMessageId: Int64) -> Message? {
+        accountLock.lock(); defer { accountLock.unlock() }
         return messageById(dbId: dbMessageId, previewLen: MessageDb.kMessagePreviewLength)
     }
 
     public func getQueuedMessages(topic: TopicProto) -> [Message]? {
+        accountLock.lock(); defer { accountLock.unlock() }
         guard let st = topic.payload as? StoredTopic else { return nil }
         guard let id = st.id, id > 0 else { return nil }
         guard ownedTopicId(topic) == id else { return nil }
@@ -478,27 +558,37 @@ public class SqlStore: Storage {
     }
 
     public func getQueuedMessageDeletes(topic: TopicProto, hard: Bool) -> [MsgRange]? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return nil }
         guard let st = topic.payload as? StoredTopic, let id = st.id, id > 0 else { return nil }
-        return BaseDb.sharedInstance.messageDb?.queryDeleted(topicId: id, hard: hard)
+        return dbh?.messageDb?.queryDeleted(topicId: id, hard: hard)
     }
 
     public func getLatestMessagePreviews() -> [Message]? {
-        return BaseDb.sharedInstance.messageDb?.queryLatest()
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard isReady else { return nil }
+        return dbh?.messageDb?.queryLatest()
     }
 
     /// Return the message page starting at the `from`.
     public func getMessagePage(topic: TopicProto, from: Int, limit: Int, forward: Bool) -> [Message]? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return nil }
         guard let st = topic.payload as? StoredTopic, let id = st.id, id > 0 else { return nil }
-        return BaseDb.sharedInstance.messageDb?.query(topicId: id, from: from, limit: limit, forward: forward)
+        return dbh?.messageDb?.query(topicId: id, from: from, limit: limit, forward: forward)
     }
 
     public func getMessage(fromTopic topic: TopicProto, byEffectiveSeqId seqId: Int) -> Message? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return nil }
         guard let st = topic.payload as? StoredTopic, let id = st.id, id > 0 else { return nil }
-        return BaseDb.sharedInstance.messageDb?.getMessage(fromTopic: id, byEffectiveSeq: seqId)
+        return dbh?.messageDb?.getMessage(fromTopic: id, byEffectiveSeq: seqId)
     }
 
     public func getAllMsgVersions(fromTopic topic: TopicProto, forSeq seqId: Int, limit: Int?) -> [Int]? {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard ownedTopicId(topic) != nil else { return nil }
         guard let st = topic.payload as? StoredTopic, let id = st.id, id > 0 else { return nil }
-        return BaseDb.sharedInstance.messageDb?.getAllVersions(fromTopic: id, forSeq: seqId, limit: limit)
+        return dbh?.messageDb?.getAllVersions(fromTopic: id, forSeq: seqId, limit: limit)
     }
 }

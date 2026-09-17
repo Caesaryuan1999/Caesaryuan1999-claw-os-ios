@@ -129,15 +129,17 @@ class SignupViewController: UITableViewController {
         guard submissionGate.begin() else { return }
 
         let creds = [Credential(meth: ClawAuthInput.inviteCredentialMethod, val: inviteCode)]
+        let tinode = Cache.tinode
 
         func doSignUp(withPublicCard pub: TheCard, withCredentials creds: [Credential]) {
+            guard Cache.isCurrent(tinode) else { return }
             let desc = MetaSetDesc<TheCard, String>(pub: pub, priv: nil)
             desc.attachments = pub.photoRefs
 
             UiUtils.toggleProgressOverlay(in: self, visible: true, title: NSLocalizedString("正在注册...", comment: "Progress overlay"))
 
             do {
-                guard let connection = try Cache.tinode.connectDefault(inBackground: false) else {
+                guard let connection = try tinode.connectDefault(inBackground: false) else {
                     submissionGate.finish()
                     signUpButton.isUserInteractionEnabled = true
                     UiUtils.toggleProgressOverlay(in: self, visible: false)
@@ -146,31 +148,38 @@ class SignupViewController: UITableViewController {
                 }
                 connection
                     .thenApply { _ in
-                        return Cache.tinode.createAccountBasic(uname: login, pwd: pwd, login: true, tags: nil, desc: desc, creds: creds)
+                        guard Cache.isCurrent(tinode) else { throw TinodeError.invalidState("Session ended") }
+                        return tinode.createAccountBasic(uname: login, pwd: pwd, login: true, tags: nil, desc: desc, creds: creds)
                     }
                     .thenApply { [weak self] msg in
+                        return Cache.ifCurrent(tinode) { () -> PromisedReply<ServerMessage>? in
                         guard let signupVC = self else { return nil }
-                        let tinode = Cache.tinode
                         SharedUtils.saveAuthToken(for: login, token: tinode.authToken, expires: tinode.authTokenExpires)
                         if let ctrl = msg?.ctrl, ctrl.code >= 300, ctrl.text.contains("validate credentials") {
                             DispatchQueue.main.async {
-                                UiUtils.routeToCredentialsVC(in: signupVC.navigationController, verifying: ctrl.getStringArray(for: "cred")?.first)
+                                UiUtils.routeToCredentialsVC(in: signupVC.navigationController, verifying: ctrl.getStringArray(for: "cred")?.first, for: tinode)
                             }
                         } else {
-                            if let token = Cache.tinode.authToken {
-                                Cache.tinode.setAutoLoginWithToken(token: token)
+                            if let token = tinode.authToken {
+                                tinode.setAutoLoginWithToken(token: token)
                             }
-                            UiUtils.routeToChatListVC()
+                            UiUtils.routeToChatListVC(for: tinode)
                         }
                         return nil
+
+                        } ?? nil
                     }
                     .thenCatch { err in
+                        return Cache.ifCurrent(tinode) { () -> PromisedReply<ServerMessage>? in
                         Cache.log.error("Failed to create account: %@", err.localizedDescription)
                         DispatchQueue.main.async {
+                            guard Cache.isCurrent(tinode) else { return }
                             UiUtils.showToast(message: self.signUpErrorMessage(for: err))
                         }
-                        Cache.tinode.disconnect()
+                        tinode.disconnect()
                         return nil
+
+                        } ?? nil
                     }
                     .thenFinally { [weak self] in
                         self?.submissionGate.finish()
@@ -182,7 +191,7 @@ class SignupViewController: UITableViewController {
                     }
             } catch {
                 submissionGate.finish()
-                Cache.tinode.disconnect()
+                tinode.disconnect()
                 DispatchQueue.main.async {
                     UiUtils.showToast(message: ClawAuthErrorMessages.signUpMessage(for: error))
                     self.signUpButton.isUserInteractionEnabled = true

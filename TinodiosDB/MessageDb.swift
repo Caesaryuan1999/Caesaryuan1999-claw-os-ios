@@ -726,7 +726,7 @@ public class MessageDb {
 
     func queryLatest() -> [StoredMessage]? {
         let messages2 = self.table.alias("m2")
-        guard let topicDb = baseDb.topicDb else { return nil }
+        guard let topicDb = baseDb.topicDb, let account = baseDb.account else { return nil }
         let topics = topicDb.table
 
         let m2Id = SQLite.Expression<Int64?>("id")
@@ -736,7 +736,8 @@ public class MessageDb {
             .join(.leftOuter, messages2,
                   on: self.table[self.topicId] == messages2[self.topicId] && self.table[self.effectiveSeq] < messages2[self.effectiveSeq])
             .join(.leftOuter, topics, on: self.table[self.topicId] == topics[topicDb.id])
-            .filter(self.table[self.delId] == nil && messages2[self.delId] == nil && messages2[m2Id] == nil && self.table[self.effectiveSeq] != nil)
+            .filter(topics[topicDb.accountId] == account.id &&
+                    self.table[self.delId] == nil && messages2[self.delId] == nil && messages2[m2Id] == nil && self.table[self.effectiveSeq] != nil)
         do {
             var messages = [StoredMessage]()
             for row in try db.prepare(joinedTable) {

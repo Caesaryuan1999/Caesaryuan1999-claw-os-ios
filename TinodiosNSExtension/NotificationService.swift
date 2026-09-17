@@ -20,82 +20,18 @@ class NotificationService: UNNotificationServiceExtension {
         self.contentHandler = contentHandler
         self.bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
 
-        // New message notification (msg):
-        // - P2P
-        //   Title: <sender name> || 'Unknown'
-        //   Body: <message content> || 'New message'
-        // - GRP
-        //   Title: <topic name> || 'Unknown'
-        //   Body: <sender name>: <message content> || 'New message'
-        //
-        // Subscription notification (sub):
-        // - P2P
-        //   Title: 'CLAW OS'
-        //   Body: <sender name> || 'Unknown'
-        // - GRP
-        //   Title: 'CLAW OS'
-        //   Body: <group name> || 'Unknown'
-        // Deleted subscription:
-        //   Always invisible.
-        //
-
-        if let bestAttemptContent = bestAttemptContent {
-            let payload = bestAttemptContent.userInfo
-            guard let topicName = payload["topic"] as? String, !topicName.isEmpty, let from = payload["xfrom"] as? String, !from.isEmpty else { return }
-
-            let action = payload["what"] as? String ?? "msg"
-
-            guard ["msg", "sub"].contains(action) else {
-                // Not handling it here.
-                return
-            }
-
-            defer { self.contentHandler!(bestAttemptContent) }
-
-            let store = BaseDb.sharedInstance.sqlStore!
-            // Bootstrap failure must not access an unfamiliar DB or fetch/write.
-            // The defer above still completes the OS callback with original content.
-            guard store.initializationError == nil else { return }
-            let topicType = Tinode.topicTypeByName(name: topicName)
-            let senderName: String
-            switch topicType {
-            case .p2p:
-                var user = store.userGet(uid: from) as? DefaultUser
-                if user == nil {
-                    // If we don't have the user info, fetch it from the server.
-                    let tinode = SharedUtils.createTinode()
-                    self.log.info("Fetching desc from server for user %@.", from)
-                    if SharedUtils.fetchDesc(using: tinode, for: from) == .newData {
-                        // The above call blocks until the servers replies, but it takes time to sync data to local store. Give the thread 1 second to persist the data.
-                        Thread.sleep(forTimeInterval: 1)
-                        user = store.userGet(uid: from) as? DefaultUser
-                    } else {
-                        self.log.info("No new desc data fetched for %@.", from)
-                    }
-                    tinode.disconnect()
-                }
-                senderName = user?.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing user name")
-                break
-            case .grp:
-                let topic = store.topicGet(from: nil, withName: topicName) as? DefaultComTopic
-                senderName = topic?.pub?.fn ?? NSLocalizedString("Unknown", comment: "Placeholder for missing topic name")
-                break
-            default:
-                return
-            }
-
-            if action == "msg" {
-                bestAttemptContent.title = senderName
-                if topicType == .grp {
-                    bestAttemptContent.body = senderName + ": " + bestAttemptContent.body
-                }
-            } else if action == "sub" {
-                bestAttemptContent.title = NSLocalizedString("CLAW OS", comment: "Push notification title")
-                bestAttemptContent.body = senderName
-            }
-        } else {
-            self.contentHandler!(request.content)
-        }
+        // C2/C3 push payloads have no verified recipient UID; xfrom is sender.
+        // A same-name topic in the active account cannot prove ownership.
+        // Do not log in, read private caches, or display the supplied body here.
+        let safeContent = bestAttemptContent ?? UNMutableNotificationContent()
+        safeContent.title = "CLAW OS"
+        safeContent.subtitle = ""
+        safeContent.body = "收到新消息，打开应用查看"
+        safeContent.attachments = []
+        safeContent.badge = nil
+        self.bestAttemptContent = safeContent
+        contentHandler(safeContent)
+        self.contentHandler = nil
     }
 
     override func serviceExtensionTimeWillExpire() {

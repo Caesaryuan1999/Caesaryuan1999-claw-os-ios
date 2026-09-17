@@ -147,7 +147,7 @@ public class LargeFileHelper: NSObject {
 
     // Called under the owning SDK session gate, before that SDK is retired.
     func invalidateSession() {
-        tinode.withActiveSession {
+        tinode.withSessionLock {
             guard !invalidated else { return }
             invalidated = true
             for upload in activeUploads.values {
@@ -160,6 +160,16 @@ public class LargeFileHelper: NSObject {
             activeUploads.removeAll()
             downloadCallbacks.removeAll()
             urlSession.invalidateAndCancel()
+        }
+    }
+
+    // Capturing/enqueuing is safe while locked; user callbacks run later on main,
+    // without a held SDK lock, and validate the session again at execution.
+    private func deliverOnMain(_ callback: @escaping () -> Void) {
+        let owner = tinode!
+        owner.dispatchIfActive {
+            guard Cache.isCurrent(owner) else { return }
+            callback()
         }
     }
 
@@ -197,7 +207,7 @@ public class LargeFileHelper: NSObject {
             guard !invalidated else { return }
             guard var url = tinode.baseURL(useWebsocketProtocol: false) else {
                 Cache.log.error("Upload failed: unable to form upload url")
-                completionCallback(nil, Upload.UploadError.invalidState("invalid upload url"))
+                deliverOnMain { completionCallback(nil, Upload.UploadError.invalidState("invalid upload url")) }
                 return
             }
             url.appendPathComponent("file/u/")
@@ -241,7 +251,7 @@ public class LargeFileHelper: NSObject {
             do {
                 try newData.write(to: localURL, options: .atomic)
             } catch {
-                completionCallback(nil, error)
+                deliverOnMain { completionCallback(nil, error) }
                 return
             }
 
@@ -251,8 +261,12 @@ public class LargeFileHelper: NSObject {
             upload.topicId = topicId
             upload.msgId = msgId
             upload.filename = filename
-            upload.progressCb = progressCallback
-            upload.finalCb = completionCallback
+            upload.progressCb = { [weak self] value in
+                self?.deliverOnMain { progressCallback?(value) }
+            }
+            upload.finalCb = { [weak self] message, error in
+                self?.deliverOnMain { completionCallback(message, error) }
+            }
             upload.request = request
             upload.localURL = localURL
             activeUploads[uploadKey] = upload
@@ -330,7 +344,9 @@ public class LargeFileHelper: NSObject {
 
             let task = urlSession.downloadTask(with: request)
             if let completion = completion {
-                downloadCallbacks[task.taskIdentifier] = completion
+                downloadCallbacks[task.taskIdentifier] = { [weak self] error in
+                    self?.deliverOnMain { completion(error) }
+                }
             }
             task.resume()
 
@@ -458,7 +474,7 @@ extension LargeFileHelper: URLSessionDownloadDelegate {
             }
             do {
                 try fileManager.moveItem(at: location, to: destinationURL)
-                UiUtils.presentFileSharingVC(for: destinationURL)
+                UiUtils.presentFileSharingVC(for: destinationURL, for: tinode)
             } catch {
                 Cache.log.error("LargeFileHelper - could not copy file to disk: %@", error.localizedDescription)
             }

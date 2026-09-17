@@ -10,6 +10,7 @@ import TinodeSDK
 import UIKit
 
 class ResetPasswordViewController: UITableViewController {
+    private var sessionOwner: Tinode?
     // UI element positions of UI in the table layout.
     private static let kSectionCredentials = 0
     private static let kSectionNewPassword = 1
@@ -29,6 +30,7 @@ class ResetPasswordViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        sessionOwner = Cache.tinode
 
         title = NSLocalizedString("重置密码", comment: "Reset password title")
         view.backgroundColor = ClawTheme.background
@@ -74,9 +76,9 @@ class ResetPasswordViewController: UITableViewController {
         if self.isMovingFromParent {
             // If the user's logged in and is voluntarily leaving the ResetPassword VC
             // by hitting the Back button.
-            let tinode = Cache.tinode
+            guard let tinode = sessionOwner, Cache.isCurrent(tinode) else { return }
             if tinode.isConnectionAuthenticated || tinode.myUid != nil {
-                tinode.logout()
+                Cache.invalidate(ifCurrent: tinode)
             }
         }
     }

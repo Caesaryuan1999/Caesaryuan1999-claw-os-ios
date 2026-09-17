@@ -424,7 +424,8 @@ public class Tinode {
     private let sessionLock = NSRecursiveLock()
     private var sessionClosed = false
 
-    private func withSessionLock<T>(_ body: () throws -> T) rethrows -> T {
+    // Cleanup may run after retirement; normal operations use withActiveSession.
+    public func withSessionLock<T>(_ body: () throws -> T) rethrows -> T {
         sessionLock.lock(); defer { sessionLock.unlock() }
         return try body()
     }
@@ -437,6 +438,15 @@ public class Tinode {
         return try withSessionLock {
             guard !sessionClosed else { return nil }
             return try body()
+        }
+    }
+
+    // Never invoke a consumer while holding the session gate. Consumer callbacks
+    // may synchronously use their UI queue or start another SDK operation.
+    public func dispatchIfActive(on queue: DispatchQueue = .main, _ callback: @escaping () -> Void) {
+        queue.async { [weak self] in
+            guard let self = self, self.isSessionActive else { return }
+            callback()
         }
     }
 
@@ -1577,14 +1587,19 @@ public class Tinode {
     ///   - hard: hard-delete user
     /// - Returns: PromisedReply of the reply ctrl message
     public func delCurrentUser(hard: Bool) -> PromisedReply<ServerMessage> {
+        guard let ownerUid = myUid else { return PromisedReply(error: TinodeError.invalidState("No authenticated account")) }
         let msgId = getNextMsgId()
         let msg = ClientMessage<Int, Int>(del: MsgClientDel(id: msgId, hard: hard))
         return sendWithPromise(payload: msg, with: msgId).thenApply { [weak self] _ in
             guard let this = self else { return nil }
-            this.disconnect()
-            this.store?.deleteAccount(this.myUid!)
-            this.myUid = nil
-            return nil
+            return this.withActiveSession { () -> PromisedReply<ServerMessage>? in
+                guard this.myUid == ownerUid, this.store?.myUid == ownerUid else {
+                    return PromisedReply(error: TinodeError.invalidState("Session changed"))
+                }
+                this.store?.deleteAccount(ownerUid)
+                this.logout()
+                return nil
+            } ?? PromisedReply(error: TinodeError.invalidState("Session ended"))
         }
     }
 

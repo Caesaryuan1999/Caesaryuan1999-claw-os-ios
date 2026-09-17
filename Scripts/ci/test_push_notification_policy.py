@@ -35,8 +35,13 @@ def main() -> None:
     assert "ClawNotificationDiagnostics.redactedToken" in APP_DELEGATE
     assert "ClawNotificationDiagnostics.redactedToken" in UI_UTILS
 
-    # The foreground policy is the native iOS notification banner/list.
-    assert "completionHandler([.badge, .banner, .list, .sound])" in APP_DELEGATE
+    # Unattributed push bodies cannot be displayed as another account's preview.
+    assert "completionHandler([.badge, .banner, .list, .sound])" not in APP_DELEGATE
+    assert 'body: "收到新消息，打开应用查看"' in APP_DELEGATE
+    nse = (ROOT / "TinodiosNSExtension/NotificationService.swift").read_text(encoding="utf-8")
+    assert 'safeContent.body = "收到新消息，打开应用查看"' in nse
+    assert "SharedUtils.fetchDesc" not in nse
+    assert "SharedUtils.connectAndLoginSync" not in APP_DELEGATE
 
     # Release IPA creation must fail closed when Firebase configuration is absent.
     assert "IOS_EXPECTED_APS_ENVIRONMENT: production" in IPA_WORKFLOW

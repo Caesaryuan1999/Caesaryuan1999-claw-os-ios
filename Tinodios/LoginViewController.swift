@@ -432,16 +432,18 @@ class LoginViewController: UIViewController {
             }
             connection
                 .thenApply({ _ in
+                        guard Cache.isCurrent(tinode) else { throw TinodeError.invalidState("Session ended") }
                         return tinode.loginBasic(uname: userName, password: password)
                     })
                 .then(
                     onSuccess: { [weak self] pkt in
+                        return Cache.ifCurrent(tinode) { () -> PromisedReply<ServerMessage>? in
                         guard let uid = tinode.myUid, !uid.isEmpty else {
                             Cache.log.error("LoginVC - login response did not include a user ID")
                             DispatchQueue.main.async {
                                 UiUtils.showToast(message: NSLocalizedString("登录响应缺少账户 ID，请重试", comment: "Missing account ID after login"))
                             }
-                            Cache.invalidate()
+                            Cache.invalidate(ifCurrent: tinode)
                             return nil
                         }
                         Cache.log.info("LoginVC - login successful for %@", uid)
@@ -452,19 +454,25 @@ class LoginViewController: UIViewController {
                         if let ctrl = pkt?.ctrl, ctrl.code >= 300, ctrl.text.contains("validate credentials") {
                             DispatchQueue.main.async {
                                 UiUtils.routeToCredentialsVC(in: self?.navigationController,
-                                                             verifying: ctrl.getStringArray(for: "cred")?.first)
+                                                             verifying: ctrl.getStringArray(for: "cred")?.first, for: tinode)
                             }
                             return nil
                         }
-                        UiUtils.routeToChatListVC()
+                        UiUtils.routeToChatListVC(for: tinode)
                         return nil
+
+                        } ?? nil
                     }, onFailure: { err in
-                        Cache.log.error("LoginVC - login failed: %@", err.localizedDescription)
-                        DispatchQueue.main.async {
-                            UiUtils.showToast(message: ClawAuthErrorMessages.loginMessage(for: err))
-                        }
-                        Cache.invalidate()
-                        return nil
+                        return Cache.ifCurrent(tinode) { () -> PromisedReply<ServerMessage>? in
+                            Cache.log.error("LoginVC - login failed: %@", err.localizedDescription)
+                            Cache.invalidate(ifCurrent: tinode)
+                            let generation = Cache.sessionGeneration
+                            DispatchQueue.main.async {
+                                guard Cache.isLoggedOut(generation: generation) else { return }
+                                UiUtils.showToast(message: ClawAuthErrorMessages.loginMessage(for: err))
+                            }
+                            return nil
+                        } ?? nil
                     }).thenFinally { [weak self] in
                         self?.submissionGate.finish()
                         guard let loginVC = self else { return }
@@ -477,7 +485,7 @@ class LoginViewController: UIViewController {
                 UiUtils.toggleProgressOverlay(in: self, visible: false)
                 Cache.log.error("LoginVC - Failed to connect/login to Tinode: %@", error.localizedDescription)
                 UiUtils.showToast(message: ClawAuthErrorMessages.loginMessage(for: error))
-                tinode.logout()
+                Cache.invalidate(ifCurrent: tinode)
             }
     }
 }

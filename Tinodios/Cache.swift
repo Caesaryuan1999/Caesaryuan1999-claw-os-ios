@@ -27,6 +27,10 @@ class Cache {
 
     static var sessionGeneration: UInt64 { shared.locked { shared.generation } }
 
+    static func isLoggedOut(generation: UInt64) -> Bool {
+        shared.locked { shared.generation == generation && shared.tinodeInstance?.myUid == nil }
+    }
+
     // Lock order is SDK session, then Cache; no callback can act between this
     // identity check and its credential/UI side effect.
     @discardableResult
@@ -65,7 +69,9 @@ class Cache {
             }
         }
         guard expected == nil || current === expected else { return false }
-        return ifCurrent(current) {
+        return current.withSessionLock {
+            shared.locked {
+                guard shared.tinodeInstance === current else { return false }
             SharedUtils.removeAuthToken()
             shared.timer.suspend()
             shared.largeFileHelper?.invalidateSession()
@@ -78,7 +84,8 @@ class Cache {
             // can remove a new account's registration. Old-server unregistration
             // is best effort in the retired SDK; no global delete-token callback.
             return true
-        } ?? false
+            }
+        }
     }
     public static func isContactSynchronizerActive() -> Bool {
         return Cache.shared.timer.state == .resumed
@@ -92,6 +99,11 @@ class Cache {
         Cache.shared.timer.resume()
     }
     private func getTinode() -> Tinode {
+        if let existing = locked({ tinodeInstance }) {
+            if existing.isSessionActive { return existing }
+            Cache.invalidate(ifCurrent: existing)
+            return getTinode()
+        }
         return locked {
             if let existing = tinodeInstance { return existing }
             let store = BaseDb.sharedInstance.sqlStore
@@ -113,14 +125,19 @@ class Cache {
     }
 
     private func getLargeFileHelper(withIdentifier identifier: String?) -> LargeFileHelper {
-        return locked {
-            if let helper = largeFileHelper { return helper }
-            let id = identifier ?? "tinode-\(Date().millisecondsSince1970)"
-            let config = URLSessionConfiguration.background(withIdentifier: id)
-            let helper = LargeFileHelper(with: getTinode(), config: config)
-            largeFileHelper = helper
-            return helper
-        }
+        let owner = getTinode()
+        let result: LargeFileHelper? = owner.withActiveSession {
+            locked {
+                guard tinodeInstance === owner else { return nil }
+                if let helper = largeFileHelper { return helper }
+                let id = identifier ?? "tinode-\(Date().millisecondsSince1970)"
+                let config = URLSessionConfiguration.background(withIdentifier: id)
+                let helper = LargeFileHelper(with: owner, config: config)
+                largeFileHelper = helper
+                return helper
+            }
+        } ?? nil
+        return result ?? getLargeFileHelper(withIdentifier: identifier)
     }
 
     // Blocking network work stays outside both locks. Only the final credential
@@ -128,21 +145,52 @@ class Cache {
     static func connectAndLogin(using tinode: Tinode, inBackground: Bool) -> Bool {
         guard let credentials = ifCurrent(tinode, { () -> (String, String)? in
             guard let name = SharedUtils.getSavedLoginUserName(),
-                  let token = SharedUtils.getAuthToken() else { return nil }
+                  let token = SharedUtils.getAuthToken(), !token.isEmpty,
+                  SharedUtils.getAuthTokenExpiryDate().map({ $0 > Date() }) ?? true else { return nil }
             tinode.setAutoLoginWithToken(token: token)
             return (name, token)
         }) ?? nil else { return false }
         do {
-            let result = try tinode.connectDefault(inBackground: inBackground)?.getResult()
-            guard (result?.ctrl?.code ?? 500) < 300 else { return false }
+            _ = try tinode.connectDefault(inBackground: inBackground)?.getResult()
             return ifCurrent(tinode) {
                 guard tinode.isConnectionAuthenticated, let token = tinode.authToken else { return false }
                 SharedUtils.saveAuthToken(for: credentials.0, token: token, expires: tinode.authTokenExpires)
                 return true
             } ?? false
         } catch {
-            return false
+            if case TinodeError.serverResponseError(let code, _, _) = error, (400..<500).contains(code) {
+                return false
+            }
+            // A network outage does not log out a retained, locally authenticated account.
+            return ifCurrent(tinode) { tinode.myUid != nil && SharedUtils.getAuthToken() != nil } ?? false
         }
+    }
+
+    static func fetchData(using tinode: Tinode, for topicName: String, seq: Int, keepConnection: Bool) -> UIBackgroundFetchResult {
+        guard tinode.isConnectionAuthenticated || connectAndLogin(using: tinode, inBackground: true) else { return .failed }
+        guard let topic = ifCurrent(tinode, { () -> DefaultComTopic? in
+            guard tinode.isConnectionAuthenticated else { return nil }
+            return (tinode.getTopic(topicName: topicName) ?? tinode.newTopic(for: topicName)) as? DefaultComTopic
+        }) ?? nil else { return .failed }
+        if topic.attached || (topic.recv ?? 0) >= seq { return .noData }
+        let get = topic.metaGetBuilder().withDesc().withSub().withLaterData(limit: 10).withDel().build()
+        guard let result = try? topic.subscribe(set: nil, get: get).getResult(),
+              (result.ctrl?.code ?? 500) < 300, isCurrent(tinode) else { return .failed }
+        if !keepConnection {
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
+                ifCurrent(tinode) { if topic.attached { topic.leave() } }
+            }
+        }
+        return .newData
+    }
+
+    static func fetchDesc(using tinode: Tinode, for topicName: String) -> UIBackgroundFetchResult {
+        guard tinode.isConnectionAuthenticated || connectAndLogin(using: tinode, inBackground: true),
+              isCurrent(tinode), tinode.isConnectionAuthenticated else { return .failed }
+        if tinode.isTopicTracked(topicName: topicName) { return .noData }
+        guard let result = try? tinode.getMeta(topic: topicName, query: MsgGetMeta.desc()).getResult(),
+              (result.ctrl?.code ?? 500) < 300, isCurrent(tinode) else { return .failed }
+        return .newData
     }
 
     public static func totalUnreadCount() -> Int {

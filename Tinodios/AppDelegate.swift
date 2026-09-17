@@ -86,12 +86,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         func onDataMessage(data: MsgServerData?) {
             let tinode = Cache.tinode
-            guard let data = data, !tinode.isMe(uid: data.from), let topicName = data.topic else { return }
+            guard tinode.isConnectionAuthenticated, let data = data,
+                  !tinode.isMe(uid: data.from), let topicName = data.topic else { return }
 
             guard let callState = data.webrtcCallState else {
                 guard ClawNotificationPolicy.allowsMessage(topicName: topicName) else { return }
                 DispatchQueue.main.async {
-                    (UIApplication.shared.delegate as? AppDelegate)?.presentSocketMessage(data, topicName: topicName)
+                    Cache.ifCurrent(tinode) {
+                        (UIApplication.shared.delegate as? AppDelegate)?.presentSocketMessage(data, topicName: topicName)
+                    }
                 }
                 return
             }
@@ -141,6 +144,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         SharedUtils.registerUserDefaults()
 
         let baseDb = BaseDb.sharedInstance
+        if SharedUtils.getAuthToken() == nil { baseDb.sqlStore?.logout() }
         if let reason = baseDb.initializationError {
             showLocalStoreBlocked(reason)
             return true
@@ -157,13 +161,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         registerForVoip()
 
-        // Try to connect and login in the background.
+        // Capture the initiating session; an old result cannot log out a new login.
+        let startupSession = Cache.tinode
         DispatchQueue.global(qos: .userInitiated).async {
-            if !SharedUtils.connectAndLoginSync(using: Cache.tinode, inBackground: false) {
-                UiUtils.logoutAndRouteToLoginVC()
+            if !Cache.connectAndLogin(using: startupSession, inBackground: false) {
+                UiUtils.logoutAndRouteToLoginVC(ifCurrent: startupSession)
             }
         }
-        Cache.tinode.addListener(self.callListener)
+        startupSession.addListener(self.callListener)
         DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + .seconds(10)) {
             let reachability = NWPathMonitor()
             reachability.start(queue: DispatchQueue.global(qos: .background))
@@ -201,7 +206,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
-        guard BaseDb.sharedInstance.isStoreAvailable else { completionHandler(); return }
+        guard BaseDb.sharedInstance.isStoreAvailable, SharedUtils.getAuthToken() != nil else { completionHandler(); return }
         backgroundSessionCompletionHandler = completionHandler
         // Instantiate large file helper.
         _ = Cache.getLargeFileHelper(withIdentifier: identifier)
@@ -248,7 +253,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // Application woken up in the background (e.g. for data fetch).
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        guard BaseDb.sharedInstance.isStoreAvailable else { completionHandler(.failed); return }
+        guard BaseDb.sharedInstance.isStoreAvailable, SharedUtils.getAuthToken() != nil else { completionHandler(.failed); return }
+        let tinode = Cache.tinode
         let state = application.applicationState
         let what = userInfo["what"] as? String
         Cache.log.info("Remote notification callback: state=%@ what=%@", String(describing: state), what ?? "msg")
@@ -272,14 +278,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     keepConnection = true
                 }
                 // Fetch data in the background.
-                completionHandler(SharedUtils.fetchData(using: Cache.tinode, for: topicName, seq: seq, keepConnection: keepConnection))
+                completionHandler(Cache.fetchData(using: tinode, for: topicName, seq: seq, keepConnection: keepConnection))
             } else if what == "sub" {
                 // New subscription.
-                completionHandler(SharedUtils.fetchDesc(using: Cache.tinode, for: topicName))
+                completionHandler(Cache.fetchDesc(using: tinode, for: topicName))
             } else if what == "read" {
                 // Read notification.
                 if let seq = Int(userInfo["seq"] as? String ?? ""), seq > 0 {
-                    completionHandler(SharedUtils.updateRead(using: Cache.tinode, for: topicName, seq: seq))
+                    // xfrom identifies a sender, not the receiving account. A push
+                    // cannot advance another account's local read cursor.
+                    completionHandler(.noData)
                 } else {
                     completionHandler(.failed)
                 }
@@ -385,7 +393,8 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     // Notification received. Process it.
     // Called when the app is in the foreground.
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        guard BaseDb.sharedInstance.isStoreAvailable else { completionHandler([]); return }
+        guard BaseDb.sharedInstance.isStoreAvailable, SharedUtils.getAuthToken() != nil else { completionHandler([]); return }
+        let tinode = Cache.tinode
         let userInfo = notification.request.content.userInfo
         let what = userInfo["what"] as? String
         // Only handling "msg" notifications. New subscriptions ("sub" notifications) in the foreground
@@ -411,10 +420,12 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             completionHandler([])
         } else {
             DispatchQueue.global(qos: .background).async {
-                SharedUtils.fetchData(using: Cache.tinode, for: topicName, seq: seq, keepConnection: false)
+                Cache.fetchData(using: tinode, for: topicName, seq: seq, keepConnection: false)
                 DispatchQueue.main.async {
-                    UIApplication.shared.applicationIconBadgeNumber = Cache.totalUnreadCount()
-                    (self.window?.rootViewController as? ClawMainTabBarController)?.refreshMessageBadge()
+                    Cache.ifCurrent(tinode) {
+                        UIApplication.shared.applicationIconBadgeNumber = Cache.totalUnreadCount()
+                        (self.window?.rootViewController as? ClawMainTabBarController)?.refreshMessageBadge()
+                    }
                 }
             }
             // If the push notification is either silent or a video call related, do not present the alert.
@@ -425,8 +436,16 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                 return
             }
 
-            Cache.log.info("Presenting foreground system notification: topic=%@ seq=%d", topicName, seq)
-            completionHandler([.badge, .banner, .list, .sound])
+            // The incoming alert may have bypassed NSE. Never present its private
+            // body without a verified recipient. Socket data has a separate path.
+            if let window = self.window {
+                Cache.ifCurrent(tinode) {
+                    ClawInAppMessageBanner.present(in: window, title: "CLAW OS",
+                        body: "收到新消息，打开应用查看", topicName: topicName,
+                        messageKey: "push-\(topicName)-\(seq)")
+                }
+            }
+            completionHandler([])
         }
     }
 
@@ -444,14 +463,20 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         }
         let tinode = Cache.tinode
         if tinode.isConnectionAuthenticated {
-            UiUtils.routeToMessageVC(forTopic: topicName)
+            if tinode.getTopic(topicName: topicName) != nil { UiUtils.routeToMessageVC(forTopic: topicName) }
+            else { UiUtils.routeToChatListVC(for: tinode) }
             return
         }
         DispatchQueue.global(qos: .userInitiated).async {
-            if !SharedUtils.connectAndLoginSync(using: tinode, inBackground: false) {
-                DispatchQueue.main.async { UiUtils.showToast(message: "Failed to connect to server") }
+            if !Cache.connectAndLogin(using: tinode, inBackground: false) {
+                DispatchQueue.main.async {
+                    Cache.ifCurrent(tinode) { UiUtils.showToast(message: "无法连接服务器，请稍后重试。") }
+                }
             } else {
-                UiUtils.routeToMessageVC(forTopic: topicName)
+                Cache.ifCurrent(tinode) {
+                    if tinode.getTopic(topicName: topicName) != nil { UiUtils.routeToMessageVC(forTopic: topicName) }
+                    else { UiUtils.routeToChatListVC(for: tinode) }
+                }
             }
         }
     }
@@ -618,7 +643,11 @@ extension AppDelegate: MessagingDelegate {
         }
         Cache.log.info("FCM registration succeeded: token=%@ length=%d",
                        ClawNotificationDiagnostics.redactedToken(token), token.count)
-        Cache.tinode.setDeviceToken(token: token)
+        let owner = Cache.tinode
+        Cache.ifCurrent(owner) {
+            guard owner.isConnectionAuthenticated else { return }
+            owner.setDeviceToken(token: token)
+        }
     }
 }
 

@@ -60,6 +60,41 @@ class TinodeSDKTests: XCTestCase {
         XCTAssertNil(sdk.withActiveSession { "stale" })
     }
 
+    func testQueuedConsumerCallbackIsSuppressedAfterSessionRetirement() {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        let queue = DispatchQueue(label: "fixture.consumer")
+        queue.suspend()
+        let stale = expectation(description: "stale callback cannot run")
+        stale.isInverted = true
+        sdk.dispatchIfActive(on: queue) { stale.fulfill() }
+        sdk.logout()
+        queue.resume()
+        wait(for: [stale], timeout: 0.1)
+    }
+
+    func testConsumerCallbackRunsOnMainWithoutHoldingSDKSessionLock() {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        let complete = expectation(description: "consumer and concurrent logout finish")
+        sdk.dispatchIfActive {
+            XCTAssertTrue(Thread.isMainThread)
+            let loggedOut = DispatchSemaphore(value: 0)
+            DispatchQueue.global().async { sdk.logout(); loggedOut.signal() }
+            // Would deadlock/time out if the callback still owned the SDK lock.
+            XCTAssertEqual(loggedOut.wait(timeout: .now() + 2), .success)
+            complete.fulfill()
+        }
+        wait(for: [complete], timeout: 3)
+    }
+
+    func testCleanupBoundaryRemainsAvailableForRetiredSession() {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        sdk.logout()
+        var cleaned = false
+        sdk.withSessionLock { cleaned = true }
+        XCTAssertTrue(cleaned)
+        XCTAssertNil(sdk.withActiveSession { true })
+    }
+
     func testPublishTimeoutNeverReturnsToAutomaticQueue() {
         XCTAssertEqual(PublishFailureDisposition.forError(
             TinodeError.requestOutcomeUnknown("reply timed out")), .unconfirmed)
