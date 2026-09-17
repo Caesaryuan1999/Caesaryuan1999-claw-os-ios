@@ -246,9 +246,10 @@ public class BaseDb {
 
 // C2-L1-20260918 is a local compatibility rule; the wire protocol is unchanged.
 extension BaseDb {
-    enum OpenError: Error { case unsupportedSchema, invalidStructure, invalidMarker }
+    enum OpenError: Error { case unsupportedSchema, invalidStructure, invalidMarker, reentrantInitialization }
 
     enum OpenStage: String {
+        case initializationGate
         case readOnlyOpen, readOnlyBegin, readOnlySchema, readOnlyCommit
         case writableOpen, foreignKeys, migrationBegin, migrationSchema, freshSchema
         case markerCreate, c2Read, c2Quarantine, c2Write, c3Read, c3Quarantine, c3Write
@@ -297,6 +298,7 @@ extension BaseDb {
             case .unsupportedSchema: category = "unsupportedSchema"
             case .invalidStructure: category = "invalidStructure"
             case .invalidMarker: category = "invalidMarker"
+            case .reentrantInitialization: category = "reentrantInitialization"
             }
         }
         return InitializationDiagnostic(stage: stage, category: category, primaryCode: primary, extendedCode: extended)
@@ -389,9 +391,56 @@ extension BaseDb {
     }
 
     // Read-only preflight protects unsupported databases and their WAL from writes.
+    private final class InitializationGate {
+        let lock = NSRecursiveLock()
+        var initializing = false
+    }
+
+    // Gates remain alive for this process. Removing a gate while a waiter holds
+    // it could create two independent locks for the same database.
+    private static let initializationRegistryLock = NSLock()
+    private static var initializationGates: [String: InitializationGate] = [:]
+
+    private static func initializationGate(at path: String) -> InitializationGate {
+        let key = URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath().path
+        initializationRegistryLock.lock()
+        defer { initializationRegistryLock.unlock() }
+        if let gate = initializationGates[key] { return gate }
+        let gate = InitializationGate()
+        initializationGates[key] = gate
+        return gate
+    }
+
+    // Serializes only initialization lifecycles for one canonical path, not
+    // normal transactions or unrelated databases. Also used by native tests.
+    static func withInitializationGate<Value>(at path: String, _ operation: () throws -> Value) throws -> Value {
+        let gate = initializationGate(at: path)
+        gate.lock.lock()
+        defer { gate.lock.unlock() }
+        guard !gate.initializing else { throw OpenError.reentrantInitialization }
+        gate.initializing = true
+        defer { gate.initializing = false }
+        return try operation()
+    }
+
     static func openPreparedDatabase(at path: String,
                                      onFailure: ((InitializationDiagnostic) -> Void)? = nil,
                                      observeStage: ((OpenStage) -> Void)? = nil) throws -> SQLite.Connection {
+        do {
+            return try withInitializationGate(at: path) {
+                try openPreparedDatabaseWithinGate(at: path, onFailure: onFailure, observeStage: observeStage)
+            }
+        } catch {
+            if let known = error as? OpenError, case .reentrantInitialization = known {
+                onFailure?(safeInitializationDiagnostic(error, stage: .initializationGate))
+            }
+            throw error
+        }
+    }
+
+    private static func openPreparedDatabaseWithinGate(at path: String,
+                                     onFailure: ((InitializationDiagnostic) -> Void)?,
+                                     observeStage: ((OpenStage) -> Void)?) throws -> SQLite.Connection {
         var stage = OpenStage.readOnlyOpen
         var failureDiagnostic: InitializationDiagnostic?
         func advance(_ value: OpenStage) {

@@ -1,0 +1,18 @@
+{
+  "baseline": "3c21ce0048108c356bee08e5f7dfdbdf0cde4328",
+  "production_files": [
+    "TinodiosDB/BaseDb.swift"
+  ],
+  "original_open_body_identical": true,
+  "original_prepare_and_validation_identical": true,
+  "sql_constants_identical": true,
+  "original_12_round_test_identical": true,
+  "new_native_methods": 4,
+  "expected_native_total": 152,
+  "runtime_validation": "NOT_RUN",
+  "hashes": {
+    "TinodiosDB/BaseDb.swift": "02a562aeab5fbfd58365ee9e0f853b8e692f8bb0f9538944c8be41f7f1a9e59a",
+    "TinodiosUITests/TinodiosUITests.swift": "471cb4f6dd90359aefa7231c1d0c5f9207c9af369711fd8f2ce930382d6010db",
+    "Scripts/ci/test_db_initialization_gate_policy.py": "8f8ff16f1cd29d5a19c3071201c8a49e586f739b22b67ec25f0b9dccf5c98cb6"
+  }
+}

@@ -440,6 +440,152 @@ final class LocalMigrationTests: XCTestCase {
         }
     }
 
+    func testInitializationGateAllowsDifferentPathsToOpenConcurrently() throws {
+        try withFixture { first, _ in
+            try withFixture { second, _ in
+                let firstEntered = DispatchSemaphore(value: 0)
+                let releaseFirst = DispatchSemaphore(value: 0)
+                let secondCompleted = DispatchSemaphore(value: 0)
+                let group = DispatchGroup()
+                let lock = NSLock()
+                var success = [String: Bool]()
+                var barrierTimedOut = false
+                var diagnostics = [String]()
+                defer { releaseFirst.signal() }
+                group.enter()
+                DispatchQueue.global().async {
+                    defer { group.leave() }
+                    do {
+                        _ = try BaseDb.openPreparedDatabase(at: first.path, onFailure: { value in
+                            lock.lock(); diagnostics.append(value.summary); lock.unlock()
+                        }, observeStage: { stage in
+                            if stage == .readOnlyOpen {
+                                firstEntered.signal()
+                                if releaseFirst.wait(timeout: .now() + 8) != .success {
+                                    lock.lock(); barrierTimedOut = true; lock.unlock()
+                                }
+                            }
+                        })
+                        lock.lock(); success["first"] = true; lock.unlock()
+                    } catch { }
+                }
+                guard firstEntered.wait(timeout: .now() + 3) == .success else {
+                    releaseFirst.signal()
+                    _ = group.wait(timeout: .now() + 5)
+                    return XCTFail("First production initializer did not enter its gate")
+                }
+                group.enter()
+                DispatchQueue.global().async {
+                    defer { secondCompleted.signal(); group.leave() }
+                    do {
+                        _ = try BaseDb.openPreparedDatabase(at: second.path, onFailure: { value in
+                            lock.lock(); diagnostics.append(value.summary); lock.unlock()
+                        })
+                        lock.lock(); success["second"] = true; lock.unlock()
+                    } catch { }
+                }
+                // Only the first path is held. The second must finish before release.
+                let otherPathCompleted = secondCompleted.wait(timeout: .now() + 3) == .success
+                releaseFirst.signal()
+                XCTAssertTrue(group.wait(timeout: .now() + 5) == .success)
+                lock.lock()
+                let opened = success
+                let timedOut = barrierTimedOut
+                let safeDiagnostics = diagnostics.joined(separator: " | ")
+                lock.unlock()
+                XCTAssertTrue(otherPathCompleted, "An unrelated database must not wait for another path's gate")
+                XCTAssertFalse(timedOut)
+                XCTAssertEqual(opened.count, 2, safeDiagnostics)
+            }
+        }
+    }
+
+    func testInitializationGateReleasesAfterOriginalSchemaError() throws {
+        try withFixture { file, database in
+            try database.run("PRAGMA user_version=114")
+            var diagnostic: BaseDb.InitializationDiagnostic?
+            XCTAssertThrowsError(try BaseDb.openPreparedDatabase(at: file.path, onFailure: { diagnostic = $0 })) { error in
+                guard let known = error as? BaseDb.OpenError, case .unsupportedSchema = known else {
+                    return XCTFail("The original schema error must escape unchanged")
+                }
+            }
+            XCTAssertEqual(diagnostic?.category, "unsupportedSchema")
+            XCTAssertEqual(diagnostic?.stage, .readOnlySchema)
+            try database.run("PRAGMA user_version=113")
+            let reopened = try BaseDb.openPreparedDatabase(at: file.path)
+            XCTAssertEqual(try reopened.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 2)
+            XCTAssertEqual(try reopened.scalar("SELECT COUNT(*) FROM messages WHERE status=35") as? Int64, 5)
+        }
+    }
+
+    func testInitializationGateRejectsSameThreadReentryWithoutDeadlock() throws {
+        try withFixture { file, _ in
+            let completed = DispatchSemaphore(value: 0)
+            let lock = NSLock()
+            var rejected = false
+            var outerSucceeded = false
+            var diagnostic: BaseDb.InitializationDiagnostic?
+            DispatchQueue.global().async {
+                defer { completed.signal() }
+                do {
+                    _ = try BaseDb.openPreparedDatabase(at: file.path, observeStage: { stage in
+                        guard stage == .readOnlyOpen else { return }
+                        do {
+                            _ = try BaseDb.openPreparedDatabase(at: file.path, onFailure: { value in
+                                lock.lock(); diagnostic = value; lock.unlock()
+                            })
+                        } catch {
+                            if let known = error as? BaseDb.OpenError, case .reentrantInitialization = known {
+                                lock.lock(); rejected = true; lock.unlock()
+                            }
+                        }
+                    })
+                    lock.lock(); outerSucceeded = true; lock.unlock()
+                } catch { }
+            }
+            XCTAssertTrue(completed.wait(timeout: .now() + 3) == .success,
+                          "Reentrant initialization must fail closed promptly")
+            lock.lock()
+            let nestedRejected = rejected
+            let opened = outerSucceeded
+            let safeDiagnostic = diagnostic
+            lock.unlock()
+            XCTAssertTrue(nestedRejected)
+            XCTAssertTrue(opened)
+            XCTAssertEqual(safeDiagnostic?.stage, .initializationGate)
+            XCTAssertEqual(safeDiagnostic?.category, "reentrantInitialization")
+            // The outer gate must also have reset after its successful return.
+            if opened { _ = try BaseDb.openPreparedDatabase(at: file.path) }
+        }
+    }
+
+    func testInitializationGateCanonicalAliasesUseTheActualSameGate() throws {
+        try withFixture { file, _ in
+            let directory = file.deletingLastPathComponent()
+            let nested = directory.appendingPathComponent("nested", isDirectory: true)
+            try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+            let link = directory.appendingPathComponent("fixture-link.sqlite")
+            try FileManager.default.createSymbolicLink(at: link, withDestinationURL: file)
+            let aliases = [directory.path + "/./" + file.lastPathComponent,
+                           nested.path + "/../" + file.lastPathComponent, link.path]
+            // Running a real open inside the actual gate proves alias identity:
+            // all aliases must hit the reentry guard before SQLite is opened.
+            try BaseDb.withInitializationGate(at: file.path) {
+                for alias in aliases {
+                    XCTAssertThrowsError(try BaseDb.openPreparedDatabase(at: alias)) { error in
+                        guard let known = error as? BaseDb.OpenError, case .reentrantInitialization = known else {
+                            return XCTFail("Canonical alias did not share the initialization gate")
+                        }
+                    }
+                }
+            }
+            for alias in aliases {
+                let opened = try BaseDb.openPreparedDatabase(at: alias)
+                XCTAssertEqual(try opened.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 2)
+            }
+        }
+    }
+
     func testInitializerWaitsForWriterAndSucceedsAfterRelease() throws {
         try withFixture { file, database in
             let writer = try SQLite.Connection(file.path)
