@@ -1102,3 +1102,545 @@ struct ClawMessageNotice: Equatable {
         return String(value[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
     }
 }
+
+
+// AUTH-A1 UIKit/SDK bridge. The Foundation flow owns no global account state.
+final class ClawIdentityCoordinator {
+    let owner: Tinode
+    let flow: ClawIdentityFlow
+    private let current: () -> Bool
+    private let origin: URL
+
+    init(purpose: ClawIdentityPurpose) throws {
+        let owner = Cache.tinode
+        let connection = Tinode.getConnectionParams()
+        guard let apiKey = Cache.ifCurrent(owner, { owner.apiKey }),
+              let origin = URL(string: (connection.1 ? "https://" : "http://") + connection.0 + "/") else {
+            throw ClawIdentityError.unavailable
+        }
+        self.owner = owner
+        self.origin = origin
+        let service = try ClawIdentityService(origin: origin, apiKey: apiKey)
+        let current: () -> Bool = {
+            let configured = Tinode.getConnectionParams()
+            return configured.0 == connection.0 && configured.1 == connection.1 && Cache.isCurrent(owner)
+        }
+        self.current = current
+        flow = ClawIdentityFlow(purpose: purpose, service: service, snapshotIsCurrent: current,
+            loginBridge: { http, completed in
+                guard current() else { completed(.failure(.ended)); return }
+                do {
+                    guard let connected = try owner.connectDefault(inBackground: false) else {
+                        completed(.failure(.unavailable)); return
+                    }
+                    connected.thenApply { _ in
+                        guard current(), owner.hostURL(useWebsocketProtocol: false) == origin else {
+                            throw ClawIdentityError.ended
+                        }
+                        return owner.loginToken(token: http.token)
+                    }.then(onSuccess: { response in
+                        guard current(), let code = response?.ctrl?.code, (200..<300).contains(code),
+                              owner.isConnectionAuthenticated, let uid = owner.myUid,
+                              let token = owner.authToken else {
+                            completed(.failure(.invalidResponse)); return nil
+                        }
+                        completed(.success(ClawIdentitySessionResult(user: uid, token: token,
+                                                                    expires: owner.authTokenExpires)))
+                        return nil
+                    }, onFailure: { _ in
+                        completed(.failure(.unavailable))
+                        return nil
+                    })
+                } catch {
+                    completed(.failure(.unavailable))
+                }
+            },
+            retireSession: { Cache.invalidate(ifCurrent: owner) },
+            commitSession: { session in
+                Cache.ifCurrent(owner) {
+                    guard current(), owner.myUid == session.user, owner.isConnectionAuthenticated else { return false }
+                    SharedUtils.saveAuthToken(for: session.user, token: session.token, expires: session.expires)
+                    owner.setAutoLoginWithToken(token: session.token)
+                    return true
+                } ?? false
+            })
+    }
+
+
+    func loginLegacy(username: String, password: String,
+                     completion: @escaping (Result<ClawIdentitySessionResult, ClawIdentityError>) -> Void) {
+        let owner = owner
+        let current = current
+        let origin = origin
+        flow.loginLegacy(username: username, password: password, bridge: { username, password, completed in
+            do {
+                guard current(), let connected = try owner.connectDefault(inBackground: false) else {
+                    completed(.failure(.ended)); return
+                }
+                connected.thenApply { _ in
+                    guard current(), owner.hostURL(useWebsocketProtocol: false) == origin else {
+                        throw ClawIdentityError.ended
+                    }
+                    return owner.loginBasic(uname: username, password: password)
+                }.then(onSuccess: { response in
+                    guard current(), let code = response?.ctrl?.code else {
+                        completed(.failure(.ended)); return nil
+                    }
+                    guard (200..<300).contains(code) else {
+                        completed(.failure(.legacyRecovery)); return nil
+                    }
+                    guard owner.isConnectionAuthenticated, let uid = owner.myUid, let token = owner.authToken else {
+                        completed(.failure(.invalidResponse)); return nil
+                    }
+                    completed(.success(ClawIdentitySessionResult(user: uid, token: token, expires: owner.authTokenExpires)))
+                    return nil
+                }, onFailure: { _ in
+                    completed(.failure(.server(code: "auth_invalid", retryAfter: nil)))
+                    return nil
+                })
+            } catch { completed(.failure(.unavailable)) }
+        }, completion: completion)
+    }
+
+    deinit { flow.invalidate() }
+}
+
+struct ClawIdentityLegalResources {
+    let terms: URL?
+    let privacy: URL?
+    var available: Bool { terms != nil && privacy != nil }
+
+    // Absent by default. Populate only through reviewed deployment configuration;
+    // no legacy domain or fabricated policy is used as a fallback.
+    static var configured: ClawIdentityLegalResources {
+        func approvedURL(_ key: String) -> URL? {
+            guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+                  let url = URL(string: value), url.scheme == "https",
+                  url.host != nil, url.user == nil, url.password == nil else { return nil }
+            return url
+        }
+        return ClawIdentityLegalResources(terms: approvedURL("CLAWTermsURL"),
+                                          privacy: approvedURL("CLAWPrivacyURL"))
+    }
+}
+
+// Shared form primitives keep the three identity steps readable without changing storyboard routes.
+final class ClawIdentityForm: UIView {
+    let stack = UIStackView()
+    let status = UILabel()
+    private var keyboardObservers: [NSObjectProtocol] = []
+
+    init(title: String, detail: String) {
+        super.init(frame: .zero)
+        backgroundColor = ClawTheme.background
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .vertical
+        stack.spacing = 16
+        addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -24),
+            stack.topAnchor.constraint(equalTo: topAnchor, constant: 32),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -32)
+        ])
+        let heading = label(title, size: 28, weight: .semibold)
+        heading.accessibilityTraits = .header
+        stack.addArrangedSubview(heading)
+        stack.addArrangedSubview(label(detail, size: 16))
+        status.font = ClawTheme.font(13, style: .footnote)
+        status.adjustsFontForContentSizeCategory = true
+        status.numberOfLines = 0
+        status.textColor = ClawTheme.muted
+        status.accessibilityTraits = .updatesFrequently
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+    deinit { keyboardObservers.forEach { NotificationCenter.default.removeObserver($0) } }
+
+    func label(_ text: String, size: CGFloat = 13, weight: UIFont.Weight = .regular) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.font = ClawTheme.font(size, weight: weight)
+        label.adjustsFontForContentSizeCategory = true
+        label.numberOfLines = 0
+        label.textColor = size >= 20 ? ClawTheme.ink : ClawTheme.muted
+        return label
+    }
+    func field(_ title: String, secure: Bool = false) -> UITextField {
+        stack.addArrangedSubview(label(title))
+        let field = UITextField()
+        field.placeholder = title
+        field.accessibilityLabel = title
+        field.font = ClawTheme.font(16)
+        field.adjustsFontForContentSizeCategory = true
+        field.autocorrectionType = .no
+        field.autocapitalizationType = .none
+        field.isSecureTextEntry = secure
+        field.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
+        ClawTheme.styleTextField(field)
+        if secure { field.textContentType = .newPassword; field.showSecureEntrySwitch() }
+        stack.addArrangedSubview(field)
+        return field
+    }
+    func button(_ title: String, target: Any, action: Selector, primary: Bool = true) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.titleLabel?.numberOfLines = 0
+        button.titleLabel?.textAlignment = .center
+        button.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
+        if primary { ClawTheme.stylePrimaryButton(button) } else { ClawTheme.styleSecondaryButton(button) }
+        button.addTarget(target, action: action, for: .touchUpInside)
+        stack.addArrangedSubview(button)
+        return button
+    }
+    func finish() { stack.addArrangedSubview(status) }
+    func setField(_ field: UITextField, visible: Bool) {
+        field.isHidden = !visible
+        if let index = stack.arrangedSubviews.firstIndex(of: field), index > 0 {
+            stack.arrangedSubviews[index - 1].isHidden = !visible
+        }
+    }
+    func fit(in table: UITableView) {
+        let width = table.bounds.width
+        guard width > 0 else { return }
+        let height = ceil(systemLayoutSizeFitting(CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel).height)
+        if table.tableHeaderView !== self || abs(frame.width - width) > 0.5 || abs(frame.height - height) > 0.5 {
+            frame = CGRect(x: 0, y: 0, width: width, height: height)
+            table.tableHeaderView = self
+        }
+    }
+    func install(in controller: UIViewController) {
+        controller.view.subviews.forEach { $0.isHidden = true }
+        let scroll = UIScrollView()
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        scroll.keyboardDismissMode = .interactive
+        scroll.backgroundColor = ClawTheme.background
+        controller.view.addSubview(scroll)
+        translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(self)
+        let bottom: NSLayoutYAxisAnchor
+        if #available(iOS 15.0, *) {
+            bottom = controller.view.keyboardLayoutGuide.topAnchor
+        } else {
+            bottom = controller.view.safeAreaLayoutGuide.bottomAnchor
+            for name in [UIResponder.keyboardWillChangeFrameNotification, UIResponder.keyboardWillHideNotification] {
+                keyboardObservers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak scroll] note in
+                    guard let scroll = scroll, scroll.window != nil else { return }
+                    let frame = (note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue ?? .zero
+                    let inset = note.name == UIResponder.keyboardWillHideNotification ? 0
+                        : max(0, scroll.bounds.maxY - scroll.convert(frame, from: nil).minY)
+                    scroll.contentInset.bottom = inset
+                    scroll.verticalScrollIndicatorInsets.bottom = inset
+                })
+            }
+        }
+        NSLayoutConstraint.activate([
+            scroll.topAnchor.constraint(equalTo: controller.view.safeAreaLayoutGuide.topAnchor),
+            scroll.leadingAnchor.constraint(equalTo: controller.view.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor),
+            scroll.bottomAnchor.constraint(equalTo: bottom),
+            leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor)
+        ])
+    }
+}
+
+
+class ClawIdentityEntryController: UITableViewController {
+    var identityPurpose: ClawIdentityPurpose { .register }
+    private var coordinator: ClawIdentityCoordinator?
+    private var form: ClawIdentityForm!
+    private let methodPicker = UISegmentedControl(items: ["手机号", "邮箱"])
+    private var country: UITextField!
+    private var identifier: UITextField!
+    private var submit: UIButton!
+    private var consent: UIButton?
+    private var termsAccepted = false
+    private let legal = ClawIdentityLegalResources.configured
+    private var timer: Timer?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = identityPurpose == .register ? "创建账号" : "找回密码"
+        form = ClawIdentityForm(title: title ?? "", detail: identityPurpose == .register
+            ? "先验证手机号或邮箱，再设置密码。" : "验证已绑定的手机号或邮箱后，重新设置密码。")
+        tableView.backgroundColor = ClawTheme.background
+        tableView.separatorStyle = .none
+        tableView.keyboardDismissMode = .interactive
+        methodPicker.selectedSegmentIndex = 0
+        methodPicker.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        methodPicker.addTarget(self, action: #selector(methodChanged), for: .valueChanged)
+        form.stack.addArrangedSubview(methodPicker)
+        country = form.field("国家码")
+        country.text = "+86"
+        country.keyboardType = .phonePad
+        identifier = form.field("手机号")
+        identifier.textContentType = .telephoneNumber
+        identifier.keyboardType = .phonePad
+        if identityPurpose == .register {
+            consent = form.button("我已阅读并同意服务条款和隐私政策", target: self, action: #selector(toggleConsent), primary: false)
+            consent?.setImage(ClawTheme.symbol("square", pointSize: 20), for: .normal)
+            _ = form.button(legal.terms == nil ? "服务条款未配置" : "查看服务条款",
+                            target: self, action: #selector(openTerms), primary: false)
+            _ = form.button(legal.privacy == nil ? "隐私政策未配置" : "查看隐私政策",
+                            target: self, action: #selector(openPrivacy), primary: false)
+        }
+        submit = form.button("获取验证码", target: self, action: #selector(requestCodeFromForm))
+        submit.accessibilityIdentifier = "claw.identity.challenge"
+        _ = form.button("重新开始", target: self, action: #selector(restartIdentity), primary: false)
+        form.finish()
+        form.fit(in: tableView)
+        UiUtils.dismissKeyboardForTaps(onView: view)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+        if coordinator?.flow.isCurrent != true { prepareIdentity() }
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.refreshControls() }
+    }
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        timer?.invalidate()
+        if isMovingFromParent || isBeingDismissed || navigationController?.isBeingDismissed == true {
+            coordinator?.flow.invalidate()
+        }
+    }
+    override func viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); form?.fit(in: tableView) }
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat { .leastNonzeroMagnitude }
+    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat { .leastNonzeroMagnitude }
+    override func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat { .leastNonzeroMagnitude }
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? { nil }
+    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? { nil }
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        cell.accessibilityElementsHidden = true
+        return cell
+    }
+    deinit { timer?.invalidate() }
+
+    private var selectedMethod: ClawIdentityMethod { methodPicker.selectedSegmentIndex == 0 ? .tel : .email }
+
+    private func prepareIdentity() {
+        submit.isEnabled = false
+        form.status.text = "正在检查身份服务…"
+        do {
+            let coordinator = try ClawIdentityCoordinator(purpose: identityPurpose)
+            self.coordinator = coordinator
+            coordinator.flow.prepare { [weak self, weak coordinator] result in
+                guard let self = self, let coordinator = coordinator, self.coordinator === coordinator else { return }
+                switch result {
+                case let .success(capabilities):
+                    self.methodPicker.setEnabled(capabilities.methods.tel, forSegmentAt: 0)
+                    self.methodPicker.setEnabled(capabilities.methods.email, forSegmentAt: 1)
+                    if !capabilities.canDeliver(self.selectedMethod) {
+                        self.methodPicker.selectedSegmentIndex = capabilities.methods.email ? 1 : 0
+                    }
+                    self.methodChanged()
+                    self.form.status.text = capabilities.test_mode
+                        ? "测试环境：验证码提交不代表真实短信或邮件投递。"
+                        : "验证码提交后仍需等待短信或邮件到达。"
+                    if !capabilities.methods.tel && !capabilities.methods.email {
+                        self.form.status.text = "验证码服务暂不可用，请稍后再试。"
+                    }
+                    if self.identityPurpose == .register && !self.legal.available {
+                        self.form.status.text = "服务条款和隐私政策尚未配置，当前暂不可注册。"
+                    }
+                case let .failure(error): self.form.status.text = error.message
+                }
+                self.refreshControls()
+            }
+        } catch { form.status.text = ClawIdentityError.unavailable.message }
+    }
+
+    @objc private func methodChanged() {
+        let phone = selectedMethod == .tel
+        form.setField(country, visible: phone)
+        identifier.placeholder = phone ? "手机号" : "邮箱"
+        identifier.accessibilityLabel = phone ? "手机号" : "邮箱"
+        identifier.keyboardType = phone ? .phonePad : .emailAddress
+        identifier.textContentType = phone ? .telephoneNumber : .emailAddress
+        if let index = form.stack.arrangedSubviews.firstIndex(of: identifier), index > 0 {
+            (form.stack.arrangedSubviews[index - 1] as? UILabel)?.text = phone ? "手机号" : "邮箱"
+        }
+        refreshControls()
+        view.setNeedsLayout()
+    }
+
+    @objc private func toggleConsent() {
+        guard legal.available else { form.status.text = "服务条款和隐私政策尚未配置，当前暂不可注册。"; return }
+        termsAccepted.toggle()
+        consent?.setImage(ClawTheme.symbol(termsAccepted ? "checkmark.square.fill" : "square", pointSize: 20), for: .normal)
+        consent?.accessibilityValue = termsAccepted ? "已勾选" : "未勾选"
+        refreshControls()
+    }
+    @objc private func openTerms() { openLegal(legal.terms) }
+    @objc private func openPrivacy() { openLegal(legal.privacy) }
+    private func openLegal(_ url: URL?) {
+        guard let url = url else { form.status.text = "尚未提供已核实的法律资源，当前无法查看。"; return }
+        UIApplication.shared.open(url)
+    }
+    @objc private func restartIdentity() {
+        coordinator?.flow.invalidate()
+        coordinator = nil
+        termsAccepted = false
+        consent?.setImage(ClawTheme.symbol("square", pointSize: 20), for: .normal)
+        prepareIdentity()
+    }
+
+    private func refreshControls() {
+        guard let flow = coordinator?.flow else { submit?.isEnabled = false; return }
+        let pending = flow.pendingChallenge != nil
+        let legalOK = identityPurpose != .register || (legal.available && termsAccepted)
+        submit.isEnabled = flow.isCurrent && !flow.busy && legalOK
+            && flow.capabilities?.canDeliver(selectedMethod) == true && (pending || flow.retrySeconds == 0)
+        submit.setTitle(flow.busy ? "正在提交…" : pending ? "重试确认请求" :
+            flow.retrySeconds > 0 ? "\(flow.retrySeconds) 秒后重新获取" : "获取验证码", for: .normal)
+        methodPicker.isEnabled = !flow.busy && !pending
+        identifier.isEnabled = !flow.busy && !pending
+        country.isEnabled = !flow.busy && !pending
+        consent?.isEnabled = !flow.busy && legal.available
+    }
+
+    @objc func requestCodeFromForm() {
+        guard let coordinator = coordinator else { prepareIdentity(); return }
+        coordinator.flow.requestCode(method: selectedMethod, input: identifier.text ?? "",
+            countryCode: country.text ?? "+86", legalResourcesAvailable: legal.available, termsAccepted: termsAccepted) { [weak self, weak coordinator] result in
+                guard let self = self, let coordinator = coordinator, self.coordinator === coordinator else { return }
+                switch result {
+                case .success:
+                    let next = CredentialsViewController()
+                    next.identityCoordinator = coordinator
+                    next.identityLegalAccepted = self.termsAccepted && self.legal.available
+                    self.navigationController?.pushViewController(next, animated: true)
+                case let .failure(error): self.form.status.text = error.message
+                }
+                self.refreshControls()
+            }
+        refreshControls()
+    }
+}
+
+final class ClawSetIdentityPasswordViewController: UIViewController {
+    let coordinator: ClawIdentityCoordinator
+    private var form: ClawIdentityForm!
+    private var password: UITextField!
+    private var confirmation: UITextField!
+    private var submit: UIButton!
+    private var reverify: UIButton!
+    private var timer: Timer?
+
+    init(coordinator: ClawIdentityCoordinator) {
+        self.coordinator = coordinator
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = coordinator.flow.purpose == .register ? "设置密码" : "重置密码"
+        view.backgroundColor = ClawTheme.background
+        form = ClawIdentityForm(title: title ?? "", detail: "12–64 位英文字母、数字或符号，不含空格。请妥善保存密码。")
+        password = form.field("新密码", secure: true)
+        confirmation = form.field("再次输入新密码", secure: true)
+        submit = form.button("确认设置", target: self, action: #selector(savePassword))
+        reverify = form.button("重新验证身份", target: self, action: #selector(startAgain), primary: false)
+        _ = form.button("返回登录", target: self, action: #selector(returnToLogin), primary: false)
+        form.finish()
+        form.install(in: self)
+        UiUtils.dismissKeyboardForTaps(onView: view)
+        refresh()
+    }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.refresh() }
+    }
+    deinit { timer?.invalidate() }
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        timer?.invalidate()
+        if isMovingFromParent || isBeingDismissed || navigationController?.isBeingDismissed == true {
+            password.text = nil
+            confirmation.text = nil
+            coordinator.flow.invalidate()
+        }
+    }
+    private func refresh() {
+        let flow = coordinator.flow
+        let frozen = flow.pendingPassword != nil
+        password.isEnabled = !flow.busy && !frozen && flow.registeredUser == nil
+        confirmation.isEnabled = password.isEnabled
+        let retry = flow.registeredUser == nil ? flow.mutationRetrySeconds : flow.loginRetrySeconds
+        submit.isEnabled = flow.isCurrent && !flow.busy && retry == 0
+            && (flow.canSetPassword || frozen || flow.registeredUser != nil)
+        submit.setTitle(flow.busy ? "正在处理…" : retry > 0 ? "\(retry) 秒后重试" : flow.registeredUser != nil ? "继续登录" :
+            frozen ? "重试确认结果" : "确认设置", for: .normal)
+        reverify.isEnabled = !flow.busy
+        if flow.isCurrent && !flow.busy && !flow.canSetPassword && !frozen && flow.registeredUser == nil {
+            form.status.text = "身份验证已失效，请点击“重新验证身份”。"
+        }
+    }
+    @objc private func savePassword() {
+        let flow = coordinator.flow
+        let value = password.text ?? ""
+        guard value == confirmation.text else { form.status.text = "两次输入的密码不一致"; return }
+        if flow.registeredUser != nil { loginRegistered(password: value); return }
+        flow.setPassword(value) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success(.registered):
+                self.form.status.text = "账号已创建，正在登录…"
+                self.loginRegistered(password: value)
+            case .success(.reset):
+                self.password.text = nil
+                self.confirmation.text = nil
+                self.coordinator.flow.invalidate()
+                self.navigationController?.popToRootViewController(animated: true)
+                UiUtils.showToast(message: "密码已重置，请重新登录")
+            case let .failure(error):
+                self.form.status.text = error.message
+                if flow.pendingPassword != nil {
+                    self.form.status.text = "提交结果未确认。请保持内容不变，点击“重试确认结果”。"
+                }
+            }
+            self.refresh()
+        }
+        refresh()
+    }
+    private func loginRegistered(password: String) {
+        let flow = coordinator.flow
+        guard let method = flow.method, let value = flow.value else { startAgain(); return }
+        flow.login(method: method, input: value, password: password) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success:
+                self.password.text = nil
+                self.confirmation.text = nil
+                UiUtils.routeToChatListVC(for: self.coordinator.owner)
+            case let .failure(error):
+                self.form.status.text = "注册已完成，暂时无法登录。\(error.message)；也可返回登录页重新登录。"
+            }
+            self.refresh()
+        }
+        refresh()
+    }
+    @objc private func returnToLogin() {
+        password.text = nil
+        confirmation.text = nil
+        coordinator.flow.invalidate()
+        navigationController?.popToRootViewController(animated: true)
+    }
+    @objc private func startAgain() {
+        password.text = nil
+        confirmation.text = nil
+        coordinator.flow.invalidate()
+        if let entry = navigationController?.viewControllers.first(where: { $0 is ClawIdentityEntryController }) {
+            navigationController?.popToViewController(entry, animated: true)
+        } else { navigationController?.popToRootViewController(animated: true) }
+    }
+}

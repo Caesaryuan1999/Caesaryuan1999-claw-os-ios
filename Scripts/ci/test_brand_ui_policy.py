@@ -94,17 +94,15 @@ def main() -> None:
     assert "ClawTheme.applyGlobalAppearance()" in app_delegate
 
     login = LOGIN.read_text(encoding="utf-8")
-    assert "ClawTheme.styleTextField(userNameTextEdit)" in login
-    assert "ClawTheme.styleTextField(passwordTextEdit)" in login
-    assert "ClawTheme.stylePrimaryButton(loginButton)" in login
-    assert "self.view.backgroundColor = ClawTheme.surface" in login
-    assert "self.scrollView.backgroundColor = ClawTheme.surface" in login
-
+    assert 'ClawIdentityForm(title: "登录 CLAW OS"' in login
+    assert 'UIImage(named: "logo-ios")' in login
+    assert "view.backgroundColor = ClawTheme.background" in login
+    assert "form.install(in: self)" in login
     signup = SIGNUP.read_text(encoding="utf-8")
-    assert "ClawTheme.stylePrimaryButton(signUpButton)" in signup
-    assert "ClawTheme.styleTextField(loginTextField)" in signup
-    assert "ClawTheme.styleTextField(passwordTextField)" in signup
-    assert "ClawTheme.styleTextField(emailTextField)" in signup
+    assert "SignupViewController: ClawIdentityEntryController" in signup
+    assert "ClawTheme.styleTextField(field)" in utils
+    assert "ClawTheme.stylePrimaryButton(button)" in utils
+    assert "ClawTheme.font(16)" in utils
 
     chat_list = CHAT_LIST.read_text(encoding="utf-8")
     assert "Cache.tinode.getFilteredTopics" in chat_list

@@ -1,140 +1,15 @@
-//
-//  ResetPasswordViewController.swift
-//  Tinodios
-//
-//  Copyright © 2019-2025 Tinode. All rights reserved.
-//
-
-import PhoneNumberKit
-import TinodeSDK
 import UIKit
+import PhoneNumberKit
 
-class ResetPasswordViewController: UITableViewController {
-    private var sessionOwner: Tinode?
-    // UI element positions of UI in the table layout.
-    private static let kSectionCredentials = 0
-    private static let kSectionNewPassword = 1
-    private static let kMethodEmail = 1
-    private static let kMethodTel = 2
-    private static let kRequestCodeButton = 3
-    private static let kIHaveCodeButton = 4
-
+class ResetPasswordViewController: ClawIdentityEntryController {
+    override var identityPurpose: ClawIdentityPurpose { .reset }
     @IBOutlet weak var promptLabel: UILabel!
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var telTextField: PhoneNumberTextField!
     @IBOutlet weak var confirmationCodeTextField: UITextField!
     @IBOutlet weak var newPasswordTextField: UITextField!
 
-    private var passwordVisible = false
-    private var passwordChangeSectionVisible = true
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        sessionOwner = Cache.tinode
-
-        title = NSLocalizedString("重置密码", comment: "Reset password title")
-        view.backgroundColor = ClawTheme.background
-        ClawTheme.styleList(tableView, rowHeight: UITableView.automaticDimension)
-        [emailTextField, telTextField, confirmationCodeTextField, newPasswordTextField].forEach {
-            ClawTheme.styleTextField($0)
-        }
-        promptLabel.textColor = ClawTheme.muted
-
-        // Listen to text change events to clear the possible error from earlier attempt.
-        emailTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
-        telTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
-        confirmationCodeTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
-        newPasswordTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: UIControl.Event.editingChanged)
-
-        promptLabel.text = NSLocalizedString("在补齐额外身份验证前，暂不开放自助找回密码。请联系支持人员恢复账号。", comment: "Secure password recovery unavailable")
-        emailTextField.placeholder = NSLocalizedString("账号名", comment: "Password reset account name placeholder")
-        emailTextField.autocapitalizationType = .none
-        emailTextField.autocorrectionType = .no
-        emailTextField.textContentType = .username
-        telTextField.placeholder = NSLocalizedString("ID", comment: "Password reset private user id placeholder")
-        telTextField.keyboardType = .asciiCapable
-        telTextField.autocapitalizationType = .none
-        telTextField.autocorrectionType = .no
-        telTextField.withFlag = false
-        telTextField.withPrefix = false
-        telTextField.withExamplePlaceholder = false
-        telTextField.withDefaultPickerUI = false
-        confirmationCodeTextField.placeholder = NSLocalizedString("再次输入新密码", comment: "Confirm new password placeholder")
-        confirmationCodeTextField.isSecureTextEntry = true
-        confirmationCodeTextField.keyboardType = .default
-        confirmationCodeTextField.textContentType = .newPassword
-        newPasswordTextField.placeholder = NSLocalizedString("新密码", comment: "New password placeholder")
-        newPasswordTextField.textContentType = .newPassword
-
-        newPasswordTextField.showSecureEntrySwitch()
-
-        UiUtils.dismissKeyboardForTaps(onView: self.view)
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        if self.isMovingFromParent {
-            // If the user's logged in and is voluntarily leaving the ResetPassword VC
-            // by hitting the Back button.
-            guard let tinode = sessionOwner, Cache.isCurrent(tinode) else { return }
-            if tinode.isConnectionAuthenticated || tinode.myUid != nil {
-                Cache.invalidate(ifCurrent: tinode)
-            }
-        }
-    }
-
-    override func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        if section == ResetPasswordViewController.kSectionNewPassword {
-            return CGFloat.leastNonzeroMagnitude
-        }
-        return super.tableView(tableView, heightForHeaderInSection: section)
-    }
-
-    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        if section == ResetPasswordViewController.kSectionNewPassword {
-            return nil
-        }
-        return super.tableView(tableView, titleForHeaderInSection: section)
-    }
-
-    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        // Show only required credential fields.
-        switch indexPath.section {
-        case ResetPasswordViewController.kSectionCredentials:
-            if indexPath.row != 0 {
-                return CGFloat.leastNonzeroMagnitude
-            }
-        case ResetPasswordViewController.kSectionNewPassword:
-            return CGFloat.leastNonzeroMagnitude
-        default:
-            break
-        }
-        return super.tableView(tableView, heightForRowAt: indexPath)
-    }
-
-    private func configurePageHeader() {
-        DispatchQueue.main.async {
-            self.promptLabel.text = NSLocalizedString("在补齐额外身份验证前，暂不开放自助找回密码。请联系支持人员恢复账号。", comment: "Secure password recovery unavailable")
-        }
-    }
-
-    @objc func textFieldDidChange(_ textField: UITextField) {
-        textField.clearErrorSign()
-    }
-
-    @IBAction func haveCodeClicked(_ sender: Any) {
-        self.tableView.reloadData()
-    }
-
-    private func validateCredential(forMethod method: String) -> String? {
-        return nil
-    }
-
-    @IBAction func requestCodeClicked(_ sender: Any) {
-        confirmCodeClicked(sender)
-    }
-
-    @IBAction func confirmCodeClicked(_ sender: Any) {
-        UiUtils.showToast(message: NSLocalizedString("在补齐额外身份验证前，暂不开放自助找回密码。请联系支持人员恢复账号。", comment: "Secure password recovery unavailable"))
-    }
+    @IBAction func haveCodeClicked(_ sender: Any) { requestCodeFromForm() }
+    @IBAction func requestCodeClicked(_ sender: Any) { requestCodeFromForm() }
+    @IBAction func confirmCodeClicked(_ sender: Any) { requestCodeFromForm() }
 }

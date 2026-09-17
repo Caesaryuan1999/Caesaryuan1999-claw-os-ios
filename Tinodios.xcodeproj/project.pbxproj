@@ -141,6 +141,11 @@
 		B0F2F0C929DA295900100B24 /* MessageViewController+MessageDisplayLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0F2F0C829DA295900100B24 /* MessageViewController+MessageDisplayLogic.swift */; };
 		B0F98C8322E381C300444121 /* MessageMenuItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0F98C8222E381C300444121 /* MessageMenuItem.swift */; };
 		FA37AD24238B0D6F00301261 /* KeyboardInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA37AD23238B0D6F00301261 /* KeyboardInfo.swift */; };
+		C1A0A0022026091800000001 /* ClawIdentityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0A0012026091800000001 /* ClawIdentityService.swift */; };
+		C1A0A0022026091800000002 /* ClawIdentityFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0A0012026091800000002 /* ClawIdentityFlow.swift */; };
+		C1A0A0022026091800000003 /* ClawIdentityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0A0012026091800000001 /* ClawIdentityService.swift */; };
+		C1A0A0022026091800000004 /* ClawIdentityFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0A0012026091800000002 /* ClawIdentityFlow.swift */; };
+		C1A0A0022026091800000005 /* IdentityFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0A0012026091800000003 /* IdentityFlowTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -369,6 +374,9 @@
 		B33FA5FDB8E984980BADDAB2 /* Pods-TinodiosUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TinodiosUITests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-TinodiosUITests/Pods-TinodiosUITests.debug.xcconfig"; sourceTree = "<group>"; };
 		B36DC000235D850000724348 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/LaunchScreen.strings"; sourceTree = "<group>"; };
 		FA37AD23238B0D6F00301261 /* KeyboardInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardInfo.swift; sourceTree = "<group>"; };
+		C1A0A0012026091800000001 /* ClawIdentityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawIdentityService.swift; sourceTree = "<group>"; };
+		C1A0A0012026091800000002 /* ClawIdentityFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawIdentityFlow.swift; sourceTree = "<group>"; };
+		C1A0A0012026091800000003 /* IdentityFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityFlowTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -490,6 +498,8 @@
 				B0BE302A27B8A3B600B04631 /* TopicSecurityViewController.swift */,
 				0AEE8BED226456080022EC3F /* UiUtils.swift */,
 				0A35BA9F2283A37500AA5E2F /* Utils.swift */,
+				C1A0A0012026091800000001 /* ClawIdentityService.swift */,
+				C1A0A0012026091800000002 /* ClawIdentityFlow.swift */,
 				0A4BD27029568B8E00493A04 /* VideoPreviewController.swift */,
 				0A0380DB21B3CC8100A3FA0E /* Main.storyboard */,
 				B0BC2B5B235E0DB800BEEB4B /* Tinodios.entitlements */,
@@ -536,6 +546,7 @@
 			children = (
 				0A3EECCC28DA0EEF00313C35 /* TinodiosUITests.entitlements */,
 				0AE21E4D28D21849008F486C /* TinodiosUITests.swift */,
+				C1A0A0012026091800000003 /* IdentityFlowTests.swift */,
 				0AE21E4F28D21849008F486C /* TinodiosUITestsLaunchTests.swift */,
 			);
 			path = TinodiosUITests;
@@ -1065,6 +1076,8 @@
 				B0A612B72294289000569DFE /* MessageViewController+SendMessageBarDelegate.swift in Sources */,
 				B0BA208523D5D8CF00C59BD4 /* FilePreviewController.swift in Sources */,
 				0A35BAA02283A37500AA5E2F /* Utils.swift in Sources */,
+				C1A0A0022026091800000001 /* ClawIdentityService.swift in Sources */,
+				C1A0A0022026091800000002 /* ClawIdentityFlow.swift in Sources */,
 				B0A612B3228EDC7B00569DFE /* ButtonAttachment.swift in Sources */,
 				0ADDBC8B2249F617000BD00D /* ChatListViewCell.swift in Sources */,
 				0A4B11FE2373DC1400199310 /* TagsEditDialogView.swift in Sources */,
@@ -1104,6 +1117,9 @@
 			files = (
 				0AE21E5028D21849008F486C /* TinodiosUITestsLaunchTests.swift in Sources */,
 				0AE21E4E28D21849008F486C /* TinodiosUITests.swift in Sources */,
+				C1A0A0022026091800000003 /* ClawIdentityService.swift in Sources */,
+				C1A0A0022026091800000004 /* ClawIdentityFlow.swift in Sources */,
+				C1A0A0022026091800000005 /* IdentityFlowTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

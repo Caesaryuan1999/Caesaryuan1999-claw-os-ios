@@ -17,6 +17,13 @@ result_dir="$repo_dir/build/ios-01-a-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$result_dir"
 python3 -B Scripts/ci/run_static_policies.py --report "$result_dir/static.json"
 pod install
+python3 - <<'PY'
+import pathlib, plistlib
+path = pathlib.Path("Tinodios/Settings.bundle/Acknowledgements.plist")
+with path.open("rb") as stream:
+    value = plistlib.load(stream)
+assert isinstance(value.get("PreferenceSpecifiers"), list), "CocoaPods license resource is invalid"
+PY
 
 # Existing Firebase policy rejects this non-production fixture for real push/release.
 created_fixture=false
@@ -60,6 +67,15 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -derivedDataPath "$result_dir/DerivedData" -resultBundlePath "$result_dir/storage.xcresult" \
   -only-testing:TinodiosUITests/PublishStorageTests \
   -only-testing:TinodiosUITests/LocalMigrationTests \
+  -only-testing:TinodiosUITests/IdentityFlowTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
+python3 - "$result_dir" <<'PY'
+import pathlib, plistlib, sys
+path = pathlib.Path(sys.argv[1]) / "DerivedData/Build/Products/Debug-iphonesimulator/Tinodios.app/Settings.bundle/Acknowledgements.plist"
+with path.open("rb") as stream:
+    value = plistlib.load(stream)
+assert isinstance(value.get("PreferenceSpecifiers"), list), "Bundled license resource is invalid"
+print("Bundled CocoaPods license resource parsed")
+PY
 echo "Simulator results: $result_dir (physical device, APNs and real server not tested)"

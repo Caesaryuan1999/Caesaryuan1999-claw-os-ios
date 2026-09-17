@@ -24,30 +24,28 @@ def main() -> None:
     assert "enum ClawAuthFormValidation" in utils
     assert "enum ClawAuthErrorMessages" in utils
     assert "final class ClawSubmissionGate" in utils
-    assert "validateLogin" in login and "submissionGate.begin()" in login
-    assert "submissionGate.finish()" in login
-    assert "guard let connection = try tinode.connectDefault" in login
-    assert "ClawAuthErrorMessages.loginMessage" in login
-    assert '"CLAW OS: \\(tinodeErr.description)"' not in login
-    assert "validateSignUp" in signup and "submissionGate.begin()" in signup
-    assert "submissionGate.finish()" in signup
-    assert "guard let connection = try tinode.connectDefault" in signup
-    for source in [login, signup]:
-        assert "let tinode = Cache.tinode" in source
-        assert "Cache.ifCurrent(tinode)" in source
-        assert "routeToChatListVC(for: tinode)" in source
-    assert "ClawAuthErrorMessages.signUpMessage" in signup
-    assert 'NSLocalizedString("注册失败：%@"' not in signup
-    for marker in [
-        "installPremiumSignupLayout()",
-        "termsAccepted",
-        "UIPasteboard.general.string",
-        "account.heightAnchor.constraint(equalToConstant: 58)",
-        "password.heightAnchor.constraint(equalToConstant: 58)",
-        "invite.heightAnchor.constraint(equalToConstant: 58)",
-        "submit.heightAnchor.constraint(equalToConstant: 54)",
-    ]:
-        assert marker in signup, f"missing Figma signup contract: {marker}"
+    flow = (ROOT / "Tinodios/ClawIdentityFlow.swift").read_text(encoding="utf-8")
+    service = (ROOT / "Tinodios/ClawIdentityService.swift").read_text(encoding="utf-8")
+    assert "validateLogin" in login and "current.loginLegacy(" in login
+    assert "ClawAuthInput.passwordForSubmit" in login
+    assert "current.flow.login(" in login
+    assert "coordinator?.flow.invalidate()" in login
+    assert "ClawIdentityEntryController" in signup and "ClawIdentityEntryController" in reset
+    assert "createAccountBasic" not in signup
+    assert "private var termsAccepted = false" in utils
+    assert "legalResourcesAvailable: legal.available" in utils
+    assert "ClawIdentityLegalResources.configured" in utils
+    assert "service.register(request)" in flow and "service.reset(request)" in flow
+    assert "session.user == http.user" in flow and "self.commitSession(confirmed)" in flow
+    assert "self.registeredUser == http.user" in flow
+    assert "snapshotIsCurrent()" in flow and "self.generation == generation" in flow
+    assert "Cache.ifCurrent(owner)" in utils and "owner.loginToken(token: http.token)" in utils
+    assert "注册已完成，暂时无法登录" in utils and "返回登录" in utils
+    assert "completionHandler(nil)" in service
+    assert 'request.setValue("no-store"' in service
+    assert "UserDefaults" not in service and "Log." not in service
+    assert "newPasswordIsValid(password)" in flow
+    assert "Existing password bytes" in flow
     assert "validatePasswordChange" in security
     assert "submissionGate.begin()" in security
     assert "submissionGate.finish()" in security
@@ -63,7 +61,8 @@ def main() -> None:
 
     assert "AuthScheme.idResetInstance" not in reset
     assert "updateAccountBasic(usingAuthScheme" not in reset
-    assert "暂不开放自助找回密码" in reset
+    assert "identityPurpose: ClawIdentityPurpose { .reset }" in reset
+    assert "legacyRecovery" in service and "管理员恢复账号" in service
 
 
 if __name__ == "__main__":
