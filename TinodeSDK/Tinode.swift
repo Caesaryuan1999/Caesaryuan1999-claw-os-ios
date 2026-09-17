@@ -1284,7 +1284,7 @@ public class Tinode {
             do {
                 try tinode.dispatch(message)
             } catch {
-                Log.default.error("onMessage error: %@", error.localizedDescription)
+                Log.default.error("packet_in_failed")
             }
         }
         func onDisconnect(isServerOriginated: Bool, code: URLSessionWebSocketTask.CloseCode, reason: String) {

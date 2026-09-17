@@ -1,0 +1,17 @@
+{
+  "level": "source_not_runtime",
+  "checks": [
+    {
+      "ref": "3f3d438",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\Scripts\\ci\\test_sdk_inbound_log_policy.py\", line 14, in <module>\n    assert errors == ['Log.default.error(\"packet_in_failed\")'], \"Receive failures must not print arbitrary error descriptions\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Receive failures must not print arbitrary error descriptions\n"
+    },
+    {
+      "ref": "working-tree",
+      "exit_code": 0,
+      "stdout": "Inbound log source entry PASS; runtime log interception NOT_RUN\n",
+      "stderr": ""
+    }
+  ]
+}
