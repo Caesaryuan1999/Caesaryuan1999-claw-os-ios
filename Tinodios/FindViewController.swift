@@ -135,7 +135,7 @@ class FindViewController: UITableViewController, FindDisplayLogic {
 
     func displayRemoteContacts(contacts newContacts: [RemoteContactHolder]) {
         assert(Thread.isMainThread)
-        self.remoteContacts = newContacts
+        self.remoteContacts = newContacts.filter { interactor?.canUse($0, input: getQueryString()) == true }
         self.tableView.reloadData()
     }
 
@@ -352,7 +352,7 @@ extension FindViewController: UISearchResultsUpdating, UISearchControllerDelegat
     private func getQueryString() -> String? {
         let whitespaceCharacterSet = CharacterSet.whitespaces
         let queryString =
-            searchController.searchBar.text!.trimmingCharacters(in: whitespaceCharacterSet)
+            (searchController.searchBar.text ?? "").trimmingCharacters(in: whitespaceCharacterSet)
         return !queryString.isEmpty ? queryString : nil
     }
 
@@ -363,6 +363,9 @@ extension FindViewController: UISearchResultsUpdating, UISearchControllerDelegat
             return
         }
         let queryString = getQueryString()
+        interactor?.invalidateDirectorySearch(input: queryString)
+        remoteContacts.removeAll()
+        tableView.reloadData()
         let currentSearchRequest = DispatchWorkItem {
             self.doSearch(queryString: queryString)
         }
@@ -387,10 +390,13 @@ extension FindViewController: ContactViewCellDelegate {
         guard let id = getUniqueId(for: indexPath) else { return }
         if indexPath.section == FindViewController.kRemoteContactsSection {
             guard !isSavingRemoteContact else { return }
-            guard let interactor = interactor else { return }
+            guard let interactor = interactor,
+                  remoteContacts.indices.contains(indexPath.row) else { return }
+            let selected = remoteContacts[indexPath.row]
+            guard interactor.canUse(selected, input: getQueryString()) else { return }
             isSavingRemoteContact = true
             tableView.isUserInteractionEnabled = false
-            interactor.saveRemoteTopic(from: remoteContacts[indexPath.row]) { [weak self] error in
+            interactor.saveRemoteTopic(from: selected) { [weak self] error in
                 DispatchQueue.main.async {
                     guard let self = self else { return }
                     self.isSavingRemoteContact = false
@@ -399,6 +405,7 @@ extension FindViewController: ContactViewCellDelegate {
                         UiUtils.ToastFailureHandler(err: error)
                         return
                     }
+                    guard interactor.canUse(selected, input: self.getQueryString()) else { return }
                     UiUtils.showToast(message: NSLocalizedString("Added to contacts", comment: "Directory search result saved"))
                     self.openSelectedContact(id: id)
                 }

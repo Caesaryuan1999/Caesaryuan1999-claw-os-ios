@@ -12,6 +12,8 @@ protocol FindBusinessLogic: AnyObject {
     var presenter: FindPresentationLogic? { get set }
     var fndTopic: DefaultFndTopic? { get }
     func loadAndPresentContacts(searchQuery: String?)
+    func invalidateDirectorySearch(input: String?)
+    func canUse(_ remoteContact: RemoteContactHolder, input: String?) -> Bool
     func updateAndPresentRemoteContacts()
     func saveRemoteTopic(from remoteContact: RemoteContactHolder, completion: @escaping (Error?) -> Void)
     func setup()
@@ -20,90 +22,96 @@ protocol FindBusinessLogic: AnyObject {
 }
 
 class RemoteContactHolder: ContactHolder {
-    var sub: Subscription<TheCard, [String]>?
+    var sub: FndSubscription?
+    var lookupTicket: ClawPublicDirectoryLookup.Ticket?
 }
 
 class FindInteractor: FindBusinessLogic {
     private class FndListener: DefaultFndTopic.Listener {
         weak var interactor: FindBusinessLogic?
-        override func onMetaSub(sub: Subscription<TheCard, [String]>) {
-            // bitmaps?
-        }
-        override func onSubsUpdated() {
-            self.interactor?.updateAndPresentRemoteContacts()
-        }
+        override func onSubsUpdated() { interactor?.updateAndPresentRemoteContacts() }
     }
 
     static let kTinodeImProtocol = "CLAW OS"
     var presenter: FindPresentationLogic?
-    private var queue = DispatchQueue(label: "co.tinode.contacts")
-    // All known contacts from BaseDb's Users table.
+    // Query state, result acceptance and clicks share the UI queue.
     private var localContacts: [ContactHolder]?
-    // Current search query (nil if none).
     private var searchQuery: String?
+    private var owner: Tinode?
+    private var active = false
     var fndTopic: DefaultFndTopic?
-    private var fndListener: FindInteractor.FndListener?
-    // Contacts returned by the server
-    // in response to a search request.
-    private var remoteContacts: [RemoteContactHolder]?
-    private var contactsManager = ContactsManager()
+    private var fndListener: FndListener?
+    private var remoteContacts: [RemoteContactHolder] = []
+    private let contactsManager = ContactsManager()
+    private let lookup = ClawPublicDirectoryLookup()
+    private static var staleLookup: NSError {
+        NSError(domain: "CLAWOS.Find", code: 4,
+                userInfo: [NSLocalizedDescriptionKey: "查找已失效，请重新输入完整 CLAW号"])
+    }
 
     func setup() {
-        fndListener = FindInteractor.FndListener()
+        lookup.invalidate()
+        fndTopic = nil
+        owner = Cache.tinode
+        active = true
+        fndListener = FndListener()
         fndListener?.interactor = self
     }
-    func cleanup() {
-        fndTopic?.listener = nil
-        if fndTopic?.attached ?? false {
-            fndTopic?.leave()
-        }
-    }
-    func attachToFndTopic() {
-        let tinode = Cache.tinode
-        UiUtils.attachToFndTopic(fndListener: self.fndListener)?.then(
-                onSuccess: { [weak self] _ in
-                    self?.fndTopic = tinode.getOrCreateFndTopic()
-                    return nil
-                },
-                onFailure: { err in
-                    Cache.log.error("FindInteractor - failed to attach to fnd topic: %@", err.localizedDescription)
-                    return nil
-                })
 
+    func cleanup() {
+        active = false
+        lookup.invalidate()
+        remoteContacts.removeAll()
+        fndTopic?.listener = nil
+        if fndTopic?.attached == true { fndTopic?.leave() }
     }
-    func updateAndPresentRemoteContacts() {
-        queue.async {
-            self.localContacts = self.fetchLocalContacts()
-            let localIds = Set(self.localContacts?.compactMap { $0.uniqueId } ?? [])
-            if let subs = self.fndTopic?.getSubscriptions(), !(self.searchQuery?.isEmpty ?? true) {
-                self.remoteContacts = subs.compactMap { sub in
-                    guard let uniqueId = sub.uniqueId,
-                          ContactsManager.isDirectContactId(uniqueId),
-                          !localIds.contains(uniqueId) else {
-                        return nil
-                    }
-                    let accountName = AccountNames.fromTags(sub.priv)
-                    let contact = RemoteContactHolder(pub: sub.pub, uniqueId: uniqueId,
-                                                      accountName: accountName,
-                                                      subtitle: AccountNames.contactListSecondary(accountName: accountName))
-                    contact.sub = sub
-                    return contact
-                }
-            } else {
-                self.remoteContacts?.removeAll()
+
+    func attachToFndTopic() {
+        guard active, let owner = owner, Cache.isCurrent(owner) else { return }
+        let fnd = owner.getOrCreateFndTopic()
+        fnd.listener = fndListener
+        let attached = fnd.attached ? PromisedReply<ServerMessage>(value: ServerMessage()) : fnd.subscribe(set: nil, get: nil)
+        attached.then(onSuccess: { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self = self, self.active, Cache.isCurrent(owner), self.owner === owner else { return }
+                self.fndTopic = fnd
+                self.loadAndPresentContacts(searchQuery: self.searchQuery)
             }
-            self.presenter?.presentRemoteContacts(contacts: self.remoteContacts ?? [])
-        }
+            return nil
+        }, onFailure: { _ in
+            Cache.log.error("Directory attachment failed")
+            return nil
+        })
+    }
+
+    func invalidateDirectorySearch(input: String?) {
+        searchQuery = input
+        lookup.invalidate()
+        remoteContacts.removeAll()
+        presenter?.presentRemoteContacts(contacts: [])
+    }
+
+    func canUse(_ remoteContact: RemoteContactHolder, input: String?) -> Bool {
+        guard active, let owner = owner, Cache.isCurrent(owner), owner.isConnectionAuthenticated,
+              let ticket = remoteContact.lookupTicket, let sub = remoteContact.sub,
+              remoteContact.uniqueId == (sub.user ?? sub.topic) else { return false }
+        return lookup.matches(ticket, owner: owner, input: input, subscription: sub)
+    }
+
+    func updateAndPresentRemoteContacts() {
+        // fnd cache callbacks have no request/query identity. Only the matching
+        // getMeta promise below may admit subscriptions to the visible results.
     }
 
     func fetchLocalContacts() -> [ContactHolder] {
-        return (self.contactsManager.fetchContacts() ?? []).filter {
-            ContactsManager.isDirectContactId($0.uniqueId)
-                && !($0.uniqueId.map { Cache.tinode.isMe(uid: $0) } ?? true)
-        }
+        guard active, let owner = owner, Cache.isCurrent(owner), owner.isConnectionAuthenticated else { return [] }
+        return Cache.ifCurrent(owner) {
+            (contactsManager.fetchContacts() ?? []).filter {
+                ContactsManager.isDirectContactId($0.uniqueId)
+                    && !($0.uniqueId.map { owner.isMe(uid: $0) } ?? true)
+            }
+        } ?? []
     }
-
-    static let kSingleTagTest = try! NSRegularExpression(pattern: #"[\s,:]"#)
 
     private func matchingLocalContacts(searchQuery: String?) -> [ContactHolder] {
         guard let query = searchQuery?.trimmingCharacters(in: .whitespacesAndNewlines), !query.isEmpty else {
@@ -111,108 +119,99 @@ class FindInteractor: FindBusinessLogic {
         }
         let cleanQuery = query.first == "@" ? String(query.dropFirst()) : query
         return (localContacts ?? []).filter { contact in
-            let displayName = AccountNames.contactDisplayName(displayName: contact.pub?.fn,
-                                                               accountName: contact.accountName,
-                                                               userId: contact.uniqueId)
-            if displayName.range(of: cleanQuery, options: .caseInsensitive) != nil {
-                return true
-            }
-            return contact.accountName?.range(of: cleanQuery, options: .caseInsensitive) != nil
+            let name = AccountNames.contactDisplayName(displayName: contact.pub?.fn,
+                                                        accountName: contact.accountName, userId: contact.uniqueId)
+            return name.range(of: cleanQuery, options: .caseInsensitive) != nil
+                || contact.accountName?.range(of: cleanQuery, options: .caseInsensitive) != nil
         }
     }
 
     func loadAndPresentContacts(searchQuery: String? = nil) {
-        let changed = self.searchQuery != searchQuery
-        self.searchQuery = searchQuery
-        queue.async {
-            // Always refresh after a directory result is saved as a contact.
-            self.localContacts = self.fetchLocalContacts()
-            if self.remoteContacts == nil {
-               self.remoteContacts = []
+        invalidateDirectorySearch(input: searchQuery)
+        localContacts = fetchLocalContacts()
+        presenter?.presentLocalContacts(contacts: matchingLocalContacts(searchQuery: searchQuery))
+        guard active, let owner = owner, Cache.isCurrent(owner), owner.isConnectionAuthenticated,
+              let fnd = fndTopic, fnd.attached,
+              let ticket = lookup.begin(input: searchQuery, owner: owner) else { return }
+        fnd.setMeta(desc: MetaSetDesc(pub: ticket.wireQuery, priv: nil)).thenApply { [weak self] _ in
+            guard let self = self, Cache.isCurrent(owner),
+                  self.lookup.isCurrent(ticket, owner: owner, input: ticket.input) else {
+                return PromisedReply<ServerMessage>(error: Self.staleLookup)
             }
-
-            let contacts = self.matchingLocalContacts(searchQuery: self.searchQuery)
-            if changed {
-                var searchStr: String? = nil
-                if let query = searchQuery, !query.isEmpty,
-                   FindInteractor.kSingleTagTest.firstMatch(in: query, range: NSRange(location: 0, length: query.count)) == nil {
-                    let cleanQuery = query.first == "@" ? String(query.dropFirst()) : query
-                    searchStr = AccountNames.directorySearchQuery(cleanQuery)
+            return fnd.getMeta(query: MsgGetMeta.sub())
+        }.then(onSuccess: { [weak self] response in
+            DispatchQueue.main.async {
+                guard let self = self, self.active, Cache.isCurrent(owner),
+                      self.lookup.isCurrent(ticket, owner: owner, input: self.searchQuery) else { return }
+                let localIds = Set(self.localContacts?.compactMap { $0.uniqueId } ?? [])
+                self.remoteContacts = (response?.meta?.sub?.compactMap { $0 as? FndSubscription } ?? []).compactMap { sub in
+                    var contact: RemoteContactHolder?
+                    self.lookup.consume(ticket, owner: owner, input: self.searchQuery, subscription: sub) { uid in
+                        guard ContactsManager.isDirectContactId(uid), !localIds.contains(uid), !owner.isMe(uid: uid) else { return }
+                        let accountName = AccountNames.fromTags(sub.priv)
+                        let found = RemoteContactHolder(pub: sub.pub, uniqueId: uid, accountName: accountName,
+                            subtitle: AccountNames.contactListSecondary(accountName: accountName))
+                        found.sub = sub
+                        found.lookupTicket = ticket
+                        contact = found
+                    }
+                    return contact
                 }
-                _ = self.fndTopic?.setMeta(desc: MetaSetDesc(pub: searchStr ?? Tinode.kNullValue, priv: nil))
+                self.presenter?.presentRemoteContacts(contacts: self.remoteContacts)
             }
-
-            self.remoteContacts?.removeAll()
-            if let searchQuery = searchQuery,
-               searchQuery.count >= UiUtils.kMinTagLength,
-               AccountNames.directorySearchQuery(searchQuery) != nil {
-                self.fndTopic?.getMeta(query: MsgGetMeta.sub())
-            } else {
-                // Clear remoteContacts.
-                self.presenter?.presentRemoteContacts(contacts: self.remoteContacts!)
+            return nil
+        }, onFailure: { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self = self, Cache.isCurrent(owner),
+                      self.lookup.isCurrent(ticket, owner: owner, input: self.searchQuery) else { return }
+                self.presenter?.presentRemoteContacts(contacts: [])
             }
-            self.presenter?.presentLocalContacts(contacts: contacts)
-        }
+            return nil
+        })
     }
 
     func saveRemoteTopic(from remoteContact: RemoteContactHolder, completion: @escaping (Error?) -> Void) {
-        guard let topicName = remoteContact.uniqueId, let sub = remoteContact.sub else {
-            completion(NSError(domain: "CLAWOS.Find", code: 1,
-                               userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Failed to save group and contact info.", comment: "Error message")]))
-            return
+        guard canUse(remoteContact, input: searchQuery), let owner = owner,
+              let ticket = remoteContact.lookupTicket, let sub = remoteContact.sub else {
+            completion(Self.staleLookup); return
         }
-        let tinode = Cache.tinode
-        var topic: DefaultComTopic?
-        if !tinode.isTopicTracked(topicName: topicName) {
-            topic = tinode.newTopic(for: topicName) as? DefaultComTopic
-            topic?.pub = sub.pub
-        } else {
-            topic = tinode.getTopic(topicName: topicName) as? DefaultComTopic
+        var selected: DefaultComTopic?
+        lookup.consume(ticket, owner: owner, input: searchQuery, subscription: sub) { uid in
+            selected = Cache.ifCurrent(owner) {
+                if let existing = owner.getTopic(topicName: uid) as? DefaultComTopic { return existing }
+                let created = owner.newTopic(for: uid) as? DefaultComTopic
+                created?.pub = sub.pub
+                return created
+            } ?? nil
         }
-        guard let topicUnwrapped = topic else {
-            completion(NSError(domain: "CLAWOS.Find", code: 2,
-                               userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Failed to save group and contact info.", comment: "Error message")]))
-            return
-        }
-
-        guard topicUnwrapped.isP2PType else {
-            completion(NSError(domain: "CLAWOS.Find", code: 3,
-                               userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Only user contacts can be added.", comment: "Error message")]))
-            return
-        }
-        if topicUnwrapped.attached {
-            completeRemoteTopicSave(topic: topicUnwrapped, subscription: sub, topicName: topicName, completion: completion)
-            return
-        }
-        topicUnwrapped.subscribe().then(
-            onSuccess: { [weak self] _ in
-                self?.completeRemoteTopicSave(
-                    topic: topicUnwrapped,
-                    subscription: sub,
-                    topicName: topicName,
-                    completion: completion)
-                return nil
-            },
-            onFailure: { error in
-                completion(error)
-                return nil
-            })
-    }
-
-    private func completeRemoteTopicSave(
-        topic: DefaultComTopic,
-        subscription: SubscriptionProto,
-        topicName: String,
-        completion: @escaping (Error?) -> Void) {
-        topic.persist()
-        contactsManager.processSubscription(sub: subscription)
-        queue.async {
+        guard let topic = selected, topic.isP2PType else { completion(Self.staleLookup); return }
+        let finish = { [weak self] in
+            guard let self = self, self.canUse(remoteContact, input: self.searchQuery) else {
+                completion(Self.staleLookup); return
+            }
+            var saved = false
+            self.lookup.consume(ticket, owner: owner, input: self.searchQuery, subscription: sub) { _ in
+                saved = Cache.ifCurrent(owner) {
+                    topic.persist()
+                    self.contactsManager.processSubscription(sub: sub)
+                    return true
+                } ?? false
+            }
+            guard saved else { completion(Self.staleLookup); return }
             self.localContacts = self.fetchLocalContacts()
-            self.remoteContacts?.removeAll { $0.uniqueId == topicName }
-            self.presenter?.presentLocalContacts(
-                contacts: self.matchingLocalContacts(searchQuery: self.searchQuery))
-            self.presenter?.presentRemoteContacts(contacts: self.remoteContacts ?? [])
+            self.remoteContacts.removeAll { $0.uniqueId == remoteContact.uniqueId }
+            self.presenter?.presentLocalContacts(contacts: self.matchingLocalContacts(searchQuery: self.searchQuery))
+            self.presenter?.presentRemoteContacts(contacts: self.remoteContacts)
+            completion(nil)
         }
-        completion(nil)
+        if topic.attached { finish(); return }
+        guard canUse(remoteContact, input: searchQuery) else { completion(Self.staleLookup); return }
+        topic.subscribe().then(onSuccess: { _ in
+            DispatchQueue.main.async(execute: finish)
+            return nil
+        }, onFailure: { error in
+            DispatchQueue.main.async { completion(error) }
+            return nil
+        })
     }
 }

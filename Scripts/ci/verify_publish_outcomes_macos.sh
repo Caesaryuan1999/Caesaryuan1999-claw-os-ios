@@ -72,6 +72,7 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -only-testing:TinodiosUITests/LocalMigrationTests \
   -only-testing:TinodiosUITests/IdentityFlowTests \
   -only-testing:TinodiosUITests/ConversationRemovalTests \
+  -only-testing:TinodiosUITests/PublicDirectoryTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
 python3 - "$result_dir" <<'PY'

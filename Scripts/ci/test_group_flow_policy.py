@@ -26,10 +26,13 @@ def main() -> None:
     zh_hans = ZH_HANS.read_text(encoding="utf-8")
 
     assert "completion: @escaping (Error?) -> Void" in find_interactor
-    assert "topicUnwrapped.subscribe()" in find_interactor
-    assert find_interactor.index("topicUnwrapped.subscribe()") < find_interactor.index("contactsManager.processSubscription")
+    assert "topic.subscribe().then(onSuccess:" in find_interactor
+    assert "DispatchQueue.main.async(execute: finish)" in find_interactor
+    assert "if topic.attached { finish(); return }" in find_interactor
+    assert "self.canUse(remoteContact, input: self.searchQuery)" in find_interactor
+    assert "contactsManager.processSubscription(sub: sub)" in find_interactor
     assert "isSavingRemoteContact" in find_view
-    assert "guard let interactor = interactor else { return }" in find_view
+    assert "interactor.canUse(selected, input: getQueryString())" in find_view
 
     assert "UISearchController" in edit_members
     assert "filteredContacts" in edit_members
@@ -37,7 +40,7 @@ def main() -> None:
     assert "selectedContactIds" in edit_members
     assert "ContactsManager.isDirectContactId(uid)" in edit_members
     assert "Tinode.topicTypeByName(name: uid) == .p2p" in contacts_manager
-    assert "ContactsManager.isDirectContactId(uniqueId)" in find_interactor
+    assert "ContactsManager.isDirectContactId(uid)" in find_interactor
 
     assert "guard !isCreatingGroup else" in new_group
     assert "请选择至少一位群成员" in new_group

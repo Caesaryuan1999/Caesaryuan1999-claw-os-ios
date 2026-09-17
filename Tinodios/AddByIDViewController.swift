@@ -11,6 +11,7 @@ import TinodeSDK
 class AddByIDViewController: UIViewController {
     private var qrScanner: QRScanner?
     private var tinode: Tinode!
+    private let lookup = ClawPublicDirectoryLookup()
 
     @IBOutlet weak var showCodeButton: UIButton!
     @IBOutlet weak var scanCodeButton: UIButton!
@@ -48,7 +49,7 @@ class AddByIDViewController: UIViewController {
         self.tinode = Cache.tinode
         UiUtils.dismissKeyboardForTaps(onView: self.view)
 
-        idTextField.placeholder = NSLocalizedString("用户名或账号名", comment: "Placeholder for contact lookup")
+        idTextField.placeholder = NSLocalizedString("完整 CLAW号", comment: "Placeholder for contact lookup")
         okayButton.setTitle(NSLocalizedString("确认", comment: "Confirm contact lookup"), for: .normal)
         idTextField.autocorrectionType = .no
         idTextField.autocapitalizationType = .none
@@ -116,6 +117,7 @@ class AddByIDViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
+        lookup.invalidate()
         qrScanner?.stop()
     }
 
@@ -133,6 +135,8 @@ class AddByIDViewController: UIViewController {
 
     @objc func textFieldDidChange(_ textField: UITextField) {
         textField.clearErrorSign()
+        lookup.invalidate()
+        okayButton.isEnabled = true
     }
 
     @IBAction func okayClicked(_ sender: Any) {
@@ -170,102 +174,59 @@ class AddByIDViewController: UIViewController {
         ClawTheme.styleRoundedIconButton(scanCodeButton, symbolName: "viewfinder", selected: true)
     }
 
-    private func normalizeLookupInput(_ value: String) -> String {
-        var query = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        if query.first == "@" {
-            query = String(query.dropFirst()).trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        return query
-    }
-
-    private func isPrivateUserId(_ value: String?) -> Bool {
-        guard let value = value else { return false }
-        return AccountNames.isUserIdLike(value) || Tinode.topicTypeByName(name: value) == .p2p
-    }
-
-    private func findMatchingUserId(in subs: [FndSubscription]?, query: String) -> String? {
-        guard let subs = subs else { return nil }
-        for sub in subs {
-            let candidate = sub.user ?? sub.topic
-            guard Tinode.topicTypeByName(name: candidate) == .p2p,
-                  AccountNames.matchesPublicSearchName(tags: sub.priv, query: query) else {
-                continue
-            }
-            return candidate
-        }
-        return nil
-    }
-
-    private func findMatchingUserId(response: ServerMessage?, fnd: DefaultFndTopic, query: String) -> String? {
-        if let subs = response?.meta?.sub?.compactMap({ $0 as? FndSubscription }),
-           let match = findMatchingUserId(in: subs, query: query) {
-            return match
-        }
-        return findMatchingUserId(in: fnd.getSubscriptions(), query: query)
-    }
-
     func handleCodeEntered(_ value: String) {
-        let query = normalizeLookupInput(value)
-        guard !query.isEmpty else {
+        guard let owner = tinode, Cache.isCurrent(owner), owner.isConnectionAuthenticated else {
+            UiUtils.showToast(message: "服务暂不可用")
             okayButton.isEnabled = true
             return
         }
-        guard !isPrivateUserId(query) else {
-            UiUtils.showToast(message: NSLocalizedString("不能通过 ID 搜索，请输入用户名或账号名", comment: "Private ID search is disabled"))
+        guard let ticket = lookup.begin(input: value, owner: owner) else {
+            UiUtils.showToast(message: "请输入完整 CLAW号，不支持查询表达式")
             okayButton.isEnabled = true
             return
         }
-        guard let searchQuery = AccountNames.directorySearchQuery(query) else {
-            UiUtils.showToast(message: NSLocalizedString("请输入有效的用户名或账号名", comment: "Invalid contact lookup query"))
-            okayButton.isEnabled = true
-            return
-        }
-        guard tinode.isConnectionAuthenticated else {
-            UiUtils.showToast(message: NSLocalizedString("服务暂不可用", comment: "Unable to use service"))
-            okayButton.isEnabled = true
-            return
-        }
-        UiUtils.attachToFndTopic(fndListener: nil)?.then(
-            onSuccess: { [weak self] msg in
-                guard let self = self else { return nil }
-                let fnd = self.tinode.getOrCreateFndTopic()
-                return fnd.setMeta(desc: MetaSetDesc(pub: searchQuery, priv: nil)).thenApply { _ in
-                    return fnd.getMeta(query: MsgGetMeta.sub())
-                }.then(
-                    onSuccess: { [weak self] response in
-                        guard let self = self else { return nil }
-                        guard let userId = self.findMatchingUserId(response: response, fnd: fnd, query: query) else {
-                            DispatchQueue.main.async {
-                                UiUtils.showToast(message: NSLocalizedString("未找到该用户", comment: "Contact lookup no match"))
-                            }
-                            return nil
-                        }
-                        if let sub = response?.meta?.sub?.compactMap({ $0 as? FndSubscription }).first(where: { $0.uniqueId == userId }) ??
-                            fnd.getSubscriptions()?.first(where: { $0.uniqueId == userId }) {
+        let fnd = owner.getOrCreateFndTopic()
+        let attached = fnd.attached ? PromisedReply<ServerMessage>(value: ServerMessage()) : fnd.subscribe(set: nil, get: nil)
+        attached.thenApply { [weak self] _ in
+            guard let self = self, Cache.isCurrent(owner),
+                  self.lookup.isCurrent(ticket, owner: owner, input: ticket.input) else {
+                return PromisedReply<ServerMessage>(error: NSError(domain: "CLAWOS.Find", code: 4))
+            }
+            return fnd.setMeta(desc: MetaSetDesc(pub: ticket.wireQuery, priv: nil))
+        }.thenApply { [weak self] _ in
+            guard let self = self, Cache.isCurrent(owner),
+                  self.lookup.isCurrent(ticket, owner: owner, input: ticket.input) else {
+                return PromisedReply<ServerMessage>(error: NSError(domain: "CLAWOS.Find", code: 4))
+            }
+            return fnd.getMeta(query: MsgGetMeta.sub())
+        }.then(onSuccess: { [weak self] response in
+            DispatchQueue.main.async {
+                guard let self = self, Cache.isCurrent(owner),
+                      self.lookup.isCurrent(ticket, owner: owner, input: self.idTextField.text) else { return }
+                self.okayButton.isEnabled = true
+                // Only this request's response is evidence. Never fall back to fnd's shared cache.
+                let subs = response?.meta?.sub?.compactMap { $0 as? FndSubscription } ?? []
+                for sub in subs {
+                    if self.lookup.consume(ticket, owner: owner, input: self.idTextField.text, subscription: sub, action: { returnedUID in
+                        guard Cache.ifCurrent(owner, {
                             ContactsManager.default.processSubscription(sub: sub)
-                        }
-                        self.presentChatReplacingCurrentVC(with: userId)
-                        return nil
-                    },
-                    onFailure: { err in
-                        DispatchQueue.main.async {
-                            UiUtils.showToast(message: String(format: NSLocalizedString("查找失败：%@", comment: "Contact lookup failure"), err.localizedDescription))
-                        }
-                        return nil
-                    })
-            },
-            onFailure: { err in
-                DispatchQueue.main.async {
-                    UiUtils.showToast(message: String(format: NSLocalizedString("查找失败：%@", comment: "Contact lookup failure"), err.localizedDescription))
+                            return true
+                        }) == true else { return }
+                        self.presentChatReplacingCurrentVC(with: returnedUID)
+                    }) { return }
                 }
-                return nil
-            }).thenFinally({ [weak self] in
-                DispatchQueue.main.async {
-                    if self?.okayButton.isEnabled == false {
-                        self?.okayButton.isEnabled = true
-                    }
-                }
-            })
+                UiUtils.showToast(message: "未找到该 CLAW号")
+            }
+            return nil
+        }, onFailure: { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self = self, Cache.isCurrent(owner),
+                      self.lookup.isCurrent(ticket, owner: owner, input: self.idTextField.text) else { return }
+                self.okayButton.isEnabled = true
+                UiUtils.showToast(message: "查找失败，请检查连接后重试")
+            }
+            return nil
+        })
     }
 
     func scanQRCode() {
@@ -289,7 +250,7 @@ extension AddByIDViewController: QRScannerDelegate {
             }
             return
         }
-        UiUtils.showToast(message: NSLocalizedString("不能通过 ID 搜索，请输入用户名或账号名", comment: "Private ID search is disabled"))
+        UiUtils.showToast(message: NSLocalizedString("暂不支持私密 ID 二维码，请输入完整 CLAW号", comment: "Private ID search is disabled"))
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) { [weak self] in
             self?.qrScanner?.start()
         }

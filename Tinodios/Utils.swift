@@ -6,6 +6,9 @@
 //
 
 import Foundation
+import TinodeSDK
+import TinodiosDB
+#if !CLAW_PUBLIC_DIRECTORY_TESTS
 import UIKit
 import Kingfisher
 import MobileCoreServices
@@ -1025,6 +1028,8 @@ enum ClawProfileLayout {
     }
 }
 
+#endif
+
 enum AccountNames {
     static let basicTagPrefix = "basic:"
 
@@ -1042,19 +1047,32 @@ enum AccountNames {
         return UserDb.publicAccountName(from: [tag])
     }
 
+    static func lookupInput(_ query: String?) -> String {
+        var value = (query ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.first == "@" { value.removeFirst() }
+        return value.lowercased()
+    }
+
+    private static func directoryTerms(_ query: String?) -> [String] {
+        let value = lookupInput(query)
+        guard !value.isEmpty,
+              value.unicodeScalars.allSatisfy({ $0.isASCII }),
+              value.range(of: #"^[a-z0-9][a-z0-9_-]*$"#, options: .regularExpression) != nil else { return [] }
+        let validAlias = Tinode.isValidTagValueFormat(tag: value)
+        // A UID-looking input can only mean an explicitly published alias.
+        if value.hasPrefix("usr") {
+            return validAlias ? [Tinode.kTagAlias + value] : []
+        }
+        var terms = validAlias ? [Tinode.kTagAlias + value] : []
+        if value.range(of: #"^[a-z0-9]+$"#, options: .regularExpression) != nil {
+            terms.append(basicTagPrefix + value)
+        }
+        return terms
+    }
+
     static func matchesPublicSearchName(tags: [String]?, query: String?) -> Bool {
-        let normalized = normalize(query)
-        guard !normalized.isEmpty, !isUserIdLike(normalized), let tags = tags else {
-            return false
-        }
-        let expectedBasic = basicTagPrefix + normalized
-        let expectedAlias = Tinode.kTagAlias + normalized
-        return tags.contains { tag in
-            let normalizedTag = normalize(tag)
-            return normalized == normalizedTag ||
-                expectedBasic == normalizedTag ||
-                expectedAlias == normalizedTag
-        }
+        let expected = Set(directoryTerms(query))
+        return !expected.isEmpty && (tags ?? []).contains { expected.contains(normalize($0)) }
     }
 
     static func exactLookupQuery(_ accountName: String) -> String {
@@ -1062,12 +1080,8 @@ enum AccountNames {
     }
 
     static func directorySearchQuery(_ query: String) -> String? {
-        let normalized = normalize(query.trimmingCharacters(in: .whitespacesAndNewlines))
-        guard !normalized.isEmpty, !isUserIdLike(normalized) else { return nil }
-        if ClawAuthInput.isAccountNameValid(normalized) {
-            return "\(exactLookupQuery(normalized)),\(Tinode.kTagAlias)\(query),\(query)"
-        }
-        return "\(Tinode.kTagAlias)\(query),\(query)"
+        let terms = directoryTerms(query)
+        return terms.isEmpty ? nil : terms.joined(separator: ",")
     }
 
     static func isUserIdLike(_ value: String?) -> Bool {
@@ -1106,6 +1120,55 @@ enum AccountNames {
     }
 }
 
+/// Binds a directory response and its later selection to one manual query and SDK owner.
+/// UI callers serialize input changes and consumption on the main queue. No callback runs under this lock.
+final class ClawPublicDirectoryLookup {
+    struct Ticket {
+        fileprivate let generation: UUID
+        fileprivate let owner: ObjectIdentifier
+        let input: String
+        let wireQuery: String
+    }
+    private let lock = NSLock()
+    private var generation = UUID()
+
+    func invalidate() {
+        lock.lock(); defer { lock.unlock() }
+        generation = UUID()
+    }
+
+    func begin(input: String?, owner: AnyObject) -> Ticket? {
+        lock.lock(); defer { lock.unlock() }
+        generation = UUID()
+        guard let wire = AccountNames.directorySearchQuery(input ?? "") else { return nil }
+        return Ticket(generation: generation, owner: ObjectIdentifier(owner),
+                      input: AccountNames.lookupInput(input), wireQuery: wire)
+    }
+
+    func isCurrent(_ ticket: Ticket, owner: AnyObject, input: String?) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return generation == ticket.generation && ticket.owner == ObjectIdentifier(owner)
+            && ticket.input == AccountNames.lookupInput(input)
+    }
+
+    func matches(_ ticket: Ticket, owner: AnyObject, input: String?, subscription: FndSubscription) -> Bool {
+        return isCurrent(ticket, owner: owner, input: input)
+            && subscription.uniqueId == (subscription.user ?? subscription.topic)
+            && Tinode.topicTypeByName(name: subscription.user ?? subscription.topic) == .p2p
+            && AccountNames.matchesPublicSearchName(tags: subscription.priv, query: ticket.input)
+    }
+
+    @discardableResult
+    func consume(_ ticket: Ticket, owner: AnyObject, input: String?, subscription: FndSubscription,
+                 action: (String) -> Void) -> Bool {
+        guard matches(ticket, owner: owner, input: input, subscription: subscription),
+              let returnedUID = subscription.user ?? subscription.topic else { return false }
+        action(returnedUID)
+        return true
+    }
+}
+
+#if !CLAW_PUBLIC_DIRECTORY_TESTS
 /// Immutable, UI-ready representation of an incoming message notice.
 ///
 /// Keep normalization and de-duplication inputs in one place so socket and
@@ -1688,3 +1751,4 @@ final class ClawSetIdentityPasswordViewController: UIViewController {
         } else { navigationController?.popToRootViewController(animated: true) }
     }
 }
+#endif

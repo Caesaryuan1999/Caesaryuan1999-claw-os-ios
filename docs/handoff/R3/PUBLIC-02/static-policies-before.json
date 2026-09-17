@@ -1,0 +1,280 @@
+{
+  "captured_at": "2026-09-17T22:01:25.875029+00:00",
+  "evidence_level": "static_source_policy",
+  "scripts": 34,
+  "failed": 1,
+  "results": [
+    {
+      "script": "Scripts/ci/test_active_contacts_layout_policy.py",
+      "sha256": "f29028fe0b1953d5532fbb07a1adbe912bff610f77bcf044977382e00da55aad",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_add_by_id_layout_policy.py",
+      "sha256": "df12cb8cb934ae2a5dca39f8544c740d47a691845df44f038551004aca39bddd",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_auth_ui_policy.py",
+      "sha256": "cd895a456036ce98c85be33e346b9c1eb3e4b321e6862e7c78503aa14b32b392",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_brand_ui_policy.py",
+      "sha256": "bed9936c93278304ae549e6acd51552a6faac1ba00a3a352361b8dbebc4ef397",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_c3_sqlite.py",
+      "sha256": "3e2b71ebed134185164e87949cce94727c483f20683ad07b186187e586221724",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "{\n  \"level\": \"real SQLite with production SQL and Python UUID/capability bridge; not Swift\",\n  \"tests\": [\n    {\n      \"name\": \"legacy-key-and-unmarked31-36-quarantined-with-payload-preserved\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"repeat-NSE-open-does-not-recover-live31\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"main-recovery-distinguishes-C3-from-legacy\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"no-capability-keeps-new-message-queued-bridge\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"claim-checks-account-topic-sender-and-CAS\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"stale20-snapshot-cannot-claim-actual36\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"legacy35-denied-C3-36-retries-original-payload\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"invalid-or-non-v4-key-does-not-claim-bridge\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"wire-JSON-is-not-typed-storage-header-bridge\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"two-real-connections-only-one-C3-claim\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"commit-denial-rolls-back-both-markers-and-statuses\",\n      \"passed\": true\n    },\n    {\n      \"name\": \"new-empty-store-has-both-boundaries\",\n      \"passed\": true\n    }\n  ],\n  \"passed\": 12,\n  \"total\": 12\n}\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_call_lifecycle_policy.py",
+      "sha256": "b72457e5fcee45ca48ed429052496a4ffdb1806c3b54a9997234a2d1c722aefd",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "CLAW OS call lifecycle policy checks passed.\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_chat_list_branding_policy.py",
+      "sha256": "fc46ad888e8677222ae51b1d47987c841ef22a7bf52204d1497bccf1022befda",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "iOS chat-list branding policy checks passed.\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_compact_message_layout_policy.py",
+      "sha256": "450bfd71e9d9b41e58d571be6f433d4d83c3057206eddabf94871213a3957274",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_contacts_session_policy.py",
+      "sha256": "9f118bab0e00a582115c96049123b32760e471dbd2fad19664fa9a3dacdc034d",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "{\n  \"level\": \"source-contract-only\",\n  \"source\": \"working-tree\",\n  \"passed\": 6,\n  \"total\": 6,\n  \"checks\": {\n    \"one_captured_sdk_before_enumeration\": true,\n    \"credentials_in_same_owner_gate_before_enumeration\": true,\n    \"post_enumeration_auto_login_requires_same_owner\": true,\n    \"blocking_network_wait_outside_all_gates\": true,\n    \"contact_and_marker_writes_require_owner_after_reply\": true,\n    \"normal_same_owner_network_path_retained\": true\n  }\n}\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_device_info_policy.py",
+      "sha256": "1fab45ce622458ccd0b0f9d7bcd4181c999f746c410370dff619a9cd97eb933f",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_figma_visual_contract_policy.py",
+      "sha256": "c4d2f6036f8a820fb8f1cb44941a89ecfa4c92a4d770d7ba94aef3d8a9ea6da7",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "CLAW OS Figma visual contract checks passed.\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_group_creation_flow_policy.py",
+      "sha256": "195e47fc7e9b576c05f8ce8a92194399417ba306cd6a03ac6c45bacd2e3e6da3",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "CLAW OS premium group creation flow checks passed.\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_group_flow_policy.py",
+      "sha256": "33880e45775b8826866c010b8eb8f2456bd48f9982365ccb4df509d06a01a97d",
+      "status": "fail",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\Scripts\\ci\\test_group_flow_policy.py\", line 73, in <module>\n    main()\n  File \"C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\Scripts\\ci\\test_group_flow_policy.py\", line 29, in main\n    assert \"topicUnwrapped.subscribe()\" in find_interactor\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "script": "Scripts/ci/test_ios_release_identity.py",
+      "sha256": "761e882ff84743cd626e551939be0213b45e0255aadf303273976c2f51568402",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_license_plist.py",
+      "sha256": "b39d738a7f79c7edb657920613d41cc5fcd24ea9220a5aaedba6f2ecba9cdc84",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.047s\n\nOK\n"
+    },
+    {
+      "script": "Scripts/ci/test_local_migration_sqlite.py",
+      "sha256": "0264297cbe109494dd1f62d650739122912f0d22dc0c641acf0d1fefebd3963e",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "{'name': 'old20and30-isolated-across-accounts', 'status': 'pass'}\n{'name': 'all-nonstatus-data-preserved', 'status': 'pass'}\n{'name': 'repeat-preserves-new20-and-active30', 'status': 'pass'}\n{'name': 'interrupt-rolls-back-marker-and-status', 'status': 'pass'}\n{'name': 'two-process-equivalent-sqlite-locks', 'status': 'pass'}\n{'name': 'unknown112-preserved', 'status': 'pass'}\n{'name': 'newer114-preserved', 'status': 'pass'}\n{'name': 'wal-data-and-consistent-backup', 'status': 'pass'}\n{'name': 'missing-column-rejected', 'status': 'pass'}\n{'name': 'unknown-table-rejected', 'status': 'pass'}\n{'name': 'unknown-trigger-rejected', 'status': 'pass'}\n{'name': 'missing-unique-index-rejected', 'status': 'pass'}\n{'name': 'wrong-partial-index-rejected', 'status': 'pass'}\n{'name': 'foreign-key-data-rejected', 'status': 'pass'}\n{'name': 'unknown-marker-rule-rejected', 'status': 'pass'}\n{'name': 'actual-sqlite-commit-denial-rolls-back', 'status': 'pass'}\n{'name': 'marker-insert-failure-rolls-back-status', 'status': 'pass'}\n{'name': 'fresh-marker-before-new20', 'status': 'pass'}\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_media_attachment_policy.py",
+      "sha256": "7e98bba9d4dbe1969b033cb7601c80d7d4917ea166ca3acf2f977e6bc5cc1fca",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "iOS media attachment and preview policy checks passed\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_message_background_policy.py",
+      "sha256": "65a1966d2b819eeed2e3f097e43debfefd704db7886e63e75cf5b250832f8893",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_message_delete_policy.py",
+      "sha256": "654fbc8d880f8210a8381781fd8dd1a86f9252c21bf120f86170bd033711fd7d",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_message_selection_policy.py",
+      "sha256": "15bdec2f415757666389132049c0e4347f9ad9b9603c359d09c65db6e8dadfa2",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "iOS message multi-select policy checks passed\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_notification_navigation_policy.py",
+      "sha256": "5053b40d41f18f3fefc2f5d512c7a8ba2204b65a8ba981b727fc2164b23862c2",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_notification_settings_policy.py",
+      "sha256": "4ad9172f4259b70ac70a62f3363f64e71beecabcbd231cdf0aec5b3c30738007",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_premium_secondary_ui_policy.py",
+      "sha256": "ebe385e86240bca7831cb193d8e67901bfcc2d787d76ea1e3b2cf9e1e7a57f1d",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "CLAW OS secondary UI policy checks passed.\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_publish_outcome_policy.py",
+      "sha256": "55a14ae33156bbd82c5993c56a87d64d759603da3622e3486c8179eb59e28c34",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.004s\n\nOK\n"
+    },
+    {
+      "script": "Scripts/ci/test_push_notification_policy.py",
+      "sha256": "dd8018e035ba7a43e61cb4c1fb06fe0cf2464f8b3f372df3855a86227cb72108",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_security_layout_policy.py",
+      "sha256": "5b7a8aa7b6ede107a67d2e9a774922c14dd760a418ec8e27d92c69d0a4b91b1f",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_session_sqlite.py",
+      "sha256": "ad34cb4ae04a5353f7c76753e3ce03c36a1112bb9ea3df20afddbe6501e325e1",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "{\n  \"evidence\": \"actual_SQLite_synthetic_fixture_production_SQL_Python_adapter_not_Swift\",\n  \"source_ref\": \"working-tree\",\n  \"fixture_sha256\": \"a3218a660a7d7f36a0a02b90bf1a9d0dda25a8668d764aef2e858f50d66eacdf\",\n  \"tests\": 8,\n  \"failed\": 0,\n  \"results\": [\n    {\n      \"name\": \"logout-preserves-all-message-payloads-statuses-UUID-and-sequence\",\n      \"status\": \"pass\"\n    },\n    {\n      \"name\": \"captured-old-UID-deactivation-preserves-new-account\",\n      \"status\": \"pass\"\n    },\n    {\n      \"name\": \"reactivation-preserves-never-sent-and-uncertain-qualification\",\n      \"status\": \"pass\"\n    },\n    {\n      \"name\": \"interrupted-deactivation-transaction-rolls-back-without-loss\",\n      \"status\": \"pass\"\n    },\n    {\n      \"name\": \"inactive-account-cannot-read-cached-topic-ID\",\n      \"status\": \"pass\"\n    },\n    {\n      \"name\": \"same-topic-name-does-not-cross-account-row-ownership\",\n      \"status\": \"pass\"\n    },\n    {\n      \"name\": \"UID-and-account-row-must-match\",\n      \"status\": \"pass\"\n    },\n    {\n      \"name\": \"latest-preview-query-is-account-scoped\",\n      \"status\": \"pass\"\n    }\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_signup_registration_policy.py",
+      "sha256": "26ed956ae4ea1d94d239f9a6d6504c136b5d150e0c8ff54622a5c7a89c2541f7",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_subscription_cache_policy.py",
+      "sha256": "c1e94bcbb5784d59413aff822f39b1a3b0dfcf1b22f9b4e960606842360365cd",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_topic_info_layout_policy.py",
+      "sha256": "06ab6f83c61af70269057fcd20316224c9ebe03053922f3ce93ba6f26ee98905",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "iOS user-settings layout policy checks passed.\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_topic_security_layout_policy.py",
+      "sha256": "23e5ba62802607b0de03bf686039032137a19ccf151bb357adbc8726b5f79621",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "iOS conversation-security layout policy checks passed.\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_video_call_policy.py",
+      "sha256": "a5b7f6368d696880c19b5ebf4366992e696e4c9203aa2984d19da1df5e0b8fcf",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "iOS video call policy checks passed.\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_video_media_policy.py",
+      "sha256": "f8b5845b6b1d71f3f03a66682f16f1c14343aa88a1412b35927aa9db2044f585",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "iOS video media policy checks passed.\n",
+      "stderr": ""
+    },
+    {
+      "script": "Scripts/ci/test_websocket_tls_policy.py",
+      "sha256": "61dd247afebcf9ea685bedd8ec0af8799a0fc98fad31231bb46318b4b5044323",
+      "status": "pass",
+      "exit_code": 0,
+      "stdout": "WebSocket TLS policy OK: URLSession uses system trust evaluation.\n",
+      "stderr": ""
+    }
+  ]
+}

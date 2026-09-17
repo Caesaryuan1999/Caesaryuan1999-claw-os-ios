@@ -1,0 +1,11 @@
+{
+  "Tinodios/Utils.swift": "88477e883e9aa022398d73b82afcde8780211a1f6a4375ee0beae4834ddaef14",
+  "Tinodios/AddByIDViewController.swift": "caa2506a302f0a41167ced8f484cda6fb60c09f0f15bfc7066eb39d8380ba8f2",
+  "Tinodios/FindInteractor.swift": "4acf8662bd3465d77294ca6de95f9f2d54d8ee1b4cbff89b84ebf9d1d99c5736",
+  "Tinodios/FindViewController.swift": "67c83b0c6623371fe9e7377563fbc2fce8069f3c613accdd094ba46fb1f84bca",
+  "TinodiosUITests/PublicDirectoryTests.swift": "56ec40ef500a7beca4051344ebc94b349952ef730f750870ee9e3c3c980f6aa7",
+  "Tinodios.xcodeproj/project.pbxproj": "ffee93da2f229f458bc8b8bd98504c4b7faee36d6208f80c5a02f0a08a071dc4",
+  "Scripts/ci/verify_publish_outcomes_macos.sh": "4da696c71ff3ff5378d202dcfbbf9021829a2e08adca9a38fe127629b628891a",
+  "Scripts/ci/test_public_directory_policy.py": "a1162667365ce63c64e45f5907f7cd2d9560a4f02afbc08dffcd97d63c47d674",
+  "Scripts/ci/test_group_flow_policy.py": "af1bd07daa1d9106492a9aeb3b48cba834a406128bee92e3c61e9fae36212484"
+}
