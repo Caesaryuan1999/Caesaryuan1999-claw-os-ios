@@ -24,6 +24,7 @@ final class ClawIdentityFlow {
     private(set) var active = true
     private(set) var busy = false
     private(set) var capabilities: ClawIdentityCapabilities?
+    private(set) var capabilitiesChecked = false
     private(set) var method: ClawIdentityMethod?
     private(set) var value: String?
     private(set) var challenge: ClawIdentityChallenge?
@@ -61,6 +62,9 @@ final class ClawIdentityFlow {
     }
 
     var isCurrent: Bool { active && snapshotIsCurrent() }
+    var legacyLoginAvailable: Bool {
+        isCurrent && capabilitiesChecked && capabilities?.legacy_basic != false
+    }
     private func seconds(until deadline: Date?) -> Int { max(0, Int(ceil((deadline ?? now()).timeIntervalSince(now())))) }
     var retrySeconds: Int { seconds(until: cooldownDeadline) }
     var loginRetrySeconds: Int { seconds(until: loginCooldownDeadline) }
@@ -96,16 +100,20 @@ final class ClawIdentityFlow {
 
     func prepare(_ completion: @escaping (Result<ClawIdentityCapabilities, ClawIdentityError>) -> Void) {
         guard isCurrent, !busy else { completion(.failure(.ended)); return }
-        if let capabilities = capabilities { completion(.success(capabilities)); return }
+        if let capabilities = capabilities {
+            completion(capabilities.supported ? .success(capabilities) : .failure(.unavailable)); return
+        }
         busy = true
         let generation = generation
         service.capabilities { [weak self] result in
             self?.consume(result, generation: generation) { [weak self] result in
                 guard let self = self else { return }
+                self.capabilitiesChecked = true
                 switch result {
                 case let .success(capabilities):
-                    guard capabilities.supported else { completion(.failure(.unavailable)); return }
+                    // Remember explicit legacy refusal even if the newer AUTH flow is unavailable.
                     self.capabilities = capabilities
+                    guard capabilities.supported else { completion(.failure(.unavailable)); return }
                     completion(.success(capabilities))
                 case let .failure(error): completion(.failure(error))
                 }
@@ -351,9 +359,9 @@ final class ClawIdentityFlow {
                      bridge: @escaping (String, String, @escaping (Result<ClawIdentitySessionResult, ClawIdentityError>) -> Void) -> Void,
                      completion: @escaping (Result<ClawIdentitySessionResult, ClawIdentityError>) -> Void) {
         guard isCurrent, !busy else { completion(.failure(.ended)); return }
-        guard capabilities?.supported == true, capabilities?.legacy_basic == true else {
-            completion(.failure(.unavailable)); return
-        }
+        // Original basic login must work without the optional AUTH HTTP endpoints.
+        // An explicit server capability legacy_basic=false remains authoritative.
+        guard legacyLoginAvailable else { completion(.failure(.unavailable)); return }
         guard !username.isEmpty, !password.isEmpty else { completion(.failure(.invalidIdentifier)); return }
         busy = true
         websocketStarted = true

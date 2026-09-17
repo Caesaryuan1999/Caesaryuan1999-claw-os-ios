@@ -408,5 +408,45 @@ final class IdentityFlowTests: XCTestCase {
         XCTAssertFalse(flow.sessionCommitted)
     }
 
+    func testMissingAUTH404StillAllowsOriginalBasicLogin() throws {
+        IdentityProtocol.respond { [self] _ in reply(#"{"error":{"code":"not_found"}}"#, 404) }
+        XCTAssertThrowsError(try awaitResult { flow.prepare($0) }.get())
+        XCTAssertTrue(flow.legacyLoginAvailable)
+        var calls = 0
+        _ = try awaitResult { done in
+            flow.loginLegacy(username: "oldname", password: " old ", bridge: { name, password, reply in
+                calls += 1
+                XCTAssertEqual(name, "oldname")
+                XCTAssertEqual(password, " old ")
+                reply(.success(ClawIdentitySessionResult(user: "usrOld", token: "dGVzdA==", expires: nil)))
+            }, completion: done)
+        }.get()
+        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(committed.first?.user, "usrOld")
+        XCTAssertTrue(flow.sessionCommitted)
+    }
+    func testExplicitLegacyFalseSurvivesDisabledAUTHCapabilities() throws {
+        IdentityProtocol.respond { [self] _ in
+            reply(capabilities.replacingOccurrences(of: #""enabled":true"#, with: #""enabled":false"#)
+                .replacingOccurrences(of: #""legacy_basic":true"#, with: #""legacy_basic":false"#))
+        }
+        XCTAssertThrowsError(try awaitResult { flow.prepare($0) }.get())
+        XCTAssertFalse(flow.legacyLoginAvailable)
+        XCTAssertEqual(flow.capabilities?.legacy_basic, false)
+        XCTAssertThrowsError(try awaitResult { done in
+            flow.loginLegacy(username: "oldname", password: " old ", bridge: { _, _, _ in
+                XCTFail("Explicit legacy refusal dispatched basic login")
+            }, completion: done)
+        }.get())
+        XCTAssertTrue(committed.isEmpty)
+    }
+    func testFailedAUTHTransportAllowsOriginalBasicButNotNewIdentityLogin() throws {
+        IdentityProtocol.respond { _ in throw URLError(.cannotConnectToHost) }
+        XCTAssertThrowsError(try awaitResult { flow.prepare($0) }.get())
+        XCTAssertTrue(flow.legacyLoginAvailable)
+        XCTAssertThrowsError(try awaitResult { flow.login(method: .email, input: "a@b.com", password: "old", completion: $0) }.get())
+        XCTAssertTrue(committed.isEmpty)
+    }
+
 }
 

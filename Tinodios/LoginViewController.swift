@@ -88,7 +88,9 @@ class LoginViewController: UIViewController {
                         ? "测试环境：短信或邮件投递尚未代表正式服务。" : "使用密码登录；验证码仅用于注册和找回密码。")
                     if !capabilities.legacy_basic { self.legacyMode = false; self.methodChanged() }
                 case let .failure(error):
-                    self.form.status.text = status ?? "\(error.message)。请检查连接设置；公网身份服务须使用 HTTPS。"
+                    self.form.status.text = status ?? (current.flow.legacyLoginAvailable
+                        ? "手机号和邮箱登录暂不可用；已有原账号可选择“使用原账号登录”。"
+                        : "\(error.message)。请检查连接设置。")
                 }
                 self.refresh()
             }
@@ -100,13 +102,14 @@ class LoginViewController: UIViewController {
     private func refresh() {
         let flow = coordinator?.flow
         let ready = flow?.isCurrent == true && flow?.busy == false && flow?.capabilities?.supported == true
-        loginButton.isEnabled = ready && (flow?.loginRetrySeconds ?? 0) == 0 && (!legacyMode || flow?.capabilities?.legacy_basic == true)
+        loginButton.isEnabled = (legacyMode ? flow?.legacyLoginAvailable == true && flow?.busy == false : ready)
+            && (flow?.loginRetrySeconds ?? 0) == 0
         loginButton.setTitle(flow?.busy == true ? "正在登录…" : (flow?.loginRetrySeconds ?? 0) > 0 ? "\(flow!.loginRetrySeconds) 秒后重试" : "登录", for: .normal)
         userNameTextEdit.isEnabled = flow?.busy != true
         passwordTextEdit.isEnabled = flow?.busy != true
         country.isEnabled = flow?.busy != true
         methodPicker.isEnabled = flow?.busy != true
-        legacyButton.isEnabled = ready && flow?.capabilities?.legacy_basic == true
+        legacyButton.isEnabled = flow?.legacyLoginAvailable == true && flow?.busy == false
     }
     @objc private func methodChanged() {
         let phone = !legacyMode && selectedMethod == .tel
@@ -149,8 +152,9 @@ class LoginViewController: UIViewController {
                 self.passwordTextEdit.text = nil
                 UiUtils.routeToChatListVC(for: current.owner)
             case let .failure(error):
-                self.form.status.text = error.message
-                if !current.flow.isCurrent { self.prepareIdentity(status: error.message) }
+                let message = self.legacyMode && error.code == "auth_invalid" ? "原账号名或密码不正确" : error.message
+                self.form.status.text = message
+                if !current.flow.isCurrent { self.prepareIdentity(status: message) }
             }
             self.refresh()
         }
