@@ -897,6 +897,73 @@ final class LocalMigrationTests: XCTestCase {
         }
     }
 
+    private func publicContact(_ tags: [String], uid: String = "usrPublicFixture") throws -> FndSubscription {
+        let data = try JSONSerialization.data(withJSONObject: [
+            "user": uid, "public": ["fn": "公开资料夹具"], "private": tags
+        ])
+        return try JSONDecoder().decode(FndSubscription.self, from: data)
+    }
+
+    func testPublicAliasFirstInsertAndReopenPreservesPublicIdentifier() throws {
+        try withFixture { file, database in
+            let base = BaseDb(databasePath: file.path)
+            let users = try XCTUnwrap(base.userDb)
+            let sub = try publicContact(["basic:legacyname", "alias:claw_abc123def456"])
+            let id = users.insert(sub: sub)
+            XCTAssertGreaterThan(id, 0)
+            XCTAssertEqual(try database.scalar("SELECT account_name FROM users WHERE id=?", id) as? String,
+                           "claw_abc123def456")
+            let reopened = BaseDb(databasePath: file.path)
+            let loaded = try XCTUnwrap(reopened.userDb?.readOne(uid: sub.user)?.payload as? StoredUser)
+            XCTAssertEqual(loaded.accountName, "claw_abc123def456")
+            XCTAssertEqual(try database.scalar("PRAGMA user_version") as? Int64, 113)
+        }
+    }
+
+    func testPublicIdentifierLegacyFallbackAndAliasOrder() throws {
+        try withFixture { file, database in
+            let users = try XCTUnwrap(BaseDb(databasePath: file.path).userDb)
+            let id = users.insert(sub: try publicContact(["email:fixture@example.test", "basic:Legacy42"]))
+            XCTAssertEqual(try database.scalar("SELECT account_name FROM users WHERE id=?", id) as? String, "legacy42")
+            XCTAssertEqual(UserDb.publicAccountName(from: ["basic:legacy42", "alias:CLAW_ABC123DEF456"]),
+                           "claw_abc123def456")
+            XCTAssertEqual(UserDb.publicAccountName(from: ["alias:", "basic:legacy42"]), "legacy42")
+        }
+    }
+
+    func testPublicIdentifierNeverFallsBackToPrivateIdentity() throws {
+        try withFixture { file, database in
+            let users = try XCTUnwrap(BaseDb(databasePath: file.path).userDb)
+            let sub = try publicContact(["email:fixture@example.test", "tel:+8613800000000", "alias:invalid alias"])
+            let id = users.insert(sub: sub)
+            XCTAssertGreaterThan(id, 0)
+            XCTAssertNil(try database.scalar("SELECT account_name FROM users WHERE id=?", id))
+            XCTAssertNil((users.readOne(uid: sub.user)?.payload as? StoredUser)?.accountName)
+            XCTAssertNil(UserDb.publicAccountName(from: nil))
+            // Explicit public tags are authoritative, without guessing internal-name prefixes.
+            XCTAssertEqual(UserDb.publicAccountName(from: ["alias:usrpublic123"]), "usrpublic123")
+        }
+    }
+
+    func testPublicIdentifierSameContactRemainsAccountScoped() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let users = try XCTUnwrap(base.userDb)
+            let store = try XCTUnwrap(base.sqlStore)
+            let a = try publicContact(["alias:claw_aaa123def456"])
+            XCTAssertGreaterThan(users.insert(sub: a), 0)
+            store.logout()
+            XCTAssertNil(users.readOne(uid: a.user))
+            store.myUid = "usrFixtureB"
+            XCTAssertNil(users.readOne(uid: a.user))
+            XCTAssertGreaterThan(users.insert(sub: try publicContact(["alias:claw_bbb123def456"])), 0)
+            XCTAssertEqual((users.readOne(uid: a.user)?.payload as? StoredUser)?.accountName, "claw_bbb123def456")
+            store.logout()
+            store.myUid = "usrFixtureA"
+            XCTAssertEqual((users.readOne(uid: a.user)?.payload as? StoredUser)?.accountName, "claw_aaa123def456")
+        }
+    }
+
     func testBlockedStoragePreventsSDKConnectPublishAndLocalAcknowledgement() throws {
         try withFixture { file, database in
             try database.run("PRAGMA user_version=114")

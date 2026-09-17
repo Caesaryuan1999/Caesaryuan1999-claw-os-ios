@@ -191,7 +191,21 @@ public class UserDb {
     }
 
     private static func accountName(from sub: SubscriptionProto?) -> String? {
-        guard let tags = (sub as? FndSubscription)?.priv else { return nil }
+        return publicAccountName(from: (sub as? FndSubscription)?.priv)
+    }
+
+    /// Public directory tags only. Never derive this value from a UID or login credentials.
+    public static func publicAccountName(from tags: [String]?) -> String? {
+        guard let tags = tags else { return nil }
+        for tag in tags {
+            let normalized = tag.lowercased()
+            guard normalized.hasPrefix(Tinode.kTagAlias) else { continue }
+            let value = String(normalized.dropFirst(Tinode.kTagAlias.count))
+            if !value.isEmpty && Tinode.isValidTagValueFormat(tag: value) {
+                return value
+            }
+        }
+        // Preserve historical public basic tags; authentication usernames are not a source.
         let prefix = "basic:"
         return tags.compactMap { tag in
             let normalized = tag.lowercased()

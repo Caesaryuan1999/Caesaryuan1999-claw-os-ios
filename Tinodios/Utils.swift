@@ -989,14 +989,13 @@ enum AccountNames {
     }
 
     static func fromTags(_ tags: [String]?) -> String? {
-        return tags?.compactMap { fromBasicTag($0) }.first
+        return UserDb.publicAccountName(from: tags)
     }
 
     static func fromBasicTag(_ tag: String?) -> String? {
         guard let tag = tag,
               tag.lowercased().hasPrefix(basicTagPrefix) else { return nil }
-        let accountName = normalize(String(tag.dropFirst(basicTagPrefix.count)))
-        return isPublicAccountName(accountName) ? accountName : nil
+        return UserDb.publicAccountName(from: [tag])
     }
 
     static func matchesPublicSearchName(tags: [String]?, query: String?) -> Bool {
@@ -1058,7 +1057,8 @@ enum AccountNames {
     }
 
     private static func isPublicAccountName(_ value: String?) -> Bool {
-        return ClawAuthInput.isAccountNameValid(value) && !isUserIdLike(value)
+        guard let value = value, !value.isEmpty else { return false }
+        return UserDb.publicAccountName(from: [Tinode.kTagAlias + value, basicTagPrefix + value]) != nil
     }
 }
 
