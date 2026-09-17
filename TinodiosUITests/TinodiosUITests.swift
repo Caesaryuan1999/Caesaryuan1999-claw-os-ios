@@ -479,7 +479,8 @@ final class LocalMigrationTests: XCTestCase {
             try db.run(BaseDb.migrationWriteSQL)
             try db.run("UPDATE messages SET status=31 WHERE id=4")
             try db.run("UPDATE messages SET status=36 WHERE id=5")
-            try db.run("UPDATE messages SET head=? WHERE id IN (2,3,4,5)", "{\"clientmsgid\":\"abcdefab-1111-4111-8111-abcdefabcdef\"}")
+            let headers: [String: JSONValue] = ["clientmsgid": .string("abcdefab-1111-4111-8111-abcdefabcdef")]
+            try db.run("UPDATE messages SET head=? WHERE id IN (2,3,4,5)", XCTUnwrap(Tinode.serializeObject(headers)))
             let before = try preservedData(db)
             XCTAssertTrue(BaseDb(databasePath: file.path).isStoreAvailable)
             XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE id IN (2,3,4,5) AND status=35") as? Int64, 4)
@@ -538,7 +539,13 @@ final class LocalMigrationTests: XCTestCase {
         try withFixture { file, _ in
             let base = BaseDb(databasePath: file.path)
             let first = try XCTUnwrap(base.db)
-            try first.run("UPDATE messages SET status=20,head=? WHERE id=2", "{\"clientmsgid\":\"abcdefab-1111-4111-8111-abcdefabcdef\"}")
+            let key = "abcdefab-1111-4111-8111-abcdefabcdef"
+            let headers: [String: JSONValue] = ["clientmsgid": .string(key)]
+            // Persist the actual typed storage encoding, not wire-format JSON.
+            let encoded = try XCTUnwrap(Tinode.serializeObject(headers))
+            let decoded: [String: JSONValue]? = Tinode.deserializeObject(from: encoded)
+            XCTAssertEqual(C3PublishPolicy.clientMessageId(in: decoded), key)
+            try first.run("UPDATE messages SET status=20,head=? WHERE id=2", encoded)
             let second = try SQLite.Connection(file.path)
             second.busyTimeout = 5
             let lock = NSLock()
@@ -548,6 +555,8 @@ final class LocalMigrationTests: XCTestCase {
                 lock.lock(); claims.append(claimed); lock.unlock()
             }
             XCTAssertEqual(claims.filter { $0 }.count, 1)
+            XCTAssertEqual(try first.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 31)
+            XCTAssertEqual(try first.scalar("SELECT head FROM messages WHERE id=2") as? String, encoded)
         }
     }
 
