@@ -13,3 +13,5 @@ Evidence in build/ios-01-a-*/launch-smoke/: manifest.json with commit/archive/ex
 Windows: actual Python production runner exercised by check_smoke_runner.py with ONLY macOS subprocess/process-path/time boundary mocks: 6/6 PASS (success scope, install failure, invalid PID, wrong executable, screenshot failure, current-PID crash). First run exposed duplicate crash-report evidence on error collection (5/6); de-duplicated by filename, rerun6/6. These are not simctl/macOS results. Python AST and diff --check pass. Current native expectation remains112; actual Mac smoke NOT_RUN until parent CI4.
 
 Success label PASS_COLD_LAUNCH_ONLY does not prove the login screen or UI journey. Screenshot review explicitly PENDING_HUMAN; parent inspects the screenshot. Login, OTP delivery, contacts/chat navigation, device permission flows, physical device/APNs remain NOT_RUN. No credentials entered.
+
+追加验证：Windows工作树旧.sh为CRLF，直接bash -n报{\\r；git ls-files --eol证实提交blob为LF。实际提取34da10e提交中的shell原字节后bash -n通过（0 CRLF）。这是提交脚本语法验证，不是macOS执行；未重写其他继承文件行尾。
