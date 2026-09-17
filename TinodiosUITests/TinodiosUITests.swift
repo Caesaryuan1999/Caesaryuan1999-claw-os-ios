@@ -229,6 +229,17 @@ class FakeTinodeServer {
 // These tests use BaseDb's production path with independent synthetic old data.
 // Prepared on Windows; execution requires the Mac SQLite.swift/XCTest target.
 final class LocalMigrationTests: XCTestCase {
+    func testSchemaReadPropagatesSQLiteStepError() throws {
+        let database = try SQLite.Connection(.inMemory)
+        // Valid preparation followed by an integer-overflow error during step.
+        // The gate must throw, not crash through Sequence.next()'s try!.
+        XCTAssertThrowsError(try BaseDb.schemaRows(in: database, sql: "SELECT abs(-9223372036854775808)"))
+        let rows = try BaseDb.schemaRows(in: database, sql: "SELECT 1 UNION ALL SELECT 2")
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertEqual(rows[0][0] as? Int64, 1)
+        XCTAssertEqual(rows[1][0] as? Int64, 2)
+    }
+
     private static let fixtureSQL = """
     -- Synthetic old-version 113 fixture, transcribed from the five table builders
     -- at 97e21f49 / takeover-20260917-214922. No real accounts or attachment data.
