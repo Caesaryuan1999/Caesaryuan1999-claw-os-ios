@@ -845,7 +845,13 @@ class UiUtils {
         let iconName: String
         var tint: UIColor = UiUtils.kDeliveryMarkerColor
 
-        if message.isPending {
+        if message.isUnconfirmed {
+            return (UIImage(systemName: "questionmark.circle.fill")!, .systemOrange)
+        }
+        if message.isFailed {
+            return (UIImage(systemName: "exclamationmark.circle.fill")!, .systemRed)
+        }
+        if !message.isSynced {
             iconName = "in-progress-30"
         } else {
             if topic.msgReadCount(seq: message.seqId) > 0 {

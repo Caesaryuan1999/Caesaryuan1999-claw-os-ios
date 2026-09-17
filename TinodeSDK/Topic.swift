@@ -1356,23 +1356,18 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
             error: TinodeError.notConnected("Leaving topic when Tinode is not connected."))
     }
 
-    private func processDelivery(ctrl: MsgServerCtrl?, id: Int64) {
-        guard let ctrl = ctrl else {
-            return
-        }
-        guard let seq = ctrl.getIntParam(for: "seq"), seq > 0 else {
-            return
+    private func processDelivery(ctrl: MsgServerCtrl?, id: Int64) throws {
+        let seq = try PublishConfirmation.sequence(from: ctrl)
+        guard let ctrl = ctrl else { return } // Validated above.
+        if id > 0, let s = store {
+            guard s.msgDelivered(topic: self, dbMessageId: id,
+                                 timestamp: ctrl.ts, seq: seq) else {
+                throw TinodeError.requestOutcomeUnknown("Server accepted the message but local confirmation could not be saved")
+            }
         }
         setSeq(seq: seq)
         touched = ctrl.ts
-        if id > 0, let s = store {
-            if s.msgDelivered(topic: self, dbMessageId: id,
-                              timestamp: ctrl.ts, seq: seq) {
-                setRecv(recv: seq)
-            }
-        } else {
-            setRecv(recv: seq)
-        }
+        setRecv(recv: seq)
         setRead(read: seq)
         if let s = store {
             s.setRead(topic: self, read: seq)
@@ -1382,6 +1377,10 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
     }
 
     private func publishInternal(content: Drafty, head: [String: JSONValue]?, msgId: Int64) -> PromisedReply<ServerMessage> {
+        guard let tinode = tinode, let store = store,
+              store.msgSyncing(topic: self, dbMessageId: msgId, sync: true) else {
+            return PromisedReply(error: TinodeError.requestNotSent("该消息已在处理，或无法保存发送状态。请核对会话记录。"))
+        }
         var headers = head
         var attachments: [String]?
         if !content.isPlain {
@@ -1396,13 +1395,21 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
             headers?.removeValue(forKey: "mime")
         }
 
-        return tinode!.publish(topic: name, head: headers, content: content, attachments: attachments).then(
-            onSuccess: { [weak self] msg in
-                self?.processDelivery(ctrl: msg?.ctrl, id: msgId)
+        return tinode.publish(topic: name, head: headers, content: content, attachments: attachments)
+            .thenApply({ [weak self] msg in
+                try self?.processDelivery(ctrl: msg?.ctrl, id: msgId)
                 return nil
-            }, onFailure: { [weak self] err in
-                self?.store?.msgSyncing(topic: self!, dbMessageId: msgId, sync: false)
-                // Rethrow exception to trigger the next possible failure listener.
+            }).thenCatch({ [weak self] err in
+                if let self = self {
+                    switch PublishFailureDisposition.forError(err) {
+                    case .queued:
+                        self.store?.msgSyncing(topic: self, dbMessageId: msgId, sync: false)
+                    case .failed:
+                        self.store?.msgFailed(topic: self, dbMessageId: msgId)
+                    case .unconfirmed:
+                        self.store?.msgUnconfirmed(topic: self, dbMessageId: msgId)
+                    }
+                }
                 throw err
             })
     }
@@ -1436,17 +1443,21 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
             }
         }
         if id < 0 {
-            return PromisedReply(error: TopicError.messageDraftFailure("Topic[\(self.name)]: could not save message draft"))
+            return PromisedReply(error: TinodeError.requestNotSent("无法保存消息，请检查设备存储后重试。"))
         }
         if attached {
             return publishInternal(content: content, head: head, msgId: id)
         } else {
             return subscribe()
+                .thenCatch({ error in
+                    // Only the subscription ran. No publish was dispatched by this chain.
+                    if let error = error as? TinodeError, case .notConnected = error {
+                        throw error
+                    }
+                    throw TinodeError.requestNotSent("无法进入会话：\(error.localizedDescription)")
+                })
                 .thenApply({ [weak self] _ in
                     return self?.publishInternal(content: content, head: head, msgId: id)
-                }).thenCatch({ [weak self] err in
-                    self?.store?.msgSyncing(topic: self!, dbMessageId: id, sync: false)
-                    throw err
                 })
         }
     }
@@ -1545,7 +1556,6 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
             return tinode!.delMessage(topicName: name, msgId: m.seqId, hard: m.isDeleted(hard: true))
         }
         if m.isReady, let content = m.content {
-            store?.msgSyncing(topic: self, dbMessageId: msgId, sync: true)
             return self.publishInternal(content: content, head: m.head, msgId: msgId)
         }
         return PromisedReply<ServerMessage>(value: ServerMessage())
@@ -1572,7 +1582,6 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
                 self.store?.msgDiscard(topic: self, dbMessageId: msgId)
                 continue
             }
-            self.store?.msgSyncing(topic: self, dbMessageId: msgId, sync: true)
             result = self.publishInternal(content: msg.content!, head: msg.head, msgId: msgId)
         }
         return result

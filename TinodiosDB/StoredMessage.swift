@@ -32,6 +32,8 @@ public class StoredMessage: MsgServerData, Message {
             dbStatus == .deletedSoft
     }
     public var isSynced: Bool { return dbStatus == .synced }
+    public var isUnconfirmed: Bool { return dbStatus == .unconfirmed }
+    public var isFailed: Bool { return dbStatus == .failed }
 
     /// Message has not been delivered to the server yet.
     public var isPending: Bool { return dbStatus == nil || dbStatus! <= .sending }

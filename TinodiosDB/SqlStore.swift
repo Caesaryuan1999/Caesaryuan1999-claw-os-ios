@@ -264,17 +264,26 @@ public class SqlStore: Storage {
     }
 
     public func msgSyncing(topic: TopicProto, dbMessageId: Int64, sync: Bool) -> Bool {
-        return self.dbh?.messageDb?.updateStatusAndContent(
-            msgId: dbMessageId,
-            status: sync ? .sending : .queued,
-            content: nil) ?? false
+        if sync {
+            return self.dbh?.messageDb?.transitionStatus(
+                msgId: dbMessageId, from: .queued, to: .sending) ?? false
+        }
+        return self.dbh?.messageDb?.transitionStatus(
+            msgId: dbMessageId, from: .sending, to: .queued) ?? false
+    }
+
+    public func msgUnconfirmed(topic: TopicProto, dbMessageId: Int64) -> Bool {
+        return self.dbh?.messageDb?.transitionStatus(
+            msgId: dbMessageId, from: .sending, to: .unconfirmed) ?? false
+    }
+
+    // Called by the main app before it constructs a new SDK instance, never by NSE init.
+    public func recoverInterruptedPublishes() -> Bool {
+        return self.dbh?.messageDb?.recoverInterruptedPublishes() ?? false
     }
 
     public func msgFailed(topic: TopicProto, dbMessageId: Int64) -> Bool {
-        return self.dbh?.messageDb?.updateStatusAndContent(
-            msgId: dbMessageId,
-            status: .failed,
-            content: nil) ?? false
+        return self.dbh?.messageDb?.markPendingFailed(msgId: dbMessageId) ?? false
     }
 
     public func msgPruneFailed(topic: TopicProto) -> Bool {

@@ -9,6 +9,77 @@ import XCTest
 
 import Network
 @testable import TinodeSDK
+@testable import TinodiosDB
+import SQLite
+
+// Runs against isolated SQLite files; does not launch or clear the app database.
+final class PublishStorageTests: XCTestCase {
+    func testTwoConcurrentClaimsDispatchOnlyOneCopy() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".sqlite")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let first = try SQLite.Connection(url.path)
+        let second = try SQLite.Connection(url.path)
+        first.busyTimeout = 2
+        second.busyTimeout = 2
+        try first.run("CREATE TABLE messages (id INTEGER PRIMARY KEY, status INTEGER, content TEXT)")
+        try first.run("INSERT INTO messages VALUES (1, 20, 'preserve me')")
+        let lock = NSLock()
+        var claims = [Bool]()
+        DispatchQueue.concurrentPerform(iterations: 2) { index in
+            let claimed = MessageDb.transitionStatus(in: index == 0 ? first : second,
+                msgId: 1, from: .queued, to: .sending)
+            lock.lock()
+            claims.append(claimed)
+            lock.unlock()
+        }
+        XCTAssertEqual(claims.filter { $0 }.count, 1)
+        XCTAssertEqual(try first.scalar("SELECT status FROM messages WHERE id=1") as? Int64, 30)
+        XCTAssertEqual(try first.scalar("SELECT content FROM messages WHERE id=1") as? String, "preserve me")
+    }
+
+    func testReopenPreservesUnknownAndOnlyReplaysNeverSentMessages() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".sqlite")
+        defer { try? FileManager.default.removeItem(at: url) }
+        do {
+            let db = try SQLite.Connection(url.path)
+            try db.run("CREATE TABLE messages (id INTEGER PRIMARY KEY, status INTEGER, content TEXT)")
+            try db.run("INSERT INTO messages VALUES (1,20,'queued'),(2,30,'interrupted'),(3,35,'unknown'),(4,40,'failed'),(5,50,'accepted')")
+        }
+        let reopened = try SQLite.Connection(url.path)
+        XCTAssertTrue(MessageDb.recoverInterruptedPublishes(in: reopened))
+        XCTAssertEqual(try reopened.scalar("SELECT COUNT(*) FROM messages WHERE status=20") as? Int64, 1)
+        XCTAssertEqual(try reopened.scalar("SELECT COUNT(*) FROM messages WHERE status=35") as? Int64, 2)
+        XCTAssertEqual(try reopened.scalar("SELECT COUNT(*) FROM messages") as? Int64, 5)
+        XCTAssertFalse(MessageDb.transitionStatus(in: reopened, msgId: 2, from: .queued, to: .sending))
+        XCTAssertFalse(MessageDb.transitionStatus(in: reopened, msgId: 3, from: .queued, to: .sending))
+        XCTAssertFalse(MessageDb.transitionStatus(in: reopened, msgId: 4, from: .queued, to: .sending))
+    }
+
+    func testOnlyConfirmedMessagesAreSynced() {
+        for status in [BaseDb.Status.sending, .unconfirmed, .failed] {
+            let message = StoredMessage()
+            message.dbStatus = status
+            XCTAssertFalse(message.isSynced)
+        }
+        let unknown = StoredMessage()
+        unknown.dbStatus = .unconfirmed
+        XCTAssertTrue(unknown.isUnconfirmed)
+        XCTAssertFalse(unknown.isReady)
+    }
+
+    func testLateFailureCannotDowngradeAcceptedOrUnknownMessages() throws {
+        let db = try SQLite.Connection(.inMemory)
+        try db.run("CREATE TABLE messages (id INTEGER PRIMARY KEY, status INTEGER)")
+        try db.run("INSERT INTO messages VALUES (1,50),(2,35),(3,10),(4,30)")
+        XCTAssertFalse(MessageDb.markPendingFailed(in: db, msgId: 1))
+        XCTAssertFalse(MessageDb.markPendingFailed(in: db, msgId: 2))
+        XCTAssertTrue(MessageDb.markPendingFailed(in: db, msgId: 3))
+        XCTAssertTrue(MessageDb.markPendingFailed(in: db, msgId: 4))
+        XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=1") as? Int64, 50)
+        XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 35)
+        XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE status=40") as? Int64, 2)
+    }
+}
 
 class FakeTinodeServer {
     var listener: NWListener

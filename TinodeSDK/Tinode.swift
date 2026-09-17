@@ -16,6 +16,9 @@ public enum TinodeError: LocalizedError, CustomStringConvertible {
     case invalidState(String)
     case invalidArgument(String)
     case notConnected(String)
+    case requestNotSent(String)
+    // The request may have reached the server. It must not be replayed automatically.
+    case requestOutcomeUnknown(String)
     case serverResponseError(Int, String, String?)
     case notSubscribed(String)
     case notSynchronized
@@ -31,6 +34,10 @@ public enum TinodeError: LocalizedError, CustomStringConvertible {
                 return "Invalid argument: \(message)"
             case .notConnected(let message):
                 return "Not connected: \(message)"
+            case .requestNotSent(let message):
+                return "Request not sent: \(message)"
+            case .requestOutcomeUnknown(let message):
+                return "Request outcome unconfirmed: \(message)"
             case .serverResponseError(let code, let text, _):
                 return "\(text) (\(code))"
             case .notSubscribed(let message):
@@ -43,6 +50,44 @@ public enum TinodeError: LocalizedError, CustomStringConvertible {
 
     public var errorDescription: String? {
         return description
+    }
+}
+
+public enum PublishFailureDisposition: Equatable {
+    case queued, failed, unconfirmed
+
+    public static func forError(_ error: Error) -> PublishFailureDisposition {
+        if let error = error as? TinodeError {
+            switch error {
+            case .notConnected:
+                // Only emitted before handing this request to transport.
+                return .queued
+            case .invalidArgument, .requestNotSent:
+                return .failed
+            case .serverResponseError(let code, _, _):
+                // A timeout or a server/gateway failure does not prove rejection.
+                return (400..<500).contains(code) && code != 408 ? .failed : .unconfirmed
+            default:
+                return .unconfirmed
+            }
+        }
+        if error is EncodingError {
+            return .failed
+        }
+        if let jsonError = error as? TinodeJsonError, case .encode = jsonError {
+            return .failed
+        }
+        return .unconfirmed
+    }
+}
+
+enum PublishConfirmation {
+    static func sequence(from ctrl: MsgServerCtrl?) throws -> Int {
+        guard let ctrl = ctrl, (200..<300).contains(ctrl.code),
+              let seq = ctrl.getIntParam(for: "seq"), seq > 0 else {
+            throw TinodeError.requestOutcomeUnknown("Missing valid publish confirmation or sequence")
+        }
+        return seq
     }
 }
 
@@ -196,7 +241,7 @@ public class Tinode {
         @objc private func expireFutures() {
             futuresQueue.sync {
                 let expirationThreshold = Date().addingTimeInterval(TimeInterval(-ConcurrentFuturesMap.kFutureTimeout))
-                let error = TinodeError.serverResponseError(ServerMessage.kStatusGatewayTimeout, "timeout", nil)
+                let error = TinodeError.requestOutcomeUnknown("Timed out waiting for the server reply")
                 var expiredKeys = [String]()
                 for (id, f) in futuresDict {
                     if f.creationTimestamp < expirationThreshold {
@@ -663,7 +708,7 @@ public class Tinode {
     }
 
     private func send<DP: Codable, DR: Codable>(payload msg: ClientMessage<DP, DR>) throws {
-        guard let conn = connection else {
+        guard let conn = connection, conn.isConnected else {
             throw TinodeError.notConnected("Attempted to send msg to a closed connection.")
         }
         let jsonData = try Tinode.jsonEncoder.encode(msg)
@@ -673,10 +718,12 @@ public class Tinode {
 
     private func sendWithPromise<DP: Codable, DR: Codable>(payload msg: ClientMessage<DP, DR>, with id: String) -> PromisedReply<ServerMessage> {
         let future = PromisedReply<ServerMessage>()
+        // Register before send: a fast reply must not be lost between these operations.
+        futures[id] = future
         do {
             try send(payload: msg)
-            futures[id] = future
         } catch {
+            _ = futures.removeValue(forKey: id)
             do {
                 try future.reject(error: error)
             } catch {
@@ -1052,7 +1099,7 @@ public class Tinode {
         }
     }
     private func handleDisconnect(isServerOriginated: Bool, code: URLSessionWebSocketTask.CloseCode, reason: String) {
-        let e = TinodeError.notConnected("no longer connected to server")
+        let e = TinodeError.requestOutcomeUnknown("Connection closed before the server reply")
         futures.rejectAndPurgeAll(withError: e)
         serverBuild = nil
         serverVersion = nil

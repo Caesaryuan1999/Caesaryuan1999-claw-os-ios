@@ -58,6 +58,9 @@ class Cache {
         if tinodeInstance == nil {
             queue.sync {
                 if tinodeInstance == nil {
+                    if BaseDb.sharedInstance.sqlStore?.recoverInterruptedPublishes() != true {
+                        Cache.log.error("Could not recover interrupted publishes; sending rows remain excluded from replay")
+                    }
                     tinodeInstance = SharedUtils.createTinode()
                     DispatchQueue.main.async {
                         self.tinodeInstance?.addListener((UIApplication.shared.delegate as! AppDelegate).callListener)

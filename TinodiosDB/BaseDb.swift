@@ -24,6 +24,9 @@ public class BaseDb {
         case queued = 20
         // Object is in the process of being sent to the server.
         case sending = 30
+        // Dispatched but not confirmed. Never eligible for automatic queued replay.
+        // Keep schema version unchanged: adding this raw value does not alter tables.
+        case unconfirmed = 35
         // Sending failed
         case failed = 40
         // Object is received by the server.

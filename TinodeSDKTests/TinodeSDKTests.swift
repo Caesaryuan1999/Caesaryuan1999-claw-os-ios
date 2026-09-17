@@ -11,6 +11,63 @@ import XCTest
 // TODO: add tests for Tinode here.
 class TinodeSDKTests: XCTestCase {
 
+    func testPublishTimeoutNeverReturnsToAutomaticQueue() {
+        XCTAssertEqual(PublishFailureDisposition.forError(
+            TinodeError.requestOutcomeUnknown("reply timed out")), .unconfirmed)
+    }
+
+    func testPublishDisconnectAfterDispatchNeverReturnsToAutomaticQueue() {
+        XCTAssertEqual(PublishFailureDisposition.forError(
+            TinodeError.requestOutcomeUnknown("connection closed")), .unconfirmed)
+    }
+
+    func testPublishOfflineBeforeDispatchCanRemainQueued() {
+        XCTAssertEqual(PublishFailureDisposition.forError(
+            TinodeError.notConnected("connection is not open")), .queued)
+    }
+
+    func testDraftOrSubscriptionFailureDoesNotClaimAnUnknownServerOutcome() {
+        XCTAssertEqual(PublishFailureDisposition.forError(
+            TinodeError.requestNotSent("draft could not be saved")), .failed)
+    }
+
+    func testExplicitPermissionRejectionIsFailedAndNotQueued() {
+        XCTAssertEqual(PublishFailureDisposition.forError(
+            TinodeError.serverResponseError(403, "permission denied", nil)), .failed)
+    }
+
+    func testGatewayFailureAndUnexpectedFailureRemainUnconfirmed() {
+        XCTAssertEqual(PublishFailureDisposition.forError(
+            TinodeError.serverResponseError(504, "gateway timeout", nil)), .unconfirmed)
+        XCTAssertEqual(PublishFailureDisposition.forError(
+            NSError(domain: "test.transport", code: 1)), .unconfirmed)
+    }
+
+    func testPublishConfirmationRejectsMissingOrNonPositiveSequence() throws {
+        for json in [
+            "{\"ctrl\":{\"id\":\"1\",\"code\":200,\"text\":\"ok\",\"ts\":\"2026-09-17T12:00:00Z\"}}",
+            "{\"ctrl\":{\"id\":\"1\",\"code\":200,\"text\":\"ok\",\"ts\":\"2026-09-17T12:00:00Z\",\"params\":{\"seq\":0}}}",
+            "{\"ctrl\":{\"id\":\"1\",\"code\":403,\"text\":\"denied\",\"ts\":\"2026-09-17T12:00:00Z\",\"params\":{\"seq\":10}}}"
+        ] {
+            let packet = try Tinode.jsonDecoder.decode(ServerMessage.self, from: Data(json.utf8))
+            XCTAssertThrowsError(try PublishConfirmation.sequence(from: packet.ctrl))
+        }
+        XCTAssertThrowsError(try PublishConfirmation.sequence(from: nil))
+    }
+
+    func testPublishConfirmationUsesServerSequence() throws {
+        let json = "{\"ctrl\":{\"id\":\"7\",\"code\":202,\"text\":\"accepted\",\"ts\":\"2026-09-17T12:00:00Z\",\"params\":{\"seq\":42}}}"
+        let packet = try Tinode.jsonDecoder.decode(ServerMessage.self, from: Data(json.utf8))
+        XCTAssertEqual(try PublishConfirmation.sequence(from: packet.ctrl), 42)
+    }
+
+    func testLateFailureCannotChangeAResolvedRequest() throws {
+        let reply = PromisedReply<Int>()
+        try reply.resolve(result: 42)
+        XCTAssertThrowsError(try reply.reject(error: TinodeError.requestOutcomeUnknown("late disconnect")))
+        XCTAssertEqual(try reply.getResult(), 42)
+    }
+
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
     }

@@ -260,6 +260,45 @@ public class MessageDb {
         return false
     }
 
+    /// Atomic compare-and-set prevents two sync passes from dispatching one row.
+    static func transitionStatus(in db: SQLite.Connection, msgId: Int64? = nil,
+                                 from: BaseDb.Status, to: BaseDb.Status) -> Bool {
+        let table = Table(MessageDb.kTableName)
+        let status = SQLite.Expression<Int?>("status")
+        var rows = table.filter(status == from.rawValue)
+        if let msgId = msgId {
+            rows = rows.filter(SQLite.Expression<Int64>("id") == msgId)
+        }
+        do {
+            let changed = try db.run(rows.update(status <- to.rawValue))
+            return msgId == nil || changed > 0
+        } catch {
+            BaseDb.log.error("MessageDb - status transition failed: %@", error.localizedDescription)
+            return false
+        }
+    }
+
+    func transitionStatus(msgId: Int64, from: BaseDb.Status, to: BaseDb.Status) -> Bool {
+        return MessageDb.transitionStatus(in: db, msgId: msgId, from: from, to: to)
+    }
+
+    static func recoverInterruptedPublishes(in db: SQLite.Connection) -> Bool {
+        return transitionStatus(in: db, from: .sending, to: .unconfirmed)
+    }
+
+    func recoverInterruptedPublishes() -> Bool {
+        return MessageDb.recoverInterruptedPublishes(in: db)
+    }
+
+    static func markPendingFailed(in db: SQLite.Connection, msgId: Int64) -> Bool {
+        return transitionStatus(in: db, msgId: msgId, from: .draft, to: .failed) ||
+            transitionStatus(in: db, msgId: msgId, from: .sending, to: .failed)
+    }
+
+    func markPendingFailed(msgId: Int64) -> Bool {
+        return MessageDb.markPendingFailed(in: db, msgId: msgId)
+    }
+
     func delivered(msgId: Int64, ts: Date, seq: Int) -> Bool {
         let record = self.table.filter(self.id == msgId)
         do {

@@ -51,6 +51,7 @@
 		0ACE9E7523813A1D006BE575 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACE9E7423813A1D006BE575 /* NotificationService.swift */; };
 		0ACE9E7923813A1D006BE575 /* TinodiosNSExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0ACE9E7223813A1D006BE575 /* TinodiosNSExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0ACE9E7F23814157006BE575 /* TinodiosDB.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0ACE9E7E23814157006BE575 /* TinodiosDB.framework */; };
+		A10A00012026091700000001 /* TinodiosDB.framework in Test Frameworks */ = {isa = PBXBuildFile; fileRef = 0ACE9E7E23814157006BE575 /* TinodiosDB.framework */; };
 		0AD5552A21C625BB0027FD16 /* ChatListInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD5552921C625BB0027FD16 /* ChatListInteractor.swift */; };
 		0AD6873D27233C0800A39486 /* QuotedAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD6873C27233C0800A39486 /* QuotedAttachment.swift */; };
 		0ADDBC8B2249F617000BD00D /* ChatListViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADDBC8A2249F617000BD00D /* ChatListViewCell.swift */; };
@@ -393,6 +394,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10A00012026091700000001 /* TinodiosDB.framework in Test Frameworks */,
 				0FE526C4E14CE1F2D7FABB30 /* libPods-TinodiosUITests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

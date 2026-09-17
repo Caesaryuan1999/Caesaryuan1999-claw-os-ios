@@ -41,6 +41,8 @@ public protocol Message {
     func isDeleted(hard: Bool) -> Bool
     var isSynced: Bool { get }
     var isPending: Bool { get }
+    var isUnconfirmed: Bool { get }
+    var isFailed: Bool { get }
     var isForwarded: Bool { get }
     var isEdited: Bool { get }
 }
@@ -185,6 +187,10 @@ public protocol Storage: AnyObject {
     ///     `true` on success, `false` otherwise
     @discardableResult
     func msgFailed(topic: TopicProto, dbMessageId: Int64) -> Bool
+
+    /// Retain a dispatched message whose server outcome cannot be confirmed.
+    @discardableResult
+    func msgUnconfirmed(topic: TopicProto, dbMessageId: Int64) -> Bool
 
     /// Delete all failed messages in the given topis.
     /// - Parameters:

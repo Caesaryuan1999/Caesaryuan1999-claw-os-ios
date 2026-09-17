@@ -361,9 +361,20 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 }
                 return nil
             },
-            onFailure: { err in
+            onFailure: { [weak self] err in
                 Cache.log.error("sendMessage error: %@", err.localizedDescription)
+                self?.loadMessagesFromCache()
+                if PublishFailureDisposition.forError(err) == .unconfirmed {
+                    DispatchQueue.main.async {
+                        UiUtils.showToast(message: "发送结果未确认，消息已保留。请核对会话记录，重新发送可能产生重复消息。")
+                    }
+                    return nil
+                }
                 if let e = err as? TinodeError {
+                    if case .requestNotSent(let reason) = e {
+                        DispatchQueue.main.async { UiUtils.showToast(message: reason) }
+                        return nil
+                    }
                     if case .notConnected(_) = e {
                         DispatchQueue.main.async { UiUtils.showToast(message: NSLocalizedString("You are offline.", comment: "Toast notification")) }
                         Cache.tinode.reconnectNow(interactively: false, reset: false)
@@ -473,10 +484,17 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         guard let topic = topic, let store = topic.store else {
             return
         }
+        if message.isUnconfirmed || message.status == BaseDb.Status.sending.rawValue {
+            // A local draft ID cannot retract a possibly accepted server message.
+            DispatchQueue.main.async {
+                UiUtils.showToast(message: "发送结果未确认，暂不能删除或撤回。请先核对会话记录，原消息已保留。")
+            }
+            return
+        }
         var seqIds: [Int] = []
         var localDbMessageIds = Set<Int64>()
         var localSeqIds = Set<Int>()
-        if let replSeq = message.replacesSeq, let versionSeqIds = topic.store?.getAllMsgVersions(fromTopic: topic, forSeq: replSeq, limit: nil) {
+        if message.isSynced, let replSeq = message.replacesSeq, let versionSeqIds = topic.store?.getAllMsgVersions(fromTopic: topic, forSeq: replSeq, limit: nil) {
             for seq in versionSeqIds {
                 if TopicDb.isUnsentSeq(seq: seq) {
                     localSeqIds.insert(seq)
@@ -818,6 +836,14 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 if let content = draft {
                     _ = topic.store?.msgReady(topic: topic, dbMessageId: msg.msgId, data: content)
                     topic.syncOne(msgId: msg.msgId)
+                        .thenCatch({ error in
+                            if PublishFailureDisposition.forError(error) == .unconfirmed {
+                                DispatchQueue.main.async {
+                                    UiUtils.showToast(message: "发送结果未确认，附件消息已保留。请核对会话记录，重新发送可能产生重复消息。")
+                                }
+                            }
+                            throw error
+                        })
                         .thenFinally({
                             interactor?.loadMessagesFromCache()
                         })
