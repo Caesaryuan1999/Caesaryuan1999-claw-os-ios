@@ -31,18 +31,16 @@ class AccountSettingsViewController: UITableViewController {
     private let premiumAvatar = RoundImageView()
     private let premiumDisplayName = UILabel()
     private let premiumIdentityCaption = UILabel()
-    private let premiumUid = UILabel()
     private let premiumAccountName = UILabel()
-    private let premiumInviteCode = UILabel()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.accessibilityIdentifier = "claw.settings.account.screen"
         tableView.accessibilityIdentifier = "claw.settings.account.list"
         setup()
-        navigationItem.title = NSLocalizedString("Account settings", comment: "Account settings title")
+        navigationItem.title = NSLocalizedString("我", comment: "Account settings title")
         ClawTheme.styleList(tableView, rowHeight: 72)
-        tableView.backgroundColor = ClawTheme.surfaceMuted
+        tableView.backgroundColor = ClawTheme.background
         tableView.separatorStyle = .none
         tableView.sectionHeaderHeight = 0
         tableView.sectionFooterHeight = 12
@@ -69,8 +67,8 @@ class AccountSettingsViewController: UITableViewController {
 
     private func installPremiumHeader() {
         let width = max(tableView.bounds.width, UIScreen.main.bounds.width)
-        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 760))
-        header.backgroundColor = ClawTheme.surfaceMuted
+        let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 620))
+        header.backgroundColor = ClawTheme.background
 
         premiumAvatar.translatesAutoresizingMaskIntoConstraints = false
         premiumAvatar.contentMode = .scaleAspectFill
@@ -79,15 +77,17 @@ class AccountSettingsViewController: UITableViewController {
         premiumAvatar.layer.borderColor = ClawTheme.brandSoft.cgColor
 
         premiumDisplayName.translatesAutoresizingMaskIntoConstraints = false
-        premiumDisplayName.font = .systemFont(ofSize: 22, weight: .bold)
+        premiumDisplayName.font = ClawTheme.font(24, weight: .semibold, style: .title2)
         premiumDisplayName.textColor = ClawTheme.ink
         premiumDisplayName.textAlignment = .center
         premiumDisplayName.numberOfLines = 0
         premiumDisplayName.adjustsFontForContentSizeCategory = true
 
         premiumIdentityCaption.translatesAutoresizingMaskIntoConstraints = false
-        premiumIdentityCaption.text = NSLocalizedString("ID 和账号名用于查找和添加", comment: "Account identity explanation")
-        premiumIdentityCaption.font = .systemFont(ofSize: 13, weight: .medium)
+        premiumIdentityCaption.text = NSLocalizedString("CLAW 号用于查找和添加，与登录手机号或邮箱分开", comment: "Public identity explanation")
+        premiumIdentityCaption.font = ClawTheme.font(13, style: .footnote)
+        premiumIdentityCaption.adjustsFontForContentSizeCategory = true
+        premiumIdentityCaption.numberOfLines = 0
         premiumIdentityCaption.textColor = ClawTheme.muted
         premiumIdentityCaption.textAlignment = .center
 
@@ -95,51 +95,44 @@ class AccountSettingsViewController: UITableViewController {
         card.translatesAutoresizingMaskIntoConstraints = false
         ClawTheme.styleCard(card)
 
-        let idRow = makeIdentityRow(
-            title: "ID",
-            valueLabel: premiumUid,
-            copyTag: 0)
         let accountRow = makeIdentityRow(
-            title: NSLocalizedString("账号名（不可修改）", comment: "Immutable account name"),
+            title: NSLocalizedString("CLAW 号", comment: "Public account identifier"),
             valueLabel: premiumAccountName,
             copyTag: 1)
-        let inviteRow = makeIdentityRow(
-            title: NSLocalizedString("注册邀请码", comment: "Registration invite code"),
-            valueLabel: premiumInviteCode,
-            copyTag: 2)
-
-        let rows = UIStackView(arrangedSubviews: [idRow, accountRow, inviteRow])
+        let rows = UIStackView(arrangedSubviews: [accountRow])
         rows.translatesAutoresizingMaskIntoConstraints = false
         rows.axis = .vertical
-        rows.distribution = .fillEqually
-        rows.spacing = 0
 
         let settingsCard = UIView()
         settingsCard.translatesAutoresizingMaskIntoConstraints = false
         ClawTheme.styleCard(settingsCard)
 
         let generalRow = makeSettingsMenuRow(
-            title: NSLocalizedString("通用设置", comment: "General settings"),
-            symbolName: "slider.horizontal.3",
+            title: NSLocalizedString("个人资料", comment: "Profile settings"),
+            symbolName: "person.crop.circle",
             action: #selector(openGeneralSettings))
         let notificationsRow = makeSettingsMenuRow(
             title: NSLocalizedString("通知", comment: "Notification settings"),
             symbolName: "bell",
             action: #selector(openNotifications))
         let securityRow = makeSettingsMenuRow(
-            title: NSLocalizedString("安全", comment: "Security settings"),
+            title: NSLocalizedString("账号与安全", comment: "Security settings"),
             symbolName: "shield",
             action: #selector(openSecurity))
-        let settingsRows = UIStackView(arrangedSubviews: [generalRow, notificationsRow, securityRow])
+        let helpRow = makeSettingsMenuRow(
+            title: NSLocalizedString("帮助", comment: "Help settings"),
+            symbolName: "questionmark.circle",
+            action: #selector(openHelp))
+        let settingsRows = UIStackView(arrangedSubviews: [generalRow, notificationsRow, securityRow, helpRow])
         settingsRows.translatesAutoresizingMaskIntoConstraints = false
         settingsRows.axis = .vertical
         settingsRows.distribution = .fillEqually
 
         let logoutButton = UIButton(type: .system)
         logoutButton.translatesAutoresizingMaskIntoConstraints = false
-        logoutButton.setTitle(NSLocalizedString("登出", comment: "Log out"), for: .normal)
+        logoutButton.setTitle(NSLocalizedString("退出登录", comment: "Log out"), for: .normal)
         logoutButton.setTitleColor(ClawTheme.danger, for: .normal)
-        logoutButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        logoutButton.titleLabel?.font = ClawTheme.font(16, weight: .semibold)
         logoutButton.setImage(
             ClawTheme.symbol("rectangle.portrait.and.arrow.right", pointSize: ClawTheme.iconStandard,
                              weight: .medium),
@@ -168,8 +161,8 @@ class AccountSettingsViewController: UITableViewController {
         NSLayoutConstraint.activate([
             premiumAvatar.topAnchor.constraint(equalTo: header.topAnchor, constant: 24),
             premiumAvatar.centerXAnchor.constraint(equalTo: header.centerXAnchor),
-            premiumAvatar.widthAnchor.constraint(equalToConstant: 112),
-            premiumAvatar.heightAnchor.constraint(equalToConstant: 112),
+            premiumAvatar.widthAnchor.constraint(equalToConstant: 88),
+            premiumAvatar.heightAnchor.constraint(equalToConstant: 88),
 
             premiumDisplayName.topAnchor.constraint(equalTo: premiumAvatar.bottomAnchor, constant: 18),
             premiumDisplayName.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 24),
@@ -182,7 +175,7 @@ class AccountSettingsViewController: UITableViewController {
             card.topAnchor.constraint(equalTo: premiumIdentityCaption.bottomAnchor, constant: 30),
             card.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             card.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-            card.heightAnchor.constraint(equalToConstant: 218),
+            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 84),
 
             rows.leadingAnchor.constraint(equalTo: card.leadingAnchor),
             rows.trailingAnchor.constraint(equalTo: card.trailingAnchor),
@@ -192,7 +185,6 @@ class AccountSettingsViewController: UITableViewController {
             settingsCard.topAnchor.constraint(equalTo: card.bottomAnchor, constant: 18),
             settingsCard.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             settingsCard.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-            settingsCard.heightAnchor.constraint(equalToConstant: 186),
             settingsRows.leadingAnchor.constraint(equalTo: settingsCard.leadingAnchor),
             settingsRows.trailingAnchor.constraint(equalTo: settingsCard.trailingAnchor),
             settingsRows.topAnchor.constraint(equalTo: settingsCard.topAnchor),
@@ -201,9 +193,13 @@ class AccountSettingsViewController: UITableViewController {
             logoutButton.topAnchor.constraint(equalTo: settingsCard.bottomAnchor, constant: 14),
             logoutButton.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
             logoutButton.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
-            logoutButton.heightAnchor.constraint(equalToConstant: 54),
+            logoutButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 52),
             logoutButton.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -24)
         ])
+        header.frame.size.height = ceil(header.systemLayoutSizeFitting(
+            CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel).height)
         tableView.tableHeaderView = header
     }
 
@@ -214,12 +210,11 @@ class AccountSettingsViewController: UITableViewController {
         tableView.contentInset.bottom = max(24, view.safeAreaInsets.bottom + 24)
         header.frame.size.width = tableView.bounds.width
         header.setNeedsLayout()
-        header.layoutIfNeeded()
         let fittingHeight = header.systemLayoutSizeFitting(
             CGSize(width: tableView.bounds.width, height: UIView.layoutFittingCompressedSize.height),
             withHorizontalFittingPriority: .required,
             verticalFittingPriority: .fittingSizeLevel).height
-        let targetHeight = max(760, fittingHeight + 1)
+        let targetHeight = ceil(fittingHeight)
         if abs(header.frame.height - targetHeight) > 0.5 {
             header.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: targetHeight)
             tableView.tableHeaderView = header
@@ -234,22 +229,22 @@ class AccountSettingsViewController: UITableViewController {
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = title
-        titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        titleLabel.font = ClawTheme.font(13, style: .footnote)
+        titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.textColor = ClawTheme.primaryPressed
 
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
-        valueLabel.font = UIFont.monospacedSystemFont(ofSize: 16, weight: .medium)
+        valueLabel.font = ClawTheme.font(16, weight: .medium)
+        valueLabel.adjustsFontForContentSizeCategory = true
         valueLabel.textColor = ClawTheme.ink
-        valueLabel.numberOfLines = 1
-        valueLabel.adjustsFontSizeToFitWidth = true
-        valueLabel.minimumScaleFactor = 0.72
+        valueLabel.numberOfLines = 0
 
         let copyButton = UIButton(type: .system)
         copyButton.translatesAutoresizingMaskIntoConstraints = false
         copyButton.tag = copyTag
         copyButton.setImage(ClawTheme.symbol("doc.on.doc", pointSize: ClawTheme.iconCompact, weight: .regular), for: .normal)
         copyButton.tintColor = ClawTheme.muted
-        copyButton.accessibilityLabel = NSLocalizedString("复制", comment: "Copy value")
+        copyButton.accessibilityLabel = NSLocalizedString("复制 CLAW 号", comment: "Copy public identifier")
         copyButton.addTarget(self, action: #selector(copyPremiumValue(_:)), for: .touchUpInside)
 
         let divider = UIView()
@@ -266,11 +261,13 @@ class AccountSettingsViewController: UITableViewController {
             titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: copyButton.leadingAnchor, constant: -12),
             valueLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             valueLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
+            valueLabel.bottomAnchor.constraint(equalTo: row.bottomAnchor, constant: -12),
             valueLabel.trailingAnchor.constraint(equalTo: copyButton.leadingAnchor, constant: -12),
             copyButton.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -8),
             copyButton.centerYAnchor.constraint(equalTo: row.centerYAnchor),
             copyButton.widthAnchor.constraint(equalToConstant: 48),
             copyButton.heightAnchor.constraint(equalToConstant: 48),
+            copyButton.topAnchor.constraint(greaterThanOrEqualTo: row.topAnchor, constant: 8),
             divider.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 18),
             divider.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -18),
             divider.bottomAnchor.constraint(equalTo: row.bottomAnchor),
@@ -287,6 +284,9 @@ class AccountSettingsViewController: UITableViewController {
         let row = UIControl()
         row.translatesAutoresizingMaskIntoConstraints = false
         row.addTarget(self, action: action, for: .touchUpInside)
+        row.isAccessibilityElement = true
+        row.accessibilityLabel = title
+        row.accessibilityTraits = .button
 
         let icon = UIImageView(image: ClawTheme.symbol(
             symbolName, pointSize: ClawTheme.iconStandard, weight: .medium))
@@ -298,7 +298,8 @@ class AccountSettingsViewController: UITableViewController {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = title
         label.textColor = ClawTheme.ink
-        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        label.font = ClawTheme.font(16)
+        label.numberOfLines = 0
         label.adjustsFontForContentSizeCategory = true
 
         let chevron = UIImageView(image: ClawTheme.symbol(
@@ -321,7 +322,9 @@ class AccountSettingsViewController: UITableViewController {
             icon.widthAnchor.constraint(equalToConstant: 24),
             icon.heightAnchor.constraint(equalToConstant: 24),
             label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 16),
-            label.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            row.heightAnchor.constraint(greaterThanOrEqualToConstant: 60),
+            label.topAnchor.constraint(equalTo: row.topAnchor, constant: 16),
+            label.bottomAnchor.constraint(equalTo: row.bottomAnchor, constant: -16),
             label.trailingAnchor.constraint(lessThanOrEqualTo: chevron.leadingAnchor, constant: -12),
             chevron.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -18),
             chevron.centerYAnchor.constraint(equalTo: row.centerYAnchor),
@@ -336,6 +339,10 @@ class AccountSettingsViewController: UITableViewController {
     }
 
     @objc private func openGeneralSettings() {
+        guard self.tinode.getMeTopic() != nil else {
+            UiUtils.showToast(message: NSLocalizedString("正在加载个人资料，请稍后重试", comment: "Profile not yet available"))
+            return
+        }
         performSegue(withIdentifier: "AccountSettings2General", sender: self)
     }
 
@@ -352,14 +359,18 @@ class AccountSettingsViewController: UITableViewController {
         performSegue(withIdentifier: "AccountSettings2Security", sender: self)
     }
 
+    @objc private func openHelp() {
+        performSegue(withIdentifier: "AccountSettings2Help", sender: self)
+    }
+
     @objc private func confirmLogout() {
         let alert = UIAlertController(
-            title: NSLocalizedString("登出", comment: "Log out"),
-            message: NSLocalizedString("确定要登出？", comment: "Warning in logout alert"),
+            title: NSLocalizedString("退出登录", comment: "Log out"),
+            message: NSLocalizedString("退出后需重新登录。本机待发与待确认消息将保留。", comment: "Warning in logout alert"),
             preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Cancel"), style: .cancel))
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("确定", comment: "Confirm"),
+            title: NSLocalizedString("退出登录", comment: "Confirm logout"),
             style: .destructive,
             handler: { _ in self.logout() }))
         present(alert, animated: true)
@@ -367,11 +378,11 @@ class AccountSettingsViewController: UITableViewController {
 
     private func logout() {
         guard Cache.tinode != nil else {
-            UiUtils.showToast(message: NSLocalizedString("登出失败，请重试", comment: "Logout failure"))
+            UiUtils.showToast(message: NSLocalizedString("退出登录失败，请重试", comment: "Logout failure"))
             return
         }
         UiUtils.logoutAndRouteToLoginVC()
-        UiUtils.showToast(message: NSLocalizedString("已成功登出", comment: "Logout success"), level: .info)
+        UiUtils.showToast(message: NSLocalizedString("已退出登录", comment: "Logout success"), level: .info)
     }
 
     private func reloadData() {
@@ -382,9 +393,7 @@ class AccountSettingsViewController: UITableViewController {
             descriptionLabel.text = NSLocalizedString("邀请码不可用", comment: "Placeholder for missing invite code")
             avatarImageView.set(pub: nil, id: self.tinode.myUid, deleted: false)
             premiumDisplayName.text = NSLocalizedString("正在同步账号", comment: "Account data loading state")
-            premiumUid.text = self.tinode.myUid ?? "-"
             premiumAccountName.text = NSLocalizedString("未设置", comment: "Placeholder for missing account name")
-            premiumInviteCode.text = NSLocalizedString("邀请码不可用", comment: "Placeholder for missing invite code")
             premiumAvatar.set(pub: nil, id: self.tinode.myUid, deleted: false)
             scheduleAccountSyncRetry()
             return
@@ -396,7 +405,7 @@ class AccountSettingsViewController: UITableViewController {
         self.userNameLabel.text = AccountNames.contactDisplayName(displayName: me.pub?.fn,
                                                                   accountName: accountName,
                                                                   userId: self.tinode.myUid)
-        premiumDisplayName.text = self.userNameLabel.text
+        premiumDisplayName.text = me.pub?.fn ?? accountName ?? NSLocalizedString("未设置昵称", comment: "Missing display name")
 
         // Avatar.
         self.avatarImageView.set(pub: me.pub, id: self.tinode.myUid, deleted: false)
@@ -405,11 +414,9 @@ class AccountSettingsViewController: UITableViewController {
 
         self.descriptionLabel.text = me.creds?.first(where: { $0.meth == ClawAuthInput.inviteCredentialMethod })?.val ??
             NSLocalizedString("邀请码不可用", comment: "Placeholder for missing invite code")
-        premiumInviteCode.text = descriptionLabel.text
 
-        // Private ID: only shown on the owner's account settings page.
+        // Retain the legacy storyboard outlet; the hidden row is not public profile UI.
         self.myUIDLabel.text = self.tinode.myUid
-        premiumUid.text = self.tinode.myUid
         self.myUIDLabel.sizeToFit()
 
         self.aliasLabel.text = accountName ?? NSLocalizedString("未设置", comment: "Placeholder for missing account name")
@@ -431,22 +438,9 @@ class AccountSettingsViewController: UITableViewController {
         let accountName = (self.me ?? self.tinode.getMeTopic()).flatMap {
             AccountNames.fromTags($0.tags)
         }
-        let value: String?
-        let message: String
-        switch sender.tag {
-        case 0:
-            value = self.tinode.myUid
-            message = NSLocalizedString("ID 已复制", comment: "Toast notification")
-        case 1:
-            value = accountName
-            message = NSLocalizedString("账号名已复制", comment: "Toast notification")
-        default:
-            value = self.descriptionLabel.text
-            message = NSLocalizedString("邀请码已复制", comment: "Toast notification")
-        }
-        guard let value = value, !value.isEmpty else { return }
+        guard sender.tag == 1, let value = accountName, !value.isEmpty else { return }
         UIPasteboard.general.string = value
-        UiUtils.showToast(message: message, level: .info)
+        UiUtils.showToast(message: NSLocalizedString("CLAW 号已复制", comment: "Public identifier copied"), level: .info)
     }
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {

@@ -23,7 +23,7 @@ def main() -> None:
     assert "avatar.setBrandingIcon()" in avatar
     assert 'UIImage(named: "logo-ios")' in round_image
     assert "contentMode = .scaleAspectFill" in round_image
-    assert "setFixedCornerRadius(12)" in chat_cell
+    assert "setFixedCornerRadius(16)" in chat_cell
 
     for relative in (
         "FindViewController.swift",

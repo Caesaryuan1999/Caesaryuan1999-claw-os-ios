@@ -49,7 +49,7 @@ class FindViewController: UITableViewController, FindDisplayLogic {
     private func updateSearchBarPlaceholder(authStatus: CNAuthorizationStatus) {
         let placeholderText: String
         let placeholderFontSize: CGFloat
-        placeholderText = NSLocalizedString("搜索用户名", comment: "Contacts search placeholder")
+        placeholderText = NSLocalizedString("搜索联系人", comment: "Contacts search placeholder")
         placeholderFontSize = 15
         searchController.searchBar.textField?.attributedPlaceholder =
             NSAttributedString(
@@ -113,12 +113,13 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         navigationItem.title = NSLocalizedString("通讯录", comment: "Contacts screen title")
         inviteActionButtonItem.image = ClawTheme.symbol("person.badge.plus", pointSize: ClawTheme.iconCompact, weight: .medium)
         inviteActionButtonItem.tintColor = ClawTheme.primary
+        inviteActionButtonItem.accessibilityLabel = NSLocalizedString("添加联系人", comment: "Add contact action")
         view.accessibilityIdentifier = "claw.contacts.screen"
         tableView.accessibilityIdentifier = "claw.contacts.list"
         searchController.searchBar.accessibilityIdentifier = "claw.contacts.search"
         inviteActionButtonItem.accessibilityIdentifier = "claw.contacts.add"
         ClawTheme.styleSearchBar(searchController.searchBar)
-        ClawTheme.styleList(tableView, rowHeight: 76)
+        ClawTheme.styleList(tableView, rowHeight: 84)
         tableView.backgroundColor = ClawTheme.surface
         if #available(iOS 15.0, *) {
             tableView.sectionHeaderTopPadding = 0
@@ -219,42 +220,7 @@ class FindViewController: UITableViewController, FindDisplayLogic {
     }
 
     private func presentInviteOptions() {
-        let inviteSubject = NSLocalizedString("CLAW OS", comment: "Invitation subject")
-        let inviteBody = NSLocalizedString("下载 CLAW OS： https://veilping.app/", comment: "Invitation body")
-        let attrs = [ NSAttributedString.Key.font: UIFont.systemFont(ofSize: 20.0) ]
-        let dialogTitle = NSAttributedString(string: NSLocalizedString("Invite", comment: "Dialog title: call to action"), attributes: attrs)
-        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        alert.setValue(dialogTitle, forKey: "attributedTitle")
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Copy to clipboard", comment: "Alert action"), style: .default, handler: { _ in
-            let pasteboard = UIPasteboard.general
-            pasteboard.string = inviteBody
-        }))
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Email", comment: "Alert action"), style: .default, handler: { _ in
-            if MFMailComposeViewController.canSendMail() {
-                let mailVC = MFMailComposeViewController()
-                mailVC.mailComposeDelegate = self
-                mailVC.setSubject(inviteSubject)
-                mailVC.setMessageBody(inviteBody, isHTML: false)
-
-                self.present(mailVC, animated: true)
-            } else {
-                UiUtils.showToast(message: NSLocalizedString("No access to email", comment: "Error message"))
-            }
-        }))
-        alert.addAction(UIAlertAction(title: NSLocalizedString("Messages", comment: "Alert action"), style: .default, handler: { _ in
-            if MFMessageComposeViewController.canSendText() {
-                let messageVC = MFMessageComposeViewController()
-                messageVC.messageComposeDelegate = self
-                messageVC.body = inviteBody
-
-                self.present(messageVC, animated: true)
-            } else {
-                UiUtils.showToast(message: NSLocalizedString("No access to messages", comment: "Toast error message"))
-            }
-        }))
-        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Cancel action"), style: .cancel, handler: nil))
-        alert.popoverPresentationController?.barButtonItem = inviteActionButtonItem
-        self.present(alert, animated: true)
+        UiUtils.showToast(message: NSLocalizedString("邀请链接尚未配置，请通过 CLAW 号查找联系人。", comment: "Invite link unavailable"))
     }
 
     // MARK: - Table view data source
@@ -482,7 +448,7 @@ extension FindViewController: ContactViewCellDelegate {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = section == FindViewController.kRemoteContactsSection
             ? NSLocalizedString("No results", comment: "Empty search results")
-            : NSLocalizedString("暂无联系人，可通过用户名搜索并添加。", comment: "Empty contacts list")
+            : NSLocalizedString("暂无联系人，可通过 CLAW 号查找并添加。", comment: "Empty contacts list")
         label.font = .preferredFont(forTextStyle: .subheadline)
         label.textColor = ClawTheme.muted
         label.textAlignment = .center

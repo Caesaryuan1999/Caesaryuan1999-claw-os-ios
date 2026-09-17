@@ -25,7 +25,7 @@ for marker in ["styleSearchBar", "styleList", "styleCard", "styleCallControl"]:
     assert marker in theme, f"missing shared CLAW OS UI primitive: {marker}"
 
 assert "ClawTheme.styleSearchBar(searchController.searchBar)" in contacts
-assert "ClawTheme.styleList(tableView, rowHeight: 76)" in contacts
+assert "ClawTheme.styleList(tableView, rowHeight: 84)" in contacts
 for marker in [
     "ClawContactsHeaderView",
     "ClawActiveContactCell",
@@ -90,8 +90,8 @@ for marker in [
 assert "ClawTheme.styleList(tableView, rowHeight: 72)" in account
 for marker in [
     "ClawTheme.styleCard(settingsCard)",
-    "premiumAvatar.heightAnchor.constraint(equalToConstant: 112)",
-    "logoutButton.heightAnchor.constraint(equalToConstant: 54)",
+    "premiumAvatar.heightAnchor.constraint(equalToConstant: 88)",
+    "logoutButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 52)",
     "AccountSettings2General",
     "SettingsNotificationsViewController(style: .insetGrouped)",
     "AccountSettings2Security",

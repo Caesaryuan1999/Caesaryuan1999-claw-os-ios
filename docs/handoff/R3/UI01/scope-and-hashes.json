@@ -1,0 +1,76 @@
+{
+  "base": "34a8b3e5ad4df210117e2e03b308576796ba55b2",
+  "evidence_level": "windows_source_and_xml_only",
+  "checks": {
+    "exact_10_production_files": true,
+    "no_sdk_db_identity_or_message_implementation_delta": true,
+    "all_non_theme_utils_unchanged": true,
+    "calls_and_new_chat_implementation_unchanged": true,
+    "storyboard_routes_outlets_identical_except_two_named_existing_segues": true,
+    "cell_xib_only_avatar_and_badge_dimensions_changed": true,
+    "no_unverified_help_or_invite_domain": true,
+    "delivery_marker_still_centralized": true
+  },
+  "files": [
+    {
+      "path": "Scripts/ci/test_auth_ui_policy.py",
+      "sha256": "af5bf3c497cfa514a945520c5312fd189d49b328f177332ce5b742643396fb82"
+    },
+    {
+      "path": "Scripts/ci/test_brand_ui_policy.py",
+      "sha256": "23e6c61ca3d26f4bdcd1c91e86d5227bd20e05aa2125064870e2f59a5e7540f3"
+    },
+    {
+      "path": "Scripts/ci/test_chat_list_branding_policy.py",
+      "sha256": "fc46ad888e8677222ae51b1d47987c841ef22a7bf52204d1497bccf1022befda"
+    },
+    {
+      "path": "Scripts/ci/test_figma_visual_contract_policy.py",
+      "sha256": "bcd9e5dd151e738db631d05ada996642feced1988b03eccf1391cc7a2f5e72b9"
+    },
+    {
+      "path": "Scripts/ci/test_premium_secondary_ui_policy.py",
+      "sha256": "88864e086282a3fcb36f6655d5c605f3b78dbcd50e3d5d72790269b35cccb77e"
+    },
+    {
+      "path": "Tinodios/AccountGeneralSettingsViewController.swift",
+      "sha256": "2b8f12a7a24e57ea6be459f43d50779d73c7c7933a9be5ebd4ec45949c62fb46"
+    },
+    {
+      "path": "Tinodios/AccountSettingsViewController.swift",
+      "sha256": "ada9ba2311f6ac6ca554e24e476225316c0738d09b9115c02c66fb76fd0eeaab"
+    },
+    {
+      "path": "Tinodios/Base.lproj/Main.storyboard",
+      "sha256": "343b6481c2175c371a874d01987da4838f52dc08a809fcb806e1d371335047b3"
+    },
+    {
+      "path": "Tinodios/ChatListViewController.swift",
+      "sha256": "627bd94ec8058469ebde2ae3eca869f2202221da64874b0102715f4b415965a6"
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "sha256": "27f28af67061871bdbaf2d78ba943d55d008904bdcade55041d322d7ed167147"
+    },
+    {
+      "path": "Tinodios/NewChatTabController.swift",
+      "sha256": "6905cfa9facfffba44599b87d64f77bcf17b896589de011f4a4488e602af0ebb"
+    },
+    {
+      "path": "Tinodios/SettingsHelpViewController.swift",
+      "sha256": "cffa76fa892409da5eb4ad0324ed5723158b08722ccb8478e233bb5099e1e604"
+    },
+    {
+      "path": "Tinodios/Utils.swift",
+      "sha256": "345f928f2a1376a0eca984026536e64497859b849fa1e479eed236b96140c161"
+    },
+    {
+      "path": "Tinodios/widgets/ChatListViewCell.swift",
+      "sha256": "8c56820f0a19251ff3dd457668886ecb2fe5fae71a8da6f4431239f19041e132"
+    },
+    {
+      "path": "Tinodios/widgets/ChatListViewCell.xib",
+      "sha256": "c907e16d520515e00f3b0166329fa7bdfc11bb14d20797e0edc235b3e8074c80"
+    }
+  ]
+}

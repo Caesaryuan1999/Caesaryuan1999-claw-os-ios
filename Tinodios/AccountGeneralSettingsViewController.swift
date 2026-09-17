@@ -50,7 +50,7 @@ class AccountGeneralSettingsViewController: UITableViewController {
     }
 
     private func setup() {
-        title = NSLocalizedString("通用设置", comment: "Account general settings title")
+        title = NSLocalizedString("个人资料", comment: "Account general settings title")
         view.backgroundColor = ClawTheme.background
         ClawTheme.styleList(tableView, rowHeight: UITableView.automaticDimension)
         self.tinode = Cache.tinode

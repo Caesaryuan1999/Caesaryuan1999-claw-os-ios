@@ -496,7 +496,7 @@
                                             </subviews>
                                         </tableViewCellContentView>
                                         <connections>
-                                            <segue destination="7UE-Do-egL" kind="show" id="OVe-uQ-msv"/>
+                                            <segue destination="7UE-Do-egL" kind="show" identifier="AccountSettings2Help" id="OVe-uQ-msv"/>
                                         </connections>
                                     </tableViewCell>
                                 </cells>
@@ -1055,7 +1055,7 @@
                         <barButtonItem key="rightBarButtonItem" title="通讯录" id="LVG-dB-flA">
                             <imageReference key="image" image="plus.bubble" catalog="system" symbolScale="large"/>
                             <connections>
-                                <segue destination="qBo-ye-avT" kind="show" id="PRK-dk-KAe"/>
+                                <segue destination="qBo-ye-avT" kind="show" identifier="Chats2NewChat" id="PRK-dk-KAe"/>
                             </connections>
                         </barButtonItem>
                     </navigationItem>

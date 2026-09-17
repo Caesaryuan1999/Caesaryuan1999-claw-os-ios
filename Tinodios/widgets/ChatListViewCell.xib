@@ -24,8 +24,8 @@
                             <accessibilityTraits key="traits" image="YES"/>
                         </accessibility>
                         <constraints>
-                            <constraint firstAttribute="width" constant="54" id="Xwl-Wv-LEn"/>
-                            <constraint firstAttribute="height" constant="54" id="oid-ph-s3J"/>
+                            <constraint firstAttribute="width" constant="48" id="Xwl-Wv-LEn"/>
+                            <constraint firstAttribute="height" constant="48" id="oid-ph-s3J"/>
                         </constraints>
                     </view>
                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Title" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wDJ-YF-7hy">
@@ -88,7 +88,7 @@
                             <accessibilityTraits key="traits" staticText="YES" notEnabled="YES"/>
                         </accessibility>
                         <constraints>
-                            <constraint firstAttribute="height" constant="18" id="iMo-f5-dnu"/>
+                            <constraint firstAttribute="height" constant="24" id="iMo-f5-dnu"/>
                             <constraint firstAttribute="width" constant="18" id="pfH-oq-llg"/>
                         </constraints>
                         <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="10"/>

@@ -5,15 +5,12 @@
 //  Copyright © 2020 Tinode. All rights reserved.
 //
 
-import MessageUI
 import TinodeSDK
 import TinodiosDB
 import UIKit
 
 class SettingsHelpViewController: UITableViewController {
-    // 44px is the default UITableView row height.
-    // TODO: may be 88px for retina display. Handle it.
-    private static let kDefaultRowHeight: CGFloat = 44
+    private static let kDefaultRowHeight: CGFloat = 52
 
     @IBOutlet weak var contactUs: UITableViewCell!
     @IBOutlet weak var termsOfUse: UITableViewCell!
@@ -25,8 +22,6 @@ class SettingsHelpViewController: UITableViewController {
     @IBOutlet weak var serverAddressLabel: UILabel!
     @IBOutlet weak var poweredByView: UIView!
 
-    private var tosUrl: URL!
-    private var privacyUrl: URL!
     private var isUsingCustomBranding = false
     private var contentHeight: CGFloat = 0
 
@@ -37,9 +32,23 @@ class SettingsHelpViewController: UITableViewController {
 
     private func setup() {
         title = NSLocalizedString("帮助", comment: "Help settings title")
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: NSLocalizedString("开源许可", comment: "Open source licenses"),
+            style: .plain, target: self, action: #selector(showLicenses))
+        view.accessibilityIdentifier = "claw.settings.help.screen"
         view.backgroundColor = ClawTheme.background
         ClawTheme.styleList(tableView, rowHeight: SettingsHelpViewController.kDefaultRowHeight)
-        [contactUs, termsOfUse, privacyPolicy].forEach { ClawTheme.styleTableCell($0) }
+        let helpCells: [UITableViewCell] = [contactUs, termsOfUse, privacyPolicy]
+        helpCells.forEach { cell in
+            ClawTheme.styleTableCell(cell)
+            cell.accessoryType = .none
+            cell.textLabel?.font = ClawTheme.font(16)
+            cell.textLabel?.adjustsFontForContentSizeCategory = true
+            cell.textLabel?.numberOfLines = 0
+        }
+        contactUs.textLabel?.text = NSLocalizedString("支持方式未配置", comment: "Support unavailable")
+        termsOfUse.textLabel?.text = NSLocalizedString("服务条款未配置", comment: "Terms unavailable")
+        privacyPolicy.textLabel?.text = NSLocalizedString("隐私政策未配置", comment: "Privacy policy unavailable")
         appVersion.textColor = ClawTheme.muted
         serviceNameLabel.textColor = ClawTheme.muted
         serviceLinkLabel.textColor = ClawTheme.muted
@@ -64,18 +73,14 @@ class SettingsHelpViewController: UITableViewController {
         let versionCode = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
         self.appVersion.text = "\(version) (\(versionCode))"
 
-        self.tosUrl = URL(string: SharedUtils.tosUrl ?? "https://veilping.app/terms.html")
-        self.privacyUrl = URL(string: SharedUtils.privacyUrl ?? "https://veilping.app/privacy.html")
+        // No verified legal/support destination has been supplied for this release.
+        // Do not treat the previous brand's domain as this service's published policy.
 
         // Logo.
         logoView.image = UIImage(named: "logo-ios")
         // Service name.
         serviceNameLabel.text = NSLocalizedString("CLAW OS", comment: "Product name")
-        // Service link (strip path from privacy url).
-        var components = URLComponents()
-        components.scheme = privacyUrl!.scheme
-        components.host = privacyUrl!.host
-        serviceLinkLabel.text = components.url!.absoluteString
+        serviceLinkLabel.text = NSLocalizedString("连接信息仅用于诊断", comment: "Connection diagnostics description")
         // Server address.
         let (host, tls) = Tinode.getConnectionParams()
         serverAddressLabel.text = (tls ? "https://" : "http://") + host
@@ -97,6 +102,11 @@ class SettingsHelpViewController: UITableViewController {
         self.poweredByView.isHidden = !isUsingCustomBranding
     }
 
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        if indexPath.section == 0 && indexPath.row == 0 { return 230 }
+        return max(SettingsHelpViewController.kDefaultRowHeight, ceil(ClawTheme.font(16).lineHeight) + 24)
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
@@ -115,30 +125,55 @@ class SettingsHelpViewController: UITableViewController {
     }
 
     @objc func termsOfUseClicked(sender: UITapGestureRecognizer) {
-        UIApplication.shared.open(self.tosUrl)
+        UiUtils.showToast(message: NSLocalizedString("尚未提供已核实的服务条款，当前无法查看。", comment: "Terms unavailable"))
     }
 
     @objc func privacyPolicyClicked(sender: UITapGestureRecognizer) {
-        UIApplication.shared.open(self.privacyUrl)
+        UiUtils.showToast(message: NSLocalizedString("尚未提供已核实的隐私政策，当前无法查看。", comment: "Privacy policy unavailable"))
     }
 
     @objc func contactUsClicked(sender: UITapGestureRecognizer) {
-        if MFMailComposeViewController.canSendMail() {
-            let mail = MFMailComposeViewController()
-            mail.mailComposeDelegate = self
-            mail.setToRecipients(["support@veilping.app"])
-            present(mail, animated: true)
-        } else {
-            UiUtils.showToast(message: NSLocalizedString("Cannot send email: functionality not accessible.", comment: "Error message"))
-        }
+        UiUtils.showToast(message: NSLocalizedString("支持方式尚未配置，请联系为你提供此应用的管理员。", comment: "Support unavailable"))
     }
-}
 
-extension SettingsHelpViewController: MFMailComposeViewControllerDelegate {
-    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
-        controller.dismiss(animated: true)
-        if let err = error {
-            UiUtils.showToast(message: String(format: NSLocalizedString("Failed to send email: %@", comment: "Error message"), err.localizedDescription))
+    @objc private func showLicenses() {
+        guard let url = Bundle.main.url(forResource: "Acknowledgements", withExtension: "plist",
+                                        subdirectory: "Settings.bundle"),
+              let data = try? Data(contentsOf: url),
+              let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
+              let dictionary = plist as? [String: Any],
+              let entries = dictionary["PreferenceSpecifiers"] as? [[String: Any]] else {
+            UiUtils.showToast(message: NSLocalizedString("本机开源许可文件暂不可用。", comment: "License file unavailable"))
+            return
         }
+        let notices = entries.compactMap { entry -> String? in
+            guard let text = entry["FooterText"] as? String, !text.isEmpty else { return nil }
+            let name = entry["Title"] as? String ?? ""
+            return name.isEmpty ? text : name + "\n\n" + text
+        }
+        guard !notices.isEmpty else {
+            UiUtils.showToast(message: NSLocalizedString("本机开源许可文件暂不可用。", comment: "License file unavailable"))
+            return
+        }
+        let controller = UIViewController()
+        controller.title = NSLocalizedString("开源许可", comment: "Open source licenses")
+        controller.view.backgroundColor = ClawTheme.background
+        let textView = UITextView()
+        textView.translatesAutoresizingMaskIntoConstraints = false
+        textView.backgroundColor = ClawTheme.surface
+        textView.textColor = ClawTheme.ink
+        textView.font = ClawTheme.font(13, style: .footnote)
+        textView.adjustsFontForContentSizeCategory = true
+        textView.isEditable = false
+        textView.textContainerInset = UIEdgeInsets(top: 24, left: 16, bottom: 24, right: 16)
+        textView.text = notices.joined(separator: "\n\n────────\n\n")
+        controller.view.addSubview(textView)
+        NSLayoutConstraint.activate([
+            textView.leadingAnchor.constraint(equalTo: controller.view.safeAreaLayoutGuide.leadingAnchor),
+            textView.trailingAnchor.constraint(equalTo: controller.view.safeAreaLayoutGuide.trailingAnchor),
+            textView.topAnchor.constraint(equalTo: controller.view.safeAreaLayoutGuide.topAnchor),
+            textView.bottomAnchor.constraint(equalTo: controller.view.safeAreaLayoutGuide.bottomAnchor)
+        ])
+        navigationController?.pushViewController(controller, animated: true)
     }
 }

@@ -32,20 +32,27 @@ class ChatListViewCell: UITableViewCell {
     @IBOutlet weak var badgeDangerWidth: NSLayoutConstraint!
 
     private let messageTimeLabel = UILabel()
+    private let cardView = UIView()
     private var premiumLayoutInstalled = false
 
     override func awakeFromNib() {
         super.awakeFromNib()
         installPremiumLayout()
-        backgroundColor = .white
-        contentView.backgroundColor = .white
-        title.font = .systemFont(ofSize: 16, weight: .semibold)
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        selectionStyle = .none
+        title.font = ClawTheme.font(16, weight: .semibold)
         title.textColor = ClawTheme.ink
-        subtitle.font = .systemFont(ofSize: 13, weight: .regular)
+        subtitle.font = ClawTheme.font(13, style: .subheadline)
         subtitle.textColor = ClawTheme.muted
-        icon.avatar.setFixedCornerRadius(12)
+        icon.avatar.setFixedCornerRadius(16)
         unreadCount.backgroundColor = ClawTheme.primary
-        unreadCount.textColor = .white
+        unreadCount.textColor = ClawTheme.onBrand
+        unreadCount.font = ClawTheme.font(12, weight: .semibold, style: .caption1)
+        let labels: [UILabel] = [title, subtitle, messageTimeLabel, unreadCount]
+        labels.forEach { $0.adjustsFontForContentSizeCategory = true }
+        unreadCount.constraints.first(where: { $0.firstAttribute == .height })?.constant =
+            max(24, ceil(unreadCount.font.lineHeight) + 8)
         unreadCount.layer.cornerRadius = 10
         unreadCount.layer.cornerCurve = .continuous
         unreadCount.clipsToBounds = true
@@ -80,17 +87,17 @@ class ChatListViewCell: UITableViewCell {
         NSLayoutConstraint.deactivate(legacyConstraints)
 
         icon.translatesAutoresizingMaskIntoConstraints = false
-        title.numberOfLines = 1
+        title.numberOfLines = 2
         title.lineBreakMode = .byTruncatingTail
         title.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         title.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        subtitle.numberOfLines = 1
+        subtitle.numberOfLines = 2
         subtitle.lineBreakMode = .byTruncatingTail
         subtitle.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         subtitle.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         messageTimeLabel.translatesAutoresizingMaskIntoConstraints = false
-        messageTimeLabel.font = .systemFont(ofSize: 11, weight: .regular)
+        messageTimeLabel.font = ClawTheme.font(12, style: .caption1)
         messageTimeLabel.textColor = ClawTheme.muted
         messageTimeLabel.textAlignment = .right
         messageTimeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -112,27 +119,36 @@ class ChatListViewCell: UITableViewCell {
         previewRow.alignment = .center
         previewRow.spacing = 4
 
-        contentView.addSubview(titleRow)
-        contentView.addSubview(previewRow)
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        cardView.isUserInteractionEnabled = false
+        cardView.backgroundColor = ClawTheme.surface
+        cardView.layer.cornerRadius = ClawTheme.cardRadius
+        cardView.layer.cornerCurve = .continuous
+        contentView.insertSubview(cardView, at: 0)
+
+        let textRows = UIStackView(arrangedSubviews: [titleRow, previewRow])
+        textRows.translatesAutoresizingMaskIntoConstraints = false
+        textRows.axis = .vertical
+        textRows.spacing = 4
+        contentView.addSubview(textRows)
 
         iconBlockedWidth.constant = ChatListViewCell.kIconWidth
         unreadCountWidth.constant = 20
         iconMuted.constraints.first(where: { $0.firstAttribute == .width })?.constant = ChatListViewCell.kIconWidth
 
         NSLayoutConstraint.activate([
-            icon.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            icon.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-
-            titleRow.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 12),
-            titleRow.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            titleRow.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 13),
-            titleRow.heightAnchor.constraint(equalToConstant: 22),
-
-            previewRow.leadingAnchor.constraint(equalTo: titleRow.leadingAnchor),
-            previewRow.trailingAnchor.constraint(equalTo: titleRow.trailingAnchor),
-            previewRow.topAnchor.constraint(equalTo: titleRow.bottomAnchor, constant: 4),
-            previewRow.heightAnchor.constraint(equalToConstant: 24),
-
+            cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            cardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
+            cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5),
+            cardView.heightAnchor.constraint(greaterThanOrEqualToConstant: 84),
+            icon.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
+            icon.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
+            icon.bottomAnchor.constraint(lessThanOrEqualTo: cardView.bottomAnchor, constant: -12),
+            textRows.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 12),
+            textRows.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12),
+            textRows.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
+            textRows.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -12),
             messageTimeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 48)
         ])
     }
@@ -149,6 +165,19 @@ class ChatListViewCell: UITableViewCell {
 
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
+        cardView.backgroundColor = selected || isHighlighted ? ClawTheme.brandSoft : ClawTheme.surface
+    }
+
+    override func setHighlighted(_ highlighted: Bool, animated: Bool) {
+        super.setHighlighted(highlighted, animated: animated)
+        cardView.backgroundColor = highlighted || isSelected ? ClawTheme.brandSoft : ClawTheme.surface
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        unreadCount.constraints.first(where: { $0.firstAttribute == .height })?.constant =
+            max(24, ceil(unreadCount.font.lineHeight) + 8)
+        unreadCount.layer.cornerRadius = unreadCount.bounds.height / 2
     }
 
     private func setMessageStatusVisibility(hidden: Bool) {
@@ -165,9 +194,9 @@ class ChatListViewCell: UITableViewCell {
             // If we have a latestMessage and its up to date.
             let availableWidth = max(contentView.bounds.width - 132, 140)
             subtitle.attributedText = msg.attributedPreview(
-                fitIn: CGSize(width: availableWidth, height: 24),
+                fitIn: CGSize(width: availableWidth, height: ceil(subtitle.font.lineHeight) * 2),
                 withDefaultAttributes: [
-                    .font: UIFont.systemFont(ofSize: 13, weight: .regular),
+                    .font: ClawTheme.font(13, style: .subheadline),
                     .foregroundColor: ClawTheme.muted
                 ])
             latestTimestamp = msg.ts
@@ -222,7 +251,9 @@ class ChatListViewCell: UITableViewCell {
         if unread > 0 {
             unreadCount.text = unread > 9 ? "9+" : String(unread)
             unreadCount.isHidden = false
-            unreadCountWidth.constant = 20
+            let badgeTextWidth = (unreadCount.text! as NSString).size(
+                withAttributes: [.font: unreadCount.font!]).width
+            unreadCountWidth.constant = max(24, ceil(badgeTextWidth) + 12)
         } else {
             unreadCount.isHidden = true
             unreadCountWidth.constant = .leastNonzeroMagnitude

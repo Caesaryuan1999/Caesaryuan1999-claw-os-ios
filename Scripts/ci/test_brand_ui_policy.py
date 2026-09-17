@@ -76,9 +76,9 @@ def main() -> None:
         "static let surface",
         "static let border",
         "static let inputRadius: CGFloat = 14",
-        "static let buttonRadius: CGFloat = 15",
+        "static let buttonRadius: CGFloat = 12",
         "static let cardRadius: CGFloat = 16",
-        "static let touchTarget: CGFloat = 44",
+        "static let touchTarget: CGFloat = 48",
         "static let iconSmall: CGFloat = 18",
         "static let iconCompact: CGFloat = 20",
         "static let iconStandard: CGFloat = 24",
@@ -122,7 +122,7 @@ def main() -> None:
     assert "min(activeTopics.count" not in chat_list
     assert "showAllContacts" in chat_list
     assert 'ClawTheme.symbol("magnifyingglass"' in chat_list
-    assert "搜索消息或联系人" in chat_list
+    assert "搜索会话" in chat_list
 
     message = MESSAGE.read_text(encoding="utf-8")
     assert 'ClawTheme.symbol("phone.fill"' in message

@@ -29,7 +29,7 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
         let deleted: Bool
     }
 
-    private static let kFooterHeight: CGFloat = 30
+    private static let kFooterHeight: CGFloat = 48
 
     @IBOutlet var chatListTableView: UITableView!
 
@@ -62,11 +62,11 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
         router.viewController = viewController
 
         self.chatListTableView.register(UINib(nibName: "ChatListViewCell", bundle: nil), forCellReuseIdentifier: "ChatListViewCell")
-        self.chatListTableView.backgroundColor = ClawTheme.surface
-        self.chatListTableView.separatorColor = ClawTheme.border
+        self.chatListTableView.backgroundColor = ClawTheme.background
+        self.chatListTableView.separatorStyle = .none
         self.chatListTableView.separatorInset = UIEdgeInsets(top: 0, left: 92, bottom: 0, right: 18)
-        self.chatListTableView.rowHeight = 76
-        self.chatListTableView.estimatedRowHeight = 76
+        self.chatListTableView.rowHeight = UITableView.automaticDimension
+        self.chatListTableView.estimatedRowHeight = 94
         self.navigationItem.largeTitleDisplayMode = .never
         setupBrandTitle()
 
@@ -75,7 +75,7 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
         archivedChatsFooter!.backgroundColor = tableView.backgroundColor
         let button = UIButton(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: ChatListViewController.kFooterHeight))
         button.setTitle(NSLocalizedString("Archived Chats", comment: "View title"), for: .normal)
-        button.setTitleColor(UIColor.darkGray, for: .normal)
+        button.setTitleColor(ClawTheme.muted, for: .normal)
         button.titleLabel?.font = button.titleLabel?.font.withSize(15)
         button.addTarget(self, action: #selector(navigateToArchive), for: .touchUpInside)
         archivedChatsFooter!.addSubview(button)
@@ -91,8 +91,8 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
 
         let title = UILabel()
         title.text = "CLAW OS"
-        title.textColor = ClawTheme.ink
-        title.font = .systemFont(ofSize: 22, weight: .semibold)
+        title.textColor = ClawTheme.primary
+        title.font = ClawTheme.font(13, weight: .semibold, style: .caption1)
         title.adjustsFontForContentSizeCategory = true
 
         let brand = UIStackView(arrangedSubviews: [logo, title])
@@ -102,14 +102,35 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
         brand.accessibilityLabel = "CLAW OS"
         brand.frame = CGRect(x: 0, y: 0, width: 142, height: 36)
         NSLayoutConstraint.activate([
-            logo.widthAnchor.constraint(equalToConstant: 32),
-            logo.heightAnchor.constraint(equalToConstant: 32)
+            logo.widthAnchor.constraint(equalToConstant: 24),
+            logo.heightAnchor.constraint(equalToConstant: 24)
         ])
         // The storyboard provides a legacy navigation-item title. Clear it so the
         // custom logo-and-name view is the only brand shown in this header.
         navigationItem.title = nil
         navigationItem.titleView = nil
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: brand)
+        let compose = UIButton(type: .system)
+        compose.setTitle(NSLocalizedString("发起聊天", comment: "Start a chat"), for: .normal)
+        compose.titleLabel?.font = ClawTheme.font(16, weight: .semibold)
+        compose.titleLabel?.adjustsFontForContentSizeCategory = true
+        compose.tintColor = ClawTheme.primary
+        compose.accessibilityIdentifier = "claw.chats.compose"
+        compose.addTarget(self, action: #selector(startChat), for: .touchUpInside)
+        compose.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        navigationItem.rightBarButtonItems = [UIBarButtonItem(customView: compose)]
+    }
+
+    @objc private func startChat() {
+        performSegue(withIdentifier: "Chats2NewChat", sender: nil)
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard isViewLoaded,
+              previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory else { return }
+        rebuildHeader()
+        tableView.reloadData()
     }
 
     private func rebuildHeader() {
@@ -119,22 +140,30 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
         activeContactItems = buildActiveContactItems()
         let hasActiveContacts = !activeContactItems.isEmpty
         let activeStripHeight = ActiveContactsLayoutMetrics.stripHeight
-        let headerHeight: CGFloat = hasActiveContacts ? 104 + activeStripHeight + 38 : 104
+        let titleFont = ClawTheme.font(32, weight: .bold, style: .largeTitle)
+        let headingOffset = ceil(titleFont.lineHeight) + 16
+        let searchFont = ClawTheme.font(16)
+        let searchHeight = max(48, ceil(searchFont.lineHeight) + 24)
+        let searchExtra = searchHeight - 48
+        let headerHeight: CGFloat = (hasActiveContacts ? 104 + activeStripHeight + 38 : 104)
+            + headingOffset + searchExtra
         let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: headerHeight))
-        header.backgroundColor = ClawTheme.surface
+        header.backgroundColor = ClawTheme.background
 
-        let search = UITextField(frame: CGRect(x: 18, y: 12, width: width - 36, height: 48))
+        let search = UITextField(frame: CGRect(x: 24, y: 12, width: width - 48, height: searchHeight))
         search.text = query
-        search.placeholder = NSLocalizedString("搜索消息或联系人", comment: "Chat list search placeholder")
-        search.font = .systemFont(ofSize: 15)
+        search.placeholder = NSLocalizedString("搜索会话", comment: "Search names and aliases in conversations")
+        search.font = searchFont
+        search.adjustsFontForContentSizeCategory = true
+        search.accessibilityIdentifier = "claw.chats.search"
         search.returnKeyType = .search
         search.clearButtonMode = .whileEditing
         search.autocorrectionType = .no
         ClawTheme.styleTextField(search)
-        search.backgroundColor = ClawTheme.surfaceMuted
+        search.backgroundColor = ClawTheme.surface
         search.layer.borderWidth = 0
-        let searchIconContainer = UIView(frame: CGRect(x: 0, y: 0, width: 42, height: 48))
-        let searchIcon = UIImageView(frame: CGRect(x: 14, y: 14, width: 20, height: 20))
+        let searchIconContainer = UIView(frame: CGRect(x: 0, y: 0, width: 42, height: searchHeight))
+        let searchIcon = UIImageView(frame: CGRect(x: 14, y: (searchHeight - 20) / 2, width: 20, height: 20))
         searchIcon.image = ClawTheme.symbol("magnifyingglass", pointSize: 18, weight: .medium)
         searchIcon.tintColor = ClawTheme.muted
         searchIcon.contentMode = .scaleAspectFit
@@ -255,11 +284,23 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
         }
 
         let recentTitle = UILabel(frame: CGRect(x: 18, y: recentTitleY, width: width - 36, height: 22))
-        recentTitle.text = NSLocalizedString("最近消息", comment: "Recent chats section title")
+        recentTitle.text = NSLocalizedString("最近会话", comment: "Recent chats section title")
         recentTitle.textColor = ClawTheme.muted
         recentTitle.font = .systemFont(ofSize: 14, weight: .medium)
         header.addSubview(recentTitle)
 
+        for child in header.subviews {
+            if child.frame.minY >= 76 { child.frame.origin.y += searchExtra }
+            child.frame.origin.y += headingOffset
+        }
+        let pageTitle = UILabel(frame: CGRect(x: 24, y: 8, width: width - 48,
+                                             height: ceil(titleFont.lineHeight)))
+        pageTitle.text = NSLocalizedString("消息", comment: "Messages page heading")
+        pageTitle.font = titleFont
+        pageTitle.textColor = ClawTheme.ink
+        pageTitle.adjustsFontForContentSizeCategory = true
+        pageTitle.accessibilityTraits = .header
+        header.addSubview(pageTitle)
         tableView.tableHeaderView = header
         headerWidth = width
     }
@@ -493,7 +534,9 @@ extension ChatListViewController {
         if show {
             let rect = CGRect(x: 0, y: 0, width: view.bounds.width, height: view.bounds.height)
             let messageLabel = UILabel(frame: rect)
-            messageLabel.text = NSLocalizedString("暂无消息", comment: "Placeholder when no chats found")
+            messageLabel.text = (searchField?.text?.isEmpty ?? true)
+                ? NSLocalizedString("还没有会话，点击“发起聊天”开始。", comment: "Empty conversation list")
+                : NSLocalizedString("没有找到相关会话", comment: "No matching conversation")
             messageLabel.textColor = ClawTheme.muted
             messageLabel.numberOfLines = 0
             messageLabel.textAlignment = .center

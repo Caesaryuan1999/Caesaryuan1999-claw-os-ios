@@ -19,15 +19,12 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
         let contacts = storyboard.instantiateViewController(withIdentifier: "Find")
         let contactsNavigation = UINavigationController(rootViewController: contacts)
 
-        let callsNavigation = UINavigationController(rootViewController: ClawCallsHistoryViewController())
-
         let account = storyboard.instantiateViewController(withIdentifier: "Account Settings")
         let accountNavigation = UINavigationController(rootViewController: account)
 
         controller.viewControllers = [
             controller.messagesNavigationController,
             contactsNavigation,
-            callsNavigation,
             accountNavigation
         ]
         controller.configureAppearance()
@@ -45,8 +42,7 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
         let items: [(String, String, String)] = [
             ("消息", "message", "message.fill"),
             ("通讯录", "person.2", "person.2.fill"),
-            ("通话", "phone", "phone.fill"),
-            ("我的", "person.crop.circle", "person.crop.circle.fill")
+            ("我", "person.crop.circle", "person.crop.circle.fill")
         ]
         for (index, item) in items.enumerated() where index < (viewControllers?.count ?? 0) {
             viewControllers?[index].tabBarItem = UITabBarItem(
@@ -63,12 +59,12 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
         appearance.stackedLayoutAppearance.normal.iconColor = ClawTheme.muted
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
             .foregroundColor: ClawTheme.muted,
-            .font: UIFont.systemFont(ofSize: 11, weight: .medium)
+            .font: ClawTheme.font(12, weight: .medium, style: .caption1)
         ]
         appearance.stackedLayoutAppearance.selected.iconColor = ClawTheme.primary
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
             .foregroundColor: ClawTheme.primary,
-            .font: UIFont.systemFont(ofSize: 11, weight: .semibold)
+            .font: ClawTheme.font(12, weight: .semibold, style: .caption1)
         ]
         tabBar.standardAppearance = appearance
         if #available(iOS 15.0, *) {
@@ -89,8 +85,8 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
         messagesItem.badgeValue = unread > 0 ? (unread > 99 ? "99+" : String(unread)) : nil
         messagesItem.badgeColor = ClawTheme.danger
         messagesItem.setBadgeTextAttributes([
-            .foregroundColor: UIColor.white,
-            .font: UIFont.systemFont(ofSize: 10, weight: .bold)
+            .foregroundColor: ClawTheme.onBrand,
+            .font: ClawTheme.font(12, weight: .semibold, style: .caption1)
         ], for: .normal)
     }
 }

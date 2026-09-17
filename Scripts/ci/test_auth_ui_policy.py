@@ -58,7 +58,7 @@ def main() -> None:
     assert 'NSLocalizedString("修改密码失败：%@"' not in security
     assert "systemLayoutSizeFitting" in account
     assert "contentInset.bottom" in account
-    assert "已成功登出" in account and "登出失败，请重试" in account
+    assert "已退出登录" in account and "退出登录失败，请重试" in account
     assert "self!" not in signup
 
     assert "AuthScheme.idResetInstance" not in reset

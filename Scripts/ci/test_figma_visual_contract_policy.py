@@ -21,10 +21,10 @@ traditional = read("zh-Hant.lproj/Main.strings")
 members = read("EditMembersViewController.swift")
 
 for marker in [
-    "green: 168 / 255, blue: 157 / 255",
-    "green: 122 / 255, blue: 114 / 255",
+    "color(light: 0x006F64, dark: 0x72D9BF)",
+    "color(light: 0xF4F6F3, dark: 0x101B19)",
     "static let inputRadius: CGFloat = 14",
-    "static let buttonRadius: CGFloat = 15",
+    "static let buttonRadius: CGFloat = 12",
     "static let iconStandard: CGFloat = 24",
 ]:
     assert marker in theme, f"missing Figma design token: {marker}"

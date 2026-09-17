@@ -21,49 +21,43 @@ enum ClawTheme {
         case last
     }
 
-    static let primary = UIColor(red: 0 / 255, green: 168 / 255, blue: 157 / 255, alpha: 1)
-    static let primaryPressed = UIColor(red: 0 / 255, green: 122 / 255, blue: 114 / 255, alpha: 1)
-    static let accent = UIColor(red: 17 / 255, green: 200 / 255, blue: 213 / 255, alpha: 1)
-    static let success = UIColor(red: 37 / 255, green: 197 / 255, blue: 122 / 255, alpha: 1)
+    // R3.D1 semantic colors. UIKit resolves both appearances at display time.
+    private static func color(light: UInt32, dark: UInt32) -> UIColor {
+        UIColor { traits in
+            let rgb = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: CGFloat((rgb >> 16) & 0xff) / 255,
+                           green: CGFloat((rgb >> 8) & 0xff) / 255,
+                           blue: CGFloat(rgb & 0xff) / 255, alpha: 1)
+        }
+    }
+
+    static let primary = color(light: 0x006F64, dark: 0x72D9BF)
+    static let onBrand = color(light: 0xFFFFFF, dark: 0x102D24)
+    static let primaryPressed = primary.withAlphaComponent(0.85)
+    static let accent = primary
+    static let success = primary
     static let warning = UIColor(red: 255 / 255, green: 176 / 255, blue: 32 / 255, alpha: 1)
-    static let danger = UIColor(red: 239 / 255, green: 91 / 255, blue: 98 / 255, alpha: 1)
-    static let dangerSoft = UIColor(red: 253 / 255, green: 236 / 255, blue: 234 / 255, alpha: 1)
-    static let brandSoft = UIColor(red: 234 / 255, green: 248 / 255, blue: 246 / 255, alpha: 1)
-    static let background = UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 11 / 255, green: 21 / 255, blue: 20 / 255, alpha: 1)
-            : UIColor(red: 244 / 255, green: 247 / 255, blue: 246 / 255, alpha: 1)
-    }
-    static let surface = UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 18 / 255, green: 32 / 255, blue: 30 / 255, alpha: 1)
-            : .white
-    }
-    static let surfaceMuted = UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 25 / 255, green: 48 / 255, blue: 44 / 255, alpha: 1)
-            : UIColor(red: 244 / 255, green: 247 / 255, blue: 246 / 255, alpha: 1)
-    }
-    static let border = UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 49 / 255, green: 73 / 255, blue: 69 / 255, alpha: 1)
-            : UIColor(red: 228 / 255, green: 233 / 255, blue: 232 / 255, alpha: 1)
-    }
-    static let ink = UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 236 / 255, green: 245 / 255, blue: 243 / 255, alpha: 1)
-            : UIColor(red: 7 / 255, green: 28 / 255, blue: 26 / 255, alpha: 1)
-    }
-    static let muted = UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 168 / 255, green: 186 / 255, blue: 183 / 255, alpha: 1)
-            : UIColor(red: 107 / 255, green: 119 / 255, blue: 117 / 255, alpha: 1)
-    }
+    static let danger = color(light: 0xA83236, dark: 0xFFB4AC)
+    static let dangerSoft = danger.withAlphaComponent(0.12)
+    static let brandSoft = color(light: 0xE4EFEB, dark: 0x293D35)
+    static let background = color(light: 0xF4F6F3, dark: 0x101B19)
+    static let surface = color(light: 0xFFFFFF, dark: 0x1B2926)
+    static let surfaceMuted = brandSoft
+    static let border = color(light: 0xD9E3DE, dark: 0x3B5047)
+    static let ink = color(light: 0x182E2D, dark: 0xEDF5F0)
+    static let muted = color(light: 0x566865, dark: 0xA6B9B1)
+
     static let inputRadius: CGFloat = 14
-    static let buttonRadius: CGFloat = 15
+    static let buttonRadius: CGFloat = 12
     static let cardRadius: CGFloat = 16
     static let cornerRadius: CGFloat = cardRadius
-    static let touchTarget: CGFloat = 44
+    static let touchTarget: CGFloat = 48
+
+    static func font(_ size: CGFloat, weight: UIFont.Weight = .regular,
+                     style: UIFont.TextStyle = .body) -> UIFont {
+        UIFontMetrics(forTextStyle: style).scaledFont(for: .systemFont(ofSize: size, weight: weight))
+    }
+
     static let iconSmall: CGFloat = 18
     static let iconCompact: CGFloat = 20
     static let iconStandard: CGFloat = 24
@@ -100,10 +94,11 @@ enum ClawTheme {
 
     static func stylePrimaryButton(_ button: UIButton) {
         button.backgroundColor = primary
-        button.tintColor = .white
-        button.setTitleColor(.white, for: .normal)
-        button.setTitleColor(UIColor.white.withAlphaComponent(0.6), for: .disabled)
-        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        button.tintColor = onBrand
+        button.setTitleColor(onBrand, for: .normal)
+        button.setTitleColor(onBrand.withAlphaComponent(0.6), for: .disabled)
+        button.titleLabel?.font = font(16, weight: .semibold)
+        button.titleLabel?.adjustsFontForContentSizeCategory = true
         button.titleLabel?.textAlignment = .center
         button.contentHorizontalAlignment = .center
         button.contentVerticalAlignment = .center
@@ -116,7 +111,8 @@ enum ClawTheme {
         button.backgroundColor = .clear
         button.tintColor = primary
         button.setTitleColor(primary, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        button.titleLabel?.font = font(16, weight: .medium)
+        button.titleLabel?.adjustsFontForContentSizeCategory = true
     }
 
     static func styleTextField(_ textField: UITextField) {
@@ -294,7 +290,7 @@ enum ClawTheme {
     static func styleRoundedIconButton(_ button: UIButton, symbolName: String,
                                        selected: Bool = false) {
         styleIconButton(button, symbolName: symbolName, pointSize: iconCompact,
-                        tintColor: selected ? .white : primary)
+                        tintColor: selected ? onBrand : primary)
         button.backgroundColor = selected ? primary : brandSoft
         button.layer.cornerRadius = 12
         button.layer.cornerCurve = .continuous
