@@ -113,6 +113,52 @@ final class IdentityFlowTests: XCTestCase {
         return data
     }
 
+    func testNonTLSLegacyOriginKeepsSDKLoginWithoutCreatingHTTPTransport() throws {
+        let origin = URL(string: "http://192.168.50.20:6060/")!
+        XCTAssertThrowsError(try ClawIdentityService(origin: origin, apiKey: "synthetic"))
+        let disabled = ClawIdentityFlow.makeHTTPService(origin: origin, apiKey: "synthetic")
+        XCTAssertNil(disabled)
+        let legacy = ClawIdentityFlow(purpose: .register, service: disabled,
+            snapshotIsCurrent: { true }, loginBridge: { _, _ in XCTFail("No new HTTP token bridge") },
+            retireSession: {}, commitSession: { $0.user == "usrLegacy" })
+        defer { legacy.invalidate() }
+        XCTAssertThrowsError(try awaitResult { legacy.prepare($0) }.get())
+        XCTAssertTrue(legacy.legacyLoginAvailable)
+        let originalPassword = " \told-password\n"
+        var calls = 0
+        let result = try awaitResult {
+            legacy.loginLegacy(username: "original42", password: originalPassword, bridge: { name, password, reply in
+                calls += 1
+                XCTAssertEqual(name, "original42")
+                XCTAssertEqual(password, originalPassword)
+                reply(.success(ClawIdentitySessionResult(user: "usrLegacy", token: "b2xk", expires: nil)))
+            }, completion: $0)
+        }.get()
+        XCTAssertEqual(result.user, "usrLegacy")
+        XCTAssertEqual(calls, 1)
+        XCTAssertTrue(legacy.sessionCommitted)
+    }
+
+    func testAbsentHTTPTransportCannotSendAnyNewIdentityRequest() throws {
+        let disabled = ClawIdentityFlow.makeHTTPService(origin: URL(string: "http://identity.example.test/")!,
+                                                       apiKey: "synthetic")
+        XCTAssertNil(disabled)
+        let blocked = ClawIdentityFlow(purpose: .register, service: disabled,
+            snapshotIsCurrent: { true }, loginBridge: { _, _ in XCTFail("New login must stay blocked") },
+            retireSession: {}, commitSession: { _ in XCTFail("No session to commit"); return false })
+        defer { blocked.invalidate() }
+        XCTAssertThrowsError(try awaitResult { blocked.prepare($0) }.get())
+        XCTAssertThrowsError(try awaitResult { blocked.login(method: .email, input: "a@example.test",
+                                                             password: "Original bytes", completion: $0) }.get())
+        XCTAssertThrowsError(try awaitResult { blocked.requestCode(method: .email, input: "a@example.test",
+            legalResourcesAvailable: true, termsAccepted: true, completion: $0) }.get())
+        XCTAssertThrowsError(try awaitResult { blocked.verify(code: "123456", completion: $0) }.get())
+        XCTAssertThrowsError(try awaitResult { blocked.setPassword("Abcdef123456!", completion: $0) }.get())
+        XCTAssertFalse(blocked.busy)
+        XCTAssertNil(blocked.pendingChallenge)
+        XCTAssertNil(blocked.pendingPassword)
+    }
+
     func testIdentifierNormalizationKeepsPlusAndDotsAndRejectsUnicode() throws {
         XCTAssertEqual(try ClawIdentityInput.normalize(" \tUser.Name+Tag@XN--EXAMPLE.COM\r\n", method: .email), "user.name+tag@xn--example.com")
         XCTAssertEqual(try ClawIdentityInput.normalize("13800138000", method: .tel), "+8613800138000")
@@ -449,4 +495,3 @@ final class IdentityFlowTests: XCTestCase {
     }
 
 }
-

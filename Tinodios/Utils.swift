@@ -1164,7 +1164,7 @@ final class ClawIdentityCoordinator {
         }
         self.owner = owner
         self.origin = origin
-        let service = try ClawIdentityService(origin: origin, apiKey: apiKey)
+        let service = ClawIdentityFlow.makeHTTPService(origin: origin, apiKey: apiKey)
         let current: () -> Bool = {
             let configured = Tinode.getConnectionParams()
             return configured.0 == connection.0 && configured.1 == connection.1 && Cache.isCurrent(owner)

@@ -14,7 +14,7 @@ final class ClawIdentityFlow {
     typealias LoginBridge = (ClawIdentityLogin, @escaping (Result<ClawIdentitySessionResult, ClawIdentityError>) -> Void) -> Void
 
     let purpose: ClawIdentityPurpose
-    let service: ClawIdentityService
+    let service: ClawIdentityService?
     private let now: () -> Date
     private let snapshotIsCurrent: () -> Bool
     private let loginBridge: LoginBridge
@@ -41,7 +41,7 @@ final class ClawIdentityFlow {
     private var websocketStarted = false
     private var generation = UUID()
 
-    init(purpose: ClawIdentityPurpose, service: ClawIdentityService,
+    init(purpose: ClawIdentityPurpose, service: ClawIdentityService?,
          now: @escaping () -> Date = Date.init,
          snapshotIsCurrent: @escaping () -> Bool,
          loginBridge: @escaping LoginBridge,
@@ -56,8 +56,13 @@ final class ClawIdentityFlow {
         self.commitSession = commitSession
     }
 
+    /// AUTH transport policy stays strict; an unavailable HTTP service does not disable an existing SDK login.
+    static func makeHTTPService(origin: URL, apiKey: String) -> ClawIdentityService? {
+        return try? ClawIdentityService(origin: origin, apiKey: apiKey)
+    }
+
     deinit {
-        service.cancel()
+        service?.cancel()
         if active && websocketStarted && !sessionCommitted { retireSession() }
     }
 
@@ -78,7 +83,7 @@ final class ClawIdentityFlow {
         guard active else { return }
         active = false
         generation = UUID()
-        service.cancel()
+        service?.cancel()
         pendingChallenge = nil
         pendingPassword = nil
         challenge = nil
@@ -103,6 +108,11 @@ final class ClawIdentityFlow {
         if let capabilities = capabilities {
             completion(capabilities.supported ? .success(capabilities) : .failure(.unavailable)); return
         }
+        guard let service = service else {
+            capabilitiesChecked = true
+            completion(.failure(.unavailable))
+            return
+        }
         busy = true
         let generation = generation
         service.capabilities { [weak self] result in
@@ -125,6 +135,7 @@ final class ClawIdentityFlow {
                      legalResourcesAvailable: Bool, termsAccepted: Bool,
                      completion: @escaping (Result<ClawIdentityChallenge, ClawIdentityError>) -> Void) {
         guard isCurrent, !busy else { completion(.failure(.ended)); return }
+        guard let service = service else { completion(.failure(.unavailable)); return }
         guard let capabilities = capabilities, capabilities.supported, capabilities.canDeliver(method),
               purpose != .register || (legalResourcesAvailable && termsAccepted) else {
             completion(.failure(.unavailable)); return
@@ -187,6 +198,7 @@ final class ClawIdentityFlow {
 
     func verify(code: String, completion: @escaping (Result<ClawIdentityProof, ClawIdentityError>) -> Void) {
         guard isCurrent, !busy else { completion(.failure(.ended)); return }
+        guard let service = service else { completion(.failure(.unavailable)); return }
         guard canVerify, let challenge = challenge else {
             completion(.failure(.server(code: "challenge_expired", retryAfter: nil))); return
         }
@@ -226,6 +238,7 @@ final class ClawIdentityFlow {
     func setPassword(_ password: String,
                      completion: @escaping (Result<PasswordOutcome, ClawIdentityError>) -> Void) {
         guard isCurrent, !busy else { completion(.failure(.ended)); return }
+        guard let service = service else { completion(.failure(.unavailable)); return }
         guard mutationRetrySeconds == 0 else {
             completion(.failure(.server(code: "rate_limited", retryAfter: mutationRetrySeconds))); return
         }
@@ -292,6 +305,7 @@ final class ClawIdentityFlow {
     func login(method: ClawIdentityMethod, input: String, countryCode: String = "+86", password: String,
                completion: @escaping (Result<ClawIdentitySessionResult, ClawIdentityError>) -> Void) {
         guard isCurrent, !busy else { completion(.failure(.ended)); return }
+        guard let service = service else { completion(.failure(.unavailable)); return }
         guard capabilities?.supported == true else { completion(.failure(.unavailable)); return }
         guard loginRetrySeconds == 0 else {
             completion(.failure(.server(code: "rate_limited", retryAfter: loginRetrySeconds))); return
