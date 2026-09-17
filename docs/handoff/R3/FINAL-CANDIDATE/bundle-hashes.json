@@ -1,0 +1,12 @@
+{
+  "source_commit": "f3043d923aa0f0c996b6a2967a9d2c33acefb435",
+  "sha256": {
+    "apply-setup-first-attempt.json": "ccec234a6f8494c7eb6943b09ba31691f60359b006f7b61d7c2f609504424a3f",
+    "CLAW-IOS-R3-source-test-ci.patch": "27045cbce487250932bf91ad0219cd0a2bc7d2c5912e0deaced76218f59d261a",
+    "commits.tsv": "ee73d7db328ae22efb6c20d363ec96bfb995958a954595b10135e3a9db0f9ff3",
+    "file-manifest.json": "f061aabd427e47dc5850cbcebea2f94410ab5cf0fe672e916fe003ae0420a6c0",
+    "README.md": "c3004beb99fc22eee09965815545c6cb210f30d342a82626177448908c31a13d",
+    "static-policies.json": "7deb1326b1a42fa9363304f2d8ffc72780da7821647f5b417985bec6a0ab93c6",
+    "verify_forward_apply.py": "47f279cffacbd4ad71b5ed8fed94b079a5a041fa718ca4e3dc8057e0fb2e0a55"
+  }
+}

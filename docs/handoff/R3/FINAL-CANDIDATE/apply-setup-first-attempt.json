@@ -1,0 +1,10 @@
+{
+  "stage": "temporary baseline index setup",
+  "result": "FAIL before applying",
+  "error": "git apply --check --index: existing paths do not match index",
+  "cause": "git update-index --cacheinfo created entries without refreshed worktree stat data",
+  "resolution": "git update-index --refresh after preparing baseline files, before apply --check --index",
+  "patch_bytes_changed": false,
+  "actual_final_apply": "PASS all55 content SHA/Git mode/blob matches",
+  "original_source_or_worktree_modified": false
+}
