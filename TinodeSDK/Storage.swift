@@ -182,6 +182,11 @@ public protocol Storage: AnyObject {
     @discardableResult
     func msgSyncing(topic: TopicProto, dbMessageId: Int64, sync: Bool) -> Bool
 
+    /// Claim exactly the persisted message snapshot about to be dispatched.
+    /// Reject a changed status or logical message identity instead of using
+    /// a stale pre-claim state to decide how an unsuccessful attempt recovers.
+    func msgClaim(topic: TopicProto, message: Message) -> Bool
+
     /// Mark message as failed.
     /// - Parameters:
     ///     - topic: topic which owns the message

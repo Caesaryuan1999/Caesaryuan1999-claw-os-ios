@@ -306,17 +306,19 @@ public class MessageDb {
         return MessageDb.transitionStatus(in: db, msgId: msgId, from: from, to: to)
     }
 
-    static let claimC3SQL = "UPDATE messages SET status=31 WHERE id=? AND topic_id=? AND sender=? AND status IN (20,36) AND head=? AND EXISTS (SELECT 1 FROM topics t JOIN accounts a ON a.id=t.account_id WHERE t.id=messages.topic_id AND a.id=? AND a.uid=? AND a.last_active=1) AND EXISTS (SELECT 1 FROM users u WHERE u.id=messages.user_id AND u.account_id=? AND u.uid=?)"
+    static let claimC3SQL = "UPDATE messages SET status=31 WHERE id=? AND topic_id=? AND sender=? AND status=? AND head=? AND EXISTS (SELECT 1 FROM topics t JOIN accounts a ON a.id=t.account_id WHERE t.id=messages.topic_id AND a.id=? AND a.uid=? AND a.last_active=1) AND EXISTS (SELECT 1 FROM users u WHERE u.id=messages.user_id AND u.account_id=? AND u.uid=?)"
     static let recoverC3SQL = "UPDATE messages SET status=36 WHERE status=31"
 
-    static func claimC3(in db: SQLite.Connection, msgId: Int64, topicId: Int64, accountId: Int64, uid: String) -> Bool {
+    static func claimC3(in db: SQLite.Connection, msgId: Int64, topicId: Int64, accountId: Int64, uid: String,
+                        expectedStatus: BaseDb.Status, expectedKey: String) -> Bool {
+        guard expectedStatus == .queued || expectedStatus == .unconfirmedC3 else { return false }
         do {
             var claimed = false
             try db.transaction(.immediate) {
                 guard let serialized = try db.scalar("SELECT head FROM messages WHERE id=?", msgId) as? String else { return }
                 let headers: [String: JSONValue]? = Tinode.deserializeObject(from: serialized)
-                guard C3PublishPolicy.clientMessageId(in: headers) != nil else { return }
-                try db.run(claimC3SQL, msgId, topicId, uid, serialized, accountId, uid, accountId, uid)
+                guard C3PublishPolicy.clientMessageId(in: headers) == expectedKey else { return }
+                try db.run(claimC3SQL, msgId, topicId, uid, expectedStatus.rawValue, serialized, accountId, uid, accountId, uid)
                 claimed = db.changes == 1
             }
             return claimed // A failed COMMIT cannot authorize transport dispatch.

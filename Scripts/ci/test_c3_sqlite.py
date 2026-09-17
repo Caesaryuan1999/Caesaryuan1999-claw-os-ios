@@ -39,18 +39,22 @@ def run(source, message_source):
             if db.in_transaction:
                 db.execute("ROLLBACK")
             raise
-    def claim(db, msg=2, topic=1, account=1, sender="usrFixtureA", capable=True):
+    def claim(db, msg=2, topic=1, account=1, sender="usrFixtureA", capable=True, expected_status=None):
         if not capable:
             return False
         db.execute("BEGIN IMMEDIATE")
         try:
-            row = db.execute("SELECT head FROM messages WHERE id=?", (msg,)).fetchone()
+            row = db.execute("SELECT head,status FROM messages WHERE id=?", (msg,)).fetchone()
+            expected_status = row[1] if expected_status is None else expected_status
+            if expected_status not in (20,36):
+                db.execute("COMMIT")
+                return False
             key = json.loads(row[0] or "{}").get("clientmsgid")
             if not isinstance(key,str) or not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", key):
                 db.execute("COMMIT")
                 return False
             changed = db.execute(constant(message_source, "claimC3SQL"),
-                (msg,topic,sender,row[0],account,sender,account,sender)).rowcount
+                (msg,topic,sender,expected_status,row[0],account,sender,account,sender)).rowcount
             db.execute("COMMIT")
             return changed == 1
         except Exception:
@@ -96,6 +100,14 @@ def run(source, message_source):
                 assert claim(db)
                 assert not claim(db)
             check("claim-checks-account-topic-sender-and-CAS", scoped)
+            def stale_snapshot():
+                db.execute("UPDATE messages SET status=20 WHERE id=2")
+                assert claim(db, expected_status=20)
+                db.execute("UPDATE messages SET status=36 WHERE id=2")
+                assert not claim(db, expected_status=20)
+                assert db.execute("SELECT status FROM messages WHERE id=2").fetchone()[0] == 36
+                assert claim(db, expected_status=36)
+            check("stale20-snapshot-cannot-claim-actual36", stale_snapshot)
             def unknown():
                 db.execute("UPDATE messages SET status=35 WHERE id=2")
                 assert not claim(db)

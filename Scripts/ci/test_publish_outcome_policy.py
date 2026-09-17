@@ -32,7 +32,7 @@ class PublishOutcomeSourcePolicy(unittest.TestCase):
     def test_publish_claims_a_durable_slot_before_transport(self):
         topic = source("TinodeSDK/Topic.swift")
         publish = topic.split("private func publishInternal", 1)[1].split("/// Publish content", 1)[0]
-        claim = publish.find("msgSyncing(")
+        claim = publish.find("msgClaim(")
         transport = publish.find(".publish(")
         self.assertTrue(0 <= claim < transport, "Publish must claim queued storage before handing content to transport")
         self.assertIn("PublishFailureDisposition.forError", publish)
@@ -40,7 +40,8 @@ class PublishOutcomeSourcePolicy(unittest.TestCase):
         messages = source("TinodiosDB/MessageDb.swift")
         self.assertIn("status == from.rawValue", messages)
         self.assertIn("MessageDb.claimC3", source("TinodiosDB/SqlStore.swift"))
-        self.assertIn("status IN (20,36)", messages)
+        self.assertIn("AND status=? AND head=?", messages)
+        self.assertIn("expectedStatus == .queued || expectedStatus == .unconfirmedC3", messages)
         self.assertIn("supportsDurablePublish", publish[:claim])
 
     def test_transport_interruptions_are_distinct_from_pre_send_offline(self):
