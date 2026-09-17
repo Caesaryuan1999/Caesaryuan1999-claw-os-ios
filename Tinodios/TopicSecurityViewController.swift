@@ -364,7 +364,7 @@ class TopicSecurityViewController: UITableViewController {
         if (sender.name ?? "") == "deleteGroup" {
             guard topic.isGrpType else { return }
             confirmRemoval(.dissolveGroup, title: "解散群组？",
-                message: "解散后，所有成员都将无法继续使用此群聊。此操作无法撤销。", button: "解散群组")
+                message: "所有成员将无法访问此群聊，服务器上的群消息历史将被删除。成员已保存到设备的文件或副本不会一并删除。此操作无法撤销。", button: "解散群组")
         } else {
             guard topic.isSlfType else { return }
             confirmRemoval(.deleteSavedMessages, title: "删除已保存消息？",
