@@ -40,6 +40,8 @@ jobs:
           name: ios-local-store-${{ github.sha }}
           path: |
             build/ios-01-a-*/static.json
+            build/ios-01-a-*/*-summary.json
+            build/ios-01-a-*/*-summary.err
             build/ios-01-a-*/sdk.log
             build/ios-01-a-*/storage.log
             build/ios-01-a-*/sdk.xcresult

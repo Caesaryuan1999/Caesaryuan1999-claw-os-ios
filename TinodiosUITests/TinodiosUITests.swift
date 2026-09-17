@@ -16,7 +16,8 @@ import SQLite
 final class PublishStorageTests: XCTestCase {
     func testTwoConcurrentClaimsDispatchOnlyOneCopy() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".sqlite")
-        defer { try? FileManager.default.removeItem(at: url) }
+        // Retain this unique synthetic fixture until the test process exits.
+        // Never unlink an SQLite file while a connection may still own it.
         let first = try SQLite.Connection(url.path)
         let second = try SQLite.Connection(url.path)
         first.busyTimeout = 2
@@ -39,7 +40,7 @@ final class PublishStorageTests: XCTestCase {
 
     func testReopenPreservesUnknownAndOnlyReplaysNeverSentMessages() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".sqlite")
-        defer { try? FileManager.default.removeItem(at: url) }
+        // Keep the synthetic file until process teardown closes all handles.
         do {
             let db = try SQLite.Connection(url.path)
             try db.run("CREATE TABLE messages (id INTEGER PRIMARY KEY, status INTEGER, content TEXT)")
@@ -277,7 +278,8 @@ final class LocalMigrationTests: XCTestCase {
     private func withFixture(_ body: (URL, SQLite.Connection) throws -> Void) throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
+        // BaseDb accessors may retain their connection for the process lifetime.
+        // Preserve this unique fixture instead of unlinking a live SQLite inode.
         let file = folder.appendingPathComponent("old113.sqlite")
         let database = try SQLite.Connection(file.path)
         try database.execute(Self.fixtureSQL)

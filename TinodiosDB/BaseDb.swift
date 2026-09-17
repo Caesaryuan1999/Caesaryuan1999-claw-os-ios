@@ -305,7 +305,11 @@ extension BaseDb {
         if FileManager.default.fileExists(atPath: path) {
             let readOnly = try SQLite.Connection(path, readonly: true)
             readOnly.busyTimeout = 5
-            _ = try validateSchema(in: readOnly)
+            // All schema reads must observe one snapshot while another process
+            // may commit the first migration and its marker table.
+            try readOnly.transaction(.deferred) {
+                _ = try validateSchema(in: readOnly)
+            }
         }
         let database = try SQLite.Connection(path)
         database.busyTimeout = 5

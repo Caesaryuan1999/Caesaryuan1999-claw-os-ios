@@ -1,8 +1,10 @@
 # Uncomment the next line to define a global platform for your project
 platform :ios, '14.0'
 
-# https://stackoverflow.com/a/58067562/6692196 !use_frameworks is no longer needed.
-# use_frameworks!
+# Share one SQLite.swift runtime across the app, TinodiosDB and XCTest.
+# Separate static copies have different DispatchSpecificKey instances: passing
+# a Connection across those modules can trap on nested queue.sync calls.
+use_frameworks! :linkage => :dynamic
 
 # ignore all warnings from all pods
 inhibit_all_warnings!
