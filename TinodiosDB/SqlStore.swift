@@ -294,10 +294,22 @@ public class SqlStore: Storage {
         guard initializationError == nil, let topicId = ownedTopicId(topic),
               let account = dbh?.account, let db = dbh?.db, ownsMessage(topic, id: dbMessageId) else { return false }
         if sync {
-            return MessageDb.claimC3(in: db, msgId: dbMessageId, topicId: topicId, accountId: account.id, uid: account.uid)
+            guard let message = getMessageById(dbMessageId: dbMessageId) else { return false }
+            return msgClaim(topic: topic, message: message)
         }
         return self.dbh?.messageDb?.transitionStatus(
             msgId: dbMessageId, from: .sendingC3, to: .queued) ?? false
+    }
+
+    public func msgClaim(topic: TopicProto, message: Message) -> Bool {
+        accountLock.lock(); defer { accountLock.unlock() }
+        guard initializationError == nil, let topicId = ownedTopicId(topic),
+              let account = dbh?.account, let db = dbh?.db,
+              message.from == account.uid, let rawStatus = message.status,
+              let expectedStatus = BaseDb.Status(rawValue: rawStatus),
+              let expectedKey = C3PublishPolicy.clientMessageId(in: message.head) else { return false }
+        return MessageDb.claimC3(in: db, msgId: message.msgId, topicId: topicId,
+            accountId: account.id, uid: account.uid, expectedStatus: expectedStatus, expectedKey: expectedKey)
     }
 
     public func msgUnconfirmed(topic: TopicProto, dbMessageId: Int64) -> Bool {

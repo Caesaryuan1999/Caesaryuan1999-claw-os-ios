@@ -1384,7 +1384,7 @@ open class Topic<DP: Codable & Mergeable, DR: Codable & Mergeable, SP: Codable, 
         guard let store = store, let message = store.getMessageById(dbMessageId: msgId),
               message.isReady, message.from == tinode.myUid,
               let content = message.content, C3PublishPolicy.clientMessageId(in: message.head) != nil,
-              store.msgSyncing(topic: self, dbMessageId: msgId, sync: true) else {
+              store.msgClaim(topic: self, message: message) else {
             return PromisedReply(error: TinodeError.requestNotSent("该消息已在处理，或无法保存发送状态。请核对会话记录。"))
         }
         // Always dispatch the frozen persisted payload, including its original UUID.

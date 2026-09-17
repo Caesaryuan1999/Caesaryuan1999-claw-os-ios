@@ -583,8 +583,9 @@ final class LocalMigrationTests: XCTestCase {
     func testC3AtomicClaimChecksScopeAndRetainsOriginalKey() throws {
         try withC3Store { _, db, store, topic in
             let message = try newC3Message(store, topic)
-            XCTAssertFalse(MessageDb.claimC3(in: db, msgId: message.msgId, topicId: 2, accountId: 1, uid: "usrFixtureA"))
-            XCTAssertFalse(MessageDb.claimC3(in: db, msgId: message.msgId, topicId: 1, accountId: 2, uid: "usrFixtureB"))
+            let key = try XCTUnwrap(C3PublishPolicy.clientMessageId(in: message.head))
+            XCTAssertFalse(MessageDb.claimC3(in: db, msgId: message.msgId, topicId: 2, accountId: 1, uid: "usrFixtureA", expectedStatus: .queued, expectedKey: key))
+            XCTAssertFalse(MessageDb.claimC3(in: db, msgId: message.msgId, topicId: 1, accountId: 2, uid: "usrFixtureB", expectedStatus: .queued, expectedKey: key))
             XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
             XCTAssertFalse(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
             XCTAssertTrue(store.msgUnconfirmed(topic: topic, dbMessageId: message.msgId))
@@ -604,7 +605,7 @@ final class LocalMigrationTests: XCTestCase {
             let lock = NSLock()
             var claims = [Bool]()
             DispatchQueue.concurrentPerform(iterations: 2) { index in
-                let claimed = MessageDb.claimC3(in: index == 0 ? first : second, msgId: 2, topicId: 1, accountId: 1, uid: "usrFixtureA")
+                let claimed = MessageDb.claimC3(in: index == 0 ? first : second, msgId: 2, topicId: 1, accountId: 1, uid: "usrFixtureA", expectedStatus: .queued, expectedKey: "abcdefab-1111-4111-8111-abcdefabcdef")
                 lock.lock(); claims.append(claimed); lock.unlock()
             }
             XCTAssertEqual(claims.filter { $0 }.count, 1)
@@ -618,6 +619,42 @@ final class LocalMigrationTests: XCTestCase {
             XCTAssertFalse(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
             db.commitHook(nil)
             XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, 20)
+        }
+    }
+
+    func testC3StaleQueuedSnapshotCannotClaimAnUnconfirmedRetry() throws {
+        try withC3Store { _, db, store, topic in
+            let created = try newC3Message(store, topic)
+            let staleQueued = try XCTUnwrap(store.getMessageById(dbMessageId: created.msgId))
+            XCTAssertEqual(staleQueued.status, 20)
+            XCTAssertTrue(store.msgClaim(topic: topic, message: staleQueued))
+            XCTAssertTrue(store.msgUnconfirmed(topic: topic, dbMessageId: staleQueued.msgId))
+            // Another attempt is now unknown. The earlier raw20 snapshot must
+            // not claim raw36 and later restore it to a definitely unsent state.
+            XCTAssertFalse(store.msgClaim(topic: topic, message: staleQueued))
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", staleQueued.msgId) as? Int64, 36)
+            let freshRetry = try XCTUnwrap(store.getMessageById(dbMessageId: staleQueued.msgId))
+            XCTAssertTrue(freshRetry.isUnconfirmed)
+            XCTAssertTrue(store.msgClaim(topic: topic, message: freshRetry))
+            topic.restorePublishFailure(TinodeError.notConnected("before retry transport"),
+                msgId: freshRetry.msgId, wasUnconfirmed: freshRetry.isUnconfirmed)
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", freshRetry.msgId) as? Int64, 36)
+        }
+    }
+
+    func testC3StaleLogicalIdentityCannotClaimAReusedLocalRow() throws {
+        try withC3Store { _, db, store, topic in
+            let created = try newC3Message(store, topic)
+            let staleMessage = try XCTUnwrap(store.getMessageById(dbMessageId: created.msgId))
+            XCTAssertEqual(staleMessage.status, 20)
+            let other = try newC3Message(store, topic)
+            // Explicit synthetic row reuse represents an old database restore.
+            // The production dispatcher must compare logical identity as well
+            // as row ID and raw state before sending the captured old content.
+            try db.run("UPDATE messages SET head=(SELECT head FROM messages WHERE id=?) WHERE id=?",
+                       other.msgId, staleMessage.msgId)
+            XCTAssertFalse(store.msgClaim(topic: topic, message: staleMessage))
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", staleMessage.msgId) as? Int64, 20)
         }
     }
 
