@@ -13,6 +13,12 @@ from test_local_migration_sqlite import fixture, constant, schema_sql, connect
 
 ROOT = Path(__file__).resolve().parents[2]
 KEY = "abcdefab-1111-4111-8111-abcdefabcdef"
+HEADER_TYPE = "Dictionary<String, JSONValue>"
+
+def stored_headers(key):
+    # Model Tinode.serializeObject's type prefix; the XCTest uses the Swift
+    # serializer itself. This bridge remains SQL evidence, not Swift execution.
+    return HEADER_TYPE + ";" + json.dumps({"clientmsgid": key})
 
 def run(source, message_source):
     results = []
@@ -49,7 +55,11 @@ def run(source, message_source):
             if expected_status not in (20,36):
                 db.execute("COMMIT")
                 return False
-            key = json.loads(row[0] or "{}").get("clientmsgid")
+            tag, separator, payload = (row[0] or "").partition(";")
+            if separator != ";" or tag != HEADER_TYPE:
+                db.execute("COMMIT")
+                return False
+            key = json.loads(payload).get("clientmsgid")
             if not isinstance(key,str) or not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", key):
                 db.execute("COMMIT")
                 return False
@@ -67,7 +77,7 @@ def run(source, message_source):
             def boundary():
                 db.execute(constant(source, "migrationCreateSQL"))
                 db.execute(constant(source, "migrationWriteSQL"))
-                db.execute("UPDATE messages SET head=? WHERE id IN (2,3,4,5)", (json.dumps({"clientmsgid":KEY}),))
+                db.execute("UPDATE messages SET head=? WHERE id IN (2,3,4,5)", (stored_headers(KEY),))
                 db.execute("UPDATE messages SET status=31 WHERE id=4")
                 db.execute("UPDATE messages SET status=36 WHERE id=5")
                 before=db.execute("SELECT id,head,content FROM messages ORDER BY id").fetchall()
@@ -118,10 +128,16 @@ def run(source, message_source):
             check("legacy35-denied-C3-36-retries-original-payload", unknown)
             def invalid_key():
                 for value in ["old",KEY.upper(),None,str(uuid.uuid1())]:
-                    db.execute("UPDATE messages SET status=20,head=? WHERE id=2",(json.dumps({"clientmsgid":value}),))
+                    db.execute("UPDATE messages SET status=20,head=? WHERE id=2",(stored_headers(value),))
                     assert not claim(db)
-                db.execute("UPDATE messages SET head=? WHERE id=2",(json.dumps({"clientmsgid":KEY}),))
+                db.execute("UPDATE messages SET head=? WHERE id=2",(stored_headers(KEY),))
             check("invalid-or-non-v4-key-does-not-claim-bridge", invalid_key)
+            def wire_json_is_not_storage():
+                db.execute("UPDATE messages SET status=20,head=? WHERE id=2", (json.dumps({"clientmsgid":KEY}),))
+                assert not claim(db)
+                assert db.execute("SELECT status FROM messages WHERE id=2").fetchone()[0] == 20
+                db.execute("UPDATE messages SET head=? WHERE id=2", (stored_headers(KEY),))
+            check("wire-JSON-is-not-typed-storage-header-bridge", wire_json_is_not_storage)
         def concurrent():
             def attempt(_):
                 with connect(path, timeout=5, isolation_level=None) as db:
