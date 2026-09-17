@@ -74,10 +74,10 @@ final class PublishStorageTests: XCTestCase {
         XCTAssertFalse(MessageDb.markPendingFailed(in: db, msgId: 1))
         XCTAssertFalse(MessageDb.markPendingFailed(in: db, msgId: 2))
         XCTAssertTrue(MessageDb.markPendingFailed(in: db, msgId: 3))
-        XCTAssertTrue(MessageDb.markPendingFailed(in: db, msgId: 4))
+        XCTAssertFalse(MessageDb.markPendingFailed(in: db, msgId: 4))
         XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=1") as? Int64, 50)
         XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 35)
-        XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE status=40") as? Int64, 2)
+        XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE status=40") as? Int64, 1)
     }
 }
 
@@ -229,6 +229,17 @@ class FakeTinodeServer {
 // These tests use BaseDb's production path with independent synthetic old data.
 // Prepared on Windows; execution requires the Mac SQLite.swift/XCTest target.
 final class LocalMigrationTests: XCTestCase {
+    func testSchemaReadPropagatesSQLiteStepError() throws {
+        let database = try SQLite.Connection(.inMemory)
+        // Valid preparation followed by an integer-overflow error during step.
+        // The gate must throw, not crash through Sequence.next()'s try!.
+        XCTAssertThrowsError(try BaseDb.schemaRows(in: database, sql: "SELECT abs(-9223372036854775808)"))
+        let rows = try BaseDb.schemaRows(in: database, sql: "SELECT 1 UNION ALL SELECT 2")
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertEqual(rows[0][0] as? Int64, 1)
+        XCTAssertEqual(rows[1][0] as? Int64, 2)
+    }
+
     private static let fixtureSQL = """
     -- Synthetic old-version 113 fixture, transcribed from the five table builders
     -- at 97e21f49 / takeover-20260917-214922. No real accounts or attachment data.
@@ -415,7 +426,7 @@ final class LocalMigrationTests: XCTestCase {
                 lock.unlock()
             }
             XCTAssertEqual(available.filter { $0 }.count, 2)
-            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 1)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 2)
             XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE status=35") as? Int64, 5)
         }
     }
@@ -434,6 +445,235 @@ final class LocalMigrationTests: XCTestCase {
             blocked.logout()
             XCTAssertEqual(try Data(contentsOf: file), originalDb)
             XCTAssertEqual(try Data(contentsOf: wal), originalWal)
+        }
+    }
+
+
+    private func withC3Store(_ body: (BaseDb, SQLite.Connection, SqlStore, DefaultComTopic) throws -> Void) throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let db = try XCTUnwrap(base.db)
+            let store = try XCTUnwrap(base.sqlStore)
+            let sdk = Tinode(for: "fixture", authenticateWith: "fixture", persistDataIn: nil)
+            let topic = DefaultComTopic(tinode: sdk, name: "grpFixtureA")
+            let stored = StoredTopic()
+            stored.id = 1
+            stored.minLocalSeq = 6
+            stored.maxLocalSeq = 6
+            stored.nextUnsentId = 2_000_000_020
+            topic.payload = stored
+            topic.store = store
+            try body(base, db, store, topic)
+        }
+    }
+
+    private func newC3Message(_ store: SqlStore, _ topic: DefaultComTopic) throws -> Message {
+        return try XCTUnwrap(store.msgSend(topic: topic, data: Drafty(plainText: "frozen"), head: nil))
+    }
+
+    func testC3BoundaryDoesNotTrustInheritedUUIDOr31And36() throws {
+        try withFixture { file, db in
+            try db.run(BaseDb.migrationCreateSQL)
+            try db.run(BaseDb.migrationWriteSQL)
+            try db.run("UPDATE messages SET status=31 WHERE id=4")
+            try db.run("UPDATE messages SET status=36 WHERE id=5")
+            try db.run("UPDATE messages SET head=? WHERE id IN (2,3,4,5)", "{\"clientmsgid\":\"abcdefab-1111-4111-8111-abcdefabcdef\"}")
+            let before = try preservedData(db)
+            XCTAssertTrue(BaseDb(databasePath: file.path).isStoreAvailable)
+            XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE id IN (2,3,4,5) AND status=35") as? Int64, 4)
+            XCTAssertEqual(try db.scalar(BaseDb.c3MigrationReadSQL) as? Int64, 1)
+            XCTAssertEqual(try preservedData(db), before)
+        }
+    }
+
+    func testC3RecoveryAndRepeatedNSEInitialization() throws {
+        try withC3Store { _, db, _, _ in
+            try db.run("UPDATE messages SET status=31 WHERE id=2")
+            try db.run("UPDATE messages SET status=30 WHERE id=3")
+            try BaseDb.prepareDatabase(in: db)
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 31)
+            XCTAssertTrue(MessageDb.recoverInterruptedPublishes(in: db))
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 36)
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=3") as? Int64, 35)
+        }
+    }
+
+    func testC3NewMessagesOverrideForwardedUUIDAndDraftReadyFreezesPayload() throws {
+        try withC3Store { _, db, store, topic in
+            let old = "abcdefab-1111-4111-8111-abcdefabcdef"
+            let headers: [String: JSONValue] = ["clientmsgid": .string(old), "forwarded": .string("grpOld:7")]
+            let first = try XCTUnwrap(store.msgSend(topic: topic, data: Drafty(plainText: "new"), head: headers))
+            let second = try XCTUnwrap(store.msgSend(topic: topic, data: Drafty(plainText: "new"), head: headers))
+            let key = try XCTUnwrap(C3PublishPolicy.clientMessageId(in: first.head))
+            XCTAssertNotEqual(key, old)
+            XCTAssertNotEqual(key, C3PublishPolicy.clientMessageId(in: second.head))
+            XCTAssertEqual(C3PublishPolicy.clientMessageId(in: store.getMessageById(dbMessageId: first.msgId)?.head), key)
+            XCTAssertTrue(store.msgReady(topic: topic, dbMessageId: 1, data: Drafty(plainText: "attachment complete")))
+            let ready = try XCTUnwrap(store.getMessageById(dbMessageId: 1))
+            XCTAssertNotNil(C3PublishPolicy.clientMessageId(in: ready.head))
+            XCTAssertFalse(store.msgReady(topic: topic, dbMessageId: 1, data: Drafty(plainText: "late overwrite")))
+            XCTAssertFalse(store.msgDraftUpdate(topic: topic, dbMessageId: 1, data: Drafty(plainText: "late overwrite")))
+            XCTAssertEqual(try db.scalar("SELECT content FROM messages WHERE id=1") as? String, ready.content?.serialize())
+        }
+    }
+
+    func testC3AtomicClaimChecksScopeAndRetainsOriginalKey() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            XCTAssertFalse(MessageDb.claimC3(in: db, msgId: message.msgId, topicId: 2, accountId: 1, uid: "usrFixtureA"))
+            XCTAssertFalse(MessageDb.claimC3(in: db, msgId: message.msgId, topicId: 1, accountId: 2, uid: "usrFixtureB"))
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            XCTAssertFalse(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            XCTAssertTrue(store.msgUnconfirmed(topic: topic, dbMessageId: message.msgId))
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            XCTAssertEqual(C3PublishPolicy.clientMessageId(in: store.getMessageById(dbMessageId: message.msgId)?.head),
+                           C3PublishPolicy.clientMessageId(in: message.head))
+        }
+    }
+
+    func testC3TwoConcurrentConnectionsOnlyOneClaim() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let first = try XCTUnwrap(base.db)
+            try first.run("UPDATE messages SET status=20,head=? WHERE id=2", "{\"clientmsgid\":\"abcdefab-1111-4111-8111-abcdefabcdef\"}")
+            let second = try SQLite.Connection(file.path)
+            second.busyTimeout = 5
+            let lock = NSLock()
+            var claims = [Bool]()
+            DispatchQueue.concurrentPerform(iterations: 2) { index in
+                let claimed = MessageDb.claimC3(in: index == 0 ? first : second, msgId: 2, topicId: 1, accountId: 1, uid: "usrFixtureA")
+                lock.lock(); claims.append(claimed); lock.unlock()
+            }
+            XCTAssertEqual(claims.filter { $0 }.count, 1)
+        }
+    }
+
+    func testC3ClaimCommitFailureDoesNotAuthorizeDispatch() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            db.commitHook { throw NSError(domain: "fixture.commit", code: 1) }
+            XCTAssertFalse(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            db.commitHook(nil)
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, 20)
+        }
+    }
+
+    func testC3LateUploadFailureAndCancelCannotTouchClaimedOrUnknown() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            for status in [20,31,35,36,40,50] {
+                try db.run("UPDATE messages SET status=? WHERE id=?", status, message.msgId)
+                XCTAssertFalse(store.msgFailed(topic: topic, dbMessageId: message.msgId))
+                XCTAssertFalse(store.msgDiscardDraft(topic: topic, dbMessageId: message.msgId))
+                XCTAssertFalse(store.msgReady(topic: topic, dbMessageId: message.msgId, data: Drafty(plainText: "late")))
+                XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, Int64(status))
+            }
+            XCTAssertTrue(store.msgFailed(topic: topic, dbMessageId: 1))
+            XCTAssertTrue(store.msgPruneFailed(topic: topic))
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=1") as? Int64, 40)
+        }
+    }
+
+    func testC3Legacy35WithUUIDNeverClaimsAndRaw36DisplaysUnknown() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            try db.run("UPDATE messages SET status=35 WHERE id=?", message.msgId)
+            XCTAssertFalse(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            let unknown = StoredMessage()
+            unknown.dbStatus = .unconfirmedC3
+            XCTAssertTrue(unknown.isUnconfirmed)
+            XCTAssertTrue(unknown.isReady)
+            XCTAssertFalse(unknown.isSynced)
+        }
+    }
+
+    func testC3NoCapabilityKeepsPersistentQueueAndPromiseRejected() throws {
+        try withC3Store { _, db, store, topic in
+            let result = topic.publish(content: Drafty(plainText: "retain without C3"))
+            XCTAssertTrue(result.isRejected)
+            XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE status=20") as? Int64, 1)
+            let queued = try XCTUnwrap(store.getQueuedMessages(topic: topic)?.first)
+            XCTAssertNotNil(C3PublishPolicy.clientMessageId(in: queued.head))
+        }
+    }
+
+    func testC3AckAfterUnknownConfirmsAndLateErrorsCannotDowngrade() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            XCTAssertTrue(store.msgUnconfirmed(topic: topic, dbMessageId: message.msgId))
+            XCTAssertTrue(store.msgDelivered(topic: topic, dbMessageId: message.msgId, timestamp: Date(), seq: 10))
+            XCTAssertFalse(store.msgRejected(topic: topic, dbMessageId: message.msgId))
+            XCTAssertFalse(store.msgUnconfirmed(topic: topic, dbMessageId: message.msgId))
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, 50)
+        }
+    }
+
+    func testC3HistoryBeforeAckPreservesLocalIdAndOneServerSequence() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            let data = MsgServerData()
+            data.topic = topic.name; data.from = "usrFixtureA"; data.seq = 10
+            data.ts = Date(); data.head = message.head; data.content = message.content
+            let received = try XCTUnwrap(store.msgReceived(topic: topic, sub: nil, msg: data))
+            XCTAssertEqual(received.msgId, message.msgId)
+            XCTAssertTrue(store.msgDelivered(topic: topic, dbMessageId: message.msgId, timestamp: data.ts!, seq: 10))
+            XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE topic_id=1 AND seq=10") as? Int64, 1)
+        }
+    }
+
+    func testC3ExistingHistoryCollisionMergesOnlyMatchingIdentity() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            try db.run("INSERT INTO messages(topic_id,user_id,status,sender,seq,effective_seq,head,content) VALUES (1,1,50,'usrFixtureA',10,10,?,'history')", Tinode.serializeObject(message.head!))
+            XCTAssertTrue(store.msgDelivered(topic: topic, dbMessageId: message.msgId, timestamp: Date(), seq: 10))
+            XCTAssertEqual(try db.scalar("SELECT id FROM messages WHERE topic_id=1 AND seq=10") as? Int64, message.msgId)
+            XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE id=8") as? Int64, 1)
+        }
+    }
+
+    func testC3DifferentUUIDOrSenderCollisionCannotDeleteHistory() throws {
+        for kind in ["different-key", "missing-key", "different-sender"] {
+            try withC3Store { _, db, store, topic in
+                let message = try newC3Message(store, topic)
+                XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+                let wrong = kind == "different-sender" ? Tinode.serializeObject(message.head!) :
+                    (kind == "different-key" ? "{\"clientmsgid\":\"bbbbbbbb-1111-4111-8111-abcdefabcdef\"}" : nil)
+                let sender = kind == "different-sender" ? "usrFixtureB" : "usrFixtureA"
+                try db.run("INSERT INTO messages(topic_id,user_id,status,sender,seq,effective_seq,head,content) VALUES (1,1,50,?,10,10,?,'unrelated')", sender, wrong)
+                XCTAssertFalse(store.msgDelivered(topic: topic, dbMessageId: message.msgId, timestamp: Date(), seq: 10))
+                XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE topic_id=1 AND seq=10") as? Int64, 1)
+                XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, 31)
+            }
+        }
+    }
+
+    func testC3AckCommitFailureDoesNotAdvanceCacheOrLoseHistory() throws {
+        try withC3Store { _, db, store, topic in
+            let message = try newC3Message(store, topic)
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            try db.run("INSERT INTO messages(topic_id,user_id,status,sender,seq,effective_seq,head,content) VALUES (1,1,50,'usrFixtureA',10,10,?,'history')", Tinode.serializeObject(message.head!))
+            let stored = try XCTUnwrap(topic.payload as? StoredTopic)
+            let before = stored.maxLocalSeq
+            db.commitHook { throw NSError(domain: "fixture.commit", code: 1) }
+            XCTAssertFalse(store.msgDelivered(topic: topic, dbMessageId: message.msgId, timestamp: Date(), seq: 10))
+            db.commitHook(nil)
+            XCTAssertEqual(stored.maxLocalSeq, before)
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, 31)
+            XCTAssertEqual(try db.scalar("SELECT COUNT(*) FROM messages WHERE seq=10") as? Int64, 1)
+            XCTAssertFalse(store.msgDelivered(topic: topic, dbMessageId: 99999, timestamp: Date(), seq: 10))
+        }
+    }
+
+    func testC3ServerDeleteRangePreservesUnconfirmedLocalRows() throws {
+        try withC3Store { base, db, store, topic in
+            let message = try newC3Message(store, topic)
+            XCTAssertTrue(store.msgSyncing(topic: topic, dbMessageId: message.msgId, sync: true))
+            XCTAssertTrue(store.msgUnconfirmed(topic: topic, dbMessageId: message.msgId))
+            _ = base.messageDb?.deleteOrMarkDeleted(topicId: 1, delId: 2, from: 1, to: nil, hard: false)
+            XCTAssertEqual(try db.scalar("SELECT status FROM messages WHERE id=?", message.msgId) as? Int64, 36)
         }
     }
 

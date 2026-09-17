@@ -194,6 +194,24 @@ public class MessageDb {
         let savepointName = "MessageDb.insert"
         do {
             try db.savepoint(savepointName) {
+                if msg.dbStatus == .synced, let uid = baseDb.uid, msg.from == uid,
+                   let key = C3PublishPolicy.clientMessageId(in: msg.head) {
+                    let candidates = self.table.filter(self.topicId == topicId && self.sender == msg.from &&
+                        (self.status == BaseDb.Status.sendingC3.rawValue || self.status == BaseDb.Status.unconfirmedC3.rawValue))
+                    let matches = try db.prepare(candidates).filter { row in
+                        let headers: [String: JSONValue]? = Tinode.deserializeObject(from: row[self.head])
+                        return C3PublishPolicy.clientMessageId(in: headers) == key
+                    }
+                    guard matches.count <= 1 else { throw MessageDbError.dataError("Ambiguous C3 local identity") }
+                    if let local = matches.first {
+                        guard let timestamp = msg.ts,
+                              self.delivered(msgId: local[self.id], topicId: topicId, sender: uid, ts: timestamp, seq: msg.seqId) else {
+                            throw MessageDbError.dbError("Could not merge C3 history confirmation")
+                        }
+                        msg.msgId = local[self.id]
+                        return
+                    }
+                }
                 var effSeq: Int?
                 var effTs: Date?
                 if let replaceSeq = msg.replacesSeq {
@@ -240,13 +258,19 @@ public class MessageDb {
     }
 
     func updateStatusAndContent(msgId: Int64, status: BaseDb.Status?, content: Drafty?) -> Bool {
-        let record = self.table.filter(self.id == msgId)
+        // Upload callbacks may only mutate a draft which has never been dispatched.
+        let record = self.table.filter(self.id == msgId && self.status == BaseDb.Status.draft.rawValue)
         var setters = [Setter]()
         if status != .undefined {
             setters.append(self.status <- status!.rawValue)
         }
         if content != nil {
             setters.append(self.content <- content!.serialize())
+        }
+        if status == .queued, let content = content,
+           let existing = try? self.db.pluck(record) {
+            let oldHeaders: [String: JSONValue]? = Tinode.deserializeObject(from: existing[self.head])
+            setters.append(self.head <- Tinode.serializeObject(C3PublishPolicy.newHeaders(oldHeaders, content: content)))
         }
         if !setters.isEmpty {
             do {
@@ -282,8 +306,31 @@ public class MessageDb {
         return MessageDb.transitionStatus(in: db, msgId: msgId, from: from, to: to)
     }
 
+    static let claimC3SQL = "UPDATE messages SET status=31 WHERE id=? AND topic_id=? AND sender=? AND status IN (20,36) AND head=? AND EXISTS (SELECT 1 FROM topics t JOIN accounts a ON a.id=t.account_id WHERE t.id=messages.topic_id AND a.id=? AND a.uid=? AND a.last_active=1) AND EXISTS (SELECT 1 FROM users u WHERE u.id=messages.user_id AND u.account_id=? AND u.uid=?)"
+    static let recoverC3SQL = "UPDATE messages SET status=36 WHERE status=31"
+
+    static func claimC3(in db: SQLite.Connection, msgId: Int64, topicId: Int64, accountId: Int64, uid: String) -> Bool {
+        do {
+            var claimed = false
+            try db.transaction(.immediate) {
+                guard let serialized = try db.scalar("SELECT head FROM messages WHERE id=?", msgId) as? String else { return }
+                let headers: [String: JSONValue]? = Tinode.deserializeObject(from: serialized)
+                guard C3PublishPolicy.clientMessageId(in: headers) != nil else { return }
+                try db.run(claimC3SQL, msgId, topicId, uid, serialized, accountId, uid, accountId, uid)
+                claimed = db.changes == 1
+            }
+            return claimed // A failed COMMIT cannot authorize transport dispatch.
+        } catch { return false }
+    }
+
     static func recoverInterruptedPublishes(in db: SQLite.Connection) -> Bool {
-        return transitionStatus(in: db, from: .sending, to: .unconfirmed)
+        do {
+            try db.transaction(.immediate) {
+                try db.run("UPDATE messages SET status=35 WHERE status=30")
+                try db.run(recoverC3SQL)
+            }
+            return true
+        } catch { return false }
     }
 
     func recoverInterruptedPublishes() -> Bool {
@@ -291,22 +338,42 @@ public class MessageDb {
     }
 
     static func markPendingFailed(in db: SQLite.Connection, msgId: Int64) -> Bool {
-        return transitionStatus(in: db, msgId: msgId, from: .draft, to: .failed) ||
-            transitionStatus(in: db, msgId: msgId, from: .sending, to: .failed)
+        return transitionStatus(in: db, msgId: msgId, from: .draft, to: .failed)
     }
 
     func markPendingFailed(msgId: Int64) -> Bool {
         return MessageDb.markPendingFailed(in: db, msgId: msgId)
     }
 
-    func delivered(msgId: Int64, ts: Date, seq: Int) -> Bool {
-        let record = self.table.filter(self.id == msgId)
+    func delivered(msgId: Int64, topicId: Int64, sender: String, ts: Date, seq: Int) -> Bool {
+        guard seq > 0, let accountId = baseDb.account?.id,
+              (try? db.scalar("SELECT COUNT(*) FROM topics WHERE id=? AND account_id=?", topicId, accountId) as? Int64) == 1 else { return false }
+        let record = self.table.filter(self.id == msgId && self.topicId == topicId && self.sender == sender)
         do {
-            return try self.db.run(record.update(
-                self.status <- BaseDb.Status.synced.rawValue,
-                self.ts <- ts, self.seq <- seq,
-                self.effectiveSeq <- self.replSeq ?? seq,
-                self.effectiveTs <- self.effectiveTs ?? ts)) > 0
+            guard let local = try db.pluck(record) else { return false }
+            // A repeated ACK for an already merged row is a no-op, never a downgrade.
+            if local[self.status] == BaseDb.Status.synced.rawValue { return local[self.seq] == seq }
+            guard local[self.status] == BaseDb.Status.sendingC3.rawValue || local[self.status] == BaseDb.Status.unconfirmedC3.rawValue else { return false }
+            let headers: [String: JSONValue]? = Tinode.deserializeObject(from: local[self.head])
+            guard let key = C3PublishPolicy.clientMessageId(in: headers) else { return false }
+            var activeSeq = local[self.effectiveSeq] == nil ? nil : (local[self.replSeq] ?? seq)
+            var activeTs = local[self.effectiveTs] ?? ts
+            if let history = try db.pluck(self.table.filter(self.topicId == topicId && self.seq == seq && self.id != msgId)) {
+                let historyHeaders: [String: JSONValue]? = Tinode.deserializeObject(from: history[self.head])
+                guard history[self.status] == BaseDb.Status.synced.rawValue, history[self.sender] == sender,
+                      C3PublishPolicy.clientMessageId(in: historyHeaders) == key,
+                      history[self.replSeq] == local[self.replSeq] else { return false }
+                // Preserve server-history version visibility. Only the exact duplicate row
+                // is removed; replacement chains keep their server sequence references.
+                activeSeq = history[self.effectiveSeq]
+                activeTs = history[self.effectiveTs] ?? ts
+                guard try db.run(self.table.filter(self.id == history[self.id]).delete()) == 1 else { return false }
+            } else if local[self.replSeq] == nil,
+                      try activateMessageVersion(withEffectiveSeq: seq, withEffectiveTs: ts, onTopic: topicId, originalAuthor: sender) {
+                activeSeq = nil
+            }
+            return try db.run(record.update(self.status <- BaseDb.Status.synced.rawValue,
+                self.ts <- ts, self.seq <- seq, self.effectiveSeq <- activeSeq, self.effectiveTs <- activeTs)) == 1
         } catch SQLite.Result.error(message: let errMsg, code: let code, statement: _) {
             BaseDb.log.error("MessageDb[msgId = %lld]: update delivery SQLite error: code = %d, error = %@", msgId, code, errMsg)
             return false
@@ -338,16 +405,9 @@ public class MessageDb {
     /// - Returns `true` if any messages were deleted.
     @discardableResult
     func deleteFailed(forTopic topicId: Int64) -> Bool {
-        let rows = self.table.filter(self.topicId == topicId && self.status == BaseDb.Status.failed.rawValue)
-        do {
-            return try self.db.run(rows.delete()) > 0
-        } catch SQLite.Result.error(message: let errMsg, code: let code, statement: _) {
-            BaseDb.log.error("MessageDb[topicId = %lld] - deleteFailed SQLite error: code = %d, error = %@", topicId, code, errMsg)
-            return false
-        } catch {
-            BaseDb.log.error("MessageDb - deleteFailed(forTopic) operation failed: topicId = %lld, error = %@", topicId, error.localizedDescription)
-            return false
-        }
+        // Raw40 also represents a retained publish rejection; only explicit local
+        // user deletion may remove it. Page cleanup must preserve this evidence.
+        return true
     }
 
     @discardableResult
@@ -394,7 +454,7 @@ public class MessageDb {
             try db.savepoint(savepointName) {
                 // Message selector: all messages in a given topic with seq between fromId and toId [inclusive, exclusive).
                 let messageSelector = self.table.filter(
-                    self.topicId == topicId && startId <= self.seq && self.seq < endId && self.status <= BaseDb.Status.synced.rawValue)
+                    self.topicId == topicId && startId <= self.seq && self.seq < endId && self.status == BaseDb.Status.synced.rawValue)
                 // Selector of ranges which are fully within the new range.
                 let rangeDeleteSelector = self.table.filter(
                     self.topicId == topicId && startId <= self.seq && self.seq < endId && self.status >= BaseDb.Status.deletedHard.rawValue)
@@ -461,8 +521,10 @@ public class MessageDb {
             return false
         }
     }
-    func delete(msgId: Int64) -> Bool {
-        let record = self.table.filter(self.id == msgId)
+    func delete(msgId: Int64, onlyDraft: Bool = false) -> Bool {
+        var record = self.table.filter(self.id == msgId)
+        if onlyDraft { record = record.filter(self.status == BaseDb.Status.draft.rawValue) }
+        else { record = record.filter(self.status != BaseDb.Status.sending.rawValue && self.status != BaseDb.Status.sendingC3.rawValue && self.status != BaseDb.Status.unconfirmed.rawValue && self.status != BaseDb.Status.unconfirmedC3.rawValue) }
         do {
             return try self.db.run(record.delete()) > 0
         } catch SQLite.Result.error(message: let errMsg, code: let code, statement: _) {
@@ -474,7 +536,9 @@ public class MessageDb {
         }
     }
     func delete(inTopic topicId: Int64, seqId: Int) -> Bool {
-        let record = self.table.filter(self.topicId == topicId && self.seq == seqId)
+        let record = self.table.filter(self.topicId == topicId && self.seq == seqId &&
+            self.status != BaseDb.Status.sending.rawValue && self.status != BaseDb.Status.sendingC3.rawValue &&
+            self.status != BaseDb.Status.unconfirmed.rawValue && self.status != BaseDb.Status.unconfirmedC3.rawValue)
         do {
             return try self.db.run(record.delete()) > 0
         } catch SQLite.Result.error(message: let errMsg, code: let code, statement: _) {
@@ -565,7 +629,7 @@ public class MessageDb {
     }
     func queryUnsent(topicId: Int64?) -> [Message]? {
         let queryTable = self.table
-            .filter(self.topicId == topicId && self.status == BaseDb.Status.queued.rawValue)
+            .filter(self.topicId == topicId && (self.status == BaseDb.Status.queued.rawValue || self.status == BaseDb.Status.unconfirmedC3.rawValue))
             .select(self.table[*])
             .order(self.ts)
         do {

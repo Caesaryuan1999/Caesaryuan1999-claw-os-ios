@@ -99,7 +99,8 @@ def structural_check(db, source):
             expected.execute(constant(source,"migrationCreateSQL"))
             if columns(db,"claw_local_migrations") != columns(expected,"claw_local_migrations"):
                 raise RuntimeError("wrong-marker-structure")
-            if db.execute("SELECT count(*) FROM claw_local_migrations WHERE rule<>? OR completed<>1",(RULE,)).fetchone()[0]:
+            rules = (RULE, "C3-20260918") if "c3MigrationReadSQL" in source else (RULE, RULE)
+            if db.execute("SELECT count(*) FROM claw_local_migrations WHERE rule NOT IN (?,?) OR completed<>1",rules).fetchone()[0]:
                 raise RuntimeError("wrong-marker-rule")
     if db.execute("PRAGMA foreign_key_check").fetchall():
         raise RuntimeError("broken-foreign-key-data")
@@ -132,6 +133,13 @@ def bootstrap(path, source, interrupt=False, reject_commit=False):
                 db.execute(constant(source, "migrationWriteSQL"))
             elif done != (1,):
                 raise RuntimeError("invalid-marker")
+            if "c3MigrationReadSQL" in source:
+                done = db.execute(constant(source,"c3MigrationReadSQL")).fetchone()
+                if done is None:
+                    db.execute(constant(source,"c3MigrationQuarantineSQL"))
+                    db.execute(constant(source,"c3MigrationWriteSQL"))
+                elif done != (1,):
+                    raise RuntimeError("invalid-c3-marker")
             if reject_commit:
                 db.set_authorizer(lambda action,a,b,c,d: sqlite3.SQLITE_DENY if action == sqlite3.SQLITE_TRANSACTION and a == "COMMIT" else sqlite3.SQLITE_OK)
             db.execute("COMMIT")
@@ -183,7 +191,7 @@ def run(source):
                 assert db.execute("SELECT status FROM messages WHERE id=1").fetchone() == (20,)
                 # NSE bootstrap must not change a main-app publish already in flight.
                 assert db.execute("SELECT status FROM messages WHERE id=5").fetchone() == (30,)
-                assert db.execute("SELECT count(*) FROM claw_local_migrations").fetchone() == (1,)
+                assert db.execute("SELECT count(*) FROM claw_local_migrations").fetchone() == (2 if "c3MigrationReadSQL" in source else 1,)
         check("repeat-preserves-new20-and-active30", repeated)
 
         def interruption(path):
@@ -205,7 +213,7 @@ def run(source):
             with ThreadPoolExecutor(max_workers=2) as pool:
                 list(pool.map(lambda _: bootstrap(path, source), range(2)))
             with connect(path) as db:
-                assert db.execute("SELECT COUNT(*) FROM claw_local_migrations").fetchone() == (1,)
+                assert db.execute("SELECT COUNT(*) FROM claw_local_migrations").fetchone() == (2 if "c3MigrationReadSQL" in source else 1,)
                 assert db.execute("SELECT COUNT(*) FROM messages WHERE status=35").fetchone() == (5,)
         check("two-process-equivalent-sqlite-locks", concurrent)
 

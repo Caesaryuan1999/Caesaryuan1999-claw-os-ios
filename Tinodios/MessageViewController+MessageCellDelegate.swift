@@ -8,6 +8,7 @@
 import MobileVLCKit
 import UIKit
 import TinodeSDK
+import TinodiosDB
 
 private struct ClawMessageAction {
     let title: String
@@ -302,6 +303,7 @@ extension MessageViewController: MessageCellDelegate {
         guard !cell.isDeleted else { return }
         guard let topic = topic else { return }
         let messageSeqId = cell.seqId
+        let storedMessage = messageSeqIdIndex[messageSeqId].map { messages[$0] }
 
         var actions = [ClawMessageAction]()
         actions.append(ClawMessageAction(title: NSLocalizedString("复制", comment: "Menu item"),
@@ -312,7 +314,13 @@ extension MessageViewController: MessageCellDelegate {
                                          symbolName: "checklist", destructive: false) { [weak self] in
             self?.beginBulkMessageSelection(starting: messageSeqId)
         })
-        if topic.isSlfType {
+        if let message = storedMessage, !message.isSynced {
+            if !message.isUnconfirmed && message.status != BaseDb.Status.sending.rawValue && message.status != BaseDb.Status.sendingC3.rawValue {
+                actions.append(ClawMessageAction(title: "删除本机记录", symbolName: "trash", destructive: true) { [weak self] in
+                    self?.deleteMessage(seqId: messageSeqId, hard: false)
+                })
+            }
+        } else if topic.isSlfType {
             // Self-type: always hard-delete.
             actions.append(ClawMessageAction(title: NSLocalizedString("删除该消息", comment: "Menu item"),
                                              symbolName: "trash", destructive: true) { [weak self] in

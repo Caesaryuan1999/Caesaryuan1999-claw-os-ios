@@ -22,7 +22,7 @@ public class StoredMessage: MsgServerData, Message {
     }
 
     public var isDraft: Bool { get { return dbStatus == .draft } }
-    public var isReady: Bool { get { return dbStatus == .queued } }
+    public var isReady: Bool { return dbStatus == .queued || dbStatus == .unconfirmedC3 }
     public var isDeleted: Bool {
         return dbStatus == .deletedHard || dbStatus == .deletedSoft || dbStatus == .deletedSynced
     }
@@ -32,11 +32,11 @@ public class StoredMessage: MsgServerData, Message {
             dbStatus == .deletedSoft
     }
     public var isSynced: Bool { return dbStatus == .synced }
-    public var isUnconfirmed: Bool { return dbStatus == .unconfirmed }
+    public var isUnconfirmed: Bool { return dbStatus == .unconfirmed || dbStatus == .unconfirmedC3 }
     public var isFailed: Bool { return dbStatus == .failed }
 
     /// Message has not been delivered to the server yet.
-    public var isPending: Bool { return dbStatus == nil || dbStatus! <= .sending }
+    public var isPending: Bool { return dbStatus == nil || dbStatus! <= .sendingC3 }
 
     /// True if message was forwarded from another topic.
     public var isForwarded: Bool {

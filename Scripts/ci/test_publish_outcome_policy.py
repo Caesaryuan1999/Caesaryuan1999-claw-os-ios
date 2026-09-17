@@ -18,7 +18,8 @@ class PublishOutcomeSourcePolicy(unittest.TestCase):
         messages = source("TinodiosDB/MessageDb.swift")
         self.assertIn("self.status == BaseDb.Status.queued.rawValue", messages)
         self.assertIn("recoverInterruptedPublishes", messages)
-        self.assertIn("from: .sending, to: .unconfirmed", messages)
+        self.assertIn("UPDATE messages SET status=35 WHERE status=30", messages)
+        self.assertIn("UPDATE messages SET status=36 WHERE status=31", messages)
         # SQLite fixture verifies the selection rule for persisted states.
         # It deliberately does not claim to execute SQLite.swift.
         db = sqlite3.connect(":memory:")
@@ -38,7 +39,9 @@ class PublishOutcomeSourcePolicy(unittest.TestCase):
         self.assertIn("msgUnconfirmed", publish)
         messages = source("TinodiosDB/MessageDb.swift")
         self.assertIn("status == from.rawValue", messages)
-        self.assertIn("from: .queued, to: .sending", source("TinodiosDB/SqlStore.swift"))
+        self.assertIn("MessageDb.claimC3", source("TinodiosDB/SqlStore.swift"))
+        self.assertIn("status IN (20,36)", messages)
+        self.assertIn("supportsDurablePublish", publish[:claim])
 
     def test_transport_interruptions_are_distinct_from_pre_send_offline(self):
         tinode = source("TinodeSDK/Tinode.swift")
@@ -54,7 +57,7 @@ class PublishOutcomeSourcePolicy(unittest.TestCase):
         self.assertIn("message.isUnconfirmed", ui)
         self.assertIn("message.isFailed", ui)
         self.assertIn("!message.isSynced", ui)
-        self.assertIn("发送结果未确认", source("Tinodios/MessageInteractor.swift"))
+        self.assertIn("消息可能已发送，请先查看最新聊天记录。", source("Tinodios/MessageInteractor.swift"))
         self.assertNotIn("self.interactor?.deleteFailedMessages()", source("Tinodios/MessageViewController.swift"))
 
     def test_automatic_sync_has_no_preclaim_that_bypasses_the_publish_guard(self):

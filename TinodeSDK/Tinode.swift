@@ -59,10 +59,10 @@ public enum PublishFailureDisposition: Equatable {
     public static func forError(_ error: Error) -> PublishFailureDisposition {
         if let error = error as? TinodeError {
             switch error {
-            case .notConnected:
+            case .notConnected, .requestNotSent:
                 // Only emitted before handing this request to transport.
                 return .queued
-            case .invalidArgument, .requestNotSent:
+            case .invalidArgument:
                 return .failed
             case .serverResponseError(let code, _, _):
                 // A timeout or a server/gateway failure does not prove rejection.
@@ -88,6 +88,31 @@ enum PublishConfirmation {
             throw TinodeError.requestOutcomeUnknown("Missing valid publish confirmation or sequence")
         }
         return seq
+    }
+}
+
+/// C3 identity is assigned once when a new outbound row is created, never on retry.
+public enum C3PublishPolicy {
+    public static let capability = "claw-msg-v1"
+    public static let upgradeRequired = "服务端需要升级，消息尚未发送。"
+
+    public static func clientMessageId(in head: [String: JSONValue]?) -> String? {
+        guard let value = head?["clientmsgid"]?.asString(),
+              value.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", options: .regularExpression) != nil else { return nil }
+        return value
+    }
+
+    public static func newHeaders(_ head: [String: JSONValue]?, content: Drafty) -> [String: JSONValue] {
+        var headers = head ?? [:]
+        headers["clientmsgid"] = .string(UUID().uuidString.lowercased())
+        if content.isPlain { headers.removeValue(forKey: "mime") }
+        else { headers["mime"] = .string(Drafty.kMimeType) }
+        return headers
+    }
+
+    static func rejectionText(_ ctrl: MsgServerCtrl) -> String {
+        return ctrl.code == 409 && ctrl.getStringParam(for: "reason") == "clientmsgid_conflict" ?
+            "重试消息的内容已变化，请查看原消息后重新创建消息。" : ctrl.text
     }
 }
 
@@ -367,9 +392,15 @@ public class Tinode {
     public var connection: Connection?
     public var nextMsgId = 1
     private var futures = ConcurrentFuturesMap()
+    private let publishReceiptLock = NSLock()
+    private var publishReceipts: [String: (Date, (MsgServerCtrl) -> Void)] = [:]
+    private let requestIdLock = NSLock()
     public var serverVersion: String?
     public var serverBuild: String?
     private var serverParams: [String: JSONValue]?
+    public var supportsDurablePublish: Bool {
+        return isConnected && serverParams?["idempotency"]?.asString() == C3PublishPolicy.capability
+    }
     private var connectionListener: TinodeConnectionListener?
     public var timeAdjustment: TimeInterval = 0
     public var isConnectionAuthenticated = false
@@ -588,6 +619,7 @@ public class Tinode {
     }
 
     private func getNextMsgId() -> String {
+        requestIdLock.lock(); defer { requestIdLock.unlock() }
         nextMsgId += 1
         return String(nextMsgId)
     }
@@ -615,12 +647,19 @@ public class Tinode {
         if let ctrl = serverMsg.ctrl {
             listenerNotifier.onCtrlMessage(ctrl: ctrl)
             if let id = ctrl.id {
+                publishReceiptLock.lock()
+                let receipt = publishReceipts.removeValue(forKey: id)?.1
+                publishReceiptLock.unlock()
                 if let r = futures.removeValue(forKey: id) {
                     if ServerMessage.kStatusOk <= ctrl.code && ctrl.code < ServerMessage.kStatusBadRequest {
                         try r.resolve(result: serverMsg)
                     } else {
-                        try r.reject(error: TinodeError.serverResponseError(ctrl.code, ctrl.text, ctrl.getStringParam(for: "what")))
+                        try r.reject(error: TinodeError.serverResponseError(ctrl.code, C3PublishPolicy.rejectionText(ctrl), ctrl.getStringParam(for: "what")))
                     }
+                } else if (200..<300).contains(ctrl.code) {
+                    // A timeout may already have rejected its Promise. Preserve the
+                    // late confirmation independently; never turn that Promise green.
+                    receipt?(ctrl)
                 }
             }
             if ctrl.code == ServerMessage.kStatusResetContent && ctrl.text == "evicted" {
@@ -735,6 +774,7 @@ public class Tinode {
     }
 
     private func hello(inBackground bkg: Bool) -> PromisedReply<ServerMessage> {
+        serverParams = nil
         let msgId = getNextMsgId()
         let msg = ClientMessage<Int, Int>(hi: MsgClientHi(id: msgId, ver: kVersion, ua: userAgent, dev: deviceToken, lang: Locale.current.identifier, background: bkg))
         return sendWithPromise(payload: msg, with: msgId)
@@ -743,6 +783,7 @@ public class Tinode {
                     throw TinodeError.invalidReply("Unexpected type of reply packet to hello")
                 }
                 guard let tn = self else { return nil }
+                tn.serverParams = ctrl.params
                 if !(ctrl.params?.isEmpty ?? true) {
                     tn.serverVersion = ctrl.getStringParam(for: "ver")
                     tn.serverBuild = ctrl.getStringParam(for: "build")
@@ -1100,10 +1141,15 @@ public class Tinode {
         }
     }
     private func handleDisconnect(isServerOriginated: Bool, code: URLSessionWebSocketTask.CloseCode, reason: String) {
+        serverParams = nil
+        publishReceiptLock.lock()
+        publishReceipts.removeAll()
+        publishReceiptLock.unlock()
         let e = TinodeError.requestOutcomeUnknown("Connection closed before the server reply")
         futures.rejectAndPurgeAll(withError: e)
         serverBuild = nil
         serverVersion = nil
+        serverParams = nil
         isConnectionAuthenticated = false
         for t in topics.values {
             t.topicLeft(unsub: false, code: ServerMessage.kStatusServiceUnavailable, reason: "disconnected")
@@ -1209,6 +1255,7 @@ public class Tinode {
     }
 
     private func resetMsgId() {
+        requestIdLock.lock(); defer { requestIdLock.unlock() }
         nextMsgId = 0xffff + Int((Float(arc4random()) / Float(UInt32.max)) * 0xffff)
     }
 
@@ -1362,8 +1409,29 @@ public class Tinode {
         return sendWithPromise(payload: msg, with: msgId)
     }
 
-    public func publish(topic: String, head: [String: JSONValue]?, content: Drafty, attachments: [String]?) -> PromisedReply<ServerMessage> {
+    public func publish(topic: String, head: [String: JSONValue]?, content: Drafty, attachments: [String]?, onLateAcknowledgement: ((MsgServerCtrl) -> Void)? = nil) -> PromisedReply<ServerMessage> {
+        if let reason = store?.initializationError {
+            return PromisedReply(error: TinodeError.requestNotSent(reason))
+        }
+        guard isConnected else {
+            return PromisedReply(error: TinodeError.notConnected("Connection is not open"))
+        }
+        // Repeat the gate at dispatch: the connection may have changed after DB claim.
+        guard supportsDurablePublish else {
+            return PromisedReply(error: TinodeError.requestNotSent(C3PublishPolicy.upgradeRequired))
+        }
         let msgId = getNextMsgId()
+        if let receipt = onLateAcknowledgement {
+            publishReceiptLock.lock()
+            let cutoff = Date().addingTimeInterval(-300)
+            publishReceipts = publishReceipts.filter { $0.value.0 > cutoff }
+            // Bound memory while keeping the durable row eligible for same-key retry.
+            if publishReceipts.count >= 1024, let oldest = publishReceipts.min(by: { $0.value.0 < $1.value.0 })?.key {
+                publishReceipts.removeValue(forKey: oldest)
+            }
+            publishReceipts[msgId] = (Date(), receipt)
+            publishReceiptLock.unlock()
+        }
         let msg = ClientMessage<Int, Int>(pub: MsgClientPub(id: msgId, topic: topic, noecho: true, head: head, content: content))
         if let attachments = attachments, !attachments.isEmpty {
             msg.extra = MsgClientExtra(attachments: attachments)

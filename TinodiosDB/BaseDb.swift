@@ -24,9 +24,13 @@ public class BaseDb {
         case queued = 20
         // Object is in the process of being sent to the server.
         case sending = 30
+        // Claimed under the C3 capability with a persisted client message UUID.
+        case sendingC3 = 31
         // Dispatched but not confirmed. Never eligible for automatic queued replay.
         // Keep schema version unchanged: adding this raw value does not alter tables.
         case unconfirmed = 35
+        // Only this unknown state carries durable C3 retry eligibility.
+        case unconfirmedC3 = 36
         // Sending failed
         case failed = 40
         // Object is received by the server.
@@ -252,6 +256,9 @@ extension BaseDb {
     static let migrationReadSQL = "SELECT completed FROM claw_local_migrations WHERE rule='C2-L1-20260918'"
     static let migrationQuarantineSQL = "UPDATE messages SET status=35 WHERE status IN (20,30)"
     static let migrationWriteSQL = "INSERT INTO claw_local_migrations(rule,completed) VALUES ('C2-L1-20260918',1)"
+    static let c3MigrationReadSQL = "SELECT completed FROM claw_local_migrations WHERE rule='C3-20260918'"
+    static let c3MigrationQuarantineSQL = "UPDATE messages SET status=35 WHERE status IN (20,30,31,36)"
+    static let c3MigrationWriteSQL = "INSERT INTO claw_local_migrations(rule,completed) VALUES ('C3-20260918',1)"
 
     // Matches the existing v113 table builders. No destructive version fallback.
     static let schema113SQL = """
@@ -321,15 +328,34 @@ extension BaseDb {
                 try database.run(migrationQuarantineSQL)
                 try database.run(migrationWriteSQL)
             }
+            if let value = try database.scalar(c3MigrationReadSQL) {
+                guard value as? Int64 == 1 else { throw OpenError.invalidMarker }
+            } else {
+                // A pre-existing UUID does not prove an earlier C3 dispatch.
+                try database.run(c3MigrationQuarantineSQL)
+                try database.run(c3MigrationWriteSQL)
+            }
         }
         // Subsequent startup recovery of 30 is main-app-only, in Cache. NSE must
         // not turn a concurrently running main app's newly claimed 30 into 35.
     }
 
+    // Statement is both Sequence and FailableIterator. Select the throwing
+    // iterator explicitly: Array(statement) is ambiguous, while Sequence.next()
+    // uses try! and would terminate the app on an SQLite step error.
+    static func schemaRows(in database: SQLite.Connection, sql: String) throws -> [SQLite.Statement.Element] {
+        let statement = try database.prepare(sql)
+        var rows: [SQLite.Statement.Element] = []
+        while let row = try statement.failableNext() {
+            rows.append(row)
+        }
+        return rows
+    }
+
     // Returns true only for an empty version-zero database. Existing databases
     // must match the known v113 structure; unfamiliar structures are retained.
     static func validateSchema(in database: SQLite.Connection) throws -> Bool {
-        let objects = Array(try database.prepare("SELECT name,type FROM sqlite_master WHERE name NOT GLOB 'sqlite_*' AND type IN ('table','view','trigger')"))
+        let objects = try schemaRows(in: database, sql: "SELECT name,type FROM sqlite_master WHERE name NOT GLOB 'sqlite_*' AND type IN ('table','view','trigger')")
         let version = try database.scalar("PRAGMA user_version") as? Int64
         if version == 0 && objects.isEmpty { return true }
         guard version == Int64(kSchemaVersion) else { throw OpenError.unsupportedSchema }
@@ -340,7 +366,7 @@ extension BaseDb {
 
         for (table, definition) in columns113 {
             let expectedColumns = Set(definition.split(separator: " ").map(String.init))
-            let rows = Array(try database.prepare("PRAGMA table_xinfo(\(quotedIdentifier(table)))"))
+            let rows = try schemaRows(in: database, sql: "PRAGMA table_xinfo(\(quotedIdentifier(table)))")
             let columns = Set(rows.map { "\($0[1] as? String ?? ""):\(($0[2] as? String ?? "").uppercased())" })
             guard columns == expectedColumns else { throw OpenError.invalidStructure }
             for row in rows {
@@ -351,16 +377,16 @@ extension BaseDb {
                     throw OpenError.invalidStructure
                 }
             }
-            let keys = Array(try database.prepare("PRAGMA foreign_key_list(\(quotedIdentifier(table)))"))
+            let keys = try schemaRows(in: database, sql: "PRAGMA foreign_key_list(\(quotedIdentifier(table)))")
             let actualKeys = Set(keys.map { "\($0[3] as? String ?? ""):\($0[2] as? String ?? ""):\($0[4] as? String ?? "")" })
             guard actualKeys == foreignKeys113[table], keys.allSatisfy({
                 $0[5] as? String == "NO ACTION" && $0[6] as? String == "NO ACTION"
             }) else { throw OpenError.invalidStructure }
 
             var unique = Set<String>()
-            for index in try database.prepare("PRAGMA index_list(\(quotedIdentifier(table)))") where index[2] as? Int64 == 1 {
+            for index in try schemaRows(in: database, sql: "PRAGMA index_list(\(quotedIdentifier(table)))") where index[2] as? Int64 == 1 {
                 guard let name = index[1] as? String, let partial = index[4] as? Int64 else { throw OpenError.invalidStructure }
-                let columnNames = try database.prepare("PRAGMA index_info(\(quotedIdentifier(name)))").compactMap { $0[2] as? String }
+                let columnNames = try schemaRows(in: database, sql: "PRAGMA index_info(\(quotedIdentifier(name)))").compactMap { $0[2] as? String }
                 unique.insert("\(partial):" + columnNames.joined(separator: ","))
                 if partial == 1 {
                     guard let sql = try database.scalar("SELECT sql FROM sqlite_master WHERE type='index' AND name=?", name) as? String else { throw OpenError.invalidStructure }
@@ -370,13 +396,13 @@ extension BaseDb {
             }
             guard unique == uniqueIndexes113[table] else { throw OpenError.invalidStructure }
         }
-        guard Array(try database.prepare("PRAGMA foreign_key_check")).isEmpty else { throw OpenError.invalidStructure }
+        guard try schemaRows(in: database, sql: "PRAGMA foreign_key_check").isEmpty else { throw OpenError.invalidStructure }
         if tables.contains("claw_local_migrations") {
-            let rows = Array(try database.prepare("PRAGMA table_info(claw_local_migrations)"))
+            let rows = try schemaRows(in: database, sql: "PRAGMA table_info(claw_local_migrations)")
             guard rows.count == 2,
                   rows[0][1] as? String == "rule", rows[0][2] as? String == "TEXT", rows[0][3] as? Int64 == 1, rows[0][5] as? Int64 == 1,
                   rows[1][1] as? String == "completed", rows[1][2] as? String == "INTEGER", rows[1][3] as? Int64 == 1, rows[1][5] as? Int64 == 0,
-                  try database.scalar("SELECT COUNT(*) FROM claw_local_migrations WHERE rule<>'C2-L1-20260918' OR completed<>1") as? Int64 == 0 else {
+                  try database.scalar("SELECT COUNT(*) FROM claw_local_migrations WHERE rule NOT IN ('C2-L1-20260918','C3-20260918') OR completed<>1") as? Int64 == 0 else {
                 throw OpenError.invalidMarker
             }
         }

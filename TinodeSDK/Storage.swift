@@ -190,6 +190,9 @@ public protocol Storage: AnyObject {
     ///     `true` on success, `false` otherwise
     @discardableResult
     func msgFailed(topic: TopicProto, dbMessageId: Int64) -> Bool
+    // Separate a dispatched publish rejection from an obsolete upload callback.
+    func msgRejected(topic: TopicProto, dbMessageId: Int64) -> Bool
+    func msgDiscardDraft(topic: TopicProto, dbMessageId: Int64) -> Bool
 
     /// Retain a dispatched message whose server outcome cannot be confirmed.
     @discardableResult
@@ -312,6 +315,8 @@ public protocol Storage: AnyObject {
 }
 
 extension Storage {
+    public func msgRejected(topic: TopicProto, dbMessageId: Int64) -> Bool { return false }
+    public func msgDiscardDraft(topic: TopicProto, dbMessageId: Int64) -> Bool { return false }
     // Storage implementations without an initialization gate remain compatible.
     public var initializationError: String? { nil }
 }
