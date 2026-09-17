@@ -1,0 +1,7 @@
+{
+  "Podfile": "9235eaa5d2445636abb26ba5cddbdb8496c369b79b5509cb13542784aabee75a",
+  "Scripts/ci/prepare_license_plist.py": "3e879b86250373fc58fb3d9afdc1f3ccb10e36811141447559caad11dde989ab",
+  "Tinodios/Settings.bundle/Acknowledgements.plist": "894f620b2e69222517a1ff97d8251f63cb4d0c2345bf46f3f6347e544ae54a46",
+  "Scripts/ci/test_license_plist.py": "b34956baeab7f9eec36fa29c60689b0f527e785fdb0e29c8cdfb9295ce748d5b",
+  ".github/workflows/ios-smoke.yml": "0fdf35e408c93fc7b2beda368467c5872b8bc02376c12ca2867ef2e0358c7999"
+}

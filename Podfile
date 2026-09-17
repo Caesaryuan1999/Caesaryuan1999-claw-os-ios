@@ -59,8 +59,13 @@ target 'Tinodios' do
 end
 
 post_install do | installer |
-  require 'fileutils'
-  FileUtils.cp_r('Pods/Target Support Files/Pods-Tinodios/Pods-Tinodios-acknowledgements.plist', 'Tinodios/Settings.bundle/Acknowledgements.plist', :remove_destination => true)
+  # Keep the original generated license and reject malformed XML before replacing the resource.
+  # Some upstream LGPL text contains form-feed page separators forbidden by XML 1.0.
+  license_ok = system('python3', File.join(__dir__, 'Scripts/ci/prepare_license_plist.py'),
+    '--source', File.join(__dir__, 'Pods/Target Support Files/Pods-Tinodios/Pods-Tinodios-acknowledgements.plist'),
+    '--destination', File.join(__dir__, 'Tinodios/Settings.bundle/Acknowledgements.plist'),
+    '--evidence-dir', File.join(__dir__, 'build/licenses'))
+  raise 'License XML preparation failed; original license retained in Pods' unless license_ok
   installer.aggregate_targets.each do |aggregate_target|
     aggregate_target.xcconfigs.each do |config_name, config_file|
       xcconfig_path = aggregate_target.xcconfig_path(config_name)

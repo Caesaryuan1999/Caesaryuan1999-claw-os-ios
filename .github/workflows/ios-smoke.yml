@@ -59,6 +59,8 @@ jobs:
         with:
           name: ios-local-store-${{ github.sha }}
           path: |
+            build/licenses/*.json
+            build/licenses/*.plist
             build/ios-01-a-*/static.json
             build/ios-01-a-*/*-summary.json
             build/ios-01-a-*/*-summary.err
