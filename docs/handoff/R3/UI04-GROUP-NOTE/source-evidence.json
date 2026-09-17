@@ -1,0 +1,59 @@
+{
+  "baseline": "4821062e9cf503c35137e8150d7c93813077c687",
+  "production_files": [
+    "TinodeSDK/model/Types.swift",
+    "Tinodios/TopicGeneralViewController.swift"
+  ],
+  "new_native_sdk_methods": 4,
+  "expected_total_native_methods": 135,
+  "expected_sdk_methods": 30,
+  "remaining_comment_force_unwraps": 0,
+  "comment_call_sites": [
+    {
+      "path": "TinodeSDK/ComTopic.swift",
+      "line": 62,
+      "source": "return priv?.comment"
+    },
+    {
+      "path": "TinodeSDK/model/Types.swift",
+      "line": 47,
+      "source": "delta.comment = edited.isEmpty ? nil : edited"
+    },
+    {
+      "path": "Tinodios/TopicGeneralViewController.swift",
+      "line": 129,
+      "source": "topicPrivateTextField.text = topic.comment"
+    },
+    {
+      "path": "Tinodios/TopicGeneralViewController.swift",
+      "line": 188,
+      "source": "let priv = PrivateType.commentDelta(from: topic.comment, to: topicPrivateTextField.text)"
+    },
+    {
+      "path": "Tinodios/TopicInfoViewController.swift",
+      "line": 138,
+      "source": "topicPrivateTextView.textColor = (topic.comment ?? \"\").isEmpty ? .placeholderText : .secondaryLabel"
+    },
+    {
+      "path": "Tinodios/TopicInfoViewController.swift",
+      "line": 139,
+      "source": "topicPrivateTextView.text = (topic.comment ?? \"\").isEmpty ? NSLocalizedString(\"Private info: not set\", comment: \"Placeholder text in editor\") : topic.comment"
+    },
+    {
+      "path": "Tinodios/TopicInfoViewController.swift",
+      "line": 280,
+      "source": "if (indexPath.row == TopicInfoViewController.kSectionExtendedPrivate && (topic.comment ?? \"\").isEmpty) ||"
+    },
+    {
+      "path": "Tinodios/widgets/ChatListViewCell.swift",
+      "line": 214,
+      "source": "topic.comment"
+    }
+  ],
+  "sha256": {
+    "TinodeSDK/model/Types.swift": "db1a485876fb6a59b869823d7753df41e9d0f1edd0e7636b40c8a9266f55379d",
+    "Tinodios/TopicGeneralViewController.swift": "49828b75833d37ffcfe3cbff03e62782bd65287bf7e67bc2e50df10ae69b9747",
+    "TinodeSDKTests/TinodeSDKTests.swift": "ba225e97105f8986187ac63e372c89e460807ec03229b5c97faf1f75d01efa19",
+    "Scripts/ci/test_group_note_policy.py": "bee551a3f361ea8bb9a5042331aadf88349947e1091a1f398086ee29ffba7f0b"
+  }
+}

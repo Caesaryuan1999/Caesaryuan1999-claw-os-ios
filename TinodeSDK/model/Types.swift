@@ -31,12 +31,23 @@ extension PrivateType: Mergeable {
 
     public var comment: String? {
         get {
-            return self["comment"]?.asString()
+            guard let value = self["comment"]?.asString(), value != Tinode.kNullValue else { return nil }
+            return value
         }
         set {
             self["comment"] = .string(newValue ?? Tinode.kNullValue)
         }
     }
+    // Private metadata is a key-wise patch. Do not resend unrelated local keys.
+    public static func commentDelta(from original: String?, to edited: String?) -> PrivateType? {
+        guard let edited = edited else { return nil }
+        let previous = original == Tinode.kNullValue ? "" : (original ?? "")
+        guard edited != previous else { return nil }
+        var delta = PrivateType()
+        delta.comment = edited.isEmpty ? nil : edited
+        return delta
+    }
+
     public var archived: Bool? {
         get {
             self["arch"]?.asBool()

@@ -259,6 +259,61 @@ class TinodeSDKTests: XCTestCase {
         XCTAssertTrue(indexed["usrValid"] === valid)
     }
 
+    func testPrivateCommentFirstValueEncodesOnlyCommentDelta() throws {
+        let delta = try XCTUnwrap(PrivateType.commentDelta(from: nil, to: "我的备注"))
+        XCTAssertEqual(Array(delta.keys), ["comment"])
+        let meta = MsgSetMeta<TheCard, PrivateType>(desc: MetaSetDesc(pub: nil, priv: delta))
+        let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(meta)) as? [String: Any])
+        let desc = try XCTUnwrap(payload["desc"] as? [String: Any])
+        let priv = try XCTUnwrap(desc["private"] as? [String: String])
+        XCTAssertEqual(priv, ["comment": "我的备注"])
+        XCTAssertNil(desc["public"])
+        XCTAssertNil(payload["tags"])
+    }
+
+    func testPrivateCommentACKMergePreservesOtherKeysPublicAndTags() throws {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        let topic = DefaultComTopic(tinode: sdk, name: "grpNote")
+        topic.priv = ["comment": .string("旧备注"), "arch": .bool(true), "custom": .string("keep")]
+        let delta = try XCTUnwrap(PrivateType.commentDelta(from: topic.comment, to: "新备注"))
+        XCTAssertEqual(Array(delta.keys), ["comment"])
+        let meta = MsgSetMeta<TheCard, PrivateType>(
+            desc: MetaSetDesc(pub: TheCard(fn: "群名称"), priv: delta), tags: ["alias:group_note"])
+        let ack = MsgServerCtrl(id: "synthetic", topic: topic.name, code: 200, text: "ok", ts: Date(), params: nil)
+        topic.update(ctrl: ack, meta: meta)
+        XCTAssertEqual(topic.comment, "新备注")
+        XCTAssertEqual(topic.priv?["arch"]?.asBool(), true)
+        XCTAssertEqual(topic.priv?["custom"]?.asString(), "keep")
+        XCTAssertEqual(topic.pub?.fn, "群名称")
+        XCTAssertEqual(topic.tags, ["alias:group_note"])
+    }
+
+    func testPrivateCommentClearUsesNullSentinelAndACKReadsEmpty() throws {
+        let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
+        let topic = DefaultComTopic(tinode: sdk, name: "grpNote")
+        topic.priv = ["comment": .string("旧备注"), "arch": .bool(true)]
+        let delta = try XCTUnwrap(PrivateType.commentDelta(from: topic.comment, to: ""))
+        XCTAssertEqual(delta["comment"]?.asString(), Tinode.kNullValue)
+        let meta = MsgSetMeta<TheCard, PrivateType>(desc: MetaSetDesc(pub: nil, priv: delta))
+        let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(meta)) as? [String: Any])
+        let desc = try XCTUnwrap(payload["desc"] as? [String: Any])
+        XCTAssertEqual((desc["private"] as? [String: String])?["comment"], Tinode.kNullValue)
+        topic.update(ctrl: MsgServerCtrl(id: "synthetic", topic: topic.name, code: 200,
+            text: "ok", ts: Date(), params: nil), meta: meta)
+        XCTAssertNil(topic.comment)
+        XCTAssertEqual(topic.priv?["arch"]?.asBool(), true)
+        XCTAssertNil(PrivateType.commentDelta(from: topic.comment, to: ""))
+    }
+
+    func testPrivateCommentNoChangeProducesNoPatchAndPreservesTextBytes() {
+        XCTAssertNil(PrivateType.commentDelta(from: nil, to: nil))
+        XCTAssertNil(PrivateType.commentDelta(from: nil, to: ""))
+        XCTAssertNil(PrivateType.commentDelta(from: "", to: ""))
+        XCTAssertNil(PrivateType.commentDelta(from: Tinode.kNullValue, to: ""))
+        XCTAssertNil(PrivateType.commentDelta(from: "保留", to: "保留"))
+        XCTAssertEqual(PrivateType.commentDelta(from: nil, to: "  原文  ")?.comment, "  原文  ")
+    }
+
     private func validPushConfiguration() -> [String: Any] {
         [
             "API_KEY": "test-api-key",

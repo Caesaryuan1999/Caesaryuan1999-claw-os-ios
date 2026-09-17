@@ -160,32 +160,32 @@ class TopicGeneralViewController: UITableViewController {
 
     @IBAction func doneEditingClicked(_ sender: Any) {
         var pub: TheCard? = nil
-        if let title = topicTitleTextField.text, title != topic.pub?.fn {
-            pub = TheCard(fn: title)
-        }
-        let desc = topicDescriptTextView.text
-        if desc != self.topic.pub?.note {
-            pub = pub ?? TheCard()
-            if (desc ?? "").isEmpty || desc == TopicGeneralViewController.kDescriptionPlaceholder {
-                pub!.note = Tinode.kNullValue
+        var tags: [String]? = nil
+        // Public fields and aliases remain owner-only. Members may edit their
+        // own private note without accidentally submitting an empty public note.
+        if topic.isOwner {
+            if let title = topicTitleTextField.text, title != topic.pub?.fn {
+                pub = TheCard(fn: title)
+            }
+            let desc = topicDescriptTextView.text
+            if desc != self.topic.pub?.note {
+                pub = pub ?? TheCard()
+                if (desc ?? "").isEmpty || desc == TopicGeneralViewController.kDescriptionPlaceholder {
+                    pub!.note = Tinode.kNullValue
+                } else {
+                    pub!.note = desc
+                }
+            }
+            if let alias = self.aliasTextField.text, !alias.isEmpty {
+                tags = Tinode.setUniqueTag(tags: self.topic.tags, uniqueTag: "\(Tinode.kTagAlias)\(alias)")
             } else {
-                pub!.note = desc
+                tags = Tinode.clearTagPrefix(tags: self.topic.tags, prefix: Tinode.kTagAlias)
+            }
+            if tags != nil && tags!.equals(topic.tags) {
+                tags = nil
             }
         }
-        var priv: PrivateType? = nil
-        if let comment = topicPrivateTextField.text, self.topic.comment! != comment {
-            priv = PrivateType()
-            priv!.comment = comment.isEmpty ? Tinode.kNullValue : comment
-        }
-        var tags: [String]? = nil
-        if let alias = self.aliasTextField.text, !alias.isEmpty {
-            tags = Tinode.setUniqueTag(tags: self.topic.tags, uniqueTag: "\(Tinode.kTagAlias)\(alias)")
-        } else {
-            tags = Tinode.clearTagPrefix(tags: self.topic.tags, prefix: Tinode.kTagAlias)
-        }
-        if tags != nil && tags!.equals(topic.tags) {
-            tags = nil
-        }
+        let priv = PrivateType.commentDelta(from: topic.comment, to: topicPrivateTextField.text)
 
         if pub == nil && priv == nil && tags == nil {
             // Unchanged
@@ -193,7 +193,7 @@ class TopicGeneralViewController: UITableViewController {
             return
         }
 
-        self.topic.setMeta(meta: MsgSetMeta(desc: pub != nil || priv != nil ? MetaSetDesc(pub: pub, priv: nil) : nil, tags: tags))
+        self.topic.setMeta(meta: MsgSetMeta(desc: pub != nil || priv != nil ? MetaSetDesc(pub: pub, priv: priv) : nil, tags: tags))
             .then(onSuccess: { _ in
                 DispatchQueue.main.async {
                     _ = self.navigationController?.popViewController(animated: true)
