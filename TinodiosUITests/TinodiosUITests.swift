@@ -226,6 +226,235 @@ class FakeTinodeServer {
     }
 }
 
+// These tests use BaseDb's production path with independent synthetic old data.
+// Prepared on Windows; execution requires the Mac SQLite.swift/XCTest target.
+final class LocalMigrationTests: XCTestCase {
+    private static let fixtureSQL = """
+    -- Synthetic old-version 113 fixture, transcribed from the five table builders
+    -- at 97e21f49 / takeover-20260917-214922. No real accounts or attachment data.
+    PRAGMA user_version = 113;
+    CREATE TABLE accounts (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, uid TEXT, last_active INTEGER, cred_methods TEXT, device_id TEXT);
+    CREATE UNIQUE INDEX accounts_uid ON accounts(uid);
+    CREATE TABLE users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, account_id INTEGER REFERENCES accounts(id), uid TEXT, updated TEXT, pub TEXT, account_name TEXT);
+    CREATE INDEX users_account_uid ON users(account_id, uid);
+    CREATE TABLE topics (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, account_id INTEGER REFERENCES accounts(id), status INTEGER, topic TEXT, type INTEGER, visible INTEGER, created TEXT, updated TEXT, read INTEGER, recv INTEGER, seq INTEGER, clear INTEGER, max_del INTEGER, mode TEXT, defacs TEXT, last_used TEXT, min_local_seq INTEGER, max_local_seq INTEGER, next_unsent_seq INTEGER, tags TEXT, creds TEXT, pub TEXT, priv TEXT, trusted TEXT);
+    CREATE UNIQUE INDEX topics_account_topic ON topics(account_id, topic);
+    CREATE TABLE subscriptions (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, topic_id INTEGER REFERENCES topics(id), user_id INTEGER REFERENCES users(id), status INTEGER, mode TEXT, updated TEXT, read INTEGER, recv INTEGER, clear INTEGER, priv TEXT, last_seen TEXT, user_agent TEXT, subscription_class TEXT NOT NULL);
+    CREATE UNIQUE INDEX subscriptions_topic_user ON subscriptions(topic_id, user_id);
+    CREATE TABLE messages (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, topic_id INTEGER REFERENCES topics(id), user_id INTEGER REFERENCES users(id), status INTEGER, sender TEXT, ts TEXT, seq INTEGER, high INTEGER, del_id INTEGER, repl_seq INTEGER, effective_seq INTEGER, effective_ts TEXT, head TEXT, content TEXT);
+    CREATE UNIQUE INDEX messages_topic_seq ON messages(topic_id, seq DESC);
+    CREATE UNIQUE INDEX messages_topic_effective ON messages(topic_id, effective_seq DESC) WHERE effective_seq IS NOT NULL;
+    INSERT INTO accounts VALUES (1,'usrFixtureA',1,NULL,'fixture-device'),(2,'usrFixtureB',0,NULL,NULL);
+    INSERT INTO users(id,account_id,uid,updated,pub,account_name) VALUES (1,1,'usrFixtureA','2026-09-01T00:00:00.000','{"fn":"甲"}','fixtureA'),(2,2,'usrFixtureB','2026-09-01T00:00:00.000','{"fn":"乙"}','fixtureB');
+    INSERT INTO topics(id,account_id,status,topic,type,visible,seq,next_unsent_seq) VALUES (1,1,50,'grpFixtureA',2,1,8,2000000007),(2,2,50,'grpFixtureB',2,1,1,2000000001);
+    INSERT INTO subscriptions(id,topic_id,user_id,status,mode,subscription_class) VALUES (1,1,1,50,'JRWP','DefaultSubscription'),(2,2,2,50,'JRWP','DefaultSubscription');
+    -- Rows 2 and 3 deliberately have identical content/head/timestamp: only the
+    -- external event history knows whether dispatch happened; SQLite cannot know.
+    INSERT INTO messages(id,topic_id,user_id,status,sender,ts,seq,effective_seq,head,content) VALUES
+    (1,1,1,10,'usrFixtureA','2026-09-01T00:00:00.000',2000000001,2000000001,NULL,'草稿'),
+    (2,1,1,20,'usrFixtureA','2026-09-01T00:00:00.000',2000000002,2000000002,'{"attachments":["/v0/file/s/fixture-safe"]}','同样文本与附件'),
+    (3,1,1,20,'usrFixtureA','2026-09-01T00:00:00.000',2000000003,2000000003,'{"attachments":["/v0/file/s/fixture-safe"]}','同样文本与附件'),
+    (4,1,1,30,'usrFixtureA','2026-09-01T00:00:00.000',2000000004,2000000004,NULL,'在途'),
+    (5,1,1,40,'usrFixtureA','2026-09-01T00:00:00.000',2000000005,2000000005,NULL,'明确失败'),
+    (6,1,1,50,'usrFixtureA','2026-09-01T00:00:00.000',6,6,NULL,'已确认'),
+    (7,2,2,20,'usrFixtureB','2026-09-01T00:00:00.000',2000000001,2000000001,NULL,'另一个账户');
+    INSERT INTO messages(id,topic_id,user_id,status,sender,ts,seq,repl_seq,effective_seq,effective_ts,head,content) VALUES
+    (8,1,1,20,'usrFixtureA','2026-09-01T00:00:00.000',2000000006,6,2000000006,'2026-09-01T00:00:00.000','{"replace":"msg:6"}','编辑修订');
+    INSERT INTO messages(id,topic_id,status,seq,high,del_id) VALUES (9,1,80,7,9,1);
+    """
+
+    private func withFixture(_ body: (URL, SQLite.Connection) throws -> Void) throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appendingPathComponent("old113.sqlite")
+        let database = try SQLite.Connection(file.path)
+        try database.execute(Self.fixtureSQL)
+        try body(file, database)
+    }
+
+    private func preservedData(_ database: SQLite.Connection) throws -> [String] {
+        var snapshot = [String]()
+        for table in ["accounts", "users", "topics", "subscriptions", "messages"] {
+            let columns = try database.prepare("PRAGMA table_info(\(table))").compactMap { $0[1] as? String }
+                .filter { table != "messages" || $0 != "status" }
+            for row in try database.prepare("SELECT \(columns.joined(separator: ",")) FROM \(table) ORDER BY id") {
+                snapshot.append(table + ":" + row.map { String(describing: $0) }.joined(separator: "|"))
+            }
+        }
+        return snapshot
+    }
+
+    func testFirstUpgradeIsolatesLegacy20And30AndPreservesAllOtherData() throws {
+        try withFixture { file, database in
+            let before = try preservedData(database)
+            let opened = BaseDb(databasePath: file.path)
+            XCTAssertTrue(opened.isStoreAvailable)
+            XCTAssertEqual(opened.sqlStore?.myUid, "usrFixtureA")
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE status=35") as? Int64, 5)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE status=20") as? Int64, 0)
+            XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=6") as? Int64, 50)
+            XCTAssertEqual(try database.scalar("PRAGMA user_version") as? Int64, 113)
+            XCTAssertEqual(try preservedData(database), before)
+        }
+    }
+
+    func testRepeatedNSEOpenLeavesNew20AndMainApp30Untouched() throws {
+        try withFixture { file, database in
+            XCTAssertTrue(BaseDb(databasePath: file.path).isStoreAvailable)
+            try database.run("UPDATE messages SET status=20 WHERE id=1")
+            try database.run("UPDATE messages SET status=30 WHERE id=5")
+            XCTAssertTrue(BaseDb(databasePath: file.path).isStoreAvailable)
+            XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=1") as? Int64, 20)
+            XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=5") as? Int64, 30)
+            XCTAssertTrue(MessageDb.recoverInterruptedPublishes(in: database))
+            XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=1") as? Int64, 20)
+            XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=5") as? Int64, 35)
+        }
+    }
+
+    func testFreshDatabaseHasMarkerBeforeFirstMessage() throws {
+        let database = try SQLite.Connection(.inMemory)
+        try BaseDb.prepareDatabase(in: database)
+        XCTAssertEqual(try database.scalar(BaseDb.migrationReadSQL) as? Int64, 1)
+        XCTAssertFalse(try BaseDb.validateSchema(in: database))
+        try database.run("INSERT INTO messages(status,content) VALUES (20,'new pending')")
+        try BaseDb.prepareDatabase(in: database)
+        XCTAssertEqual(try database.scalar("SELECT status FROM messages") as? Int64, 20)
+    }
+
+    func testUnsupportedVersionsAndLogoutPreserveExistingTables() throws {
+        for version in [0, 112, 114] {
+            try withFixture { file, database in
+                try database.run("PRAGMA user_version=\(version)")
+                let before = try preservedData(database)
+                let blocked = BaseDb(databasePath: file.path)
+                XCTAssertFalse(blocked.isStoreAvailable)
+                XCTAssertNotNil(blocked.sqlStore?.initializationError)
+                blocked.logout()
+                XCTAssertFalse(blocked.deleteUid("usrFixtureA"))
+                XCTAssertEqual(try preservedData(database), before)
+                XCTAssertEqual(try database.scalar("PRAGMA user_version") as? Int64, Int64(version))
+            }
+        }
+    }
+
+    func testUnknownColumnTableAndTriggerAreRejectedWithoutRepair() throws {
+        for mutation in ["ALTER TABLE messages RENAME COLUMN content TO other_content",
+                         "CREATE TABLE unsupported_extension(id INTEGER)",
+                         "CREATE TRIGGER unexpected AFTER UPDATE ON messages BEGIN SELECT 1; END"] {
+            try withFixture { file, database in
+                try database.execute(mutation)
+                let schema = try database.scalar("SELECT group_concat(sql) FROM sqlite_master") as? String
+                XCTAssertFalse(BaseDb(databasePath: file.path).isStoreAvailable)
+                XCTAssertEqual(try database.scalar("SELECT group_concat(sql) FROM sqlite_master") as? String, schema)
+                XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 20)
+            }
+        }
+    }
+
+    func testMissingUniqueIndexAndWrongPartialPredicateAreRejected() throws {
+        for mutation in ["DROP INDEX messages_topic_seq",
+                         "DROP INDEX messages_topic_effective; CREATE UNIQUE INDEX wrong ON messages(topic_id,effective_seq) WHERE effective_seq>0"] {
+            try withFixture { file, database in
+                try database.execute(mutation)
+                XCTAssertFalse(BaseDb(databasePath: file.path).isStoreAvailable)
+                XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 20)
+            }
+        }
+    }
+
+    func testForeignKeyViolationsAndWrongDefinitionsAreRejected() throws {
+        try withFixture { file, database in
+            try database.run("UPDATE users SET account_id=999 WHERE id=1")
+            XCTAssertFalse(BaseDb(databasePath: file.path).isStoreAvailable)
+        }
+        let database = try SQLite.Connection(.inMemory)
+        try database.execute(Self.fixtureSQL.replacingOccurrences(of: "REFERENCES accounts(id)", with: "REFERENCES accounts(uid)"))
+        XCTAssertThrowsError(try BaseDb.prepareDatabase(in: database))
+        XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 20)
+    }
+
+    func testUnknownMarkerRuleBlocksWithoutQuarantine() throws {
+        try withFixture { file, database in
+            try database.run(BaseDb.migrationCreateSQL)
+            try database.run("INSERT INTO claw_local_migrations VALUES ('future-rule',1)")
+            XCTAssertFalse(BaseDb(databasePath: file.path).isStoreAvailable)
+            XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 20)
+        }
+    }
+
+    func testMarkerInsertFailureRollsBackPriorStatusUpdates() throws {
+        try withFixture { _, database in
+            try database.run("CREATE TABLE claw_local_migrations(rule TEXT NOT NULL PRIMARY KEY, completed INTEGER NOT NULL CHECK(completed=0))")
+            XCTAssertThrowsError(try BaseDb.prepareDatabase(in: database))
+            XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 20)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 0)
+        }
+    }
+
+    func testCommitFailureCannotExposeSuccessfulMarker() throws {
+        try withFixture { _, database in
+            enum Injected: Error { case commit }
+            database.commitHook { throw Injected.commit }
+            XCTAssertThrowsError(try BaseDb.prepareDatabase(in: database))
+            database.commitHook(nil)
+            XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 20)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM sqlite_master WHERE name='claw_local_migrations'") as? Int64, 0)
+        }
+    }
+
+    func testTwoConcurrentInitializersCommitOnlyOneMarker() throws {
+        try withFixture { file, database in
+            let lock = NSLock()
+            var available = [Bool]()
+            DispatchQueue.concurrentPerform(iterations: 2) { _ in
+                let opened = BaseDb(databasePath: file.path)
+                lock.lock()
+                available.append(opened.isStoreAvailable)
+                lock.unlock()
+            }
+            XCTAssertEqual(available.filter { $0 }.count, 2)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 1)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE status=35") as? Int64, 5)
+        }
+    }
+
+    func testUnsupportedWalDatabaseBytesSurviveBlockedOpenAndLogout() throws {
+        try withFixture { file, database in
+            try database.run("PRAGMA journal_mode=WAL")
+            try database.run("PRAGMA wal_autocheckpoint=0")
+            try database.run("UPDATE messages SET content='preserved WAL content' WHERE id=1")
+            try database.run("PRAGMA user_version=114")
+            let wal = URL(fileURLWithPath: file.path + "-wal")
+            let originalDb = try Data(contentsOf: file)
+            let originalWal = try Data(contentsOf: wal)
+            let blocked = BaseDb(databasePath: file.path)
+            XCTAssertFalse(blocked.isStoreAvailable)
+            blocked.logout()
+            XCTAssertEqual(try Data(contentsOf: file), originalDb)
+            XCTAssertEqual(try Data(contentsOf: wal), originalWal)
+        }
+    }
+
+    func testBlockedStoragePreventsSDKConnectPublishAndLocalAcknowledgement() throws {
+        try withFixture { file, database in
+            try database.run("PRAGMA user_version=114")
+            let blocked = BaseDb(databasePath: file.path)
+            let sdk = Tinode(for: "fixture", authenticateWith: "fixture", persistDataIn: blocked.sqlStore)
+            XCTAssertThrowsError(try sdk.connect(to: "127.0.0.1:9", useTLS: false, inBackground: false)) { error in
+                guard case TinodeError.requestNotSent = error else { return XCTFail("Wrong blocked-store outcome") }
+            }
+            XCTAssertFalse(sdk.reconnectNow(interactively: true, reset: false))
+            let result = sdk.publish(topic: "grpFixtureA", head: nil, content: Drafty(plainText: "must not leave device"), attachments: nil)
+            XCTAssertTrue(result.isRejected)
+            let topic = DefaultComTopic(tinode: sdk, name: "grpFixtureA")
+            XCTAssertFalse(blocked.sqlStore!.msgDelivered(topic: topic, dbMessageId: 2, timestamp: Date(), seq: 9))
+            XCTAssertEqual(try database.scalar("SELECT status FROM messages WHERE id=2") as? Int64, 20)
+        }
+    }
+}
+
 final class TinodiosUITests: XCTestCase {
     let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
     var tinodeServer: FakeTinodeServer!

@@ -13,6 +13,11 @@ enum SqlStoreError: Error {
 }
 
 public class SqlStore: Storage {
+    public var initializationError: String? {
+        guard let database = dbh else { return BaseDb.unavailableMessage }
+        return database.initializationError
+    }
+
     public var myUid: String? {
         get {
             return self.dbh?.uid
@@ -83,6 +88,7 @@ public class SqlStore: Storage {
     }
 
     public func topicDelete(topic: TopicProto, hard: Bool) -> Bool {
+        guard dbh?.isStoreAvailable == true else { return false }
         guard let st = topic.payload as? StoredTopic, let topicId = st.id else { return false }
         let savepointName = "SqlStore.topicDelete"
         do {
@@ -301,6 +307,7 @@ public class SqlStore: Storage {
     }
 
     public func msgDelivered(topic: TopicProto, dbMessageId: Int64, timestamp: Date, seq: Int) -> Bool {
+        guard dbh?.isStoreAvailable == true else { return false }
         let savepointName = "SqlStore.msgDelivered"
         do {
             try dbh?.db?.savepoint(savepointName) {

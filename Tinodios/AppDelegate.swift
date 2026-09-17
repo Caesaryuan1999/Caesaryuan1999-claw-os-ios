@@ -141,6 +141,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         SharedUtils.registerUserDefaults()
 
         let baseDb = BaseDb.sharedInstance
+        if let reason = baseDb.initializationError {
+            showLocalStoreBlocked(reason)
+            return true
+        }
         if baseDb.isReady {
             // When the app launch after user tap on notification (originally was not running / not in background), except incoming calls which are handled separately.
             if let opts = launchOptions, let userInfo = opts[.remoteNotification] as? [String: Any],
@@ -175,7 +179,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
+    private func showLocalStoreBlocked(_ reason: String) {
+        let controller = UIViewController()
+        controller.view.backgroundColor = ClawTheme.background
+        let message = UILabel()
+        message.text = reason
+        message.font = .preferredFont(forTextStyle: .body)
+        message.adjustsFontForContentSizeCategory = true
+        message.textColor = ClawTheme.ink
+        message.numberOfLines = 0
+        message.accessibilityIdentifier = "claw.localStore.blocked"
+        message.translatesAutoresizingMaskIntoConstraints = false
+        controller.view.addSubview(message)
+        NSLayoutConstraint.activate([
+            message.leadingAnchor.constraint(equalTo: controller.view.safeAreaLayoutGuide.leadingAnchor, constant: 24),
+            message.trailingAnchor.constraint(equalTo: controller.view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
+            message.centerYAnchor.constraint(equalTo: controller.view.safeAreaLayoutGuide.centerYAnchor)
+        ])
+        window?.rootViewController = controller
+        window?.makeKeyAndVisible()
+    }
+
     func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+        guard BaseDb.sharedInstance.isStoreAvailable else { completionHandler(); return }
         backgroundSessionCompletionHandler = completionHandler
         // Instantiate large file helper.
         _ = Cache.getLargeFileHelper(withIdentifier: identifier)
@@ -196,6 +222,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        guard BaseDb.sharedInstance.isStoreAvailable else { return }
         if let call = Cache.callManager.callInProgress, !UiUtils.isShowingCallVC(forTopic: call.topic) {
             // App just entered the foreground and there's a call in progress. Go to the CallVC.
             // Typically happens when the app wasn't running and screen was locked at the moment
@@ -221,6 +248,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // Application woken up in the background (e.g. for data fetch).
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        guard BaseDb.sharedInstance.isStoreAvailable else { completionHandler(.failed); return }
         let state = application.applicationState
         let what = userInfo["what"] as? String
         Cache.log.info("Remote notification callback: state=%@ what=%@", String(describing: state), what ?? "msg")
@@ -270,6 +298,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     // Tapped on a web link. See if it's an app link.
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+        guard BaseDb.sharedInstance.isStoreAvailable else { return false }
         guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
             let url = userActivity.webpageURL,
             let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
@@ -320,6 +349,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     private func refreshUnreadIndicators() {
+        guard BaseDb.sharedInstance.isStoreAvailable else { return }
         let unread = Cache.totalUnreadCount()
         UIApplication.shared.applicationIconBadgeNumber = unread
         DispatchQueue.main.async { [weak self] in
@@ -355,6 +385,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     // Notification received. Process it.
     // Called when the app is in the foreground.
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        guard BaseDb.sharedInstance.isStoreAvailable else { completionHandler([]); return }
         let userInfo = notification.request.content.userInfo
         let what = userInfo["what"] as? String
         // Only handling "msg" notifications. New subscriptions ("sub" notifications) in the foreground
@@ -401,6 +432,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
 
     // User tapped on notification.
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        guard BaseDb.sharedInstance.isStoreAvailable else { completionHandler(); return }
         let userInfo = response.notification.request.content.userInfo
         let topicName = userInfo["topic"] as? String ?? "<missing>"
         Cache.log.info("Notification response callback: action=%@ topic=%@",
@@ -601,6 +633,7 @@ extension AppDelegate: PKPushRegistryDelegate {
 
     // VoIP push notification recived.
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
+        guard BaseDb.sharedInstance.isStoreAvailable else { completion(); return }
         Cache.log.info("PK push %s", payload.debugDescription)
 
         guard type == .voIP else {

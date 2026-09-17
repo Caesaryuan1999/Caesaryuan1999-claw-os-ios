@@ -708,6 +708,7 @@ public class Tinode {
     }
 
     private func send<DP: Codable, DR: Codable>(payload msg: ClientMessage<DP, DR>) throws {
+        if let reason = store?.initializationError { throw TinodeError.requestNotSent(reason) }
         guard let conn = connection, conn.isConnected else {
             throw TinodeError.notConnected("Attempted to send msg to a closed connection.")
         }
@@ -1219,6 +1220,7 @@ public class Tinode {
     }
 
     private func connectThreadUnsafe(to hostName: String, useTLS: Bool, inBackground bkg: Bool) throws -> PromisedReply<ServerMessage>? {
+        if let reason = store?.initializationError { throw TinodeError.requestNotSent(reason) }
         if isConnected {
             Tinode.log.debug("Tinode is already connected")
             return PromisedReply<ServerMessage>(value: ServerMessage())
@@ -1256,7 +1258,8 @@ public class Tinode {
     // If |reset| is true, drop connection and reconnect. Happens when cluster is reconfigured.
     @discardableResult
     public func reconnectNow(interactively: Bool, reset: Bool) -> Bool {
-        operationsQueue.sync {
+        guard store?.initializationError == nil else { return false }
+        return operationsQueue.sync {
             var reconnectInteractive = interactively
             if connection == nil {
                 do {

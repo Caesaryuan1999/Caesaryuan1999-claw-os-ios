@@ -48,10 +48,13 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme TinodeSDK \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \
   -derivedDataPath "$result_dir/DerivedData" -resultBundlePath "$result_dir/sdk.xcresult" \
   -only-testing:TinodeSDKTests/TinodeSDKTests \
+  HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/sdk.log"
 xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \
   -derivedDataPath "$result_dir/DerivedData" -resultBundlePath "$result_dir/storage.xcresult" \
   -only-testing:TinodiosUITests/PublishStorageTests \
+  -only-testing:TinodiosUITests/LocalMigrationTests \
+  HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
 echo "Simulator results: $result_dir (physical device, APNs and real server not tested)"

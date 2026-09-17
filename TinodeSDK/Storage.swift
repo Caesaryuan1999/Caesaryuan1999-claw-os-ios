@@ -62,6 +62,9 @@ extension Message {
 
 // Base protocol for implementing persistance.
 public protocol Storage: AnyObject {
+    // Local initialization gate, distinct from login readiness. Never sent on wire.
+    var initializationError: String? { get }
+
     var myUid: String? { get set }
 
     var deviceToken: String? { get set }
@@ -306,4 +309,9 @@ public protocol Storage: AnyObject {
     /// - Returns:
     ///   Array of seq ID of edits ordered from newest to oldest.
     func getAllMsgVersions(fromTopic topic: TopicProto, forSeq seqId: Int, limit: Int?) -> [Int]?
+}
+
+extension Storage {
+    // Storage implementations without an initialization gate remain compatible.
+    public var initializationError: String? { nil }
 }

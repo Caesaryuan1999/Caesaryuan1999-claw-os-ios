@@ -53,6 +53,9 @@ class NotificationService: UNNotificationServiceExtension {
             defer { self.contentHandler!(bestAttemptContent) }
 
             let store = BaseDb.sharedInstance.sqlStore!
+            // Bootstrap failure must not access an unfamiliar DB or fetch/write.
+            // The defer above still completes the OS callback with original content.
+            guard store.initializationError == nil else { return }
             let topicType = Tinode.topicTypeByName(name: topicName)
             let senderName: String
             switch topicType {
