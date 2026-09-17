@@ -21,6 +21,11 @@ pod install
 # Existing Firebase policy rejects this non-production fixture for real push/release.
 created_fixture=false
 cleanup_fixture() {
+  for result_bundle in "$result_dir"/*.xcresult; do
+    [[ -d "$result_bundle" ]] || continue
+    xcrun xcresulttool get test-results summary --path "$result_bundle" \
+      > "${result_bundle%.xcresult}-summary.json" 2> "${result_bundle%.xcresult}-summary.err" || true
+  done
   if [[ "$created_fixture" == true ]]; then
     rm -f -- "$repo_dir/GoogleService-Info.plist"
   fi
