@@ -1,0 +1,10 @@
+{
+  "production_sql_constants_unchanged": true,
+  "schema_gate_byte_text_unchanged": true,
+  "both_transactions_retained": true,
+  "both_timeouts_5s_retained": true,
+  "concurrent_expected_two_retained": true,
+  "native_added": 2,
+  "native_cumulative_expected": 127,
+  "native_execution": "NOT_RUN_WINDOWS"
+}

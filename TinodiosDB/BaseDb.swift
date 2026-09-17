@@ -59,6 +59,7 @@ public class BaseDb {
     private let pathToDatabase: String
     public static let unavailableMessage = "本地消息数据库暂不可用，已暂停连接和发送。请关闭并重新打开应用；若仍失败，请保留应用和本机数据，安装兼容版本或联系支持人员。请勿卸载或清除数据。"
     public private(set) var initializationError: String? = BaseDb.unavailableMessage
+    internal private(set) var initializationDiagnostic: InitializationDiagnostic?
     public var isStoreAvailable: Bool { initializationError == nil && db != nil }
     public var sqlStore: SqlStore?
     public var topicDb: TopicDb?
@@ -104,7 +105,9 @@ public class BaseDb {
 
     private func initDb() {
         do {
-            let database = try BaseDb.openPreparedDatabase(at: pathToDatabase)
+            let database = try BaseDb.openPreparedDatabase(at: pathToDatabase, onFailure: {
+                self.initializationDiagnostic = $0
+            })
             // No table accessors or SDK writes are exposed before COMMIT succeeds.
             self.db = database
             self.accountDb = AccountDb(database)
@@ -114,11 +117,16 @@ public class BaseDb {
             self.messageDb = MessageDb(database, baseDb: self)
             self.account = self.accountDb?.getActiveAccount()
             self.initializationError = nil
+            self.initializationDiagnostic = nil
         } catch {
             self.db = nil
             self.initializationError = BaseDb.unavailableMessage
-            // Do not log SQL/bindings or account data from SQLite errors.
-            BaseDb.log.error("Local store initialization blocked; original data retained")
+            if self.initializationDiagnostic == nil {
+                self.initializationDiagnostic = BaseDb.safeInitializationDiagnostic(error, stage: .accessors)
+            }
+            // Only fixed stage/category names and numeric codes; never SQL, paths or bindings.
+            BaseDb.log.error("Local store initialization blocked (%@); original data retained",
+                             self.initializationDiagnostic?.summary ?? "unknown")
         }
     }
 
@@ -240,6 +248,46 @@ public class BaseDb {
 extension BaseDb {
     enum OpenError: Error { case unsupportedSchema, invalidStructure, invalidMarker }
 
+    enum OpenStage: String {
+        case readOnlyOpen, readOnlyBegin, readOnlySchema, readOnlyCommit
+        case writableOpen, foreignKeys, migrationBegin, migrationSchema, freshSchema
+        case markerCreate, c2Read, c2Quarantine, c2Write, c3Read, c3Quarantine, c3Write
+        case migrationCommit, accessors
+    }
+
+    struct InitializationDiagnostic {
+        let stage: OpenStage
+        let category: String
+        let primaryCode: Int32?
+        let extendedCode: Int32?
+        var summary: String {
+            "\(stage.rawValue):\(category):primary=\(primaryCode.map { String($0) } ?? "none"):extended=\(extendedCode.map { String($0) } ?? "none")"
+        }
+    }
+
+    // Do not use Error.description, localizedDescription, SQL statements or NSError userInfo.
+    static func safeInitializationDiagnostic(_ error: Error, stage: OpenStage) -> InitializationDiagnostic {
+        var category = "other"
+        var primary: Int32?
+        var extended: Int32?
+        if let sqlite = error as? SQLite.Result {
+            category = "sqlite"
+            switch sqlite {
+            case let .error(_, code, _): primary = code & 0xff
+            case let .extendedError(_, code, _):
+                primary = code & 0xff
+                extended = code
+            }
+        } else if let known = error as? OpenError {
+            switch known {
+            case .unsupportedSchema: category = "unsupportedSchema"
+            case .invalidStructure: category = "invalidStructure"
+            case .invalidMarker: category = "invalidMarker"
+            }
+        }
+        return InitializationDiagnostic(stage: stage, category: category, primaryCode: primary, extendedCode: extended)
+    }
+
     static let migrationCreateSQL = "CREATE TABLE IF NOT EXISTS claw_local_migrations (rule TEXT NOT NULL PRIMARY KEY, completed INTEGER NOT NULL CHECK(completed=1))"
     static let migrationReadSQL = "SELECT completed FROM claw_local_migrations WHERE rule='C2-L1-20260918'"
     static let migrationQuarantineSQL = "UPDATE messages SET status=35 WHERE status IN (20,30)"
@@ -289,44 +337,72 @@ extension BaseDb {
     }
 
     // Read-only preflight protects unsupported databases and their WAL from writes.
-    static func openPreparedDatabase(at path: String) throws -> SQLite.Connection {
-        if FileManager.default.fileExists(atPath: path) {
-            let readOnly = try SQLite.Connection(path, readonly: true)
-            readOnly.busyTimeout = 5
-            // All schema reads must observe one snapshot while another process
-            // may commit the first migration and its marker table.
-            try readOnly.transaction(.deferred) {
-                _ = try validateSchema(in: readOnly)
-            }
+    static func openPreparedDatabase(at path: String,
+                                     onFailure: ((InitializationDiagnostic) -> Void)? = nil,
+                                     observeStage: ((OpenStage) -> Void)? = nil) throws -> SQLite.Connection {
+        var stage = OpenStage.readOnlyOpen
+        func advance(_ value: OpenStage) {
+            stage = value
+            observeStage?(value)
         }
-        let database = try SQLite.Connection(path)
-        database.busyTimeout = 5
-        try database.run("PRAGMA foreign_keys = ON")
-        try prepareDatabase(in: database)
-        return database
+        do {
+            if FileManager.default.fileExists(atPath: path) {
+                advance(.readOnlyOpen)
+                let readOnly = try SQLite.Connection(path, readonly: true)
+                readOnly.busyTimeout = 5
+                // All schema reads observe one snapshot during concurrent migration.
+                advance(.readOnlyBegin)
+                try readOnly.transaction(.deferred) {
+                    advance(.readOnlySchema)
+                    _ = try validateSchema(in: readOnly)
+                    advance(.readOnlyCommit)
+                }
+            }
+            advance(.writableOpen)
+            let database = try SQLite.Connection(path)
+            database.busyTimeout = 5
+            advance(.foreignKeys)
+            try database.run("PRAGMA foreign_keys = ON")
+            try prepareDatabase(in: database, observeStage: advance)
+            return database
+        } catch {
+            onFailure?(safeInitializationDiagnostic(error, stage: stage))
+            throw error
+        }
     }
 
     // Main app and NSE acquire the same SQLite lock and recheck inside it.
     // No marker, status changes or new schema survive a failed COMMIT.
-    static func prepareDatabase(in database: SQLite.Connection) throws {
+    static func prepareDatabase(in database: SQLite.Connection, observeStage: ((OpenStage) -> Void)? = nil) throws {
+        observeStage?(.migrationBegin)
         try database.transaction(.immediate) {
+            observeStage?(.migrationSchema)
             if try validateSchema(in: database) {
+                observeStage?(.freshSchema)
                 try database.execute(schema113SQL)
             }
+            observeStage?(.markerCreate)
             try database.run(migrationCreateSQL)
+            observeStage?(.c2Read)
             if let value = try database.scalar(migrationReadSQL) {
                 guard value as? Int64 == 1 else { throw OpenError.invalidMarker }
             } else {
+                observeStage?(.c2Quarantine)
                 try database.run(migrationQuarantineSQL)
+                observeStage?(.c2Write)
                 try database.run(migrationWriteSQL)
             }
+            observeStage?(.c3Read)
             if let value = try database.scalar(c3MigrationReadSQL) {
                 guard value as? Int64 == 1 else { throw OpenError.invalidMarker }
             } else {
                 // A pre-existing UUID does not prove an earlier C3 dispatch.
+                observeStage?(.c3Quarantine)
                 try database.run(c3MigrationQuarantineSQL)
+                observeStage?(.c3Write)
                 try database.run(c3MigrationWriteSQL)
             }
+            observeStage?(.migrationCommit)
         }
         // Subsequent startup recovery of 30 is main-app-only, in Cache. NSE must
         // not turn a concurrently running main app's newly claimed 30 into 35.

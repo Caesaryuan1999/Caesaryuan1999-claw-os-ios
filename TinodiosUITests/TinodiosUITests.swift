@@ -421,15 +421,78 @@ final class LocalMigrationTests: XCTestCase {
         try withFixture { file, database in
             let lock = NSLock()
             var available = [Bool]()
+            var diagnostics = [String]()
             DispatchQueue.concurrentPerform(iterations: 2) { _ in
                 let opened = BaseDb(databasePath: file.path)
                 lock.lock()
                 available.append(opened.isStoreAvailable)
+                diagnostics.append(opened.initializationDiagnostic?.summary ?? "available")
                 lock.unlock()
             }
-            XCTAssertEqual(available.filter { $0 }.count, 2)
+            XCTAssertEqual(available.filter { $0 }.count, 2, diagnostics.joined(separator: " | "))
             XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 2)
             XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE status=35") as? Int64, 5)
+        }
+    }
+
+    func testInitializerWaitsForWriterAndSucceedsAfterRelease() throws {
+        try withFixture { file, database in
+            let writer = try SQLite.Connection(file.path)
+            try writer.run("BEGIN IMMEDIATE")
+            defer { try? writer.run("ROLLBACK") }
+            let reachedWriteLock = expectation(description: "production initializer reaches immediate transaction")
+            let completed = expectation(description: "production initializer completes")
+            let lock = NSLock()
+            var opened = false
+            var diagnostic: BaseDb.InitializationDiagnostic?
+            DispatchQueue.global().async {
+                do {
+                    _ = try BaseDb.openPreparedDatabase(at: file.path, onFailure: { value in
+                        lock.lock(); diagnostic = value; lock.unlock()
+                    }, observeStage: { stage in
+                        if stage == .migrationBegin { reachedWriteLock.fulfill() }
+                    })
+                    lock.lock(); opened = true; lock.unlock()
+                } catch {
+                    // Only the sanitized production diagnostic may enter failure output.
+                }
+                completed.fulfill()
+            }
+            wait(for: [reachedWriteLock], timeout: 3)
+            lock.lock()
+            let openedBeforeRelease = opened
+            lock.unlock()
+            XCTAssertFalse(openedBeforeRelease, "Store must not be exposed while another writer owns the lock")
+            try writer.run("COMMIT")
+            wait(for: [completed], timeout: 6)
+            lock.lock()
+            let result = opened
+            let safeFailure = diagnostic?.summary
+            lock.unlock()
+            XCTAssertTrue(result, safeFailure ?? "Open did not finish")
+            XCTAssertNil(safeFailure)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 2)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE status=35") as? Int64, 5)
+        }
+    }
+
+    func testInitializationDiagnosticContainsOnlyStageCategoryAndNumericCodes() {
+        let privateText = "synthetic-secret SELECT /private/account.sqlite"
+        let primary = BaseDb.safeInitializationDiagnostic(
+            SQLite.Result.error(message: privateText, code: 5, statement: nil), stage: .migrationBegin)
+        XCTAssertEqual(primary.summary, "migrationBegin:sqlite:primary=5:extended=none")
+        let extended = BaseDb.safeInitializationDiagnostic(
+            SQLite.Result.extendedError(message: privateText, extendedCode: 517, statement: nil), stage: .readOnlySchema)
+        XCTAssertEqual(extended.summary, "readOnlySchema:sqlite:primary=5:extended=517")
+        let unknown = BaseDb.safeInitializationDiagnostic(
+            NSError(domain: privateText, code: 999, userInfo: [NSLocalizedDescriptionKey: privateText]), stage: .readOnlyOpen)
+        XCTAssertEqual(unknown.summary, "readOnlyOpen:other:primary=none:extended=none")
+        for reason in [BaseDb.OpenError.unsupportedSchema, .invalidStructure, .invalidMarker] {
+            let result = BaseDb.safeInitializationDiagnostic(reason, stage: .migrationSchema)
+            XCTAssertEqual(result.stage, .migrationSchema)
+            XCTAssertNil(result.primaryCode)
+            XCTAssertNil(result.extendedCode)
+            XCTAssertFalse(result.summary.contains(privateText))
         }
     }
 
