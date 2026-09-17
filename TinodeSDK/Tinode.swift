@@ -264,20 +264,13 @@ public class Tinode {
             timer!.invalidate()
         }
         @objc private func expireFutures() {
-            futuresQueue.sync {
-                let expirationThreshold = Date().addingTimeInterval(TimeInterval(-ConcurrentFuturesMap.kFutureTimeout))
-                let error = TinodeError.requestOutcomeUnknown("Timed out waiting for the server reply")
-                var expiredKeys = [String]()
-                for (id, f) in futuresDict {
-                    if f.creationTimestamp < expirationThreshold {
-                        try? f.reject(error: error)
-                        expiredKeys.append(id)
-                    }
-                }
-                for id in expiredKeys {
-                    futuresDict.removeValue(forKey: id)
-                }
+            let expired = futuresQueue.sync { () -> [PromisedReply<ServerMessage>] in
+                let threshold = Date().addingTimeInterval(TimeInterval(-ConcurrentFuturesMap.kFutureTimeout))
+                let keys = futuresDict.filter { $0.value.creationTimestamp < threshold }.map { $0.key }
+                return keys.compactMap { futuresDict.removeValue(forKey: $0) }
             }
+            let error = TinodeError.requestOutcomeUnknown("Timed out waiting for the server reply")
+            for future in expired { try? future.reject(error: error) }
         }
         subscript(key: String) -> PromisedReply<ServerMessage>? {
             get { return futuresQueue.sync { return futuresDict[key] } }
@@ -287,12 +280,12 @@ public class Tinode {
             return futuresQueue.sync { return futuresDict.removeValue(forKey: key) }
         }
         func rejectAndPurgeAll(withError e: Error) {
-            futuresQueue.sync {
-                for f in futuresDict.values {
-                    try? f.reject(error: e)
-                }
+            let pending = futuresQueue.sync { () -> [PromisedReply<ServerMessage>] in
+                let pending = Array(futuresDict.values)
                 futuresDict.removeAll()
+                return pending
             }
+            for f in pending { try? f.reject(error: e) }
         }
     }
 
@@ -426,7 +419,26 @@ public class Tinode {
     private var autoLogin: Bool = false
     private var loginInProgress: Bool = false
     // Queue to execute state-mutating operations on.
-    private let operationsQueue = DispatchQueue(label: "co.tinode.operations")
+    // One SDK instance represents one local session and is permanently retired on logout.
+    // Recursive because Promise callbacks can execute synchronously on the caller thread.
+    private let sessionLock = NSRecursiveLock()
+    private var sessionClosed = false
+
+    private func withSessionLock<T>(_ body: () throws -> T) rethrows -> T {
+        sessionLock.lock(); defer { sessionLock.unlock() }
+        return try body()
+    }
+
+    public var isSessionActive: Bool { withSessionLock { !sessionClosed } }
+
+    // App credential/media callbacks use the same boundary as local logout.
+    @discardableResult
+    public func withActiveSession<T>(_ body: () throws -> T) rethrows -> T? {
+        return try withSessionLock {
+            guard !sessionClosed else { return nil }
+            return try body()
+        }
+    }
 
     public func hostURL(useWebsocketProtocol: Bool) -> URL? {
         guard !hostName.isEmpty else { return nil }
@@ -632,6 +644,8 @@ public class Tinode {
         }
     }
     private func dispatch(_ msg: String) throws {
+        sessionLock.lock(); defer { sessionLock.unlock() }
+        guard !sessionClosed else { return }
         guard !msg.isEmpty else {
             return
         }
@@ -747,6 +761,8 @@ public class Tinode {
     }
 
     private func send<DP: Codable, DR: Codable>(payload msg: ClientMessage<DP, DR>) throws {
+        sessionLock.lock(); defer { sessionLock.unlock() }
+        guard !sessionClosed else { throw TinodeError.requestNotSent("本机账号已退出，请重新登录。") }
         if let reason = store?.initializationError { throw TinodeError.requestNotSent(reason) }
         guard let conn = connection, conn.isConnected else {
             throw TinodeError.notConnected("Attempted to send msg to a closed connection.")
@@ -783,6 +799,8 @@ public class Tinode {
                     throw TinodeError.invalidReply("Unexpected type of reply packet to hello")
                 }
                 guard let tn = self else { return nil }
+                tn.sessionLock.lock(); defer { tn.sessionLock.unlock() }
+                guard !tn.sessionClosed else { throw TinodeError.invalidState("Session ended") }
                 tn.serverParams = ctrl.params
                 if !(ctrl.params?.isEmpty ?? true) {
                     tn.serverVersion = ctrl.getStringParam(for: "ver")
@@ -932,6 +950,8 @@ public class Tinode {
     }
 
     private func handleAuthenticationError(error: Error) {
+        sessionLock.lock(); defer { sessionLock.unlock() }
+        guard !sessionClosed else { return }
         if let e = error as? TinodeError {
             if case TinodeError.serverResponseError(let code, let text, _) = e {
                 if ServerMessage.kStatusBadRequest <= code && code < ServerMessage.kStatusInternalServerError {
@@ -1006,6 +1026,8 @@ public class Tinode {
     }
 
     public func setAutoLoginWithToken(token: String) {
+        sessionLock.lock(); defer { sessionLock.unlock() }
+        guard !sessionClosed else { return }
         setAutoLogin(using: AuthScheme.kLoginToken, authenticateWith: token)
     }
 
@@ -1025,6 +1047,8 @@ public class Tinode {
     }
 
     public func login(scheme: String, secret: String, creds: [Credential]?) -> PromisedReply<ServerMessage> {
+        sessionLock.lock(); defer { sessionLock.unlock() }
+        guard !sessionClosed else { return PromisedReply(error: TinodeError.invalidState("Session ended")) }
         if autoLogin {
             loginCredentials = LoginCredentials(using: scheme, authenticateWith: secret)
         }
@@ -1046,18 +1070,20 @@ public class Tinode {
         let msg = ClientMessage<Int, Int>(login: msgl)
         return sendWithPromise(payload: msg, with: msgId).then(
             onSuccess: { [weak self] pkt in
-                self?.loginInProgress = false
+                self?.withActiveSession { self?.loginInProgress = false }
                 try self?.loginSuccessful(ctrl: pkt?.ctrl)
                 return nil
             },
             onFailure: { [weak self] err in
-                self?.loginInProgress = false
+                self?.withActiveSession { self?.loginInProgress = false }
                 self?.handleAuthenticationError(error: err)
                 return PromisedReply<ServerMessage>(error: err)
             })
     }
 
     private func loginSuccessful(ctrl: MsgServerCtrl?) throws {
+        sessionLock.lock(); defer { sessionLock.unlock() }
+        guard !sessionClosed else { throw TinodeError.invalidState("Session ended") }
         guard let ctrl = ctrl else {
             throw TinodeError.invalidReply("Unexpected type of server response")
         }
@@ -1125,22 +1151,54 @@ public class Tinode {
         }
     }
     public func disconnect() {
-        operationsQueue.sync {
+        withSessionLock {
             // Remove auto-login data.
             setAutoLogin(using: nil, authenticateWith: nil)
             connection?.disconnect()
         }
     }
     public func logout() {
-        // setDeviceToken is thread-safe.
-        setDeviceToken(token: Tinode.kNullValue).thenFinally {
-            self.disconnect()
-            self.myUid = nil
-            self.serverParams = nil
-            self.store?.logout()
+        withSessionLock {
+            guard !sessionClosed else { return }
+            // Best effort only: local logout never waits for device-unregister ACK.
+            if isConnectionAuthenticated && isConnected {
+                let msg = ClientMessage<Int, Int>(hi: MsgClientHi(id: getNextMsgId(), dev: Tinode.kNullValue))
+                try? send(payload: msg)
+            }
+            sessionClosed = true
+            let previousUid = myUid
+            let previousStore = store
+            setAutoLogin(using: nil, authenticateWith: nil)
+            loginInProgress = false
+            isConnectionAuthenticated = false
+            authToken = nil
+            authTokenExpires = nil
+            myUid = nil
+            deviceToken = nil
+            serverParams = nil
+            for topic in topics.values { topic.store = nil }
+            topics = ConcurrentMap<TopicProto>()
+            users = ConcurrentMap<UserProto>()
+            topicsLoaded = false
+            topicsUpdated = nil
+            store = nil
+            if previousStore?.myUid == previousUid { previousStore?.logout() }
+            connection?.disconnect()
+            connection = nil
+            publishReceiptLock.lock()
+            publishReceipts.removeAll()
+            publishReceiptLock.unlock()
+        }
+        let error = TinodeError.requestOutcomeUnknown("Session ended before the server reply")
+        // Purge outside state/map locks: callbacks may re-enter the SDK or app cache.
+        DispatchQueue.global(qos: .utility).async { [self] in
+            futures.rejectAndPurgeAll(withError: error)
+            try? connectionListener?.rejectAllPromises(err: error)
         }
     }
     private func handleDisconnect(isServerOriginated: Bool, code: URLSessionWebSocketTask.CloseCode, reason: String) {
+        sessionLock.lock(); defer { sessionLock.unlock() }
+        guard !sessionClosed else { return }
         serverParams = nil
         publishReceiptLock.lock()
         publishReceipts.removeAll()
@@ -1165,6 +1223,7 @@ public class Tinode {
             self.tinode = tinode
         }
         func onConnect(reconnecting: Bool, param: Any?) {
+            guard tinode.isSessionActive else { return }
             let m = reconnecting ? "YES" : "NO"
             Tinode.log.info("Tinode connected: after reconnect - %@", m.description)
             let doLogin = tinode.autoLogin && tinode.loginCredentials != nil
@@ -1173,6 +1232,7 @@ public class Tinode {
                     throw TinodeError.invalidState("Missing Tinode instance in connection handler")
                 }
                 let tinode = self.tinode
+                guard tinode.isSessionActive else { throw TinodeError.invalidState("Session ended") }
 
                 if let ctrl = pkt?.ctrl {
                     tinode.timeAdjustment = Date().timeIntervalSince(ctrl.ts)
@@ -1249,7 +1309,7 @@ public class Tinode {
         private func resolveAllPromises(msg: ServerMessage?) throws {
             try completeAllPromises(msg: msg, err: nil)
         }
-        private func rejectAllPromises(err: Error?) throws {
+        fileprivate func rejectAllPromises(err: Error?) throws {
             try completeAllPromises(msg: nil, err: err)
         }
     }
@@ -1261,12 +1321,13 @@ public class Tinode {
 
     @discardableResult
     public func connect(to hostName: String, useTLS: Bool, inBackground bkg: Bool) throws -> PromisedReply<ServerMessage>? {
-        try operationsQueue.sync {
+        try withSessionLock {
             return try connectThreadUnsafe(to: hostName, useTLS: useTLS, inBackground: bkg)
         }
     }
 
     private func connectThreadUnsafe(to hostName: String, useTLS: Bool, inBackground bkg: Bool) throws -> PromisedReply<ServerMessage>? {
+        guard !sessionClosed else { throw TinodeError.invalidState("Session ended") }
         if let reason = store?.initializationError { throw TinodeError.requestNotSent(reason) }
         if isConnected {
             Tinode.log.debug("Tinode is already connected")
@@ -1306,7 +1367,8 @@ public class Tinode {
     @discardableResult
     public func reconnectNow(interactively: Bool, reset: Bool) -> Bool {
         guard store?.initializationError == nil else { return false }
-        return operationsQueue.sync {
+        return withSessionLock {
+            guard !sessionClosed else { return false }
             var reconnectInteractive = interactively
             if connection == nil {
                 do {
@@ -1348,7 +1410,9 @@ public class Tinode {
      */
     @discardableResult
     public func setDeviceToken(token: String) -> PromisedReply<ServerMessage> {
-        operationsQueue.sync {
+        withSessionLock {
+            guard !sessionClosed else { return PromisedReply(error: TinodeError.invalidState("Session ended")) }
+            let accountUid = myUid
             guard token != deviceToken else {
                 return PromisedReply<ServerMessage>(value: ServerMessage())
             }
@@ -1360,8 +1424,12 @@ public class Tinode {
             return sendWithPromise(payload: msg, with: msgId)
                 .thenCatch { [weak self] _ in
                     // Clear cached value on failure to allow for retries.
-                    self?.deviceToken = nil
-                    self?.store?.deviceToken = nil
+                    self?.withActiveSession {
+                        guard self?.myUid == accountUid, self?.store?.myUid == accountUid,
+                              self?.deviceToken == token else { return }
+                        self?.deviceToken = nil
+                        self?.store?.deviceToken = nil
+                    }
                     return nil
                 }
         }

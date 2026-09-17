@@ -143,6 +143,25 @@ public class LargeFileHelper: NSObject {
     private var tinode: Tinode!
     // Numeric id of upload.
     private var reqId = 0
+    private var invalidated = false
+
+    // Called under the owning SDK session gate, before that SDK is retired.
+    func invalidateSession() {
+        tinode.withActiveSession {
+            guard !invalidated else { return }
+            invalidated = true
+            for upload in activeUploads.values {
+                // Session end is not user cancellation. Preserve local payloads
+                // and suppress old UI/draft mutation callbacks, including deinit.
+                upload.finalCb = nil
+                upload.progressCb = nil
+                upload.task?.cancel()
+            }
+            activeUploads.removeAll()
+            downloadCallbacks.removeAll()
+            urlSession.invalidateAndCancel()
+        }
+    }
 
     init(with tinode: Tinode, config: URLSessionConfiguration) {
         super.init()
@@ -174,68 +193,72 @@ public class LargeFileHelper: NSObject {
     }
 
     public func startMsgAttachmentUpload(filename: String, mimetype: String, data payload: Data, topicId: String, msgId: Int64, progressCallback: ((Float) -> Void)?, completionCallback: @escaping (ServerMessage?, Error?) -> Void) {
-        guard var url = tinode.baseURL(useWebsocketProtocol: false) else {
-            Cache.log.error("Upload failed: unable to form upload url")
-            completionCallback(nil, Upload.UploadError.invalidState("invalid upload url"))
-            return
+        tinode.withActiveSession {
+            guard !invalidated else { return }
+            guard var url = tinode.baseURL(useWebsocketProtocol: false) else {
+                Cache.log.error("Upload failed: unable to form upload url")
+                completionCallback(nil, Upload.UploadError.invalidState("invalid upload url"))
+                return
+            }
+            url.appendPathComponent("file/u/")
+            let upload = Upload(url: url)
+            var request = URLRequest(url: url)
+
+            request.httpMethod = "POST"
+            request.addValue("Keep-Alive", forHTTPHeaderField: "Connection")
+            request.addValue(tinode.userAgent, forHTTPHeaderField: "User-Agent")
+            request.addValue("multipart/form-data; boundary=\(LargeFileHelper.kBoundary)", forHTTPHeaderField: "Content-Type")
+
+            LargeFileHelper.addCommonHeaders(to: &request, using: self.tinode)
+
+            var newData = Data()
+            // Id section.
+            self.reqId += 1
+            var header = LargeFileHelper.kTwoHyphens + LargeFileHelper.kBoundary + LargeFileHelper.kLineEnd +
+                "Content-Disposition: form-data; name=\"id\"" + LargeFileHelper.kLineEnd + LargeFileHelper.kLineEnd +
+                "\(self.reqId)" + LargeFileHelper.kLineEnd
+            if !topicId.isEmpty {
+                // Topic.
+                header +=
+                    LargeFileHelper.kTwoHyphens + LargeFileHelper.kBoundary + LargeFileHelper.kLineEnd +
+                    "Content-Disposition: form-data; name=\"topic\"" + LargeFileHelper.kLineEnd + LargeFileHelper.kLineEnd + topicId + LargeFileHelper.kLineEnd
+            }
+            // File section.
+            // Content-Disposition: form-data; name="file"; filename="1519014549699.pdf"
+            header += LargeFileHelper.kTwoHyphens + LargeFileHelper.kBoundary + LargeFileHelper.kLineEnd +
+                "Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"" + LargeFileHelper.kLineEnd
+            // Content type & transfer encoding.
+            header += "Content-Type: \(mimetype)" + LargeFileHelper.kLineEnd + "Content-Transfer-Encoding: binary" + LargeFileHelper.kLineEnd + LargeFileHelper.kLineEnd
+            newData.append(contentsOf: header.utf8)
+            newData.append(payload)
+            let footer = LargeFileHelper.kLineEnd + LargeFileHelper.kTwoHyphens + LargeFileHelper.kBoundary + LargeFileHelper.kTwoHyphens + LargeFileHelper.kLineEnd
+            newData.append(contentsOf: footer.utf8)
+
+            let tempDir = FileManager.default.temporaryDirectory
+
+            let localFileName = UUID().uuidString
+            let localURL = tempDir.appendingPathComponent("throwaway-\(localFileName)")
+            do {
+                try newData.write(to: localURL, options: .atomic)
+            } catch {
+                completionCallback(nil, error)
+                return
+            }
+
+            let uploadKey = LargeFileHelper.taskID(forTopic: topicId, msgId: msgId, filename: filename)
+            Cache.log.info("Starting upload (id='%@', topic='%@', dbMsgId=%lld): file name = %@", uploadKey, topicId, msgId, filename, mimetype)
+            upload.isUploading = true
+            upload.topicId = topicId
+            upload.msgId = msgId
+            upload.filename = filename
+            upload.progressCb = progressCallback
+            upload.finalCb = completionCallback
+            upload.request = request
+            upload.localURL = localURL
+            activeUploads[uploadKey] = upload
+            retry(upload: upload, taskId: uploadKey)
+
         }
-        url.appendPathComponent("file/u/")
-        let upload = Upload(url: url)
-        var request = URLRequest(url: url)
-
-        request.httpMethod = "POST"
-        request.addValue("Keep-Alive", forHTTPHeaderField: "Connection")
-        request.addValue(tinode.userAgent, forHTTPHeaderField: "User-Agent")
-        request.addValue("multipart/form-data; boundary=\(LargeFileHelper.kBoundary)", forHTTPHeaderField: "Content-Type")
-
-        LargeFileHelper.addCommonHeaders(to: &request, using: self.tinode)
-
-        var newData = Data()
-        // Id section.
-        self.reqId += 1
-        var header = LargeFileHelper.kTwoHyphens + LargeFileHelper.kBoundary + LargeFileHelper.kLineEnd +
-            "Content-Disposition: form-data; name=\"id\"" + LargeFileHelper.kLineEnd + LargeFileHelper.kLineEnd +
-            "\(self.reqId)" + LargeFileHelper.kLineEnd
-        if !topicId.isEmpty {
-            // Topic.
-            header +=
-                LargeFileHelper.kTwoHyphens + LargeFileHelper.kBoundary + LargeFileHelper.kLineEnd +
-                "Content-Disposition: form-data; name=\"topic\"" + LargeFileHelper.kLineEnd + LargeFileHelper.kLineEnd + topicId + LargeFileHelper.kLineEnd
-        }
-        // File section.
-        // Content-Disposition: form-data; name="file"; filename="1519014549699.pdf"
-        header += LargeFileHelper.kTwoHyphens + LargeFileHelper.kBoundary + LargeFileHelper.kLineEnd +
-            "Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"" + LargeFileHelper.kLineEnd
-        // Content type & transfer encoding.
-        header += "Content-Type: \(mimetype)" + LargeFileHelper.kLineEnd + "Content-Transfer-Encoding: binary" + LargeFileHelper.kLineEnd + LargeFileHelper.kLineEnd
-        newData.append(contentsOf: header.utf8)
-        newData.append(payload)
-        let footer = LargeFileHelper.kLineEnd + LargeFileHelper.kTwoHyphens + LargeFileHelper.kBoundary + LargeFileHelper.kTwoHyphens + LargeFileHelper.kLineEnd
-        newData.append(contentsOf: footer.utf8)
-
-        let tempDir = FileManager.default.temporaryDirectory
-
-        let localFileName = UUID().uuidString
-        let localURL = tempDir.appendingPathComponent("throwaway-\(localFileName)")
-        do {
-            try newData.write(to: localURL, options: .atomic)
-        } catch {
-            completionCallback(nil, error)
-            return
-        }
-
-        let uploadKey = LargeFileHelper.taskID(forTopic: topicId, msgId: msgId, filename: filename)
-        Cache.log.info("Starting upload (id='%@', topic='%@', dbMsgId=%lld): file name = %@", uploadKey, topicId, msgId, filename, mimetype)
-        upload.isUploading = true
-        upload.topicId = topicId
-        upload.msgId = msgId
-        upload.filename = filename
-        upload.progressCb = progressCallback
-        upload.finalCb = completionCallback
-        upload.request = request
-        upload.localURL = localURL
-        activeUploads[uploadKey] = upload
-        retry(upload: upload, taskId: uploadKey)
     }
 
     public func startAvatarUpload(mimetype: String, data payload: Data, topicId: String, completionCallback: @escaping (ServerMessage?, Error?) -> Void) {
@@ -244,54 +267,74 @@ public class LargeFileHelper: NSObject {
     }
 
     public func cancelUpload(topicId: String, msgId: Int64 = 0) -> Bool {
-        let uploadKeyPrefix = LargeFileHelper.taskID(forTopic: topicId, msgId: msgId, filename: "")
-        var keys = [String]()
-        for uploadKey in activeUploads.keys {
-            if uploadKey.starts(with: uploadKeyPrefix) {
-                keys.append(uploadKey)
+        return tinode.withActiveSession {
+            guard !invalidated else { return false }
+            let uploadKeyPrefix = LargeFileHelper.taskID(forTopic: topicId, msgId: msgId, filename: "")
+            var keys = [String]()
+            for uploadKey in activeUploads.keys {
+                if uploadKey.starts(with: uploadKeyPrefix) {
+                    keys.append(uploadKey)
+                }
             }
-        }
-        for k in keys {
-            if let upload = activeUploads.removeValue(forKey: k) {
-                upload.task?.cancel()
-                upload.cleanupTemporaryFile()
-                upload.finished(msg: nil, err: Upload.UploadError.cancelledByUser)
+            for k in keys {
+                if let upload = activeUploads.removeValue(forKey: k) {
+                    upload.task?.cancel()
+                    upload.cleanupTemporaryFile()
+                    upload.finished(msg: nil, err: Upload.UploadError.cancelledByUser)
+                }
             }
-        }
-        return !keys.isEmpty
+            return !keys.isEmpty
+
+        } ?? false
     }
 
     public func getActiveUpload(for taskId: String) -> Upload? {
-        return self.activeUploads[taskId]
+        return tinode.withActiveSession {
+            guard !invalidated else { return nil }
+            return self.activeUploads[taskId]
+
+        } ?? nil
     }
 
     public func uploadFinished(for taskId: String) {
-        self.activeUploads.removeValue(forKey: taskId)
+        tinode.withActiveSession {
+            guard !invalidated else { return }
+            self.activeUploads.removeValue(forKey: taskId)
+
+        }
     }
 
     private func retry(upload: Upload, taskId: String) {
-        guard let request = upload.request, let localURL = upload.localURL else {
-            uploadFinished(for: taskId)
-            upload.cleanupTemporaryFile()
-            upload.finished(msg: nil, err: Upload.UploadError.invalidState("Missing upload request data"))
-            return
+        tinode.withActiveSession {
+            guard !invalidated else { return }
+            guard let request = upload.request, let localURL = upload.localURL else {
+                uploadFinished(for: taskId)
+                upload.cleanupTemporaryFile()
+                upload.finished(msg: nil, err: Upload.UploadError.invalidState("Missing upload request data"))
+                return
+            }
+            upload.prepareForRetry()
+            let task = urlSession.uploadTask(with: request, fromFile: localURL)
+            task.taskDescription = taskId
+            upload.task = task
+            task.resume()
+
         }
-        upload.prepareForRetry()
-        let task = urlSession.uploadTask(with: request, fromFile: localURL)
-        task.taskDescription = taskId
-        upload.task = task
-        task.resume()
     }
 
     public func startDownload(from url: URL, completion: ((Error?) -> Void)? = nil) {
-        var request = URLRequest(url: url)
-        LargeFileHelper.addCommonHeaders(to: &request, using: self.tinode)
+        tinode.withActiveSession {
+            guard !invalidated else { return }
+            var request = URLRequest(url: url)
+            LargeFileHelper.addCommonHeaders(to: &request, using: self.tinode)
 
-        let task = urlSession.downloadTask(with: request)
-        if let completion = completion {
-            downloadCallbacks[task.taskIdentifier] = completion
+            let task = urlSession.downloadTask(with: request)
+            if let completion = completion {
+                downloadCallbacks[task.taskIdentifier] = completion
+            }
+            task.resume()
+
         }
-        task.resume()
     }
 }
 
@@ -310,8 +353,12 @@ extension LargeFileHelper: URLSessionDelegate {
 // Upload result
 extension LargeFileHelper: URLSessionDataDelegate {
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive: Data) {
-        if let taskId = dataTask.taskDescription, let upload = self.getActiveUpload(for: taskId) {
-            upload.appendResponse(didReceive)
+        tinode.withActiveSession {
+            guard !invalidated else { return }
+            if let taskId = dataTask.taskDescription, let upload = self.getActiveUpload(for: taskId) {
+                upload.appendResponse(didReceive)
+            }
+
         }
     }
 }
@@ -319,57 +366,65 @@ extension LargeFileHelper: URLSessionDataDelegate {
 // Upload progress
 extension LargeFileHelper: URLSessionTaskDelegate {
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError: Error?) {
-        Cache.log.info("Upload (id=%@) complete. Status: %@", task.taskDescription ?? "UNKNOWN", didCompleteWithError?.localizedDescription ?? "ok")
-        guard let taskId = task.taskDescription, let upload = self.getActiveUpload(for: taskId) else {
-            return
-        }
-        let statusCode = (task.response as? HTTPURLResponse)?.statusCode
-        if AttachmentUploadPolicy.shouldRetry(statusCode: statusCode, error: didCompleteWithError, attempt: upload.attempt) {
-            upload.attempt += 1
-            Cache.log.info("Retrying upload (id=%@), attempt %d of %d", taskId, upload.attempt, AttachmentUploadPolicy.maxAttempts)
-            retry(upload: upload, taskId: taskId)
-            return
-        }
-        self.uploadFinished(for: taskId)
-        var serverMsg: ServerMessage?
-        var uploadError: Error? = didCompleteWithError
-        var outcome: AttachmentUploadPolicy.Outcome =
-            AttachmentUploadPolicy.classify(statusCode: statusCode, error: didCompleteWithError) == .cancelled
-                ? .cancelled : .failedTerminal
-        defer {
-            if AttachmentUploadPolicy.shouldDeleteTemporarySource(outcome: outcome) {
-                upload.cleanupTemporaryFile()
+        tinode.withActiveSession {
+            guard !invalidated else { return }
+            Cache.log.info("Upload (id=%@) complete. Status: %@", task.taskDescription ?? "UNKNOWN", didCompleteWithError?.localizedDescription ?? "ok")
+            guard let taskId = task.taskDescription, let upload = self.getActiveUpload(for: taskId) else {
+                return
             }
-            upload.finished(msg: serverMsg, err: uploadError)
-        }
-        guard uploadError == nil else {
-            return
-        }
-        guard let response = task.response as? HTTPURLResponse else {
-            uploadError = Upload.UploadError.invalidState(String(format: NSLocalizedString("Upload failed (%@). No server response.", comment: "Error message"), upload.id))
-            return
-        }
-        guard response.statusCode == 200 else {
-            uploadError = Upload.UploadError.invalidState(String(format: NSLocalizedString("Upload failed (%@): response code %d.", comment: "Error message"), upload.id, response.statusCode))
-            return
-        }
-        guard upload.hasResponse else {
-            uploadError = Upload.UploadError.invalidState(String(format: NSLocalizedString("Upload failed (%@): empty response body.", comment: "Error message"), upload.id))
-            return
-        }
-        do {
-            serverMsg = try Tinode.jsonDecoder.decode(ServerMessage.self, from: upload.getResponse())
-            outcome = .success
-        } catch {
-            uploadError = error
-            return
+            let statusCode = (task.response as? HTTPURLResponse)?.statusCode
+            if AttachmentUploadPolicy.shouldRetry(statusCode: statusCode, error: didCompleteWithError, attempt: upload.attempt) {
+                upload.attempt += 1
+                Cache.log.info("Retrying upload (id=%@), attempt %d of %d", taskId, upload.attempt, AttachmentUploadPolicy.maxAttempts)
+                retry(upload: upload, taskId: taskId)
+                return
+            }
+            self.uploadFinished(for: taskId)
+            var serverMsg: ServerMessage?
+            var uploadError: Error? = didCompleteWithError
+            var outcome: AttachmentUploadPolicy.Outcome =
+                AttachmentUploadPolicy.classify(statusCode: statusCode, error: didCompleteWithError) == .cancelled
+                    ? .cancelled : .failedTerminal
+            defer {
+                if AttachmentUploadPolicy.shouldDeleteTemporarySource(outcome: outcome) {
+                    upload.cleanupTemporaryFile()
+                }
+                upload.finished(msg: serverMsg, err: uploadError)
+            }
+            guard uploadError == nil else {
+                return
+            }
+            guard let response = task.response as? HTTPURLResponse else {
+                uploadError = Upload.UploadError.invalidState(String(format: NSLocalizedString("Upload failed (%@). No server response.", comment: "Error message"), upload.id))
+                return
+            }
+            guard response.statusCode == 200 else {
+                uploadError = Upload.UploadError.invalidState(String(format: NSLocalizedString("Upload failed (%@): response code %d.", comment: "Error message"), upload.id, response.statusCode))
+                return
+            }
+            guard upload.hasResponse else {
+                uploadError = Upload.UploadError.invalidState(String(format: NSLocalizedString("Upload failed (%@): empty response body.", comment: "Error message"), upload.id))
+                return
+            }
+            do {
+                serverMsg = try Tinode.jsonDecoder.decode(ServerMessage.self, from: upload.getResponse())
+                outcome = .success
+            } catch {
+                uploadError = error
+                return
+            }
+
         }
     }
 
     public func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
-        if let taskId = task.taskDescription, let upload = self.getActiveUpload(for: taskId) {
-            let progress: Float = totalBytesExpectedToSend > 0 ? Float(totalBytesSent) / Float(totalBytesExpectedToSend) : 0
-            upload.progress(progress)
+        tinode.withActiveSession {
+            guard !invalidated else { return }
+            if let taskId = task.taskDescription, let upload = self.getActiveUpload(for: taskId) {
+                let progress: Float = totalBytesExpectedToSend > 0 ? Float(totalBytesSent) / Float(totalBytesExpectedToSend) : 0
+                upload.progress(progress)
+            }
+
         }
     }
 }
@@ -377,33 +432,37 @@ extension LargeFileHelper: URLSessionTaskDelegate {
 // Downloads.
 extension LargeFileHelper: URLSessionDownloadDelegate {
     public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-        defer {
-            if let cb = downloadCallbacks.removeValue(forKey: downloadTask.taskIdentifier) {
-                cb(downloadTask.error)
+        tinode.withActiveSession {
+            guard !invalidated else { return }
+            defer {
+                if let cb = downloadCallbacks.removeValue(forKey: downloadTask.taskIdentifier) {
+                    cb(downloadTask.error)
+                }
             }
-        }
-        guard downloadTask.error == nil else {
-            Cache.log.error("LargeFileHelper - download failed: %@", downloadTask.error!.localizedDescription)
-            return
-        }
+            guard downloadTask.error == nil else {
+                Cache.log.error("LargeFileHelper - download failed: %@", downloadTask.error!.localizedDescription)
+                return
+            }
 
-        guard let url = downloadTask.originalRequest?.url else { return }
-        let fn = url.extractQueryParam(named: "origfn") ?? url.lastPathComponent
+            guard let url = downloadTask.originalRequest?.url else { return }
+            let fn = url.extractQueryParam(named: "origfn") ?? url.lastPathComponent
 
-        let documentsUrl: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let destinationURL = documentsUrl.appendingPathComponent(fn)
+            let documentsUrl: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let destinationURL = documentsUrl.appendingPathComponent(fn)
 
-        let fileManager = FileManager.default
-        do {
-            try fileManager.removeItem(at: destinationURL)
-        } catch {
-            // Non-fatal: file probably doesn't exist
-        }
-        do {
-            try fileManager.moveItem(at: location, to: destinationURL)
-            UiUtils.presentFileSharingVC(for: destinationURL)
-        } catch {
-            Cache.log.error("LargeFileHelper - could not copy file to disk: %@", error.localizedDescription)
+            let fileManager = FileManager.default
+            do {
+                try fileManager.removeItem(at: destinationURL)
+            } catch {
+                // Non-fatal: file probably doesn't exist
+            }
+            do {
+                try fileManager.moveItem(at: location, to: destinationURL)
+                UiUtils.presentFileSharingVC(for: destinationURL)
+            } catch {
+                Cache.log.error("LargeFileHelper - could not copy file to disk: %@", error.localizedDescription)
+            }
+
         }
     }
 }

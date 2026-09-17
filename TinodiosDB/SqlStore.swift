@@ -20,6 +20,7 @@ public class SqlStore: Storage {
 
     public var myUid: String? {
         get {
+            accountLock.lock(); defer { accountLock.unlock() }
             return self.dbh?.uid
         }
         set {
@@ -29,8 +30,16 @@ public class SqlStore: Storage {
     }
 
     public var deviceToken: String? {
-        get { self.dbh?.accountDb?.getDeviceToken() }
-        set { self.dbh?.accountDb?.saveDeviceToken(token: newValue) }
+        get {
+            accountLock.lock(); defer { accountLock.unlock() }
+            guard dbh?.account != nil else { return nil }
+            return self.dbh?.accountDb?.getDeviceToken()
+        }
+        set {
+            accountLock.lock(); defer { accountLock.unlock() }
+            guard dbh?.account != nil else { return }
+            self.dbh?.accountDb?.saveDeviceToken(token: newValue)
+        }
     }
     var dbh: BaseDb?
     private let accountLock = NSRecursiveLock()

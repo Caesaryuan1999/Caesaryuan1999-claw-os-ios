@@ -17,7 +17,31 @@ class Cache {
     private var tinodeInstance: Tinode?
     private var timer = RepeatingTimer(timeInterval: 60 * 60 * 4) // Once every 4 hours.
     private var largeFileHelper: LargeFileHelper?
-    private var queue = DispatchQueue(label: "co.tinode.cache")
+    private let lock = NSRecursiveLock()
+    private var generation: UInt64 = 0
+
+    private func locked<T>(_ body: () -> T) -> T {
+        lock.lock(); defer { lock.unlock() }
+        return body()
+    }
+
+    static var sessionGeneration: UInt64 { shared.locked { shared.generation } }
+
+    // Lock order is SDK session, then Cache; no callback can act between this
+    // identity check and its credential/UI side effect.
+    @discardableResult
+    static func ifCurrent<T>(_ tinode: Tinode, _ body: () -> T) -> T? {
+        return tinode.withActiveSession {
+            shared.locked {
+                guard shared.tinodeInstance === tinode else { return nil }
+                return body()
+            }
+        } ?? nil
+    }
+
+    static func isCurrent(_ tinode: Tinode) -> Bool {
+        return ifCurrent(tinode) { true } ?? false
+    }
     internal static let log = TinodeSDK.Log(subsystem: "app.veilping.clawoschat")
 
     // Video call handling.
@@ -29,16 +53,32 @@ class Cache {
     public static func getLargeFileHelper(withIdentifier identifier: String? = nil) -> LargeFileHelper {
         return Cache.shared.getLargeFileHelper(withIdentifier: identifier)
     }
-    public static func invalidate() {
-        if let tinode = Cache.shared.tinodeInstance {
-            Cache.shared.timer.suspend()
-            tinode.remoteAllListeners()
-            tinode.logout()
-            Messaging.messaging().deleteToken { error in
-                Cache.log.debug("Failed to delete FCM token: %@", error.debugDescription)
+    @discardableResult
+    public static func invalidate(ifCurrent expected: Tinode? = nil) -> Bool {
+        guard let current = shared.locked({ shared.tinodeInstance }) else {
+            return shared.locked {
+                guard expected == nil, shared.tinodeInstance == nil else { return false }
+                SharedUtils.removeAuthToken()
+                BaseDb.sharedInstance.sqlStore?.logout()
+                shared.generation &+= 1
+                return true
             }
-            Cache.shared.tinodeInstance = nil
         }
+        guard expected == nil || current === expected else { return false }
+        return ifCurrent(current) {
+            SharedUtils.removeAuthToken()
+            shared.timer.suspend()
+            shared.largeFileHelper?.invalidateSession()
+            shared.largeFileHelper = nil
+            current.remoteAllListeners()
+            current.logout()
+            shared.tinodeInstance = nil
+            shared.generation &+= 1
+            // FCM installation token is shared: deleting it asynchronously here
+            // can remove a new account's registration. Old-server unregistration
+            // is best effort in the retired SDK; no global delete-token callback.
+            return true
+        } ?? false
     }
     public static func isContactSynchronizerActive() -> Bool {
         return Cache.shared.timer.state == .resumed
@@ -52,34 +92,57 @@ class Cache {
         Cache.shared.timer.resume()
     }
     private func getTinode() -> Tinode {
-        // TODO: fix tsan false positive.
-        // TSAN fires because one thread may read |tinode| variable
-        // while another thread may be writing it below in the critical section.
-        if tinodeInstance == nil {
-            queue.sync {
-                if tinodeInstance == nil {
-                    if BaseDb.sharedInstance.sqlStore?.recoverInterruptedPublishes() != true {
-                        Cache.log.error("Could not recover interrupted publishes; sending rows remain excluded from replay")
-                    }
-                    tinodeInstance = SharedUtils.createTinode()
-                    DispatchQueue.main.async {
-                        self.tinodeInstance?.addListener((UIApplication.shared.delegate as! AppDelegate).callListener)
-                    }
-                    // Tell contacts synchronizer to attempt to synchronize contacts.
+        return locked {
+            if let existing = tinodeInstance { return existing }
+            let store = BaseDb.sharedInstance.sqlStore
+            // A retained account is not a local login without its Keychain token.
+            if SharedUtils.getAuthToken() == nil { store?.logout() }
+            if store?.recoverInterruptedPublishes() != true {
+                Cache.log.error("Could not recover interrupted publishes; sending remains blocked")
+            }
+            let created = SharedUtils.createTinode()
+            tinodeInstance = created
+            DispatchQueue.main.async {
+                Cache.ifCurrent(created) {
+                    created.addListener((UIApplication.shared.delegate as! AppDelegate).callListener)
                     ContactsSynchronizer.default.appBecameActive()
                 }
             }
+            return created
         }
-        return tinodeInstance!
     }
 
     private func getLargeFileHelper(withIdentifier identifier: String?) -> LargeFileHelper {
-        if largeFileHelper == nil {
+        return locked {
+            if let helper = largeFileHelper { return helper }
             let id = identifier ?? "tinode-\(Date().millisecondsSince1970)"
             let config = URLSessionConfiguration.background(withIdentifier: id)
-            largeFileHelper = LargeFileHelper(with: Cache.tinode, config: config)
+            let helper = LargeFileHelper(with: getTinode(), config: config)
+            largeFileHelper = helper
+            return helper
         }
-        return largeFileHelper!
+    }
+
+    // Blocking network work stays outside both locks. Only the final credential
+    // write is guarded; SharedUtils' legacy synchronous helper cannot enforce it.
+    static func connectAndLogin(using tinode: Tinode, inBackground: Bool) -> Bool {
+        guard let credentials = ifCurrent(tinode, { () -> (String, String)? in
+            guard let name = SharedUtils.getSavedLoginUserName(),
+                  let token = SharedUtils.getAuthToken() else { return nil }
+            tinode.setAutoLoginWithToken(token: token)
+            return (name, token)
+        }) ?? nil else { return false }
+        do {
+            let result = try tinode.connectDefault(inBackground: inBackground)?.getResult()
+            guard (result?.ctrl?.code ?? 500) < 300 else { return false }
+            return ifCurrent(tinode) {
+                guard tinode.isConnectionAuthenticated, let token = tinode.authToken else { return false }
+                SharedUtils.saveAuthToken(for: credentials.0, token: token, expires: tinode.authTokenExpires)
+                return true
+            } ?? false
+        } catch {
+            return false
+        }
     }
 
     public static func totalUnreadCount() -> Int {
