@@ -46,6 +46,9 @@ jobs:
           xcodebuild -showsdks
           xcrun simctl list devices available
 
+      - name: Run all static source policies
+        run: python3 -B Scripts/ci/run_static_policies.py --report build/static-policies.json
+
       - name: Install CocoaPods dependencies
         env:
           COCOAPODS_DISABLE_STATS: "true"
@@ -114,33 +117,6 @@ jobs:
           PLIST
           fi
           plutil -lint GoogleService-Info.plist
-
-      - name: Verify signup registration policy
-        run: python3 Scripts/ci/test_signup_registration_policy.py
-
-      - name: Verify subscription cache policy
-        run: python3 Scripts/ci/test_subscription_cache_policy.py
-
-      - name: Verify release identity policy
-        run: python3 Scripts/ci/test_ios_release_identity.py
-
-      - name: Verify WebSocket TLS policy
-        run: python3 Scripts/ci/test_websocket_tls_policy.py
-
-      - name: Verify device information privacy policy
-        run: python3 Scripts/ci/test_device_info_policy.py
-
-      - name: Verify secondary UI policy
-        run: python3 Scripts/ci/test_premium_secondary_ui_policy.py
-
-      - name: Verify active contacts layout policy
-        run: python3 Scripts/ci/test_active_contacts_layout_policy.py
-
-      - name: Verify notification settings policy
-        run: python3 Scripts/ci/test_notification_settings_policy.py
-
-      - name: Verify push notification policy
-        run: python3 Scripts/ci/test_push_notification_policy.py
 
       - name: Build and launch simulator app
         run: |
@@ -254,6 +230,7 @@ jobs:
         with:
           name: ios-smoke-logs
           path: |
+            build/static-policies.json
             build-ios-smoke.log
             policy-tests.log
             build/PolicyTests.xcresult

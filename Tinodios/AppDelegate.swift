@@ -252,6 +252,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 // Read notification.
                 if let seq = Int(userInfo["seq"] as? String ?? ""), seq > 0 {
                     completionHandler(SharedUtils.updateRead(using: Cache.tinode, for: topicName, seq: seq))
+                } else {
+                    completionHandler(.failed)
                 }
             } else {
                 Cache.log.error("Invalid 'what' value ['%@'] in push notification for topic '%@'", what!, topicName)
