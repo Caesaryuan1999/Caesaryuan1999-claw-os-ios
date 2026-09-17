@@ -49,8 +49,11 @@ def main() -> None:
     assert 'NSLocalizedString("Make owner"' in topic_info
 
     assert "guard topic.isOwner else" in topic_security
-    assert "guard !topic.isOwner else" in topic_security
-    assert "topic.delete(hard: true)" in topic_security
+    assert "guard topic.isGrpType, !topic.isOwner else" in topic_security
+    assert "target.delete(hard: true)" in topic_security
+    assert "target.leave(unsub: true)" in topic_security
+    assert "permit.perform(currentActor: owner" in topic_security
+    assert "currentActor === actor, currentTopic === topic" in topic_security
     assert "UIAlertController" in topic_security
 
     for key in (

@@ -4,6 +4,58 @@
 //  Copyright © 2022-2025 Tinode LLC. All rights reserved.
 //
 
+
+import Foundation
+
+// A confirmation is bound to the actual account object, topic object and user intent.
+// Tested by compiling this same production source with only the Foundation section enabled.
+struct ClawConversationRemovalPermit {
+    enum Action { case removeConversation, leaveGroup, dissolveGroup, deleteSavedMessages }
+    enum Kind: Equatable { case p2p, group, saved, other }
+    enum Route: Equatable { case deleteTopic, leaveUnsubscribe }
+
+    let action: Action
+    private let actor: AnyObject
+    private let topic: AnyObject
+
+    init(action: Action, actor: AnyObject, topic: AnyObject) {
+        self.action = action
+        self.actor = actor
+        self.topic = topic
+    }
+    static func kind(isP2P: Bool, isGroup: Bool, isSaved: Bool) -> Kind {
+        if isSaved { return .saved }
+        if isGroup { return .group }
+        if isP2P { return .p2p }
+        return .other
+    }
+    @discardableResult
+    func perform(currentActor: AnyObject?, currentTopic: AnyObject?, kind: Kind, isOwner: Bool,
+                 dispatch: (Route) -> Void) -> Bool {
+        guard let currentActor = currentActor, let currentTopic = currentTopic,
+              currentActor === actor, currentTopic === topic else { return false }
+        let route: Route
+        switch action {
+        case .removeConversation:
+            guard kind == .p2p else { return false }
+            route = .deleteTopic
+        case .leaveGroup:
+            guard kind == .group, !isOwner else { return false }
+            // Explicit leave remains leave even if the server promotes this member to owner.
+            route = .leaveUnsubscribe
+        case .dissolveGroup:
+            guard kind == .group, isOwner else { return false }
+            route = .deleteTopic
+        case .deleteSavedMessages:
+            guard kind == .saved, isOwner else { return false }
+            route = .deleteTopic
+        }
+        dispatch(route)
+        return true
+    }
+}
+
+#if !CLAW_DESTRUCTIVE_POLICY_TESTS
 import UIKit
 import TinodeSDK
 import TinodiosDB
@@ -72,8 +124,8 @@ class TopicSecurityViewController: UITableViewController {
         ClawTheme.styleList(tableView, rowHeight: 62)
         tableView.separatorStyle = .none
         tableView.tableHeaderView = ClawTheme.makeStatusHeader(
-            title: NSLocalizedString("会话安全设置", comment: "Topic security status title"),
-            detail: NSLocalizedString("管理消息、成员权限以及会话的安全操作。", comment: "Topic security status detail"),
+            title: NSLocalizedString("聊天管理", comment: "Topic security status title"),
+            detail: NSLocalizedString("管理消息、成员权限及会话操作。", comment: "Topic security status detail"),
             symbolName: "checkmark.shield")
         tableView.contentInset.bottom = 24
 
@@ -82,10 +134,10 @@ class TopicSecurityViewController: UITableViewController {
         actionAuthPermissions.textLabel?.text = NSLocalizedString("已登录用户", comment: "Authenticated users")
         actionAnonPermissions.textLabel?.text = NSLocalizedString("访客用户", comment: "Anonymous users")
         actionDeleteMessages.textLabel?.text = NSLocalizedString("删除所有消息", comment: "Delete all messages")
-        actionDeleteGroup.textLabel?.text = NSLocalizedString("删除群组", comment: "Delete group")
+        actionDeleteGroup.textLabel?.text = NSLocalizedString("解散群组", comment: "Delete group")
         actionDeleteAll.textLabel?.text = NSLocalizedString("删除已保存消息", comment: "Delete saved messages")
-        actionLeaveGroup.textLabel?.text = NSLocalizedString("退出群组", comment: "Leave group")
-        actionLeaveConversation.textLabel?.text = NSLocalizedString("离开会话", comment: "Leave conversation")
+        actionLeaveGroup.textLabel?.text = NSLocalizedString("退出群聊", comment: "Leave group")
+        actionLeaveConversation.textLabel?.text = NSLocalizedString("删除会话", comment: "Leave conversation")
         actionBlockContact.textLabel?.text = NSLocalizedString("屏蔽联系人", comment: "Block contact")
         actionReportContact.textLabel?.text = NSLocalizedString("举报联系人", comment: "Report contact")
         actionReportGroup.textLabel?.text = NSLocalizedString("举报群组", comment: "Report group")
@@ -103,6 +155,7 @@ class TopicSecurityViewController: UITableViewController {
         ClawTheme.styleTableCell(actionReportContact, symbolName: "exclamationmark.bubble", destructive: true)
         ClawTheme.styleTableCell(actionReportGroup, symbolName: "exclamationmark.bubble", destructive: true)
         setup()
+        title = topic?.isGrpType == true ? "群管理" : "聊天权限"
         reloadData()
     }
 
@@ -244,15 +297,45 @@ class TopicSecurityViewController: UITableViewController {
         }
     }
 
-    private func deleteTopic() {
-        topic.delete(hard: true).then(
-            onSuccess: { _ in
-                DispatchQueue.main.async {
-                    self.performSegue(withIdentifier: "TopicSecurity2Chats", sender: nil)
+    private func removeTopic(using permit: ClawConversationRemovalPermit, owner: Tinode, target: DefaultComTopic) {
+        guard Cache.isCurrent(owner) else { return }
+        var operation: PromisedReply<ServerMessage>?
+        let dispatched = permit.perform(currentActor: owner, currentTopic: owner.getTopic(topicName: target.name),
+            kind: ClawConversationRemovalPermit.kind(isP2P: target.isP2PType, isGroup: target.isGrpType, isSaved: target.isSlfType),
+            isOwner: target.isOwner) { route in
+                switch route {
+                case .deleteTopic: operation = target.delete(hard: true)
+                case .leaveUnsubscribe: operation = target.leave(unsub: true)
                 }
-                return nil
-            },
-            onFailure: UiUtils.ToastFailureHandler)
+            }
+        guard dispatched else {
+            UiUtils.showToast(message: "会话或群成员身份已变化，请重新打开聊天信息后操作。")
+            return
+        }
+        operation?.then(onSuccess: { [weak self] _ in
+            DispatchQueue.main.async {
+                guard Cache.isCurrent(owner) else { return }
+                self?.performSegue(withIdentifier: "TopicSecurity2Chats", sender: nil)
+            }
+            return nil
+        }, onFailure: { _ in
+            DispatchQueue.main.async {
+                guard Cache.isCurrent(owner) else { return }
+                UiUtils.showToast(message: "操作未完成，请检查连接并重新打开聊天后重试。")
+            }
+            return nil
+        })
+    }
+
+    private func confirmRemoval(_ action: ClawConversationRemovalPermit.Action, title: String, message: String, button: String) {
+        guard let owner = tinode, let target = topic, Cache.isCurrent(owner) else { return }
+        let permit = ClawConversationRemovalPermit(action: action, actor: owner, topic: target)
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: button, style: .destructive) { [weak self] _ in
+            self?.removeTopic(using: permit, owner: owner, target: target)
+        })
+        present(alert, animated: true)
     }
 
     private func blockContact() {
@@ -277,18 +360,16 @@ class TopicSecurityViewController: UITableViewController {
     }
 
     @objc func deleteGroupClicked(sender: UITapGestureRecognizer) {
-        guard topic.isOwner else {
-            UiUtils.showToast(message: NSLocalizedString("只有群主可以删除群组", comment: "Toast notification"))
-            return
+        guard topic.isOwner else { UiUtils.showToast(message: "只有群主可以解散群组"); return }
+        if (sender.name ?? "") == "deleteGroup" {
+            guard topic.isGrpType else { return }
+            confirmRemoval(.dissolveGroup, title: "解散群组？",
+                message: "解散后，所有成员都将无法继续使用此群聊。此操作无法撤销。", button: "解散群组")
+        } else {
+            guard topic.isSlfType else { return }
+            confirmRemoval(.deleteSavedMessages, title: "删除已保存消息？",
+                message: "将删除你的已保存消息，并同步到你的其他设备。", button: "删除")
         }
-        let isDeleteGroup = (sender.name ?? "") == "deleteGroup"
-        let title = isDeleteGroup ? NSLocalizedString("删除群组？", comment: "Alert title") : NSLocalizedString("删除已保存消息？", comment: "Alert title")
-        let alert = UIAlertController(title: title, message: nil, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
-        alert.addAction(UIAlertAction(
-            title: NSLocalizedString("删除", comment: "Alert action"), style: .destructive,
-            handler: { _ in self.deleteTopic() }))
-        present(alert, animated: true)
     }
 
     @objc func deleteMessagesClicked(sender: UITapGestureRecognizer) {
@@ -330,26 +411,18 @@ class TopicSecurityViewController: UITableViewController {
     }
 
     @objc func leaveConversationClicked(sender: UITapGestureRecognizer) {
-        let alert = UIAlertController(title: NSLocalizedString("离开会话？", comment: "Alert title"), message: nil, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
-        alert.addAction(UIAlertAction(
-            title: NSLocalizedString("离开", comment: "Alert action"), style: .destructive,
-            handler: { _ in self.deleteTopic() }))
-        present(alert, animated: true)
+        guard topic.isP2PType else { return }
+        confirmRemoval(.removeConversation, title: "删除会话？",
+            message: "将从你的账号中移除此会话，并同步到你的其他设备。", button: "删除会话")
     }
 
     @objc func leaveGroupClicked(sender: UITapGestureRecognizer) {
-        guard !topic.isOwner else {
-            UiUtils.showToast(message: NSLocalizedString("群主不能离开群组", comment: "Toast notification"))
+        guard topic.isGrpType, !topic.isOwner else {
+            UiUtils.showToast(message: "群主不能直接退出群聊，请先转让群主或确认解散群组。")
             return
         }
-
-        let alert = UIAlertController(title: NSLocalizedString("离开群组？", comment: "Alert title"), message: nil, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: "Alert action"), style: .cancel, handler: nil))
-        alert.addAction(UIAlertAction(
-            title: NSLocalizedString("离开", comment: "Alert action"), style: .destructive,
-            handler: { _ in self.deleteTopic() }))
-        present(alert, animated: true)
+        confirmRemoval(.leaveGroup, title: "退出群聊？",
+            message: "退出后将不再接收此群的新消息，并同步到你的其他设备。", button: "退出群聊")
     }
 
     @objc func blockContactClicked(sender: UITapGestureRecognizer) {
@@ -408,7 +481,7 @@ extension TopicSecurityViewController {
                 // Channel readers cannot delete messages
                 return CGFloat.leastNonzeroMagnitude
             }
-            if indexPath.row == TopicSecurityViewController.kSectionActionsLeaveGroup && !tt.isGrpType && !tt.isSlfType {
+            if indexPath.row == TopicSecurityViewController.kSectionActionsLeaveGroup && !tt.isGrpType {
                 // P2P topic, hide [Leave Group]
                 return CGFloat.leastNonzeroMagnitude
             }
@@ -421,7 +494,7 @@ extension TopicSecurityViewController {
                 // Owner, hide [Leave]
                 return CGFloat.leastNonzeroMagnitude
             }
-            if indexPath.row == TopicSecurityViewController.kSectionActionsDelTopic && (!tt.isOwner || tt.isSlfType) {
+            if indexPath.row == TopicSecurityViewController.kSectionActionsDelTopic && (!tt.isGrpType || !tt.isOwner) {
                 // Not an owner or SLF, hide [Delete Group]
                 return CGFloat.leastNonzeroMagnitude
             }
@@ -582,3 +655,5 @@ extension TopicSecurityViewController {
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }
+
+#endif

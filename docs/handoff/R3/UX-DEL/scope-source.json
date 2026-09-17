@@ -1,0 +1,29 @@
+{
+  "evidence": "Windows source only; Swift/UIKit/real server NOT_RUN",
+  "checks": {
+    "list_p2p_only": true,
+    "list_confirmation": true,
+    "no_full_swipe": true,
+    "captures_topic_not_index_after_confirm": true,
+    "interactor_uses_actual_permit": true,
+    "security_uses_actual_permit": true,
+    "owner_identity": true,
+    "role_recheck": true,
+    "leave_is_unsubscribe": true,
+    "delete_is_delete": true,
+    "same_production_source_in_two_targets": true,
+    "test_only_define": true,
+    "retained_r2_auth_selectors": true,
+    "added_native_selector": true,
+    "sdk_db_unchanged": true
+  },
+  "hashes": {
+    "Tinodios/ChatListViewController.swift": "21e34ace898c2af234dfcd3893f58103b08c8c73a7bc09e581c8c59e5f3a28c6",
+    "Tinodios/ChatListInteractor.swift": "18dbb76700c3d829ceac59ec6897177f93c6edbbe787e4930f62c508e6037123",
+    "Tinodios/TopicSecurityViewController.swift": "181b92fc885e1c419639a37ee4a515b86f01372c3463840d1034909a3e427607",
+    "Tinodios.xcodeproj/project.pbxproj": "1b746c2dc30f685253466c8a1638310f566232ebb15698be6705da7b6e23ce50",
+    "Scripts/ci/verify_publish_outcomes_macos.sh": "b85fabc2253f6e627b8794110bf78e5674269816c23c8d7870e9899ecc2eecd2",
+    "TinodiosUITests/ConversationRemovalTests.swift": "1ab2c80c2100fba368cde4718ac42ff6a91d9d40dded608f8e893204116bac16",
+    "Scripts/ci/test_group_flow_policy.py": "33880e45775b8826866c010b8eb8f2456bd48f9982365ccb4df509d06a01a97d"
+  }
+}

@@ -507,18 +507,38 @@ extension ChatListViewController {
     }
 
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        // Delete item at indexPath
-        let delete = UIContextualAction(style: .destructive, title: NSLocalizedString("Delete", comment: "Swipe action"), handler: { _,_,_ in
-            let topic = self.topics[indexPath.row]
-            self.interactor?.deleteTopic(topic.name)
-        })
-        let archive = UIContextualAction(style: .normal, title: NSLocalizedString("Archive", comment: "Swipe action"), handler: { _,_,_ in
-            let topic = self.topics[indexPath.row]
-            self.interactor?.changeArchivedStatus(
-                forTopic: topic.name, archived: !topic.isArchived)
-        })
-
-        return UISwipeActionsConfiguration(actions: [delete, archive])
+        guard topics.indices.contains(indexPath.row) else { return nil }
+        let topic = topics[indexPath.row]
+        let owner = Cache.tinode
+        guard owner.getTopic(topicName: topic.name) === topic else { return nil }
+        var actions: [UIContextualAction] = []
+        if topic.isP2PType {
+            let permit = ClawConversationRemovalPermit(action: .removeConversation, actor: owner, topic: topic)
+            let delete = UIContextualAction(style: .destructive, title: "删除会话") { [weak self] _, _, completed in
+                // Close the swipe without pretending that a remote deletion succeeded.
+                completed(false)
+                guard let self = self, Cache.isCurrent(owner) else { return }
+                let alert = UIAlertController(title: "删除会话？",
+                    message: "将从你的账号中移除此会话，并同步到你的其他设备。", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+                alert.addAction(UIAlertAction(title: "删除会话", style: .destructive) { [weak self] _ in
+                    self?.interactor?.deleteTopic(topic, owner: owner, permit: permit)
+                })
+                self.present(alert, animated: true)
+            }
+            actions.append(delete)
+        }
+        let archive = UIContextualAction(style: .normal, title: topic.isArchived ? "取消归档" : "归档") { [weak self] _, _, completed in
+            guard Cache.isCurrent(owner), owner.getTopic(topicName: topic.name) === topic else {
+                completed(false); return
+            }
+            self?.interactor?.changeArchivedStatus(forTopic: topic.name, archived: !topic.isArchived)
+            completed(true)
+        }
+        actions.append(archive)
+        let configuration = UISwipeActionsConfiguration(actions: actions)
+        configuration.performsFirstActionWithFullSwipe = false
+        return configuration
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {

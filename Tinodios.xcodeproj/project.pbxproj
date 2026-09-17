@@ -146,6 +146,8 @@
 		C1A0A0022026091800000003 /* ClawIdentityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0A0012026091800000001 /* ClawIdentityService.swift */; };
 		C1A0A0022026091800000004 /* ClawIdentityFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0A0012026091800000002 /* ClawIdentityFlow.swift */; };
 		C1A0A0022026091800000005 /* IdentityFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0A0012026091800000003 /* IdentityFlowTests.swift */; };
+		C1A0D0022026091800000001 /* TopicSecurityViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BE302A27B8A3B600B04631 /* TopicSecurityViewController.swift */; };
+		C1A0D0022026091800000002 /* ConversationRemovalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0D0012026091800000001 /* ConversationRemovalTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -377,6 +379,7 @@
 		C1A0A0012026091800000001 /* ClawIdentityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawIdentityService.swift; sourceTree = "<group>"; };
 		C1A0A0012026091800000002 /* ClawIdentityFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawIdentityFlow.swift; sourceTree = "<group>"; };
 		C1A0A0012026091800000003 /* IdentityFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityFlowTests.swift; sourceTree = "<group>"; };
+		C1A0D0012026091800000001 /* ConversationRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationRemovalTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -547,6 +550,7 @@
 				0A3EECCC28DA0EEF00313C35 /* TinodiosUITests.entitlements */,
 				0AE21E4D28D21849008F486C /* TinodiosUITests.swift */,
 				C1A0A0012026091800000003 /* IdentityFlowTests.swift */,
+				C1A0D0012026091800000001 /* ConversationRemovalTests.swift */,
 				0AE21E4F28D21849008F486C /* TinodiosUITestsLaunchTests.swift */,
 			);
 			path = TinodiosUITests;
@@ -1120,6 +1124,8 @@
 				C1A0A0022026091800000003 /* ClawIdentityService.swift in Sources */,
 				C1A0A0022026091800000004 /* ClawIdentityFlow.swift in Sources */,
 				C1A0A0022026091800000005 /* IdentityFlowTests.swift in Sources */,
+				C1A0D0022026091800000001 /* TopicSecurityViewController.swift in Sources */,
+				C1A0D0022026091800000002 /* ConversationRemovalTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1497,6 +1503,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.veilping.clawoschat.TinodiosUITests;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) CLAW_DESTRUCTIVE_POLICY_TESTS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -1518,6 +1525,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.veilping.clawoschat.TinodiosUITests;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) CLAW_DESTRUCTIVE_POLICY_TESTS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;

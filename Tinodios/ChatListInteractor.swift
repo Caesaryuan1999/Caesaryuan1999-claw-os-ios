@@ -16,7 +16,7 @@ protocol ChatListBusinessLogic: AnyObject {
     func updateChat(_ name: String)
     func setup()
     func cleanup()
-    func deleteTopic(_ name: String)
+    func deleteTopic(_ topic: DefaultComTopic, owner: Tinode, permit: ClawConversationRemovalPermit)
     func changeArchivedStatus(forTopic name: String, archived: Bool)
 }
 
@@ -156,15 +156,28 @@ class ChatListInteractor: ChatListBusinessLogic, ChatListDataStore {
         self.presenter?.topicUpdated(name)
     }
 
-    func deleteTopic(_ name: String) {
-        let topic = Cache.tinode.getTopic(topicName: name) as! DefaultComTopic
-        topic.delete(hard: true).then(
-            onSuccess: { [weak self] _ in
-                self?.loadAndPresentTopics()
-                return nil
-            },
-            onFailure: UiUtils.ToastFailureHandler
-        )
+    func deleteTopic(_ topic: DefaultComTopic, owner: Tinode, permit: ClawConversationRemovalPermit) {
+        guard Cache.isCurrent(owner), topic.isP2PType else { return }
+        permit.perform(currentActor: owner, currentTopic: owner.getTopic(topicName: topic.name),
+            kind: ClawConversationRemovalPermit.kind(isP2P: topic.isP2PType, isGroup: topic.isGrpType, isSaved: topic.isSlfType),
+            isOwner: topic.isOwner) { route in
+                guard route == .deleteTopic else { return }
+                topic.delete(hard: true).then(
+                    onSuccess: { [weak self] _ in
+                        DispatchQueue.main.async {
+                            guard Cache.isCurrent(owner) else { return }
+                            self?.loadAndPresentTopics()
+                        }
+                        return nil
+                    },
+                    onFailure: { _ in
+                        DispatchQueue.main.async {
+                            guard Cache.isCurrent(owner) else { return }
+                            UiUtils.showToast(message: "删除会话未完成，请检查连接后重试。")
+                        }
+                        return nil
+                    })
+            }
     }
 
     func changeArchivedStatus(forTopic name: String, archived: Bool) {
