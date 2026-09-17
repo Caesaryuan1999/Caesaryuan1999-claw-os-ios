@@ -1,0 +1,7 @@
+{
+  "no_delete_credential": false,
+  "no_rebind_request": false,
+  "no_stock_verify": false,
+  "no_change_navigation": false,
+  "readonly_explanation": false
+}

@@ -1,0 +1,11 @@
+{
+  "confirmationCodeField": true,
+  "currentEmailField": true,
+  "currentTelField": true,
+  "infoLabel": true,
+  "newEmailField": true,
+  "newTelField": true,
+  "requestClicked:": true,
+  "confirmClicked:": true,
+  "public_profile_and_avatar_unchanged": true
+}

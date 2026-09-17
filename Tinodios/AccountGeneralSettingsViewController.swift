@@ -225,15 +225,12 @@ extension AccountGeneralSettingsViewController {
             }
         }
         cell.textLabel?.text = contact
-        cell.accessoryType = .disclosureIndicator
+        cell.accessoryType = .none
         cell.selectionStyle = .none
         cell.textLabel?.sizeToFit()
 
-        if !cred.isDone {
-            cell.detailTextLabel?.text = NSLocalizedString("确定", comment: "Button text")
-        } else {
-            cell.detailTextLabel?.text = ""
-        }
+        cell.detailTextLabel?.text = cred.isDone ? "已验证" : "未验证"
+        cell.accessibilityHint = "更换手机号或邮箱暂未开放"
         return cell
     }
 
@@ -273,41 +270,20 @@ extension AccountGeneralSettingsViewController {
 
         tableView.deselectRow(at: indexPath, animated: true)
 
-        guard let cred = me.creds?[indexPath.row], cred.meth != nil else { return }
-
-        var container: CredentialContainer!
-        if !cred.isDone {
-            let oldCred = me.creds?.first(where: { $0.meth == cred.meth && $0.isDone })
-            container = CredentialContainer(currentCred: oldCred!, newCred: cred)
-        } else {
-            container = CredentialContainer(currentCred: cred, newCred: nil)
-        }
-        performSegue(withIdentifier: "Settings2CredChange", sender: container)
+        UiUtils.showToast(message: "更换手机号或邮箱暂未开放")
     }
 
-    // Enable swipe to delete credentials.
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        return indexPath.section == AccountGeneralSettingsViewController.kSectionContacts
-    }
+    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool { false }
 
-    // Actual handling of swipes.
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            guard let cred = me.creds?[indexPath.row] else { return }
-            self.me.delCredential(cred).then(
-                onSuccess: { [weak self] _ in
-                    DispatchQueue.main.async {
-                        tableView.deleteRows(at: [indexPath], with: .fade)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                        // Update tags
-                        self?.reloadData()
-                    }
-                    return nil
-                },
-                onFailure: UiUtils.ToastFailureHandler)
-        }
+        // No legacy credential deletion, including stale swipe callbacks.
     }
+
+    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        if section == AccountGeneralSettingsViewController.kSectionContacts { return "更换手机号或邮箱暂未开放" }
+        return super.tableView(tableView, titleForFooterInSection: section)
+    }
+
 }
 
 extension AccountGeneralSettingsViewController: UITextFieldDelegate {
