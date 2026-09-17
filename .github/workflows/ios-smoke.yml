@@ -53,6 +53,8 @@ jobs:
                       "scope": "SDK and SQLite tests passed; App UI, devices, network and push not accepted"}
           (target.parent / "simulator-manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
           PY
+      - name: Cold launch tested app on the same simulator
+        run: python3 Scripts/ci/smoke_simulator_launch.py --build-root build
       - name: Preserve test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -70,5 +72,7 @@ jobs:
             build/ios-01-a-*/storage.xcresult
             build/ios-01-a-*/CLAW-OS-unsigned-simulator.zip
             build/ios-01-a-*/simulator-manifest.json
+            build/ios-01-a-*/simulator-id.txt
+            build/ios-01-a-*/launch-smoke/**
           if-no-files-found: warn
           retention-days: 7

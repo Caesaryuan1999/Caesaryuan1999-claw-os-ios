@@ -15,6 +15,7 @@ fi
 [[ -n "$sim_id" ]] || { echo "No iPhone simulator available" >&2; exit 1; }
 result_dir="$repo_dir/build/ios-01-a-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$result_dir"
+printf '%s\n' "$sim_id" > "$result_dir/simulator-id.txt"
 python3 -B Scripts/ci/run_static_policies.py --report "$result_dir/static.json"
 pod install
 python3 - <<'PY'
@@ -58,12 +59,14 @@ fi
 
 xcodebuild test -workspace Tinodios.xcworkspace -scheme TinodeSDK \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \
+  -parallel-testing-enabled NO \
   -derivedDataPath "$result_dir/DerivedData" -resultBundlePath "$result_dir/sdk.xcresult" \
   -only-testing:TinodeSDKTests/TinodeSDKTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/sdk.log"
 xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \
+  -parallel-testing-enabled NO \
   -derivedDataPath "$result_dir/DerivedData" -resultBundlePath "$result_dir/storage.xcresult" \
   -only-testing:TinodiosUITests/PublishStorageTests \
   -only-testing:TinodiosUITests/LocalMigrationTests \

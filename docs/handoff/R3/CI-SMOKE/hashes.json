@@ -1,0 +1,5 @@
+{
+  ".github/workflows/ios-smoke.yml": "7addf95265cc71e201d4db396e764503cc93cf53c2eb5c56f7e5e318aac43ae0",
+  "Scripts/ci/verify_publish_outcomes_macos.sh": "fb80631004b5e885a9868fb6d6c7e22b9346895ce3c26ab24ba141d7771dfdd9",
+  "Scripts/ci/smoke_simulator_launch.py": "39ee1fbdbbef258deeeeb8e5c910beed6c82baa4bf3d300997266f72b39a24e8"
+}

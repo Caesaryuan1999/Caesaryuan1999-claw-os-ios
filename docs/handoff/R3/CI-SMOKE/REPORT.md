@@ -1,0 +1,15 @@
+# R3 CI-SMOKE — unsigned simulator cold launch only
+
+3 CI files: new Scripts/ci/smoke_simulator_launch.py; existing verify_publish_outcomes_macos.sh and ios-smoke.yml. No App source, signing, provisioning, true service or push changes. No push/dispatch by this worker.
+
+The existing test script records its selected sim_id and disables Xcode test parallel cloning with -parallel-testing-enabled NO (test methods and their explicit SQLite concurrency remain unchanged). After all native tests and packaging succeed, workflow runs the smoke script on that same already-booted iOS simulator. It neither creates nor boots another device.
+
+Checks: exactly one tested .app; current commit/package ZIP SHA; simulator platform; same booted UUID; install; get_app_container and executable SHA; launch exact bundle and parse its PID; five-second survival; exact installed executable path; PNG capture; another two-second survival. Process status reads only /bin/ps -p PID -o pid=,stat=,ucomm=; precise executable path comes from host Darwin libproc.proc_pidpath, compared with simctl get_app_container, not from guessed ps command truncation. No argv/env/full-system log dump.
+
+Apple primary references consulted: [ps command and output fields](https://github.com/apple-oss-distributions/adv_cmds/blob/main/ps/ps.1), [Darwin proc_pidpath declaration](https://github.com/apple-oss-distributions/xnu/blob/main/libsyscall/wrappers/libproc/libproc.h), [Simulator screenshot command](https://developer.apple.com/library/archive/documentation/IDEs/Conceptual/iOS_Simulator_Guide/InteractingwiththeiOSSimulator/InteractingwiththeiOSSimulator.html). Availability/return values are checked at runtime; if any check fails the step exits nonzero.
+
+Evidence in build/ios-01-a-*/launch-smoke/: manifest.json with commit/archive/executable hashes, limited process state/path, return codes, screenshot SHA/dimensions; cold-launch.png; only new .ips/.crash reports named for this executable and matching this exact PID. No matching report is not a crash-free guarantee. All evidence uploaded under always(), including failed launches. terminate_previous may return nonzero because no prior instance exists; this preparatory result is recorded and is never accepted as successful launch evidence.
+
+Windows: actual Python production runner exercised by check_smoke_runner.py with ONLY macOS subprocess/process-path/time boundary mocks: 6/6 PASS (success scope, install failure, invalid PID, wrong executable, screenshot failure, current-PID crash). First run exposed duplicate crash-report evidence on error collection (5/6); de-duplicated by filename, rerun6/6. These are not simctl/macOS results. Python AST and diff --check pass. Current native expectation remains112; actual Mac smoke NOT_RUN until parent CI4.
+
+Success label PASS_COLD_LAUNCH_ONLY does not prove the login screen or UI journey. Screenshot review explicitly PENDING_HUMAN; parent inspects the screenshot. Login, OTP delivery, contacts/chat navigation, device permission flows, physical device/APNs remain NOT_RUN. No credentials entered.
