@@ -181,8 +181,9 @@ class AccountGeneralSettingsViewController: UITableViewController {
     }
 
     private func identitySummary(method: String) -> String {
-        guard let credential = me.creds?.first(where: { $0.meth == method && $0.isDone }) ??
-                me.creds?.first(where: { $0.meth == method }),
+        guard let credentials = me.creds else { return "暂未获取" }
+        guard let credential = credentials.first(where: { $0.meth == method && $0.isDone }) ??
+                credentials.first(where: { $0.meth == method }),
               let value = credential.val, !value.isEmpty else { return "未绑定" }
         return value + (credential.isDone ? " · 已验证" : " · 未验证")
     }
