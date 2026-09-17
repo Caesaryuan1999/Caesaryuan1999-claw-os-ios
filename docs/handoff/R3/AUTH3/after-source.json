@@ -1,0 +1,6 @@
+{
+  "new_password_policy": true,
+  "owner_snapshot": true,
+  "success_reauthentication": true,
+  "uncertain_reauthentication": true
+}

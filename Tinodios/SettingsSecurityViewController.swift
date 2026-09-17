@@ -249,7 +249,7 @@ class SettingsSecurityViewController: UITableViewController {
 
     private func presentPasswordChangeAlert(initialPassword: String = "", initialConfirmation: String = "") {
         let alert = UIAlertController(title: NSLocalizedString("修改密码", comment: "Alert title"),
-                                      message: NSLocalizedString("请输入两遍新密码。", comment: "Alert prompt"),
+                                      message: NSLocalizedString("请输入两遍新密码（12–64 位英文字母、数字或符号，不含空格）。修改成功后需要重新登录。", comment: "Alert prompt"),
                                       preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: ""), style: .cancel, handler: nil))
         alert.addTextField(configurationHandler: { textField in
@@ -401,6 +401,12 @@ class SettingsSecurityViewController: UITableViewController {
 
     private func updatePassword(with newPassword: String, repeatedPassword: String,
                                 retryOnFailure: Bool) {
+        guard let owner = tinode, Cache.isCurrent(owner), owner.isConnectionAuthenticated else { return }
+        guard ClawIdentityInput.newPasswordIsValid(newPassword) else {
+            UiUtils.showToast(message: ClawIdentityError.invalidPassword.message)
+            presentPasswordChangeAlert()
+            return
+        }
         switch ClawAuthFormValidation.validatePasswordChange(password: newPassword, confirmation: repeatedPassword) {
         case .ok:
             break
@@ -423,28 +429,43 @@ class SettingsSecurityViewController: UITableViewController {
         }
         guard submissionGate.begin() else { return }
         actionChangePassword.isUserInteractionEnabled = false
-        tinode.updateAccountBasic(uid: nil, username: nil, password: newPassword)
-            .then(onSuccess: { msg in
-                self.finishPasswordSubmission()
+        owner.updateAccountBasic(uid: nil, username: nil, password: newPassword)
+            .then(onSuccess: { [weak self] msg in
+                self?.finishPasswordSubmission()
                 DispatchQueue.main.async {
-                    if let ctrl = msg?.ctrl, 200 <= ctrl.code && ctrl.code < 300 {
-                        UiUtils.showToast(message: NSLocalizedString("密码已更新", comment: "Success message"), level: .info)
+                    guard Cache.isCurrent(owner) else { return }
+                    if let ctrl = msg?.ctrl, (200..<300).contains(ctrl.code) {
+                        // AUTH server has advanced the credential epoch; old token/SID is no longer usable.
+                        UiUtils.logoutAndRouteToLoginVC(ifCurrent: owner)
+                        UiUtils.showToast(message: "密码已更新，请重新登录", level: .info)
                     } else {
-                        UiUtils.showToast(message: NSLocalizedString("服务端未确认密码修改", comment: "Error message"))
-                        if retryOnFailure {
-                            self.presentPasswordChangeAlert(initialPassword: newPassword,
-                                                            initialConfirmation: repeatedPassword)
-                        }
+                        // A malformed/missing ACK cannot prove the password was not changed.
+                        UiUtils.logoutAndRouteToLoginVC(ifCurrent: owner)
+                        UiUtils.showToast(message: "密码修改结果未确认，请返回登录页尝试新密码；若无法登录，可找回密码。")
                     }
                 }
                 return nil
-            }, onFailure: { err in
-                self.finishPasswordSubmission()
+            }, onFailure: { [weak self] error in
+                self?.finishPasswordSubmission()
                 DispatchQueue.main.async {
-                    UiUtils.showToast(message: ClawAuthErrorMessages.passwordChangeMessage(for: err))
-                    if retryOnFailure {
-                        self.presentPasswordChangeAlert(initialPassword: newPassword,
-                                                        initialConfirmation: repeatedPassword)
+                    guard Cache.isCurrent(owner) else { return }
+                    var definitelyRejected = false
+                    if let failure = error as? TinodeError {
+                        switch failure {
+                        case .requestNotSent, .notConnected:
+                            definitelyRejected = true
+                        case let .serverResponseError(code, _, _):
+                            definitelyRejected = (400..<500).contains(code) && code != 408 && code != 401
+                        default: break
+                        }
+                    }
+                    if definitelyRejected {
+                        UiUtils.showToast(message: ClawAuthErrorMessages.passwordChangeMessage(for: error))
+                        if retryOnFailure { self?.presentPasswordChangeAlert() }
+                    } else {
+                        // No automatic repeat: the server may have committed before the connection closed.
+                        UiUtils.logoutAndRouteToLoginVC(ifCurrent: owner)
+                        UiUtils.showToast(message: "密码修改结果未确认，请返回登录页尝试新密码；若无法登录，可找回密码。")
                     }
                 }
                 return nil
