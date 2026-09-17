@@ -1,0 +1,4 @@
+# CI8 compile correction
+Exact CI8 a5d95cbb / run35287010044 / job105421476602: SDK30/30 PASS, then App compilation failed at ImagePreviewController.swift ImageResource(downloadURL:cacheKey:). The unqualified name resolved to a different generated resource type with name:bundle:. Storage/DB gate and new UI tests did not execute.
+Two code/test lines now use Kingfisher.ImageResource explicitly (ImagePreviewController and the existing SecondaryUIStateTests cache test). The matching source assertion uses the same qualified API. No behavior, state, payload or dependency version changes.
+Windows: targeted source policy and diff-check PASS only. Cumulative expected native count remains152 until OWNED-IMAGE-02 adds its separate tests; no Mac claim for this correction. Active OWNED work is not included.

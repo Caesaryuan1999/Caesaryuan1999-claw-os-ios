@@ -249,7 +249,7 @@ class ImagePreviewController: UIViewController, UIScrollViewDelegate {
         transport.sessionConfiguration = .ephemeral
         downloader = transport
         let denyRedirect = AnyRedirectHandler { _, _, _, completion in completion(nil) }
-        let resource = ImageResource(downloadURL: url, cacheKey: key)
+        let resource = Kingfisher.ImageResource(downloadURL: url, cacheKey: key)
         downloadTask = KingfisherManager.shared.retrieveImage(with: resource,
             options: [.requestModifier(modifier), .redirectHandler(denyRedirect), .downloader(transport)],
             completionHandler: { [weak self] result in

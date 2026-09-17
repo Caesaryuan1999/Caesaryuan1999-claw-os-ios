@@ -24,7 +24,7 @@ assert "ClawMediaFiles.exportPNG(data, suggestedName: content.fileName)" in imag
 assert "documentDirectory" not in image
 assert "mediaState.loadInline(bits)" in image
 assert "mediaState.complete(requestID, image: value.image)" in image
-assert "ImageResource(downloadURL: url, cacheKey: key)" in image
+assert "Kingfisher.ImageResource(downloadURL: url, cacheKey: key)" in image
 assert ".downloader(transport)" in image and "AnyRedirectHandler" in image
 assert "LargeFileHelper.addCommonHeaders(to: &modified, using: owner)" in image
 assert "using: Cache.tinode" not in image and "isConnectionAuthenticated" not in image

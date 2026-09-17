@@ -133,7 +133,7 @@ final class SecondaryUIStateTests: XCTestCase {
         cache.store(fixtureImage(), forKey: a, toDisk: false)
         XCTAssertNotNil(cache.retrieveImageInMemoryCache(forKey: a))
         XCTAssertNil(cache.retrieveImageInMemoryCache(forKey: b))
-        let resource = ImageResource(downloadURL: url, cacheKey: a)
+        let resource = Kingfisher.ImageResource(downloadURL: url, cacheKey: a)
         XCTAssertEqual(resource.cacheKey, a)
         XCTAssertEqual(resource.downloadURL, url)
     }
