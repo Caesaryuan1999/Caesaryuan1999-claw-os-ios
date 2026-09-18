@@ -209,11 +209,16 @@ enum ClawMediaFiles {
     }
 
     /// Only paths created and registered by this process can be cleaned up.
-    static func removeExport(_ url: URL) {
-        exportLock.lock()
-        let owned = ownedExports.remove(url) != nil
-        exportLock.unlock()
-        if owned { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+    @discardableResult static func removeExport(_ url: URL) -> Bool {
+        exportLock.lock(); defer { exportLock.unlock() }
+        guard ownedExports.contains(url) else { return false }
+        do {
+            if FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path) {
+                try FileManager.default.removeItem(at: url.deletingLastPathComponent())
+            }
+            ownedExports.remove(url)
+            return true
+        } catch { return false } // Keep ownership when the filesystem refuses cleanup.
     }
 
     static func exportPNG(_ bytes: Data, suggestedName: String?, root: URL = FileManager.default.temporaryDirectory) throws -> URL {
@@ -404,6 +409,7 @@ final class ClawOwnedImageLoader {
 // Foreground-process download only. Uploads retain their independent background session.
 enum ClawFileTransferError: Error {
     case invalidURL, sessionExpired, cancelled, redirect, network, write, invalidData
+    case tooLarge, insufficientSpace, spaceUnavailable
     case http(Int)
 
     var message: String {
@@ -411,6 +417,9 @@ enum ClawFileTransferError: Error {
         case .sessionExpired, .cancelled: return "操作已结束，请重新打开此消息。"
         case .http(403): return "当前账号无权访问此附件。"
         case .write: return "无法准备分享文件，请稍后重试。"
+        case .tooLarge: return "视频超过本机预览大小限制，请返回聊天。"
+        case .insufficientSpace: return "本机可用空间不足，请释放空间后重新打开视频。"
+        case .spaceUnavailable: return "暂时无法确认本机可用空间，请稍后重新打开视频。"
         default: return "附件暂时无法下载，请重试，或返回聊天检查此消息是否仍可访问。"
         }
     }
@@ -444,6 +453,149 @@ final class ClawOwnedFilePresentation {
     }
 }
 
+/// A per-operation preview limit, not a server policy or a disk reservation.
+struct ClawVideoDownloadBudget {
+    static let reserveBytes: Int64 = 16 * 1024 * 1024
+    let maximumBytes: Int64
+    private let availableBytes: (URL) throws -> Int64
+
+    init(maximumBytes: Int64, availableBytes: @escaping (URL) throws -> Int64 = { root in
+        let attributes = try FileManager.default.attributesOfFileSystem(forPath: root.path)
+        guard let bytes = attributes[.systemFreeSize] as? NSNumber else { throw ClawFileTransferError.spaceUnavailable }
+        return bytes.int64Value
+    }) {
+        self.maximumBytes = maximumBytes
+        self.availableBytes = availableBytes
+    }
+
+    static func captured(from context: ClawOwnedImageContext) throws -> ClawVideoDownloadBudget {
+        guard let maximum = context.withCurrent({
+            context.owner.getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: 8 * 1024 * 1024)
+        }) else { throw ClawFileTransferError.sessionExpired }
+        return ClawVideoDownloadBudget(maximumBytes: maximum)
+    }
+
+    func preflight(at root: URL) throws {
+        let doubled = maximumBytes.multipliedReportingOverflow(by: 2)
+        let required = doubled.partialValue.addingReportingOverflow(Self.reserveBytes)
+        guard maximumBytes > 0, !doubled.overflow, !required.overflow else { throw ClawFileTransferError.tooLarge }
+        let available: Int64
+        do { available = try availableBytes(root) }
+        catch { throw ClawFileTransferError.spaceUnavailable }
+        guard available >= required.partialValue else { throw ClawFileTransferError.insufficientSpace }
+    }
+
+    func checkProgress(written: Int64, expected: Int64) throws {
+        guard maximumBytes > 0, written >= 0, written <= maximumBytes,
+              expected < 0 || expected <= maximumBytes else { throw ClawFileTransferError.tooLarge }
+    }
+
+    func checkFile(_ file: URL) throws {
+        let attributes = try FileManager.default.attributesOfItem(atPath: file.path)
+        let length = (attributes[.size] as? NSNumber)?.int64Value ?? 0
+        try checkProgress(written: length, expected: length)
+        guard length > 0 else { throw ClawFileTransferError.invalidData }
+    }
+}
+
+/// Main-thread responsibility for one actual player and its optional owned file.
+/// The generic callbacks capture that player, never the controller's later player.
+final class ClawOwnedPlaybackLease {
+    private static var pending = [UUID: ClawOwnedPlaybackLease]()
+    private let identity = UUID()
+    private let context: ClawOwnedImageContext
+    private let ownedFile: URL?
+    private let stop: () -> Void
+    private let isStopped: () -> Bool
+    private let detach: () -> Void
+    private let releaseMedia: () -> Void
+    private var observer: NSObjectProtocol?
+    private var stopTimer: Timer?
+    private var requestedPlay = false
+    private var observedStopped = false
+    private(set) var retired = false
+    private(set) var cleanupPending = false
+    private(set) var cleaned = false
+
+    init(context: ClawOwnedImageContext, ownedFile: URL?, player: AnyObject,
+         stop: @escaping () -> Void, isStopped: @escaping () -> Bool,
+         detach: @escaping () -> Void, releaseMedia: @escaping () -> Void) {
+        precondition(Thread.isMainThread)
+        self.context = context
+        self.ownedFile = ownedFile
+        self.stop = stop
+        self.isStopped = isStopped
+        self.detach = detach
+        self.releaseMedia = releaseMedia
+        // The fixed VLCKit notification is posted after its cached state is updated.
+        observer = NotificationCenter.default.addObserver(forName: Notification.Name("VLCMediaPlayerStateChanged"),
+            object: player, queue: .main) { [weak self] _ in
+                guard let self = self, self.retired, self.isStopped() else { return }
+                self.observedStopped = true
+                self.completeIfStopped()
+            }
+    }
+
+    @discardableResult func play(_ operation: () -> Void) -> Bool {
+        precondition(Thread.isMainThread)
+        guard !retired, context.isCurrent else { retire(); return false }
+        requestedPlay = true
+        observedStopped = false
+        operation() // SDK/Cache gates have returned: never call VLC while holding them.
+        return true
+    }
+
+    @discardableResult func checkOwner() -> Bool {
+        precondition(Thread.isMainThread)
+        guard !retired, context.isCurrent else { retire(); return false }
+        return true
+    }
+
+    func retire() {
+        precondition(Thread.isMainThread)
+        guard !retired else { return }
+        retired = true
+        Self.pending[identity] = self
+        stop()
+        detach()
+        // No polling of an initially cached `.stopped` as proof that async stop completed.
+        // Once play was requested, require this player's actual stop notification and state.
+        completeIfStopped()
+        guard !cleaned else { return }
+        let timer = Timer(timeInterval: 5, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            self.stopTimer = nil
+            self.completeIfStopped()
+            self.cleanupPending = !self.cleaned
+            // No timeout unlink or repeated stop. Retain this attempt and its observer;
+            // a later real stop notification may still discharge its file responsibility.
+        }
+        stopTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private func completeIfStopped() {
+        guard retired, !cleaned, (!requestedPlay || observedStopped), isStopped() else { return }
+        releaseMedia()
+        if let ownedFile = ownedFile, !ClawMediaFiles.removeExport(ownedFile) {
+            cleanupPending = true
+            return
+        }
+        cleaned = true
+        cleanupPending = false
+        stopTimer?.invalidate()
+        stopTimer = nil
+        if let observer = observer { NotificationCenter.default.removeObserver(observer) }
+        observer = nil
+        Self.pending.removeValue(forKey: identity)
+    }
+
+    deinit {
+        if let observer = observer { NotificationCenter.default.removeObserver(observer) }
+        stopTimer?.invalidate()
+    }
+}
+
 final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSessionTaskDelegate {
     typealias Completion = (Swift.Result<URL, Error>) -> Void
     private let context: ClawOwnedImageContext
@@ -451,6 +603,7 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
     private let suggestedName: String?
     private let root: URL
     private let protocolClasses: [AnyClass]?
+    private let budget: ClawVideoDownloadBudget?
     private let completion: Completion
     private let lock = NSLock()
     private var session: URLSession?
@@ -460,12 +613,13 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
     private var cancelled = false
 
     init(context: ClawOwnedImageContext, suggestedName: String?, root: URL = FileManager.default.temporaryDirectory,
-         protocolClasses: [AnyClass]? = nil, completion: @escaping Completion) {
+         protocolClasses: [AnyClass]? = nil, budget: ClawVideoDownloadBudget? = nil, completion: @escaping Completion) {
         self.context = context
         self.headers = context.withCurrent { context.owner.getRequestHeaders() } ?? [:]
         self.suggestedName = suggestedName
         self.root = root
         self.protocolClasses = protocolClasses
+        self.budget = budget
         self.completion = completion
         super.init()
     }
@@ -500,6 +654,8 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
             finish(.failure(context.isCurrent ? ClawFileTransferError.invalidURL : .sessionExpired))
             return
         }
+        do { try budget?.preflight(at: root) }
+        catch { finish(.failure(error)); return }
         let session = URLSession(configuration: Self.configuration(protocolClasses: protocolClasses),
                                  delegate: self, delegateQueue: nil)
         let task = session.downloadTask(with: request)
@@ -554,7 +710,9 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
                     didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        if !context.isCurrent { finish(.failure(ClawFileTransferError.sessionExpired)) }
+        guard context.isCurrent else { finish(.failure(ClawFileTransferError.sessionExpired)); return }
+        do { try budget?.checkProgress(written: totalBytesWritten, expected: totalBytesExpectedToWrite) }
+        catch { finish(.failure(error)) }
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
@@ -568,19 +726,23 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
               response.url == requested else { finish(.failure(ClawFileTransferError.invalidData)); return }
         guard response.statusCode == 200 else { finish(.failure(ClawFileTransferError.http(response.statusCode))); return }
         do {
+            try budget?.checkFile(location)
             let attrs = try FileManager.default.attributesOfItem(atPath: location.path)
             let length = (attrs[.size] as? NSNumber)?.int64Value ?? 0
+            try budget?.checkProgress(written: length, expected: response.expectedContentLength)
             guard length > 0, response.expectedContentLength < 0 || response.expectedContentLength == length else {
                 finish(.failure(ClawFileTransferError.invalidData)); return
             }
             guard context.isCurrent else { finish(.failure(ClawFileTransferError.sessionExpired)); return }
             let export = try ClawMediaFiles.preserveDownload(location, suggestedName: suggestedName, root: root)
+            do { try budget?.checkFile(export) }
+            catch { ClawMediaFiles.removeExport(export); throw error }
             guard context.isCurrent else {
                 ClawMediaFiles.removeExport(export)
                 finish(.failure(ClawFileTransferError.sessionExpired)); return
             }
             finish(.success(export))
-        } catch { finish(.failure(ClawFileTransferError.write)) }
+        } catch { finish(.failure((error as? ClawFileTransferError) ?? .write)) }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {

@@ -49,7 +49,8 @@ tests = read("TinodiosUITests/OwnedImageTests.swift")
 # The original ten image methods remain; the same selected class now adds eleven file-transfer methods.
 image_tests = tests[:tests.index("// Actual URLSession download tasks")]
 assert len(re.findall(r"    func test\w+\(", image_tests)) == 10
-assert len(re.findall(r"    func test\w+\(", tests)) == 21
+assert len(re.findall(r"    func test\w+\(", tests.split("// These methods execute the production budget/download/lease")[0])) == 21
+assert len(re.findall(r"    func test\w+\(", tests)) == 29  # VIDEO-OWNED-02 adds eight actual helper methods.
 assert "BaseDb(databasePath:" in tests and "KingfisherManager.shared.retrieveImage" in tests
 assert "RoundImageView(frame:" in tests and "AsyncImageTextAttachment(url:" in tests
 assert "modifier.modified(for: current)" in tests and ".onlyFromCache" in tests

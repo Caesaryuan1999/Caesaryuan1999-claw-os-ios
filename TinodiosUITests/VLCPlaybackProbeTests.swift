@@ -781,4 +781,153 @@ private extension URL {
         result.queryItems = URLComponents(url: self, resolvingAgainstBaseURL: false)!.queryItems
         return result.url!
     }
+
+
+    // New tests execute production owned download and lease with real loopback HTTP, SQLite and VLC.
+    // They do not instantiate VideoPreviewController or assert arbitrary-container network isolation.
+    private func ownedFixture(_ url: URL, context: ClawOwnedImageContext, maximum: Int64) throws -> URL {
+        let completed = expectation(description: "production owned loopback download")
+        var result: Swift.Result<URL, Error>?
+        let transfer = ClawOwnedFileDownload(context: context, suggestedName: "fixture.mp4",
+            budget: ClawVideoDownloadBudget(maximumBytes: maximum)) {
+                result = $0; completed.fulfill()
+            }
+        transfer.start(from: url)
+        wait(for: [completed], timeout: 8)
+        withExtendedLifetime(transfer) {}
+        return try XCTUnwrap(result).get()
+    }
+
+    private func ownedLease(_ playback: VLCProbePlayer, file: URL,
+                            context: ClawOwnedImageContext) -> ClawOwnedPlaybackLease {
+        vlcMain {
+            let player = playback.player
+            let lease = ClawOwnedPlaybackLease(context: context, ownedFile: file, player: player,
+                stop: { player.stop() }, isStopped: { player.state == .stopped },
+                detach: { player.drawable = nil }, releaseMedia: { player.media = nil })
+            // VLCProbePlayer starts its actual player at construction. Register the same play responsibility.
+            XCTAssertTrue(lease.play {})
+            return lease
+        }
+    }
+
+    @discardableResult private func closeOwned(_ playback: VLCProbePlayer, lease: ClawOwnedPlaybackLease) -> Bool {
+        vlcMain { lease.retire() }
+        if until(5, { vlcMain { lease.cleaned } }) { playback.hide(); return true }
+        XCTFail("Owned playback did not confirm stop and cleanup within the fixed five-second budget")
+        VLCProbePlayer.retainedAfterFailedStop.append(playback)
+        return false
+    }
+
+    func testOwnedDownloadedFileProducesRealVLCFrameTimeAndSeek() throws {
+        let server = try VLCProbeServer(); defer { server.stop() }
+        let bytes = try clip(blue: false)
+        let remote = server.add("owned-download", reply: .video(bytes, cacheable: false, cookie: false))
+        let account = try VLCProbeAccount(origin: server.origin)
+        let context = try account.context()
+        let file = try ownedFixture(remote, context: context, maximum: Int64(bytes.count))
+        XCTAssertTrue(file.isFileURL)
+        XCTAssertEqual(try Data(contentsOf: file), bytes)
+        let requestsBeforePlayer = server.observations().count
+        XCTAssertGreaterThan(requestsBeforePlayer, 0)
+        let playback = try VLCProbePlayer(url: file)
+        let lease = ownedLease(playback, file: file, context: context)
+        defer { closeOwned(playback, lease: lease) }
+        _ = try libraryEvidence(playback)
+        guard until(8, { self.decoded(playback) }) else {
+            progress = ["stage": "owned-local-decode", "metrics": playback.metrics(), "requests": server.observations()]
+            throw VLCProbeFailure.playback
+        }
+        XCTAssertEqual(try snapshot(playback, label: "owned-local-real-frame"), "A_red")
+        let seekable = vlcMain { playback.player.isSeekable }
+        XCTAssertTrue(seekable)
+        vlcMain {
+            playback.player.position = 0.6
+            XCTAssertTrue(lease.play { playback.player.play() })
+        }
+        let sought = until(3, { (playback.metrics()["timeMs"] as? Int ?? 0) >= 1500 })
+        XCTAssertTrue(sought)
+        XCTAssertEqual(server.observations().count, requestsBeforePlayer)
+        try attach("vlc-owned-local-playback", ["fixture": "MEASUREMENT_VALID",
+            "localEntry": file.isFileURL, "byteIdentical": true, "seekable": seekable, "seekObserved": sought,
+            "metrics": playback.metrics(), "requests": server.observations(),
+            "safety": "MP4_FIXTURE_ONLY_NOT_ARBITRARY_CONTAINER_ISOLATION"])
+    }
+
+    func testOwnedLeaseRetirementStopsRealPlayingAndPausedVLCBeforeFileRemoval() throws {
+        var observations = [[String: Any]]()
+        for paused in [false, true] {
+            let server = try VLCProbeServer(); defer { server.stop() }
+            let bytes = try clip(blue: false)
+            let remote = server.add("owned-retirement", reply: .video(bytes, cacheable: false, cookie: false))
+            let account = try VLCProbeAccount(origin: server.origin)
+            let context = try account.context()
+            let file = try ownedFixture(remote, context: context, maximum: Int64(bytes.count))
+            let share = try ClawMediaFiles.exportData(bytes, suggestedName: "separate-share.mp4")
+            defer { ClawMediaFiles.removeExport(share) }
+            let playback = try VLCProbePlayer(url: file)
+            let lease = ownedLease(playback, file: file, context: context)
+            _ = try libraryEvidence(playback)
+            guard until(8, { self.decoded(playback) }) else {
+                progress = ["stage": "owned-retirement-decode", "metrics": playback.metrics()]
+                closeOwned(playback, lease: lease); throw VLCProbeFailure.playback
+            }
+            if paused {
+                vlcMain { playback.player.pause() }
+                guard until(3, { vlcMain { playback.player.state == .paused } }) else {
+                    closeOwned(playback, lease: lease); throw VLCProbeFailure.playback
+                }
+            }
+            let before = playback.metrics()
+            account.retire()
+            vlcMain { XCTAssertFalse(lease.checkOwner()) }
+            let cleaned = until(5, { vlcMain { lease.cleaned } })
+            observations.append(["paused": paused, "before": before, "after": playback.metrics(),
+                "actualStopConfirmed": playback.stopped(), "leaseCleaned": cleaned,
+                "ownedFileRemoved": !FileManager.default.fileExists(atPath: file.path),
+                "shareFilePreserved": FileManager.default.fileExists(atPath: share.path)])
+            progress = ["stage": "owned-retirement", "cases": observations]
+            guard cleaned else {
+                VLCProbePlayer.retainedAfterFailedStop.append(playback)
+                throw VLCProbeFailure.playback
+            }
+            XCTAssertTrue(playback.stopped())
+            XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
+            XCTAssertTrue(FileManager.default.fileExists(atPath: share.path))
+            playback.hide()
+        }
+        try attach("vlc-owned-retirement", ["fixture": "MEASUREMENT_VALID", "cases": observations,
+            "scope": "production lease and actual player; owner check directly invoked, not VideoPreview polling UI"])
+    }
+
+    func testLocalPlaylistExternalReferenceRecordsRealVLCNetworkBehavior() throws {
+        let server = try VLCProbeServer(); defer { server.stop() }
+        let bytes = try clip(blue: false)
+        let local = root.appendingPathComponent("playlist-control.mp4")
+        try bytes.write(to: local, options: .withoutOverwriting)
+        XCTAssertEqual(try sampledFrame(local, label: "playlist-source-local-control"), "A_red")
+        let target = server.add("playlist-only-loopback", reply: .video(bytes, cacheable: false, cookie: false))
+        // The sole reference is this method's registered loopback server: no real endpoint or credentials.
+        let contents = Data(("#EXTM3U\n#EXTINF:3,synthetic\n" + target.absoluteString + "\n").utf8)
+        let file = try ClawMediaFiles.exportData(contents, suggestedName: "synthetic.m3u")
+        let original = XCTAttachment(data: contents, uniformTypeIdentifier: "public.m3u-playlist")
+        original.name = "synthetic-local-playlist-source"; original.lifetime = .keepAlways; add(original)
+        let account = try VLCProbeAccount(origin: server.origin)
+        let context = try account.context()
+        let playback = try VLCProbePlayer(url: file)
+        let lease = ownedLease(playback, file: file, context: context)
+        defer { closeOwned(playback, lease: lease) }
+        _ = try libraryEvidence(playback)
+        let start = Date()
+        let window = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in false }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [window], timeout: 5), .timedOut)
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(start), 5)
+        let requests = server.observations()
+        let externalRead = !requests.isEmpty
+        try attach("vlc-local-playlist-reference", ["fixture": "MEASUREMENT_VALID",
+            "localEntry": true, "onlySyntheticLoopbackReference": true,
+            "externalReferenceRequested": externalRead, "requests": requests,
+            "metrics": playback.metrics(),
+            "safety": externalRead ? "CONFIRMED_SECONDARY_NETWORK_ACCESS" : "NOT_OBSERVED_NOT_NETWORK_ISOLATION_PROOF"])
+    }
 }

@@ -1,0 +1,21 @@
+{
+  "base": "fce1f160148796035c1dd43c4c329f0a055f1c36",
+  "scope": "source counterexamples, not Windows Swift/runtime",
+  "facts": [
+    "remote ref adds auth query then constructs VLCMedia(url:) outside owned download",
+    "owner-invalid delegate callbacks return without stop",
+    "download lacks expected/actual/final byte budget"
+  ],
+  "files": [
+    {
+      "path": "Tinodios/VideoPreviewController.swift",
+      "sha256": "a5dfada10ac556e5ebaf024c5760056e289884ebc5923e89f67df75b6a7b94a1",
+      "blob": "6421051738ca887c782c684f0452a1614aa58a49"
+    },
+    {
+      "path": "Tinodios/ClawSecondaryUIState.swift",
+      "sha256": "91cdcfa0fff27d252ecae2ebf6c43af7abfac5cab6b93d1e472f412dd1a0dab1",
+      "blob": "9dd2bdb0a87bd93961c57d39247ebdfeb289c13c"
+    }
+  ]
+}

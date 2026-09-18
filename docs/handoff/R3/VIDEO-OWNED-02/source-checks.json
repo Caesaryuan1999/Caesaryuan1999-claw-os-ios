@@ -1,0 +1,168 @@
+{
+  "level": "Windows source checks only; not Swift execution",
+  "base": "abc23071b23671323d7bce89340ea6ffb513cb3b",
+  "checks": [
+    {
+      "name": "source red: remote query handed to VLC",
+      "pass": true
+    },
+    {
+      "name": "remote auth URL no longer handed to VLC",
+      "pass": true
+    },
+    {
+      "name": "owned complete callback precedes local VLC entry",
+      "pass": true
+    },
+    {
+      "name": "only bounded current original context downloads",
+      "pass": true
+    },
+    {
+      "name": "separate play/share transfer responsibilities",
+      "pass": true
+    },
+    {
+      "name": "negotiated limit and default stay captured",
+      "pass": true
+    },
+    {
+      "name": "overflow checked copies and reserve",
+      "pass": true
+    },
+    {
+      "name": "actual free space and preflight",
+      "pass": true
+    },
+    {
+      "name": "progress includes unknown-length written bytes",
+      "pass": true
+    },
+    {
+      "name": "both temporary and final file rechecked",
+      "pass": true
+    },
+    {
+      "name": "nonvideo budget default preserves compatibility",
+      "pass": true
+    },
+    {
+      "name": "no shared cookie/cache/redirect relaxation",
+      "pass": true
+    },
+    {
+      "name": "fixed visible common timer",
+      "pass": true
+    },
+    {
+      "name": "timers canceled on page closure",
+      "pass": true
+    },
+    {
+      "name": "same-attempt player closures",
+      "pass": true
+    },
+    {
+      "name": "actual lease used before play",
+      "pass": true
+    },
+    {
+      "name": "stop requires actual event and state",
+      "pass": true
+    },
+    {
+      "name": "timeout retains attempt without unlink",
+      "pass": true
+    },
+    {
+      "name": "stop event observes exact player",
+      "pass": true
+    },
+    {
+      "name": "local caller-owned URL has no deletion lease",
+      "pass": true
+    },
+    {
+      "name": "inline source unchanged",
+      "pass": true
+    },
+    {
+      "name": "send attachment method unchanged",
+      "pass": true
+    },
+    {
+      "name": "Figma preparing copy",
+      "pass": true
+    },
+    {
+      "name": "distinct reason recovery",
+      "pass": true
+    },
+    {
+      "name": "valid source decode failure keeps share",
+      "pass": true
+    },
+    {
+      "name": "TinodiosUITests/OwnedImageTests.swift all old test bodies identical",
+      "pass": true
+    },
+    {
+      "name": "TinodiosUITests/OwnedImageTests.swift exact method count",
+      "pass": true
+    },
+    {
+      "name": "TinodiosUITests/VLCPlaybackProbeTests.swift all old test bodies identical",
+      "pass": true
+    },
+    {
+      "name": "TinodiosUITests/VLCPlaybackProbeTests.swift exact method count",
+      "pass": true
+    },
+    {
+      "name": "real helper real VLC tests",
+      "pass": true
+    },
+    {
+      "name": "playlist observed separately not security assertion",
+      "pass": true
+    },
+    {
+      "name": "existing class selectors cover all additions",
+      "pass": true
+    }
+  ],
+  "nativeInventory": [
+    {
+      "file": "TinodiosUITests/OwnedImageTests.swift",
+      "totalMethods": 29,
+      "newMethods": [
+        "testPlaybackLeaseOfflineOwnerAndLocalSourceArePreservedUntilRetirement",
+        "testPlaybackLeaseRejectsRetiredOwnerAtQueuedMainConsumption",
+        "testPlaybackLeaseRequiresStoppedEventAndRetainsFileAfterTimeout",
+        "testPlaybackRetirementCannotStopNewAttemptOrDeleteShareFile",
+        "testVideoBudgetChecksTwoCopiesReserveOverflowAndRealFilesystem",
+        "testVideoBudgetRechecksActualFileAndPreservesBoundedDownload",
+        "testVideoDownloadRejectsKnownAndUnknownLengthOversize",
+        "testVideoDownloadSpaceFailuresNeverStartTransport"
+      ],
+      "sha256": "b35bd4054fe79a3b7978c1c8bf9ceaa6b414c9a8988c804dcc6b9d4432304ee8"
+    },
+    {
+      "file": "TinodiosUITests/VLCPlaybackProbeTests.swift",
+      "totalMethods": 7,
+      "newMethods": [
+        "testLocalPlaylistExternalReferenceRecordsRealVLCNetworkBehavior",
+        "testOwnedDownloadedFileProducesRealVLCFrameTimeAndSeek",
+        "testOwnedLeaseRetirementStopsRealPlayingAndPausedVLCBeforeFileRemoval"
+      ],
+      "sha256": "31724495f43fa8dc9cda70e78d9854e6301c5eed4d81b0e48edf316349c2c41d"
+    }
+  ],
+  "expected": {
+    "sdk": 44,
+    "uiRunner": 175,
+    "vlcHost": 7,
+    "totalNative": 226,
+    "navigationSeparate": 3
+  }
+}

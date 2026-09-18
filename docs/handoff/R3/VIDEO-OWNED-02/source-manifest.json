@@ -1,0 +1,35 @@
+{
+  "base": "abc23071b23671323d7bce89340ea6ffb513cb3b",
+  "files": [
+    {
+      "path": "Tinodios/ClawSecondaryUIState.swift",
+      "rawSHA256": "d62f89fcc93d61f4b198f8ecc61bf513ba73b0a2d5f7ba892350e649d5ec6c01",
+      "bytes": 32917,
+      "baseBlob": "9dd2bdb0a87bd93961c57d39247ebdfeb289c13c"
+    },
+    {
+      "path": "Tinodios/VideoPreviewController.swift",
+      "rawSHA256": "67430aaf03f9488b1f07fb49f8a8b5b26b837490a0b7b6f7ece205a3a9754634",
+      "bytes": 34132,
+      "baseBlob": "6421051738ca887c782c684f0452a1614aa58a49"
+    },
+    {
+      "path": "TinodiosUITests/OwnedImageTests.swift",
+      "rawSHA256": "b35bd4054fe79a3b7978c1c8bf9ceaa6b414c9a8988c804dcc6b9d4432304ee8",
+      "bytes": 44255,
+      "baseBlob": "3e92327ee84dc23c01a0bf266092174865fc2325"
+    },
+    {
+      "path": "TinodiosUITests/VLCPlaybackProbeTests.swift",
+      "rawSHA256": "31724495f43fa8dc9cda70e78d9854e6301c5eed4d81b0e48edf316349c2c41d",
+      "bytes": 53645,
+      "baseBlob": "aded85a752561af20853083a18603b6e43e569be"
+    },
+    {
+      "path": "Scripts/ci/test_owned_image_policy.py",
+      "rawSHA256": "a300dc4fd139f3e64f992cc4a99ab1fcda5e689a84189a6ad30e10c62d2cff0f",
+      "bytes": 3875,
+      "baseBlob": "a21c28eef3d3657c11035011348981732dd68aa6"
+    }
+  ]
+}

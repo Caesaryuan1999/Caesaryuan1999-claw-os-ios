@@ -64,12 +64,17 @@ class VideoPreviewController: UIViewController {
     private var isPreparingShare = false
     private var keyboardOverlap: CGFloat = 0
 
-    private let player = VLCMediaPlayer()
+    private var player = VLCMediaPlayer()
     private let thumbnailer = ThumbnailFetcher()
     private var didSubmitVideo = false
 
     private var ownedContext: ClawOwnedImageContext?
-    private var ownedHelper: LargeFileHelper?
+    private var playbackLease: ClawOwnedPlaybackLease?
+    private var playbackDownload: ClawOwnedFileDownload?
+    private var playbackBudget: ClawVideoDownloadBudget?
+    private var ownerTimer: Timer?
+    private var preparingPlayback = false
+    private var preparationFailure: ClawFileTransferError?
     private var frozenContent: VideoPreviewContent?
     private var sourceGeneration = UUID()
     private var previewVisible = false
@@ -82,7 +87,7 @@ class VideoPreviewController: UIViewController {
                 invalidatePreview()
                 frozenContent = nil
                 ownedContext = nil
-                ownedHelper = nil
+                playbackBudget = nil
                 sourceAvailable = false
                 renderPlayback()
             }
@@ -144,65 +149,116 @@ class VideoPreviewController: UIViewController {
 
     private func setup() {
         navigationItem.rightBarButtonItem = nil
-        guard let content = self.previewContent, let context = Utils.ownedImageContext() else {
+        guard let content = self.previewContent,
+              let context = ownedContext ?? Utils.ownedImageContext(), context.isCurrent else {
+            preparationFailure = .sessionExpired
             renderPlayback()
             return
         }
         ownedContext = context
-        ownedHelper = Cache.ifCurrent(context.owner) { Cache.getLargeFileHelper() }
         frozenContent = content
+        preparationFailure = nil
+        sourceAvailable = false
+        preparingPlayback = false
+        playbackState = .loading
+        sourceGeneration = UUID()
+        let source = sourceGeneration
+        sendVideoBar.togglePreviewBar(with: content.pendingMessagePreview)
+        duration = content.duration
+        currentTimeLabel.text = "--:--"
+        startOwnerMonitor()
 
-        var url: URL?
-        var stream: Stream?
         switch content.videoSrc {
-        case .local(let videoUrl, _):
-            url = videoUrl
+        case .local(let videoURL, _):
             sendVideoBar.delegate = self
-
             sendVideoBar.replyPreviewDelegate = replyPreviewDelegate
-            // Local previews retain the existing caption, reply and send accessory.
+            // The selected source is caller-owned. This preview never removes it.
+            beginPlayback(VLCMedia(url: videoURL), ownedFile: nil, source: source)
         case .remote(let bits, let ref):
             if let ref = ref {
-                guard let mediaURL = context.resourceURL(from: ref) else {
-                    renderPlayback()
-                    return
+                guard let url = context.resourceURL(from: ref) else {
+                    failPreparation(.invalidURL); return
                 }
-                // VLC playback remains separate; the URL is bound to the captured owner.
-                url = context.withCurrent { context.owner.addAuthQueryParams(mediaURL) }
-            } else if let bits = bits, !bits.isEmpty {
-                stream = InputStream(data: bits)
-            } else {
+                do { playbackBudget = try ClawVideoDownloadBudget.captured(from: context) }
+                catch { failPreparation((error as? ClawFileTransferError) ?? .invalidData); return }
+                preparingPlayback = true
                 renderPlayback()
-                return
-            }
+                let operation = ClawOwnedFileDownload(context: context, suggestedName: content.fileName,
+                    budget: playbackBudget) { [weak self] result in
+                    guard let self = self, self.acceptsSource(source) else {
+                        if case let .success(file) = result { ClawMediaFiles.removeExport(file) }
+                        return
+                    }
+                    self.playbackDownload = nil
+                    self.preparingPlayback = false
+                    switch result {
+                    case let .success(file):
+                        // A local entry point is not a container-content network sandbox.
+                        self.beginPlayback(VLCMedia(url: file), ownedFile: file, source: source)
+                    case let .failure(error):
+                        self.failPreparation((error as? ClawFileTransferError) ?? .network)
+                    }
+                }
+                playbackDownload = operation
+                operation.start(from: url)
+            } else if let bits = bits, !bits.isEmpty {
+                // Keep the pre-existing inline stream behavior.
+                beginPlayback(VLCMedia(stream: InputStream(data: bits)), ownedFile: nil, source: source)
+            } else { failPreparation(.invalidData) }
         }
-        sendVideoBar.togglePreviewBar(with: content.pendingMessagePreview)
-        self.duration = content.duration
+    }
 
-        currentTimeLabel.text = "--:--"
-
-        player.drawable = videoView
-        var media: VLCMedia
-        if let url = url {
-            media = VLCMedia(url: url)
-        } else if let stream = stream as? InputStream {
-            media = VLCMedia(stream: stream)
-        } else {
-            renderPlayback()
+    private func beginPlayback(_ media: VLCMedia, ownedFile: URL?, source: UUID) {
+        guard acceptsSource(source), let context = ownedContext else {
+            if let ownedFile = ownedFile { ClawMediaFiles.removeExport(ownedFile) }
             return
         }
-        player.media = media
-        player.delegate = self
+        playbackLease?.retire()
+        let currentPlayer = VLCMediaPlayer()
+        player = currentPlayer
+        currentPlayer.drawable = videoView
+        currentPlayer.media = media
+        currentPlayer.delegate = self
+        let lease = ClawOwnedPlaybackLease(context: context, ownedFile: ownedFile, player: currentPlayer,
+            stop: { currentPlayer.stop() }, isStopped: { currentPlayer.state == .stopped },
+            detach: { currentPlayer.delegate = nil; currentPlayer.drawable = nil },
+            releaseMedia: { currentPlayer.media = nil })
+        playbackLease = lease
         sourceAvailable = true
         playbackState = .loading
         renderPlayback()
-        if context.isCurrent { player.play() }
+        if !lease.play({ currentPlayer.play() }) { failPreparation(.sessionExpired) }
+    }
+
+    private func failPreparation(_ error: ClawFileTransferError) {
+        preparingPlayback = false
+        preparationFailure = error
+        sourceAvailable = false
+        playbackState = .failed
+        renderPlayback()
+    }
+
+    private func startOwnerMonitor() {
+        ownerTimer?.invalidate()
+        let source = sourceGeneration
+        let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+            guard let self = self, self.previewVisible, self.sourceGeneration == source else { return }
+            guard self.ownedContext?.isCurrent == true, self.playbackLease?.checkOwner() != false else {
+                self.invalidatePreview()
+                self.sendVideoBar.delegate = nil
+                self.resignFirstResponder()
+                self.reloadInputViews()
+                self.failPreparation(.sessionExpired)
+                return
+            }
+        }
+        ownerTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         configureInterface()
-        setup()
         // A custom inputAccessoryView is only installed after the controller
         // becomes first responder. Without this, the video preview opens but
         // the send bar is missing on iOS.
@@ -212,8 +268,7 @@ class VideoPreviewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         previewVisible = true
-        refreshPlaybackState()
-        renderPlayback()
+        setup()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -223,12 +278,18 @@ class VideoPreviewController: UIViewController {
 
     private func invalidatePreview() {
         previewVisible = false
+        ownerTimer?.invalidate()
+        ownerTimer = nil
         sourceGeneration = UUID()
+        playbackDownload?.cancel()
+        playbackDownload = nil
+        preparingPlayback = false
         shareSlot.invalidate()
         download?.cancel()
         download = nil
         isPreparingShare = false
-        player.stop()
+        playbackLease?.retire()
+        playbackLease = nil
     }
 
     private func acceptsSource(_ generation: UUID) -> Bool {
@@ -291,7 +352,15 @@ class VideoPreviewController: UIViewController {
             name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
     }
 
-    deinit { NotificationCenter.default.removeObserver(self) }
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        ownerTimer?.invalidate()
+        playbackDownload?.cancel()
+        download?.cancel()
+        let lease = playbackLease
+        if Thread.isMainThread { lease?.retire() }
+        else { DispatchQueue.main.async { lease?.retire() } }
+    }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
@@ -425,9 +494,31 @@ class VideoPreviewController: UIViewController {
         muteButton.setTitle(soundTitle, for: .normal)
         muteButton.accessibilityLabel = soundTitle
         muteButton.isEnabled = !failed && !loading && audio != nil
-        errorMessageLabel.text = ownedContext?.isCurrent != true
-            ? "操作已结束，请返回聊天后重新打开。"
-            : (canShareOriginal ? "你可以返回聊天后重新打开，或分享原文件。" : "请检查网络连接，或返回聊天后重新打开。")
+        returnButton.setTitle(preparingPlayback ? "取消并返回" : "返回聊天", for: .normal)
+        if preparingPlayback {
+            errorTitleLabel.text = "正在准备视频"
+            errorMessageLabel.text = "视频下载完成后即可播放。返回聊天将取消本次加载。"
+        } else if ownedContext?.isCurrent != true {
+            errorTitleLabel.text = "视频已停止"
+            errorMessageLabel.text = "当前会话已失效，请返回聊天后重新打开。"
+        } else if let failure = preparationFailure {
+            errorTitleLabel.text = "视频未加载完成"
+            switch failure {
+            case .network:
+                errorMessageLabel.text = "请检查网络后，返回聊天重新打开视频。"
+            case .http(403): errorMessageLabel.text = "当前账号无权查看这段视频。"
+            case .tooLarge, .insufficientSpace, .spaceUnavailable: errorMessageLabel.text = failure.message
+            case .write: errorMessageLabel.text = "无法准备本机视频文件，请稍后重新打开。"
+            case .redirect: errorMessageLabel.text = "视频地址发生跳转，暂时无法安全加载。请返回聊天。"
+            case .sessionExpired, .cancelled: errorMessageLabel.text = "操作已结束，请返回聊天后重新打开。"
+            default: errorMessageLabel.text = "视频文件无法完整获取，请返回聊天检查此消息是否仍可访问。"
+            }
+        } else {
+            errorTitleLabel.text = "视频暂时无法播放"
+            errorMessageLabel.text = canShareOriginal
+                ? "你可以返回聊天后重新打开，或分享原文件。"
+                : "请返回聊天检查此消息是否仍可访问。"
+        }
         shareStack.isHidden = !canShareOriginal
         shareButton.isEnabled = canShareOriginal && !isPreparingShare
         shareButton.setTitle(isPreparingShare ? "正在准备分享…" : "分享视频", for: .normal)
@@ -444,16 +535,15 @@ class VideoPreviewController: UIViewController {
         guard acceptsSource(sourceGeneration), sourceAvailable, playbackState != .failed,
               playbackState != .loading, playbackState != .buffering else { return }
         if player.state == .ended || player.state == .stopped {
-            player.stop()
             player.position = 0
-            player.play()
+            playbackLease?.play { player.play() }
             return
         }
 
         if player.isPlaying {
             player.pause()
         } else {
-            player.play()
+            playbackLease?.play { player.play() }
         }
     }
 
@@ -497,11 +587,13 @@ class VideoPreviewController: UIViewController {
             })
         }
         if let ref = ref {
-            guard let url = context.resourceURL(from: ref), let helper = ownedHelper else {
+            guard let url = context.resourceURL(from: ref), let budget = playbackBudget else {
                 completed(.failure(ClawFileTransferError.invalidURL)); return
             }
-            download = helper.startOwnedDownload(from: url, context: context,
-                suggestedName: content.fileName, completion: completed)
+            let operation = ClawOwnedFileDownload(context: context, suggestedName: content.fileName,
+                                                  budget: budget, completion: completed)
+            download = operation
+            operation.start(from: url)
         } else if let bits = bits, !bits.isEmpty {
             DispatchQueue.global(qos: .userInitiated).async {
                 let result: Swift.Result<URL, Error>
