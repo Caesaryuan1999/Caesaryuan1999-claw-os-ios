@@ -355,8 +355,15 @@ final class CoreListLayoutTests: XCTestCase {
             let me = DefaultMeTopic(tinode: owner)
             me.pub = TheCard(fn: "合成很长的个人昵称")
             me.tags = ["alias:claw_fixture_long"]
-            let controller = try XCTUnwrap(UIStoryboard(name: "Main", bundle: nil)
-                .instantiateViewController(withIdentifier: "Account Settings") as? AccountSettingsViewController)
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+            let standard = try XCTUnwrap(storyboard.instantiateViewController(withIdentifier: "Account Settings")
+                as? AccountSettingsViewController)
+            try host(standard, style: .dark)
+            let standardHeight = try XCTUnwrap(standard.tableView.tableHeaderView).bounds.height
+            XCTAssertGreaterThan(standardHeight, 0)
+            try evidence("account-standard-dark", view: standard.view)
+            let controller = try XCTUnwrap(storyboard.instantiateViewController(withIdentifier: "Account Settings")
+                as? AccountSettingsViewController)
             try host(controller, category: .accessibilityExtraExtraExtraLarge, style: .dark)
             controller.view.setNeedsLayout(); controller.view.layoutIfNeeded()
             let header = try XCTUnwrap(controller.tableView.tableHeaderView)
@@ -375,9 +382,30 @@ final class CoreListLayoutTests: XCTestCase {
             } as? UIButton)
             XCTAssertGreaterThanOrEqual(profile.bounds.height, 44)
             XCTAssertEqual(controller.traitCollection.preferredContentSizeCategory, .accessibilityExtraExtraExtraLarge)
-            XCTAssertGreaterThan(header.bounds.height, controller.tableView.bounds.height)
+            XCTAssertGreaterThan(header.bounds.height, standardHeight)
             XCTAssertTrue(controller.tableView.isScrollEnabled)
+            let table = try XCTUnwrap(controller.tableView)
+            XCTAssertGreaterThanOrEqual(table.contentSize.height + 1, header.frame.maxY)
             try evidence("account-ax-dark", view: controller.view)
+            let lastAction = try XCTUnwrap(allViews(header).compactMap { $0 as? UIButton }
+                .first { $0.currentTitle == "退出登录" })
+            let topOffset = -table.adjustedContentInset.top
+            let bottomOffset = max(topOffset, table.contentSize.height - table.bounds.height + table.adjustedContentInset.bottom)
+            if bottomOffset > topOffset {
+                table.setContentOffset(CGPoint(x: 0, y: bottomOffset), animated: false)
+                try until { table.layoutIfNeeded(); return abs(table.contentOffset.y - bottomOffset) <= 1 }
+            }
+            let viewport = table.bounds.inset(by: table.adjustedContentInset)
+            let lastFrame = lastAction.convert(lastAction.bounds, to: table)
+            XCTAssertGreaterThanOrEqual(lastFrame.minY, viewport.minY - 1)
+            XCTAssertLessThanOrEqual(lastFrame.maxY, viewport.maxY + 1)
+            XCTAssertGreaterThanOrEqual(lastFrame.minX, viewport.minX - 1)
+            XCTAssertLessThanOrEqual(lastFrame.maxX, viewport.maxX + 1)
+            XCTAssertFalse(lastAction.isHidden)
+            XCTAssertGreaterThan(lastAction.alpha, 0)
+            XCTAssertNotNil(lastAction.window)
+            readable(try XCTUnwrap(lastAction.titleLabel))
+            try evidence("account-ax-end-reachable", view: controller.view)
         }
     }
 
