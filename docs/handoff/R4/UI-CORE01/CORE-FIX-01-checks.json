@@ -1,0 +1,19 @@
+{
+  "base": "4d7f5539e1cd225735b5a64f541d3a26e44180bd",
+  "test_names_unchanged": true,
+  "method_count": 6,
+  "old_assertions_retained": true,
+  "a_wip": {
+    "Tinodios/Cache.swift": "419ebbb6090985f50beef222ecf50a3df6a2f2eac3d3d8ef8a91d907d06fec9e",
+    "Tinodios/NewChatTabController.swift": "4a91adc2c80e9a18ec550cced5279b235c6f1a874124a5d2075dbe2e604f1bec",
+    "Tinodios/ClawAssistantModels.swift": "b4864191d16b3a6815ba8a9bac216c735b783d0f5f7194f14597d5b2a6eef12e",
+    "Tinodios/ClawAssistantService.swift": "843094bd75d1d8d6a2eb29aacf0615aa8dfec15ead6ab73dfd4599a128156165",
+    "Tinodios/ClawAssistantSession.swift": "77a72cffa3c94702a5d38bbc2fe8817498309e3d13cbf9d170a9f32ef3435c64",
+    "Tinodios/ClawAssistantHistory.swift": "d95ee45cd7f3e7c37011e147e9648631be05cb6dd323387ae64a59215d36aebf",
+    "Tinodios/ClawAssistantViewController.swift": "8db51c655a8b2ea07c767ff9b8db94b820732002a1d0516662a6726d9bfe465b",
+    "Tinodios/ClawAssistantHistoryViewController.swift": "dd4a3f6b01f3d1c113a7c21f3f5acc4d57a40e2244ab793d2330bd51e0af8522",
+    "Tinodios/ClawAssistantConversationViewController.swift": "ffd2412f53e4a872b7e9a167d582bb8b10a412268b9566bfd1e7cfcc96641125",
+    "TinodiosUITests/AssistantHistoryTests.swift": "cb6ad6872f3797148001dfa93c0e6c4f8ca4f2902e6b80b9c96ab060ff026abf",
+    "TinodiosUITests/AssistantLayoutTests.swift": "6fa4b84dce0c103dabdc54e6a8ba253331e0053f2af70214d9bfd61d55c4217c"
+  }
+}
