@@ -1,0 +1,22 @@
+{
+  "evidence": "Windows source comparison only; native pending Mac CI",
+  "checks": {
+    "all_post_and_shared_request_bytes_unchanged": true,
+    "flow_production_unchanged": true,
+    "mapping_only_capabilities_transport": true,
+    "new_capability_method_count": true,
+    "unknown_copy_preserved": true
+  },
+  "expected_sdk_methods": 41,
+  "expected_storage_methods": {
+    "ConversationRemovalTests": 9,
+    "IdentityFlowTests": 30,
+    "OwnedImageTests": 10,
+    "PublicDirectoryTests": 13,
+    "SecondaryUIStateTests": 13,
+    "PublishStorageTests": 4,
+    "LocalMigrationTests": 62
+  },
+  "expected_total_native": 182,
+  "expected_navigation_methods": 3
+}

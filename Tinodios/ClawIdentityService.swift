@@ -70,6 +70,7 @@ enum ClawIdentityError: Error {
     case invalidCode
     case invalidResponse
     case transport
+    case capabilitiesConnection
     case server(code: String, retryAfter: Int?)
     case ended
     case legacyRecovery
@@ -90,6 +91,7 @@ enum ClawIdentityError: Error {
         case .invalidCode: return "请输入 6 位数字验证码"
         case .invalidResponse: return "身份服务响应无效，请稍后重试"
         case .transport: return "网络请求结果未确认，请检查连接后按页面提示操作"
+        case .capabilitiesConnection: return "暂时无法连接身份服务，请检查网络和连接设置后重试。"
         case .ended: return "操作已结束，请重新开始"
         case .legacyRecovery: return "此原账号需要完成旧凭据验证。该验证方式暂不可用，请联系管理员恢复账号。"
         case let .server(code, _):
@@ -196,7 +198,15 @@ final class ClawIdentityService: NSObject, URLSessionTaskDelegate {
     }
 
     func capabilities(completion: @escaping (Result<ClawIdentityCapabilities, ClawIdentityError>) -> Void) {
-        request("capabilities", data: nil, expected: [200], completion: completion)
+        request("capabilities", data: nil, expected: [200]) {
+            (result: Result<ClawIdentityCapabilities, ClawIdentityError>) in
+            // This read-only check cannot leave a submitted identity mutation uncertain.
+            if case .failure(.transport) = result {
+                completion(.failure(.capabilitiesConnection))
+            } else {
+                completion(result)
+            }
+        }
     }
     func challenge(_ value: ClawIdentityChallengeRequest, completion: @escaping (Result<ClawIdentityChallenge, ClawIdentityError>) -> Void) {
         encode("challenge", value: value, expected: [202], completion: completion)

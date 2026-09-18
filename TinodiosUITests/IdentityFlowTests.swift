@@ -231,6 +231,39 @@ final class IdentityFlowTests: XCTestCase {
             legalResourcesAvailable: true, termsAccepted: true, completion: $0) }.get())
         XCTAssertEqual(sent, 0)
     }
+    func testCapabilitiesConnectionFailureIsReadOnlyAndCanBeCheckedAgain() throws {
+        var requests = 0
+        IdentityProtocol.respond { request in
+            requests += 1
+            XCTAssertEqual(request.httpMethod, "GET")
+            XCTAssertEqual(request.url?.lastPathComponent, "capabilities")
+            XCTAssertNil(request.httpBody)
+            XCTAssertNil(request.httpBodyStream)
+            throw URLError(.cannotConnectToHost)
+        }
+        let failed = awaitResult { flow.prepare($0) }
+        guard case let .failure(error) = failed else { return XCTFail("Expected failed capabilities check") }
+        guard case .capabilitiesConnection = error else { return XCTFail("Expected read-only connection error") }
+        XCTAssertEqual(error.message, "暂时无法连接身份服务，请检查网络和连接设置后重试。")
+        XCTAssertTrue(flow.capabilitiesChecked)
+        XCTAssertNil(flow.capabilities)
+        XCTAssertNil(flow.pendingChallenge)
+        XCTAssertNil(flow.pendingPassword)
+        XCTAssertTrue(flow.legacyLoginAvailable)
+        XCTAssertEqual(requests, 1)
+
+        IdentityProtocol.respond { [self] request in
+            requests += 1
+            XCTAssertEqual(request.httpMethod, "GET")
+            XCTAssertEqual(request.url?.lastPathComponent, "capabilities")
+            return reply(capabilities)
+        }
+        XCTAssertTrue(try awaitResult { flow.prepare($0) }.get().supported)
+        XCTAssertEqual(requests, 2)
+        XCTAssertNil(flow.pendingChallenge)
+        XCTAssertNil(flow.pendingPassword)
+    }
+
     func testUncertainChallengeExplicitRetryFreezesRequestBytesAndIdentifier() throws {
         try prepare()
         var requests: [Data] = []
@@ -241,8 +274,11 @@ final class IdentityFlowTests: XCTestCase {
             XCTAssertEqual(request.value(forHTTPHeaderField: "X-Tinode-APIKey"), "synthetic-api-key")
             throw URLError(.networkConnectionLost)
         }
-        _ = awaitResult { flow.requestCode(method: .email, input: "Test+tag@Example.com",
+        let failed = awaitResult { flow.requestCode(method: .email, input: "Test+tag@Example.com",
             legalResourcesAvailable: true, termsAccepted: true, completion: $0) }
+        guard case let .failure(error) = failed else { return XCTFail("Expected uncertain challenge") }
+        guard case .transport = error else { return XCTFail("POST must retain its uncertain result") }
+        XCTAssertEqual(error.message, "网络请求结果未确认，请检查连接后按页面提示操作")
         XCTAssertNotNil(flow.pendingChallenge)
         XCTAssertThrowsError(try awaitResult { flow.requestCode(method: .email, input: "changed@example.com",
             legalResourcesAvailable: true, termsAccepted: true, completion: $0) }.get())
