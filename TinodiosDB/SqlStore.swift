@@ -12,7 +12,7 @@ enum SqlStoreError: Error {
     case dbError(String)
 }
 
-public class SqlStore: Storage {
+public class SqlStore: AccountDeletionStorage {
     public var initializationError: String? {
         guard let database = dbh else { return BaseDb.unavailableMessage }
         return recoveryBlocked ? BaseDb.unavailableMessage : database.initializationError
@@ -56,10 +56,13 @@ public class SqlStore: Storage {
     }
 
     public func deleteAccount(_ uid: String) {
+        if !deleteAccountData(uid) { BaseDb.log.info("local_account_cleanup_failed") }
+    }
+
+    public func deleteAccountData(_ uid: String) -> Bool {
         accountLock.lock(); defer { accountLock.unlock() }
-        if !(self.dbh?.deleteUid(uid) ?? true) {
-            BaseDb.log.info("Account deletion did not succeed. Uid [%@]", uid)
-        }
+        guard let database = dbh, database.uid == nil || database.uid == uid else { return false }
+        return database.deleteUid(uid)
     }
 
     public func setMyUid(uid: String, credMethods: [String]?) {

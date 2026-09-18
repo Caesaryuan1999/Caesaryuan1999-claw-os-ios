@@ -1,0 +1,39 @@
+{
+  "evidence_level": "real SQLite with source call-order adapter, NOT Swift BaseDb execution",
+  "sqlite_version": "3.53.1",
+  "cases": [
+    {
+      "fault_table": "subscriptions",
+      "existing_reports_success": true,
+      "partial_commit": true,
+      "captured_account_remains": true,
+      "other_account_message_preserved": true,
+      "swallowed_stages": [
+        "topicDeleteAllFalse",
+        "userDeleteFalse",
+        "accountDeleteFalse"
+      ]
+    },
+    {
+      "fault_table": "users",
+      "existing_reports_success": true,
+      "partial_commit": true,
+      "captured_account_remains": true,
+      "other_account_message_preserved": true,
+      "swallowed_stages": [
+        "userDeleteFalse",
+        "accountDeleteFalse"
+      ]
+    },
+    {
+      "fault_table": "accounts",
+      "existing_reports_success": true,
+      "partial_commit": true,
+      "captured_account_remains": true,
+      "other_account_message_preserved": true,
+      "swallowed_stages": [
+        "accountDeleteFalse"
+      ]
+    }
+  ]
+}

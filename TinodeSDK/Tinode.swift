@@ -19,6 +19,7 @@ public enum TinodeError: LocalizedError, CustomStringConvertible {
     case requestNotSent(String)
     // The request may have reached the server. It must not be replayed automatically.
     case requestOutcomeUnknown(String)
+    case accountDeletedLocalCleanupIncomplete
     case serverResponseError(Int, String, String?)
     case notSubscribed(String)
     case notSynchronized
@@ -38,6 +39,8 @@ public enum TinodeError: LocalizedError, CustomStringConvertible {
                 return "Request not sent: \(message)"
             case .requestOutcomeUnknown(let message):
                 return "Request outcome unconfirmed: \(message)"
+            case .accountDeletedLocalCleanupIncomplete:
+                return "账号已注销，但本机数据清理未完成。可重试本机清理，无需再次注销。"
             case .serverResponseError(let code, let text, _):
                 return "\(text) (\(code))"
             case .notSubscribed(let message):
@@ -50,6 +53,46 @@ public enum TinodeError: LocalizedError, CustomStringConvertible {
 
     public var errorDescription: String? {
         return description
+    }
+}
+
+/// Optional observable capability. Existing Storage conformers keep their Void API.
+public protocol AccountDeletionStorage: Storage {
+    func deleteAccountData(_ uid: String) -> Bool
+}
+
+/// Local-only recovery after a confirmed remote deletion. No network method exists here.
+public final class AccountDeletionRecovery {
+    public enum Outcome { case completed, failed, stale }
+    private let owner: Tinode
+    private let store: AccountDeletionStorage
+    private let deletedUID: String
+    private let inCurrentSlot: (_ body: () -> Void) -> Bool
+
+    public init(owner: Tinode, store: AccountDeletionStorage, deletedUID: String,
+                inCurrentSlot: @escaping (_ body: () -> Void) -> Bool) {
+        self.owner = owner
+        self.store = store
+        self.deletedUID = deletedUID
+        self.inCurrentSlot = inCurrentSlot
+    }
+
+    private func withAnonymousScope<Value>(_ body: () -> Value) -> Value? {
+        owner.withActiveSession {
+            var result: Value?
+            let entered = inCurrentSlot {
+                guard owner.myUid == nil, store.myUid == nil, owner.store === store else { return }
+                result = body()
+            }
+            return entered ? result : nil
+        } ?? nil
+    }
+
+    public var isCurrent: Bool { withAnonymousScope { true } ?? false }
+
+    public func retry() -> Outcome {
+        // The caller's real slot/generation lock remains held through the local write.
+        withAnonymousScope { store.deleteAccountData(deletedUID) ? .completed : .failed } ?? .stale
     }
 }
 
@@ -1609,9 +1652,9 @@ public class Tinode {
             guard self.myUid == ownerUid, self.store?.myUid == ownerUid else {
                 return PromisedReply(error: TinodeError.invalidState("Session changed"))
             }
-            self.store?.deleteAccount(ownerUid)
+            let cleaned = (self.store as? AccountDeletionStorage)?.deleteAccountData(ownerUid) ?? false
             self.logout()
-            return nil
+            return cleaned ? nil : PromisedReply(error: TinodeError.accountDeletedLocalCleanupIncomplete)
         } ?? PromisedReply(error: TinodeError.invalidState("Session ended"))
     }
 

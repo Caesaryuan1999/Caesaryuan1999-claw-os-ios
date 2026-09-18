@@ -497,6 +497,7 @@ class SettingsSecurityViewController: UITableViewController {
     private func deleteAccount(owner: Tinode, uid: String?, generation: UInt64) {
         guard Cache.sessionGeneration == generation, owner.myUid == uid, Cache.isCurrent(owner) else { return }
         Cache.log.info("SettingsSecurityVC - deleting account")
+        let cleanupStore = owner.store as? AccountDeletionStorage
         owner.delCurrentUser(hard: true)
             .thenApply { _ in
                 DispatchQueue.main.async {
@@ -508,10 +509,58 @@ class SettingsSecurityViewController: UITableViewController {
             }
             .thenCatch { error in
                 DispatchQueue.main.async {
+                    if case TinodeError.accountDeletedLocalCleanupIncomplete = error {
+                        // The confirmed remote deletion retired this SDK already.
+                        guard Cache.sessionGeneration == generation else { return }
+                        UiUtils.logoutAndRouteToLoginVC(ifCurrent: owner)
+                        let loggedOutGeneration = generation &+ 1
+                        guard Cache.isLoggedOut(generation: loggedOutGeneration) else { return }
+                        let anonymous = Cache.tinode
+                        let recovery: AccountDeletionRecovery?
+                        if let store = cleanupStore, let deletedUID = uid {
+                            recovery = AccountDeletionRecovery(owner: anonymous, store: store, deletedUID: deletedUID,
+                                inCurrentSlot: { body in
+                                    Cache.ifCurrent(anonymous) {
+                                        guard Cache.sessionGeneration == loggedOutGeneration else { return false }
+                                        body()
+                                        return true
+                                    } ?? false
+                                })
+                        } else { recovery = nil }
+                        SettingsSecurityViewController.presentLocalCleanupRecovery(
+                            recovery, generation: loggedOutGeneration)
+                        return
+                    }
                     guard Cache.sessionGeneration == generation, owner.myUid == uid, Cache.isCurrent(owner) else { return }
                     UiUtils.ToastFailureHandler(err: error)
                 }
                 return nil
             }
+    }
+
+    private static func presentLocalCleanupRecovery(_ recovery: AccountDeletionRecovery?, generation: UInt64) {
+        guard Cache.isLoggedOut(generation: generation), recovery?.isCurrent != false,
+              let app = UIApplication.shared.delegate as? AppDelegate,
+              let presenter = app.window?.rootViewController else { return }
+        let alert = UIAlertController(title: "本机清理未完成",
+            message: "账号已注销，但本机数据清理未完成。此处只重试本机清理，不会再次提交注销。",
+            preferredStyle: .alert)
+        let cancel = UIAlertAction(title: "暂不处理", style: .cancel)
+        alert.addAction(cancel)
+        alert.preferredAction = cancel
+        if let recovery = recovery {
+            alert.addAction(UIAlertAction(title: "重试本机清理", style: .default) { _ in
+                switch recovery.retry() {
+                case .completed:
+                    guard Cache.isLoggedOut(generation: generation), recovery.isCurrent else { return }
+                    UiUtils.showToast(message: "本机账号记录已清理", level: .info)
+                case .failed:
+                    DispatchQueue.main.async { presentLocalCleanupRecovery(recovery, generation: generation) }
+                case .stale:
+                    break
+                }
+            })
+        }
+        presenter.present(alert, animated: true)
     }
 }

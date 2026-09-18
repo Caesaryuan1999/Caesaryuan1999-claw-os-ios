@@ -183,8 +183,8 @@ class TinodeSDKTests: XCTestCase {
     }
 
 
-    private func deletionFixture() -> (Tinode, AccountDeletionStoreSpy) {
-        let store = AccountDeletionStoreSpy()
+    private func deletionFixture() -> (Tinode, ObservableAccountDeletionStoreSpy) {
+        let store = ObservableAccountDeletionStoreSpy()
         let sdk = Tinode(for: "delete-fixture", authenticateWith: "fixture", persistDataIn: store)
         sdk.authToken = "synthetic-token"
         return (sdk, store)
@@ -270,6 +270,69 @@ class TinodeSDKTests: XCTestCase {
         XCTAssertEqual(store.myUid, "usrDeleteB")
         XCTAssertEqual(store.logoutCalls, 0)
         XCTAssertTrue(sdk.isSessionActive)
+    }
+
+    func testConfirmedDeletionFailedLocalCleanupRetiresWithSpecificError() throws {
+        let (sdk, store) = deletionFixture()
+        store.cleanupSucceeds = false
+        let result = sdk.finishAccountDeletion(packet: try deletionPacket(code: 200),
+            requestId: "delete-fixture", ownerUid: "usrDeleteA")
+        XCTAssertThrowsError(try XCTUnwrap(result).getResult()) { error in
+            guard case TinodeError.accountDeletedLocalCleanupIncomplete = error else {
+                XCTFail("Expected confirmed remote deletion with incomplete local cleanup"); return
+            }
+        }
+        XCTAssertEqual(store.cleanupAttempts, ["usrDeleteA"])
+        XCTAssertTrue(store.deleted.isEmpty)
+        XCTAssertFalse(sdk.isSessionActive)
+        XCTAssertNil(sdk.authToken)
+        XCTAssertNil(store.myUid)
+    }
+
+    func testConfirmedDeletionUnsupportedStorageRetiresWithoutBlindVoidDelete() throws {
+        let store = AccountDeletionStoreSpy()
+        let sdk = Tinode(for: "delete-fixture", authenticateWith: "fixture", persistDataIn: store)
+        let result = sdk.finishAccountDeletion(packet: try deletionPacket(code: 200),
+            requestId: "delete-fixture", ownerUid: "usrDeleteA")
+        XCTAssertThrowsError(try XCTUnwrap(result).getResult())
+        XCTAssertTrue(store.deleted.isEmpty)
+        XCTAssertFalse(sdk.isSessionActive)
+        XCTAssertNil(store.myUid)
+    }
+
+    func testLocalCleanupRecoveryRunsActualWriteInsideAnonymousSlotGate() {
+        let store = ObservableAccountDeletionStoreSpy()
+        store.myUid = nil
+        let anonymous = Tinode(for: "delete-fixture", authenticateWith: "fixture", persistDataIn: store)
+        var insideSlot = false
+        store.beforeCleanup = { XCTAssertTrue(insideSlot) }
+        let recovery = AccountDeletionRecovery(owner: anonymous, store: store, deletedUID: "usrDeleteA",
+            inCurrentSlot: { body in insideSlot = true; defer { insideSlot = false }; body(); return true })
+        XCTAssertTrue(recovery.isCurrent)
+        if case .completed = recovery.retry() {} else { XCTFail("Expected local-only cleanup") }
+        XCTAssertEqual(store.cleanupAttempts, ["usrDeleteA"])
+        XCTAssertTrue(anonymous.isSessionActive)
+        XCTAssertNil(anonymous.myUid)
+    }
+
+    func testLocalCleanupRecoveryRejectsChangedGenerationAccountStoreAndRetirement() {
+        for mutation in 0..<4 {
+            let store = ObservableAccountDeletionStoreSpy()
+            store.myUid = nil
+            let anonymous = Tinode(for: "delete-fixture", authenticateWith: "fixture", persistDataIn: store)
+            var slotIsCurrent = true
+            let recovery = AccountDeletionRecovery(owner: anonymous, store: store, deletedUID: "usrDeleteA",
+                inCurrentSlot: { body in guard slotIsCurrent else { return false }; body(); return true })
+            switch mutation {
+            case 0: slotIsCurrent = false
+            case 1: anonymous.myUid = "usrDeleteB"; store.myUid = "usrDeleteB"
+            case 2: anonymous.store = AccountDeletionStoreSpy()
+            default: anonymous.logout()
+            }
+            if case .stale = recovery.retry() {} else { XCTFail("Old local recovery must be inert") }
+            XCTAssertTrue(store.cleanupAttempts.isEmpty)
+            XCTAssertTrue(store.deleted.isEmpty)
+        }
     }
 
     override func setUp() {
@@ -425,7 +488,7 @@ class TinodeSDKTests: XCTestCase {
 }
 
 // Only local persistence effects are observed; Tinode session and completion logic are production.
-private final class AccountDeletionStoreSpy: Storage {
+private class AccountDeletionStoreSpy: Storage {
     var initializationError: String? { nil }
     var myUid: String? = "usrDeleteA"
     var deviceToken: String?
@@ -483,4 +546,16 @@ private final class AccountDeletionStoreSpy: Storage {
     func getMessagePage(topic: TopicProto, from: Int, limit: Int, forward: Bool) -> [Message]? { fatalError("Unexpected persistence operation in deletion fixture") }
     func getMessage(fromTopic topic: TopicProto, byEffectiveSeqId seqId: Int) -> Message? { fatalError("Unexpected persistence operation in deletion fixture") }
     func getAllMsgVersions(fromTopic topic: TopicProto, forSeq seqId: Int, limit: Int?) -> [Int]? { fatalError("Unexpected persistence operation in deletion fixture") }
+}
+
+private final class ObservableAccountDeletionStoreSpy: AccountDeletionStoreSpy, AccountDeletionStorage {
+    var cleanupSucceeds = true
+    var cleanupAttempts = [String]()
+    var beforeCleanup: (() -> Void)?
+    func deleteAccountData(_ uid: String) -> Bool {
+        beforeCleanup?()
+        cleanupAttempts.append(uid)
+        if cleanupSucceeds { deleted.append(uid) }
+        return cleanupSucceeds
+    }
 }

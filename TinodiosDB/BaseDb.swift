@@ -186,39 +186,32 @@ public class BaseDb {
     }
 
     public func deleteUid(_ uid: String) -> Bool {
-        guard isStoreAvailable else { return false }
-        var acc: StoredAccount?
-        if self.uid == uid {
-            acc = self.account
-            self.account = nil
-        } else {
-            acc = self.accountDb?.getByUid(uid: uid)
-        }
-        guard let acc2 = acc else {
-            BaseDb.log.error("Could not find account for uid [%@]", uid)
-            return false
-        }
-        let savepointName = "BaseDb.deleteUid"
-        do {
-            try self.db?.savepoint(savepointName) {
-                if !(self.topicDb?.deleteAll(forAccount: acc2.id) ?? true) {
-                    BaseDb.log.error("Failed to clear topics/messages/subscribers for account id [%lld]", acc2.id)
+        BaseDb.accessQueue.sync {
+            guard !uid.isEmpty, isStoreAvailable, let database = db,
+                  self.account == nil || self.account?.uid == uid else { return false }
+            do {
+                try database.transaction(.immediate) {
+                    guard let accountId = try database.scalar("SELECT id FROM accounts WHERE uid=?", uid) as? Int64 else {
+                        return // Already absent is a successful local-only retry.
+                    }
+                    try database.run("DELETE FROM messages WHERE topic_id IN (SELECT id FROM topics WHERE account_id=?)", accountId)
+                    try database.run("DELETE FROM subscriptions WHERE topic_id IN (SELECT id FROM topics WHERE account_id=?)", accountId)
+                    try database.run("DELETE FROM topics WHERE account_id=?", accountId)
+                    try database.run("DELETE FROM users WHERE account_id=?", accountId)
+                    try database.run("DELETE FROM accounts WHERE id=? AND uid=?", accountId, uid)
+                    guard database.changes == 1 else { throw LocalAccountDeletionError.incomplete }
                 }
-                if !(self.userDb?.delete(forAccount: acc2.id) ?? true) {
-                    BaseDb.log.error("Failed to clear users for account id [%lld]", acc2.id)
-                }
-                if !(self.accountDb?.delete(accountId: acc2.id) ?? true) {
-                    BaseDb.log.error("Failed to delete account for id [%lld]", acc2.id)
-                }
+                // A failed statement or COMMIT leaves both the data and active pointer intact.
+                if self.account?.uid == uid { self.account = nil }
+                return true
+            } catch {
+                BaseDb.log.error("local_account_cleanup_failed")
+                return false
             }
-        } catch {
-            // Explicitly releasing savepoint since ROLLBACK TO (SQLite.swift behavior) won't release the savepoint transaction.
-            self.db?.releaseSavepoint(withName: savepointName)
-            BaseDb.log.error("BaseDb - deleteUid operation failed: uid = %@, error = %@", uid, error.localizedDescription)
-            return false
         }
-        return true
     }
+
+    private enum LocalAccountDeletionError: Error { case incomplete }
 
     public static func updateCounter(db: SQLite.Connection, table: Table,
                                      usingIdColumn idColumn: SQLite.Expression<Int64>, forId id: Int64,

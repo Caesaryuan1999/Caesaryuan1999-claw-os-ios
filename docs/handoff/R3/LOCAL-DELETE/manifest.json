@@ -1,0 +1,89 @@
+{
+  "base": "4da8391b19ebe03d4a4ed7d4fb21ae428a89167e",
+  "production_files": [
+    "TinodeSDK/Tinode.swift",
+    "TinodiosDB/SqlStore.swift",
+    "TinodiosDB/BaseDb.swift",
+    "Tinodios/SettingsSecurityViewController.swift"
+  ],
+  "files": [
+    {
+      "path": "TinodeSDK/Tinode.swift",
+      "sha256": "1dc7f5322d1f8e357a7d4fc1598603e2ede7b0c9b1be6b030e1537d5a8fc2236"
+    },
+    {
+      "path": "TinodiosDB/SqlStore.swift",
+      "sha256": "aafcb2fb394318c56fcb47ccd097a4b399f0f016ba92c64bd2cd8724e6f36ae9"
+    },
+    {
+      "path": "TinodiosDB/BaseDb.swift",
+      "sha256": "48e66680f4da56b8c9460c2e489c939304a31bff805f360cb2e9d3b938c9d4b3"
+    },
+    {
+      "path": "Tinodios/SettingsSecurityViewController.swift",
+      "sha256": "71ac5454d77636f161b495505a3e952c3a430cb15a3cdd0257d97e410b4793e1"
+    },
+    {
+      "path": "TinodeSDKTests/TinodeSDKTests.swift",
+      "sha256": "bac872c941dcdbebc8e769796064a7255eee1c6961c73dcbba33e76734a111ad"
+    },
+    {
+      "path": "TinodiosUITests/TinodiosUITests.swift",
+      "sha256": "9507a041f7b8482d5d009aab7075a835f8243b04ec4b977b02fd4070d42ba9bd"
+    }
+  ],
+  "added_native_methods": [
+    {
+      "file": "TinodeSDKTests/TinodeSDKTests.swift",
+      "method": "testConfirmedDeletionFailedLocalCleanupRetiresWithSpecificError"
+    },
+    {
+      "file": "TinodeSDKTests/TinodeSDKTests.swift",
+      "method": "testConfirmedDeletionUnsupportedStorageRetiresWithoutBlindVoidDelete"
+    },
+    {
+      "file": "TinodeSDKTests/TinodeSDKTests.swift",
+      "method": "testLocalCleanupRecoveryRunsActualWriteInsideAnonymousSlotGate"
+    },
+    {
+      "file": "TinodeSDKTests/TinodeSDKTests.swift",
+      "method": "testLocalCleanupRecoveryRejectsChangedGenerationAccountStoreAndRetirement"
+    },
+    {
+      "file": "TinodiosUITests/TinodiosUITests.swift",
+      "method": "testLocalDeletionEveryStatementFailureRollsBackAllAccountsAndRows"
+    },
+    {
+      "file": "TinodiosUITests/TinodiosUITests.swift",
+      "method": "testLocalDeletionCommitFailureRollsBackAndRetainsActivePointer"
+    },
+    {
+      "file": "TinodiosUITests/TinodiosUITests.swift",
+      "method": "testLocalDeletionZeroAccountRowEffectRollsBackChildDeletes"
+    },
+    {
+      "file": "TinodiosUITests/TinodiosUITests.swift",
+      "method": "testLocalDeletionEmptyChildrenAndRepeatedCleanupAreSuccessful"
+    },
+    {
+      "file": "TinodiosUITests/TinodiosUITests.swift",
+      "method": "testLocalDeletionPreservesOtherAccountMarkersAndAutoincrement"
+    },
+    {
+      "file": "TinodiosUITests/TinodiosUITests.swift",
+      "method": "testLocalDeletionCrossAccountForeignKeyFailureRollsBackWithoutExpandingScope"
+    },
+    {
+      "file": "TinodiosUITests/TinodiosUITests.swift",
+      "method": "testLocalCleanupRecoveryCannotDeleteAfterAnotherAccountBecomesCurrent"
+    },
+    {
+      "file": "TinodiosUITests/TinodiosUITests.swift",
+      "method": "testLocalCleanupFailureCanLogoutAndRetryOnlyCapturedAccountAnonymously"
+    }
+  ],
+  "expected_native_total": 181,
+  "expected_sdk": 41,
+  "expected_storage": 140,
+  "native_status": "NOT_RUN for this delta"
+}

@@ -1,0 +1,72 @@
+{
+  "level": "actual SQLite, extracted production SQL/control adapter; NOT Swift",
+  "sqlite": "3.53.1",
+  "cases": [
+    {
+      "case": "abort-accounts",
+      "pass": true,
+      "cleanup": false,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "abort-users",
+      "pass": true,
+      "cleanup": false,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "abort-topics",
+      "pass": true,
+      "cleanup": false,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "abort-subscriptions",
+      "pass": true,
+      "cleanup": false,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "abort-messages",
+      "pass": true,
+      "cleanup": false,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "commit",
+      "pass": true,
+      "cleanup": false,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "ignore",
+      "pass": true,
+      "cleanup": false,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "success",
+      "pass": true,
+      "cleanup": true,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "empty",
+      "pass": true,
+      "cleanup": true,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "repeat",
+      "pass": true,
+      "cleanup": true,
+      "rollback_or_success_as_expected": true
+    },
+    {
+      "case": "cross-account-fk",
+      "pass": true,
+      "cleanup": false,
+      "rollback_or_success_as_expected": true
+    }
+  ]
+}

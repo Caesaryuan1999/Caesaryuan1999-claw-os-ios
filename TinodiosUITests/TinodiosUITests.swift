@@ -298,6 +298,146 @@ final class LocalMigrationTests: XCTestCase {
         return snapshot
     }
 
+    private func deletionSnapshot(_ database: SQLite.Connection) throws -> [String] {
+        var snapshot = [String]()
+        for table in ["accounts", "users", "topics", "subscriptions", "messages"] {
+            for row in try BaseDb.schemaRows(in: database, sql: "SELECT * FROM \(table) ORDER BY id") {
+                snapshot.append(table + ":" + row.map { String(describing: $0) }.joined(separator: "|"))
+            }
+        }
+        return snapshot
+    }
+
+    func testLocalDeletionEveryStatementFailureRollsBackAllAccountsAndRows() throws {
+        for table in ["messages", "subscriptions", "topics", "users", "accounts"] {
+            try withFixture { file, _ in
+                let base = BaseDb(databasePath: file.path)
+                let database = try XCTUnwrap(base.db)
+                let store = try XCTUnwrap(base.sqlStore)
+                let before = try deletionSnapshot(database)
+                try database.run("CREATE TRIGGER delete_fault BEFORE DELETE ON \(table) WHEN OLD.id=1 BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END")
+                XCTAssertFalse(store.deleteAccountData("usrFixtureA"), table)
+                XCTAssertEqual(try deletionSnapshot(database), before, table)
+                XCTAssertEqual(base.uid, "usrFixtureA", table)
+                try database.run("DROP TRIGGER delete_fault")
+            }
+        }
+    }
+
+    func testLocalDeletionCommitFailureRollsBackAndRetainsActivePointer() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let database = try XCTUnwrap(base.db)
+            let store = try XCTUnwrap(base.sqlStore)
+            let before = try deletionSnapshot(database)
+            database.commitHook { throw NSError(domain: "fixture.delete.commit", code: 1) }
+            XCTAssertFalse(store.deleteAccountData("usrFixtureA"))
+            database.commitHook(nil)
+            XCTAssertEqual(try deletionSnapshot(database), before)
+            XCTAssertEqual(base.uid, "usrFixtureA")
+        }
+    }
+
+    func testLocalDeletionZeroAccountRowEffectRollsBackChildDeletes() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let database = try XCTUnwrap(base.db)
+            let store = try XCTUnwrap(base.sqlStore)
+            let before = try deletionSnapshot(database)
+            try database.run("CREATE TRIGGER delete_ignore BEFORE DELETE ON accounts WHEN OLD.id=1 BEGIN SELECT RAISE(IGNORE); END")
+            XCTAssertFalse(store.deleteAccountData("usrFixtureA"))
+            XCTAssertEqual(try deletionSnapshot(database), before)
+            XCTAssertEqual(base.uid, "usrFixtureA")
+        }
+    }
+
+    func testLocalDeletionEmptyChildrenAndRepeatedCleanupAreSuccessful() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let database = try XCTUnwrap(base.db)
+            let store = try XCTUnwrap(base.sqlStore)
+            try database.run("DELETE FROM messages WHERE topic_id=1")
+            try database.run("DELETE FROM subscriptions WHERE topic_id=1")
+            try database.run("DELETE FROM topics WHERE account_id=1")
+            try database.run("DELETE FROM users WHERE account_id=1")
+            XCTAssertTrue(store.deleteAccountData("usrFixtureA"))
+            XCTAssertNil(base.uid)
+            XCTAssertTrue(store.deleteAccountData("usrFixtureA"))
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM accounts WHERE id=2") as? Int64, 1)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE topic_id=2") as? Int64, 1)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM claw_local_migrations") as? Int64, 2)
+        }
+    }
+
+    func testLocalDeletionPreservesOtherAccountMarkersAndAutoincrement() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let database = try XCTUnwrap(base.db)
+            let store = try XCTUnwrap(base.sqlStore)
+            let markers = try BaseDb.schemaRows(in: database, sql: "SELECT * FROM claw_local_migrations ORDER BY rule").map { String(describing: $0) }
+            let sequences = try BaseDb.schemaRows(in: database, sql: "SELECT * FROM sqlite_sequence ORDER BY name").map { String(describing: $0) }
+            XCTAssertTrue(store.deleteAccountData("usrFixtureA"))
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM accounts") as? Int64, 1)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages") as? Int64, 1)
+            XCTAssertEqual(try database.scalar("SELECT uid FROM accounts") as? String, "usrFixtureB")
+            XCTAssertEqual(try BaseDb.schemaRows(in: database, sql: "SELECT * FROM claw_local_migrations ORDER BY rule").map { String(describing: $0) }, markers)
+            XCTAssertEqual(try BaseDb.schemaRows(in: database, sql: "SELECT * FROM sqlite_sequence ORDER BY name").map { String(describing: $0) }, sequences)
+        }
+    }
+
+    func testLocalDeletionCrossAccountForeignKeyFailureRollsBackWithoutExpandingScope() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let database = try XCTUnwrap(base.db)
+            let store = try XCTUnwrap(base.sqlStore)
+            try database.run("UPDATE messages SET user_id=1 WHERE id=7")
+            let before = try deletionSnapshot(database)
+            XCTAssertFalse(store.deleteAccountData("usrFixtureA"))
+            XCTAssertEqual(try deletionSnapshot(database), before)
+            XCTAssertEqual(base.uid, "usrFixtureA")
+        }
+    }
+
+    func testLocalCleanupRecoveryCannotDeleteAfterAnotherAccountBecomesCurrent() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let database = try XCTUnwrap(base.db)
+            let store = try XCTUnwrap(base.sqlStore)
+            store.logout()
+            let anonymous = Tinode(for: "fixture.cleanup", authenticateWith: "fixture", persistDataIn: store)
+            let recovery = AccountDeletionRecovery(owner: anonymous, store: store, deletedUID: "usrFixtureA",
+                inCurrentSlot: { body in body(); return true })
+            store.myUid = "usrFixtureB"
+            let before = try deletionSnapshot(database)
+            if case .stale = recovery.retry() {} else { XCTFail("B blocks old local cleanup") }
+            XCTAssertFalse(store.deleteAccountData("usrFixtureA"))
+            XCTAssertEqual(try deletionSnapshot(database), before)
+            XCTAssertEqual(store.myUid, "usrFixtureB")
+        }
+    }
+
+    func testLocalCleanupFailureCanLogoutAndRetryOnlyCapturedAccountAnonymously() throws {
+        try withFixture { file, _ in
+            let base = BaseDb(databasePath: file.path)
+            let database = try XCTUnwrap(base.db)
+            let store = try XCTUnwrap(base.sqlStore)
+            try database.run("CREATE TRIGGER delete_fault BEFORE DELETE ON users WHEN OLD.id=1 BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END")
+            XCTAssertFalse(store.deleteAccountData("usrFixtureA"))
+            store.logout()
+            XCTAssertNil(store.myUid)
+            XCTAssertEqual(try database.scalar("SELECT last_active FROM accounts WHERE id=1") as? Int64, 0)
+            try database.run("DROP TRIGGER delete_fault")
+            let anonymous = Tinode(for: "fixture.cleanup", authenticateWith: "fixture", persistDataIn: store)
+            let recovery = AccountDeletionRecovery(owner: anonymous, store: store, deletedUID: "usrFixtureA",
+                inCurrentSlot: { body in body(); return true })
+            if case .completed = recovery.retry() {} else { XCTFail("Expected local-only recovery") }
+            XCTAssertNil(store.myUid)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM accounts WHERE id=1") as? Int64, 0)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM accounts WHERE id=2") as? Int64, 1)
+            XCTAssertEqual(try database.scalar("SELECT COUNT(*) FROM messages WHERE topic_id=2") as? Int64, 1)
+        }
+    }
+
     func testFirstUpgradeIsolatesLegacy20And30AndPreservesAllOtherData() throws {
         try withFixture { file, database in
             let before = try preservedData(database)
