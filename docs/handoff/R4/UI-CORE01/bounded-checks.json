@@ -1,0 +1,123 @@
+{
+  "base": "94af9225091278d676fca0f1eb13ca9e8a30dac2",
+  "scope": "source equality and XML/membership only, no Swift execution",
+  "checks": [
+    {
+      "path": "Tinodios/widgets/ChatListViewCell.swift",
+      "method": "public func fillFromTopic(topic:",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/ChatListViewController.swift",
+      "method": "private func buildActiveContactItems",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/ChatListViewController.swift",
+      "method": "private func applySearchFilter",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/ChatListViewController.swift",
+      "method": "func displayChats(",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/ChatListViewController.swift",
+      "method": "override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "method": "func displayLocalContacts",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "method": "func displayRemoteContacts",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "method": "func getUniqueId",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "method": "func jumpTo",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "method": "public func cancelPendingSearchRequest",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "method": "private func doSearch",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "method": "func updateSearchResults",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/AccountSettingsViewController.swift",
+      "method": "private func reloadData",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/AccountSettingsViewController.swift",
+      "method": "private func scheduleAccountSyncRetry",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/AccountSettingsViewController.swift",
+      "method": "@IBAction func copyTopicValue",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/AccountSettingsViewController.swift",
+      "method": "@objc private func copyPremiumValue",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "Tinodios/AccountSettingsViewController.swift",
+      "method": "@objc private func openGeneralSettings",
+      "unchanged_from_base": true
+    },
+    {
+      "xib_outlets": 6,
+      "all_resolve": true
+    },
+    {
+      "ci_selector_only_addition": true
+    },
+    {
+      "pbx_existing_app_host_source_membership": true
+    },
+    {
+      "new_native_methods": [
+        "testConversationNibOptInKeepsDataAndRestoresLegacyReuse",
+        "testContactNibOptInSelectionAndDefaultConsumerRemainDistinct",
+        "testOriginalNibsAt320GrowForAccessibilityInBothAppearances",
+        "testRealFindConsumesContactsAndEmptyStateWithoutDirectoryCalls",
+        "testRealAccountMissingThenPublicAliasUsesOriginalDataConsumer",
+        "testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries"
+      ],
+      "expected_only": true,
+      "existing_native": 242,
+      "navigation": 3
+    }
+  ],
+  "source_candidate": "c84ab98db11685a656dfe483cd1db59c055fd81e",
+  "test_only_successor": {
+    "parent": "a2db7d1f1413370b67f7140f1189da068a60b21e",
+    "target": "c84ab98db11685a656dfe483cd1db59c055fd81e",
+    "only_original_method6_changed": true,
+    "other_five_and_helpers_unchanged": true,
+    "no_production_change": true
+  },
+  "diff_check": "PASS"
+}

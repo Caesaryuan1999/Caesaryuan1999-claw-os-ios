@@ -1,0 +1,153 @@
+{
+  "baseline": "94af9225091278d676fca0f1eb13ca9e8a30dac2",
+  "source_commit": "c84ab98db11685a656dfe483cd1db59c055fd81e",
+  "production_files": 6,
+  "test_wiring_files": 6,
+  "native_execution": "NOT_RUN Windows; root controls Mac CI",
+  "planned_native": 248,
+  "planned_navigation": 3,
+  "old_native_assertions_removed": 0,
+  "new_methods": [
+    "testConversationNibOptInKeepsDataAndRestoresLegacyReuse",
+    "testContactNibOptInSelectionAndDefaultConsumerRemainDistinct",
+    "testOriginalNibsAt320GrowForAccessibilityInBothAppearances",
+    "testRealFindConsumesContactsAndEmptyStateWithoutDirectoryCalls",
+    "testRealAccountMissingThenPublicAliasUsesOriginalDataConsumer",
+    "testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries"
+  ],
+  "paths": [
+    {
+      "path": "Scripts/ci/test_active_contacts_layout_policy.py",
+      "mode": "100644",
+      "blob": "619cfb56e8aca19293142913746425066c877a59",
+      "bytes": 2925,
+      "git_sha256": "d8fe2857aa6bdc9307470485a3cb6b707bbe3731e3be851359b04bf0be1bd7f9",
+      "base_blob": "ad43d2e48d1d5e204d8c3f07a82d5ae2556a035c",
+      "raw_bytes": 2925,
+      "raw_sha256": "d8fe2857aa6bdc9307470485a3cb6b707bbe3731e3be851359b04bf0be1bd7f9",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Scripts/ci/test_chat_list_branding_policy.py",
+      "mode": "100644",
+      "blob": "3d5ba4ec0ffb3795fce55efbc362cb6207b48b16",
+      "bytes": 1601,
+      "git_sha256": "9be24a2991caaaa2d0e9c3e6a36adcad9e62d9db53ac901be17de892c29de767",
+      "base_blob": "ccfecbb17f4b7ed46f0b134b56a02b85a3b7269c",
+      "raw_bytes": 1601,
+      "raw_sha256": "9be24a2991caaaa2d0e9c3e6a36adcad9e62d9db53ac901be17de892c29de767",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Scripts/ci/test_premium_secondary_ui_policy.py",
+      "mode": "100644",
+      "blob": "a30318c8685d16cb9d2a57b1fce9b8f8d3d3d265",
+      "bytes": 5287,
+      "git_sha256": "a8213558a13ed78559e238725435e49076b0108fd961068ba22d381c59c0c0ed",
+      "base_blob": "596c2a86989069a8ef66c41f0b9bfb4ca7a34d41",
+      "raw_bytes": 5287,
+      "raw_sha256": "a8213558a13ed78559e238725435e49076b0108fd961068ba22d381c59c0c0ed",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "mode": "100644",
+      "blob": "ffd8dea3b3fd7c68f7417af5c8fe3a7a4130b4d5",
+      "bytes": 24247,
+      "git_sha256": "5bdf7844f19a47c1c8cd1eaf9644a26c2f1fcb5e56bcd5065d356df156e2f965",
+      "base_blob": "3cbcfb58714dc8f6f6d327898bfad003d6837be6",
+      "raw_bytes": 24247,
+      "raw_sha256": "5bdf7844f19a47c1c8cd1eaf9644a26c2f1fcb5e56bcd5065d356df156e2f965",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "mode": "100644",
+      "blob": "db8c60e24e643e3465cb039f57636d9575e825f2",
+      "bytes": 128626,
+      "git_sha256": "5308c02b55c106b60b92641090d01421927debe6e9c90f218cbfd99c1ecc5c4f",
+      "base_blob": "9f79c03c6bd48526d085a181492ea296584d4ec8",
+      "raw_bytes": 130577,
+      "raw_sha256": "82bb1923cdb31bcd2b9a8faf3b233c262c78a2d22c8ceb1657542c786d907ed0",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Tinodios/AccountSettingsViewController.swift",
+      "mode": "100644",
+      "blob": "846096eb1fdd3114ea3f683340abe6bd2fb6a216",
+      "bytes": 19154,
+      "git_sha256": "ab5d6097657a466e85e2b8e55d40315f19322730ea1d795a96943ea34aad7fe1",
+      "base_blob": "21f66ca7edf1cdb814eab566e5c12138340acab8",
+      "raw_bytes": 19531,
+      "raw_sha256": "ec63bdfa29d2baad20fe7034ab9989999ae660bb7f641b84de7e9d1e00fa8549",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Tinodios/ChatListViewController.swift",
+      "mode": "100644",
+      "blob": "64d0b9d7bb0ef39b497fe93d5a93703b266703f3",
+      "bytes": 24301,
+      "git_sha256": "80edabf4262f0c8d15abae8697bf061f1659ad02a6e709f50a943b00114037e3",
+      "base_blob": "ade1a7acec608910ceab78fafc60528025452ec6",
+      "raw_bytes": 24834,
+      "raw_sha256": "08bde8fb0efc6811e9f1ed2ff896a8dac0bc456cb6e9cda32a3f77d6d9e33d45",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "mode": "100644",
+      "blob": "e583ce5a5c69e67f3dc699c88ebd07668b715c7d",
+      "bytes": 27070,
+      "git_sha256": "7fcc118cbb0f87133e62c188ff15db442433368e8b47a2e684c5d8890e8ea4b5",
+      "base_blob": "83ddc422ddb9d4159405a40b6c3fec125548001b",
+      "raw_bytes": 27688,
+      "raw_sha256": "33788eff611e408f43e30623b73f48f453f6bf5577f2d2475741f4f433c20399",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Tinodios/widgets/ChatListViewCell.swift",
+      "mode": "100644",
+      "blob": "19a73168aeb26ab12ceebfc0556480254aac0470",
+      "bytes": 15754,
+      "git_sha256": "573212f829f46a9532beb011b23a7309c085bba0329bf1fb2878319c611ca9f5",
+      "base_blob": "4dcd77b218af7a8c5a4c3a9e1db803a957c282ba",
+      "raw_bytes": 16090,
+      "raw_sha256": "ec45ac104da025354dd9e1fbb2bead94b346365cfb0d305668f8e3cb9a7a015a",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Tinodios/widgets/ContactViewCell.swift",
+      "mode": "100644",
+      "blob": "3e590a00ce642bf925664a0b8871820efbb3131b",
+      "bytes": 5052,
+      "git_sha256": "103a78f47872e860f48365dbde73c5c9934f47626f055f4024b01c9aecc734f8",
+      "base_blob": "8223a810782335b683533e503ba366eab3b880c1",
+      "raw_bytes": 5183,
+      "raw_sha256": "6c15e2315ac7e222428b06cde47b90ca30008a71771778d815e3731ada802cc3",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "Tinodios/widgets/ContactViewCell.xib",
+      "mode": "100644",
+      "blob": "f1c55ab6ee785e087102999509e3cfbd8b06d0aa",
+      "bytes": 11524,
+      "git_sha256": "fbafeb1c57e27fd3ac6cb86c2045ae4899ff5827bf2cf1d6406ce1d91472a20c",
+      "base_blob": "789c0ae235954574c15db6a6c6df81cb3eeb5b1a",
+      "raw_bytes": 11644,
+      "raw_sha256": "9655512f0f64812921af8d23b95e1562566158e49033cc932be2702219bbde2b",
+      "clean_filter_blob_matches": true
+    },
+    {
+      "path": "TinodiosUITests/CoreListLayoutTests.swift",
+      "mode": "100644",
+      "blob": "28b0450d0f7f78bfefe611329e74b64efc3d5176",
+      "bytes": 26232,
+      "git_sha256": "3f1e6bc38d76b884140dc9a3c1cb6c41965239793a8fb7269f2dbe0f218cd559",
+      "base_blob": null,
+      "raw_bytes": 26232,
+      "raw_sha256": "3f1e6bc38d76b884140dc9a3c1cb6c41965239793a8fb7269f2dbe0f218cd559",
+      "clean_filter_blob_matches": true
+    }
+  ],
+  "production_commit": "a2db7d1f1413370b67f7140f1189da068a60b21e"
+}

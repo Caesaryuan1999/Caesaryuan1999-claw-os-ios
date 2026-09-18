@@ -1,0 +1,29 @@
+{
+  "scope": "Original policy bytes executed against approved R4 layout; source policy conflict, not a native failure",
+  "checks": [
+    {
+      "path": "Scripts/ci/test_chat_list_branding_policy.py",
+      "baseline_policy_blob": "ccfecbb17f4b7ed46f0b134b56a02b85a3b7269c",
+      "executed_against_source": "a2db7d1f1413370b67f7140f1189da068a60b21e",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 42, in <module>\n  File \"<string>\", line 18, in main\nAssertionError\n"
+    },
+    {
+      "path": "Scripts/ci/test_active_contacts_layout_policy.py",
+      "baseline_policy_blob": "ad43d2e48d1d5e204d8c3f07a82d5ae2556a035c",
+      "executed_against_source": "a2db7d1f1413370b67f7140f1189da068a60b21e",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 70, in <module>\n  File \"<string>\", line 39, in main\nAssertionError\n"
+    },
+    {
+      "path": "Scripts/ci/test_premium_secondary_ui_policy.py",
+      "baseline_policy_blob": "596c2a86989069a8ef66c41f0b9bfb4ca7a34d41",
+      "executed_against_source": "a2db7d1f1413370b67f7140f1189da068a60b21e",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 102, in <module>\nAssertionError: missing Figma account-settings structure: premiumAvatar.heightAnchor.constraint(equalToConstant: 64)\n"
+    }
+  ]
+}
