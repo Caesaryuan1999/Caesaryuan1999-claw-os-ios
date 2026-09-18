@@ -1,0 +1,59 @@
+{
+  "scope": "Test-only successor restoration; no compilation/native execution",
+  "baseline": "b004af0d5c5d8ce2f7560fad04ed8711694c8e23",
+  "target_source": "34b675e7f1db76c90ca112e0f2588f1ddfb97696",
+  "packaging_parent": "243fc2888c170d5ea8eae28aaafedf295c383faf",
+  "path": "TinodiosUITests/AssistantStreamTests.swift",
+  "before": {
+    "mode": "100644",
+    "kind": "blob",
+    "blob": "f4cda80ea203957c8a9d8f9ce5ffc2ed4e1008c7",
+    "bytes": 20538,
+    "sha256": "51b1a7b8e4c28a8f8808b9d36f8df4cf4459edca4b1f71eb9f0117a822c53b47"
+  },
+  "after": {
+    "mode": "100644",
+    "kind": "blob",
+    "blob": "279f5699f5c7b9d1fc095841469921add7ac2ff3",
+    "bytes": 20538,
+    "sha256": "944c08471fdd5889584b0f064a38c4a2bc05c3c4211ea9c2bb3a6c38af76e221"
+  },
+  "patch": {
+    "path": "test-only.patch",
+    "bytes": 1335,
+    "sha256": "05f48b74e0288cc3683c7f0f2afbf6ab6d0a3b37e4fed73fafd5e1de9c37e9bf"
+  },
+  "forward_apply": {
+    "independent_index_directory": "C:\\Users\\12287\\AppData\\Local\\Temp\\claw-ios-ci39-fixture-forward-zi5mdheb",
+    "result_tree": "596d683a0a53da5312018d8662976d9dddb9ba7c",
+    "base_entries": 947,
+    "result_entries": 947,
+    "non_docs_entries": 553,
+    "whole_tree_equals_base_with_only_target_test_replaced": true,
+    "all_non_docs_mode_kind_blob_equal_target": true,
+    "all_unselected_entries_unchanged": true,
+    "selected_blob_bytes_match_target": true,
+    "original_index_unchanged": true,
+    "original_index_sha256": "2b95e318e2b55813be8fcf328ae90c20f5bdcf936bf2ec7b3d687f96833fe273"
+  },
+  "old_bundle_unchanged_sha256": "fb935e5f761a7bdb20cc110c9421b93e4ef11d052e277bab5578721c44bf7750",
+  "ci39": {
+    "run": "35402042528",
+    "job": "105783842048",
+    "source": "b004af0d5c5d8ce2f7560fad04ed8711694c8e23",
+    "native_passed": 289,
+    "native_failed": 4,
+    "native_skipped": 0,
+    "navigation_package_cold": "NOT_RUN",
+    "zip_sha256": "71cbce339b394cf06b8d7085a95faeb5cba7e2f6552fcbc7b84585ee43d6569e"
+  },
+  "ci40": {
+    "run": "35403779991",
+    "job": "105789172452",
+    "source": "34b675e7f1db76c90ca112e0f2588f1ddfb97696",
+    "status": "PENDING",
+    "sdk44": "reported passed by root; final evidence not independently accepted",
+    "expected_native": 293,
+    "expected_navigation": 3
+  }
+}

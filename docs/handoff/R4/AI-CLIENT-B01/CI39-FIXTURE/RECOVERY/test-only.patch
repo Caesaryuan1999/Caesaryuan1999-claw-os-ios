@@ -1,0 +1,26 @@
+diff --git a/TinodiosUITests/AssistantStreamTests.swift b/TinodiosUITests/AssistantStreamTests.swift
+index f4cda80ea203957c8a9d8f9ce5ffc2ed4e1008c7..279f5699f5c7b9d1fc095841469921add7ac2ff3 100644
+--- a/TinodiosUITests/AssistantStreamTests.swift
++++ b/TinodiosUITests/AssistantStreamTests.swift
+@@ -49,16 +49,16 @@ private final class AssistantSocketServer {
+             default: break
+             }
+         }
+-        listener.start(queue: queue)
+-        guard ready.wait(timeout: .now() + 3) == .success, queue.sync(execute: { port != nil }) else {
+-            listener.cancel(); throw AssistantFixture.Failure.fixture
+-        }
+-        boundPort = port!
+         listener.newConnectionHandler = { [weak self] connection in
+             guard let self = self, self.peers.count < 32 else { connection.cancel(); return }
+             self.peers.append(connection); connection.start(queue: self.queue)
+             self.read(connection, bytes: Data())
+         }
++        listener.start(queue: queue)
++        guard ready.wait(timeout: .now() + 3) == .success, queue.sync(execute: { port != nil }) else {
++            listener.cancel(); throw AssistantFixture.Failure.fixture
++        }
++        boundPort = port!
+     }
+     private var boundPort: UInt16 = 0
+     var url: URL { URL(string: "http://127.0.0.1:\(boundPort)/")! }
