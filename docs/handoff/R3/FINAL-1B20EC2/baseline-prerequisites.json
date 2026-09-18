@@ -1,0 +1,36 @@
+{
+  "baseline": "34a8b3e5ad4df210117e2e03b308576796ba55b2",
+  "target": "1b20ec2971061dbc002d1748f0f252d87b69d0f7",
+  "dependencies": [
+    {
+      "path": "Scripts/ci/fixtures/ios113.sql",
+      "base_sha256": "9ab879befa1a451e827c31bb9bea148621635f6ab9a44447f6c5f76f718256f2",
+      "target_sha256": "9ab879befa1a451e827c31bb9bea148621635f6ab9a44447f6c5f76f718256f2",
+      "target_bytes": 3983,
+      "unchanged_from_baseline": true,
+      "included_as_patch_delta": false,
+      "reason": "Synthetic nonempty account/attachment SQLite fixture, not user data"
+    },
+    {
+      "path": "Scripts/ci/run_static_policies.py",
+      "base_sha256": "335ebbf96e991fbf728a97b1ac6f7c0ad6ca7bb87db0105f27f229ce4fad3de7",
+      "target_sha256": "335ebbf96e991fbf728a97b1ac6f7c0ad6ca7bb87db0105f27f229ce4fad3de7",
+      "target_bytes": 3273,
+      "unchanged_from_baseline": true,
+      "included_as_patch_delta": false,
+      "reason": "Preserved source policy entry point"
+    },
+    {
+      "path": "Podfile.lock",
+      "base_sha256": "9d9e6bc8457d647cf571d1087bb317ecde5115e514d58c7b07263db8adf8caa6",
+      "target_sha256": "8fa1543054fb3c9b9827176fca30c915717ae4a82e184b981ea41d0dbaa8e2f5",
+      "target_bytes": 7626,
+      "unchanged_from_baseline": false,
+      "included_as_patch_delta": true,
+      "reason": "Actual target dependency lock; delta IS included in this package"
+    }
+  ],
+  "not_an_empty_upstream_patch": true,
+  "private_content_read_or_copied": false,
+  "configuration": "Retain private baseline configuration locally. CI only uses disabled push placeholder and loopback."
+}

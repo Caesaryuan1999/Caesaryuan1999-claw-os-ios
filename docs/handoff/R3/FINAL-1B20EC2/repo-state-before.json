@@ -1,0 +1,22 @@
+{
+  "branch": "codex/r3-20260918-ios",
+  "head": "1b20ec2971061dbc002d1748f0f252d87b69d0f7",
+  "origin": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios.git",
+  "tracked_dirty_count": 0,
+  "preserved_untracked_groups": [
+    "artifacts/",
+    "docs/handoff/R3/CHAT-SCROLL-PLAN.md",
+    "docs/handoff/R3/VIDEO-OWNED-02/WIP-CI24/",
+    "docs/handoff/R3/VOICE-LIFECYCLE-01/WIP-CI19/",
+    "docs/handoff/R3/VOICE-LIFECYCLE-01/WIP-CI20/"
+  ],
+  "instructions": [
+    "C:/Users/12287/.codex/RTK.md",
+    "root AGENTS.md",
+    "root docs/context/ACTIVE_CONTEXT.md",
+    "root docs/context/WORKSTREAMS.md",
+    "root docs/context/WINDOW_04_IOS.md",
+    "parent bounded packaging authorization: docs only, no source/CI changes or push"
+  ],
+  "scope": "Before new package generation; original untracked groups preserved"
+}

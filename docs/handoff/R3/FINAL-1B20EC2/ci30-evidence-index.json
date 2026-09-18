@@ -1,0 +1,352 @@
+{
+  "target": "1b20ec2971061dbc002d1748f0f252d87b69d0f7",
+  "run": 35361193265,
+  "job": 105652584258,
+  "artifact_id": 10554503451,
+  "artifact_bytes": 49411977,
+  "artifact_sha256": "58b0fe764142d67d8ffc1cb408fd8de9c281067987f56ffca7d9844f16dfaedd",
+  "summaries": {
+    "sdk-summary.json": {
+      "passedTests": 44,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "startTime": 1789744646.055,
+      "finishTime": 1789744879.44,
+      "result": "Passed"
+    },
+    "storage-summary.json": {
+      "passedTests": 188,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "startTime": 1789744891.512,
+      "finishTime": 1789745639.05,
+      "result": "Passed"
+    },
+    "navigation-summary.json": {
+      "passedTests": 3,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "startTime": 1789745651.167,
+      "finishTime": 1789745985.598,
+      "result": "Passed"
+    }
+  },
+  "app_zip": {
+    "path": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/CLAW-OS-unsigned-simulator.zip",
+    "bytes": 37450313,
+    "sha256": "a16037ed92f5b7fb37e93c904faec1941a4ee69e1ba200fe61434c3425bcc3fd"
+  },
+  "cold_launch": {
+    "status": "NOT_RUN: simulator readiness gate failed before install/launch",
+    "bootstatus_timeout_seconds": 45,
+    "bootstatus_elapsed_seconds": 46.685563,
+    "later_state": "Booted only, not readiness evidence",
+    "cause": "Internal bootstatus stage unknown"
+  },
+  "small_evidence": [
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/sdk-summary.json",
+      "bytes": 1262,
+      "sha256": "61456f70f05ffa23a633ef043bef76a4273578d8f2c0c6f716333e0671a57c8f"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-summary.json",
+      "bytes": 1164,
+      "sha256": "33bdf8401178250a3940fe6f732ab26e4369805341ece66c6c6377c54cb01a02"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/navigation-summary.json",
+      "bytes": 968,
+      "sha256": "a539070b13ee811dd46e1708c57b553642fc6fec42724e5d347859a380d10e12"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/simulator-manifest.json",
+      "bytes": 534,
+      "sha256": "f44a82c5f29782661335827e443a48956a4f5860c62cec896d9d59136f88373e"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/launch-smoke/manifest.json",
+      "bytes": 3137,
+      "sha256": "0330099bb7dde6387562325f45f34b2c676b6b9e913571d7d6ab9e8dcd5946ec"
+    }
+  ],
+  "root_review": {
+    "path": "artifacts/integration/20260918/R3-ios-ci30-root-review.json",
+    "sha256": "a432ea19d2df3bcb385e9f40b0efaa4dd3266d4ec6bbd42b62e63f0a42e2a32c"
+  },
+  "voice_assets_verified": [
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/EC3701BC-E438-4D78-9B57-E362C7C4CB65.json",
+      "bytes": 9428,
+      "sha256": "ed4e4550fd8c657b2425652e7a258c60793797a12a7438aaa27ac35cfa608067",
+      "test": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-teardown-current-before-reset_0_7002F212-8618-4330-85DD-435B608BE8DA.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/F695647A-C69F-4AF3-894B-ACB65B7A0A3D.png",
+      "bytes": 185179,
+      "sha256": "b3ec9df9dae12c18606f23ce8097b36ff0670c8efb94ca779d9afe2764e6cba8",
+      "test": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-teardown-current-before-reset_0_893195A9-7DE7-4B78-8E10-12B447F9492E.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/4B2271E2-5326-43ED-B817-F8AB16CB3C80.json",
+      "bytes": 9424,
+      "sha256": "6b293c35160af7b8fa2a4e5e0684a09b3d581af615f7be2dc06efac9d4f0ace3",
+      "test": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-controlled-handler-actions_0_308610A0-8B4C-4B61-A7C9-3E6EB5552BF0.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/2FF4B213-F6C3-4827-9F25-16F73A652F24.png",
+      "bytes": 185179,
+      "sha256": "b3ec9df9dae12c18606f23ce8097b36ff0670c8efb94ca779d9afe2764e6cba8",
+      "test": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-controlled-handler-actions_0_6B0A4B36-919A-4CB8-88C7-C7206FC19F2D.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/2613032B-A82D-4979-8D0B-6B9E284E8627.json",
+      "bytes": 7429,
+      "sha256": "f56ab89e22d6fb536910452742dfb20d42730b436956aff1030ec49962da6304",
+      "test": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-controlled-up-lock_0_B1C0F5FC-1C6F-4AF9-8096-7B5388EC6D15.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/6F9DF618-4340-4DE2-804F-012750832390.png",
+      "bytes": 208761,
+      "sha256": "d03eaef3de9a38d81634b89c689e2b0e258aba173fd903906802f755a1ccd67d",
+      "test": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-controlled-up-lock_0_C6393E5F-0A58-48FA-BDD0-2740ED222309.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/C0A9D7A6-F28A-41DE-B664-EE2CC69ED717.json",
+      "bytes": 10275,
+      "sha256": "0425e750a3c2c0f7e1209840d36c104846b4935d44a0d398e3d394e3559a6442",
+      "test": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-teardown-current-before-reset_0_0CFEFC3F-3295-4494-9A0C-E1A64D2E836C.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/175463BE-5A68-46C3-903A-A7EBCA779370.png",
+      "bytes": 164108,
+      "sha256": "89afb32262ec700902d650925c64e11e755d5ebc7076cbbb423b2e4042e35f01",
+      "test": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-teardown-current-before-reset_0_D3147606-6E95-42FD-BF34-6AFE0B3E92B8.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/EAC55349-259B-44E8-9668-44F546027A3D.json",
+      "bytes": 10269,
+      "sha256": "5f967be7e967963460e221fb5dec2455c18ebe1cd8ea8f7bc2a96374cd945fe2",
+      "test": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-dark-largest-type-scroll_0_04AB4550-FB2B-4757-BBE1-6544CCF6FA53.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/2BA40CB6-A4A9-4B97-8092-48902C86E864.png",
+      "bytes": 164108,
+      "sha256": "89afb32262ec700902d650925c64e11e755d5ebc7076cbbb423b2e4042e35f01",
+      "test": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-dark-largest-type-scroll_0_D9B5445D-452E-4662-BE6B-3C8F0C4E6A3B.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/0089C1BE-4F7F-46AE-A046-E4F59C39938F.json",
+      "bytes": 7738,
+      "sha256": "18628ae63d8240a9ff6ca9d109e6ba3292bdeacf8c98df15f86dfc449c2a5b4d",
+      "test": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-light-default-type_0_39A02F7F-7294-44CA-8F78-5F9A4585AB4C.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/EE3F2963-9695-46E0-8AFB-ED54BE8B6E55.png",
+      "bytes": 164748,
+      "sha256": "ff53295d61180e341d7ee9e67c2c977567c11e61407baf6dc08b1cef9f934f9a",
+      "test": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-light-default-type_0_1ED0660B-9D84-40FE-A7DB-663480076EA5.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/58AA7BE7-1BF0-45D2-8EF0-B396A52D3B1A.json",
+      "bytes": 8003,
+      "sha256": "68b38796e427eff41bbd9bce068be1024605a68304327230506d74f5d4823851",
+      "test": "VoiceLayoutTests/testInputAccessoryKeyboardAppearsAndDismisses()",
+      "name": "voice-component-teardown-current-before-reset_0_F6DEB823-09D6-4396-9E43-21CC04AE689C.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/BA6EFC78-119D-46AA-B058-5EB65A7C2DF7.png",
+      "bytes": 109578,
+      "sha256": "8d728bd0b653409f3be15f3621c21eea735160d817f34083db666713657e8989",
+      "test": "VoiceLayoutTests/testInputAccessoryKeyboardAppearsAndDismisses()",
+      "name": "voice-component-teardown-current-before-reset_0_88064C78-DB3B-4802-BF26-AA2C8FDF12A9.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/8BA7B84D-69B9-4CB6-A798-49AB5CFFF075.json",
+      "bytes": 7991,
+      "sha256": "b2dafb5b441ddbcbc29bcfeb16e09997aceaeaac3080269071a8b968782f463b",
+      "test": "VoiceLayoutTests/testInputAccessoryKeyboardAppearsAndDismisses()",
+      "name": "voice-component-keyboard-dismissed_0_E9A22164-4438-4322-A7D9-A1573453D6C7.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/B7BC5F5E-4B13-4153-8F38-5506C7822AB5.png",
+      "bytes": 109578,
+      "sha256": "8d728bd0b653409f3be15f3621c21eea735160d817f34083db666713657e8989",
+      "test": "VoiceLayoutTests/testInputAccessoryKeyboardAppearsAndDismisses()",
+      "name": "voice-component-keyboard-dismissed_0_034ADA2F-424F-4359-A560-0370F68FBB91.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/A7C2A131-2B67-46F4-9644-03FF85189F21.json",
+      "bytes": 7366,
+      "sha256": "7563376767a4523e874d9eb71ea213d64c42fb26555b440779d2a3200dbec2fd",
+      "test": "VoiceLayoutTests/testInputAccessoryKeyboardAppearsAndDismisses()",
+      "name": "voice-component-keyboard-shown_0_338DD1A0-E07F-4FB1-AF13-DAB31AFAB607.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/4664A429-1743-4394-937F-33470EF78EF8.png",
+      "bytes": 68478,
+      "sha256": "0d1f80c53e98702f14c65698867ae94451fc92ef5f1aa2f50242b985edf59561",
+      "test": "VoiceLayoutTests/testInputAccessoryKeyboardAppearsAndDismisses()",
+      "name": "voice-component-keyboard-shown_0_DEB6C203-7AA4-40A4-AD0E-0403E63A7246.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/C8205783-0C07-4C7C-82D0-5FC14041342D.json",
+      "bytes": 7071,
+      "sha256": "e6ea91ff4104d70e4a542775484a88dda64df8863f995b55dd5916d29466184c",
+      "test": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-teardown-current-before-reset_0_AFDA12B7-82C6-40BA-9999-B0B1ECE3DBBC.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/B352BC09-6803-4119-9763-D91BDE44A2C8.png",
+      "bytes": 57294,
+      "sha256": "d315d72474c83993ee320eee74418dfb67bb8ab8406f8df5a59108f887538fa1",
+      "test": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-teardown-current-before-reset_0_D496337E-5399-4DA5-A91C-8778D18782F7.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/0E823FCD-91B9-4663-B2E3-4CA0CF78916B.json",
+      "bytes": 7077,
+      "sha256": "3ca756f9e48ca3e4dd021d3344dbd685876b821a5f7f0acfb5120b4f3b38f3cd",
+      "test": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-send-button-empty-recording-restored_0_5A2C469B-CBEE-4FAD-9DEE-5C7E9C38956B.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/7A6556FB-BB5F-438A-AD67-EB0948B2F030.png",
+      "bytes": 57713,
+      "sha256": "e8a70976358db5aa9876a9fd1dae9a1663545993768419c40b5fdd3e327da943",
+      "test": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-send-button-empty-recording-restored_0_82C0E7BA-B4FB-4823-A116-86670920FB81.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/843E6C33-8E53-431B-914A-24908A590A75.json",
+      "bytes": 7075,
+      "sha256": "702cbe6288f0cd072773b1877c30c7c757d183968a16b8e0b0820f098583dd08",
+      "test": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-send-button-text-single-line_0_A5132289-76BF-424D-8BFC-8C364CE1C9D8.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/792A770F-C2F0-47D7-813F-43A260846637.png",
+      "bytes": 68478,
+      "sha256": "0d1f80c53e98702f14c65698867ae94451fc92ef5f1aa2f50242b985edf59561",
+      "test": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-send-button-text-single-line_0_4A7D3BE6-EF9C-44F0-A10B-F8E8428FCFF9.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/B228A454-74C9-47E3-BEE3-DBA5AC8D1848.json",
+      "bytes": 6755,
+      "sha256": "3ac43bd0f3e0085ccbfd8ab963e77379d22f81a009fa85d7e663a93a2973be5a",
+      "test": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-initial-and-repeat-reset_0_C0D654D2-C136-40BD-880C-141FD06A0CD0.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/896F55B9-09DF-44B6-8984-879D15AF733E.png",
+      "bytes": 103871,
+      "sha256": "431853c714ff25d1808fb9000c77a33ee0722ef4a1cf1f9768a38c1d3bf466eb",
+      "test": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-initial-and-repeat-reset_0_D272ED92-7F7B-489B-8564-927AC1A4C18D.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/1324620E-59F3-478B-B9E3-739A0EC7F29A.json",
+      "bytes": 10778,
+      "sha256": "0939573d7e1e434db4db0841dff6b747d3c0f58791298f8d67196f113c3bb62f",
+      "test": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-teardown-current-before-reset_0_CC2347DC-1C7F-4450-B6AA-5BE17EB6E81D.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/2C3F2869-065A-4BD9-9B30-646F81790A7C.png",
+      "bytes": 168969,
+      "sha256": "236e8a13485a9ab5f15212359aba416d796679a923e8e1cdc67de690332749fa",
+      "test": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-teardown-current-before-reset_0_11B60AC1-8156-4D5A-9A69-797DC7421CA6.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/2AD77EBB-503B-47CF-9690-FB6B4A75CB0F.json",
+      "bytes": 10774,
+      "sha256": "380ed94dce8c283dcc56e4017c9242b5425e27ce2dfe787e4b028533baf9adf1",
+      "test": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-paused-interrupted-preview_0_5E3D3808-8A51-43DC-9B00-3F33C1F6DE86.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/41ABEE3F-99DE-4FB8-AB6D-E8388B569051.png",
+      "bytes": 168969,
+      "sha256": "236e8a13485a9ab5f15212359aba416d796679a923e8e1cdc67de690332749fa",
+      "test": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-paused-interrupted-preview_0_306B0DEE-6931-49BA-94A0-D5C39C735DDB.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/B67CC8CC-21E7-460E-AF8A-ACC04B199305.json",
+      "bytes": 9780,
+      "sha256": "7decb9e74ed189cd83b7487e01cf0149ac2d4be5de3abf123c76706da68e0ba9",
+      "test": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-listening-controlled-presentation_0_4AC60AE5-7C4B-4524-B380-1C36B578E991.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/06AB0E6C-0346-4922-8F01-89173D29784C.png",
+      "bytes": 168569,
+      "sha256": "aa0730a332631cfe75499d8678dd39333e54ef5b1471e7af653dbfb946a8ebdb",
+      "test": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-listening-controlled-presentation_0_DC0A0665-EBF3-4D44-B961-D554CB6E77CC.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/C64B430E-8456-4BFE-8CD6-050205B41401.json",
+      "bytes": 7390,
+      "sha256": "9c2bc8fb7681fb36bb9d774e7b5aa9d5d1926f77d329b11972bd55ba7929f0bd",
+      "test": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-holding-controlled-presentation_0_3235CF61-E4D2-4DCD-84A2-2F82CDF7EB61.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/CC009B2A-23B7-4B00-9A73-A212004440DB.png",
+      "bytes": 185702,
+      "sha256": "a8627e3232262e0c17468e355fc48ded3042fa7d35b1c36d1659d9e52ef73524",
+      "test": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-holding-controlled-presentation_0_3BFD768B-A9FD-4DA7-954A-A2A46D851694.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/CA83CA38-91B6-416E-B956-01FA9B97C9D2.json",
+      "bytes": 8121,
+      "sha256": "15b4e952b418f0030c6de427ae6d9829b4eeb17dce29bcb7bfdcc128c65a158c",
+      "test": "VoiceLayoutTests/testResetAfterGestureDoesNotReusePreviousLayout()",
+      "name": "voice-component-teardown-current-before-reset_0_B1C22342-ECA3-48FD-BC77-7860D2D69ADD.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/B9A732E9-CB54-463F-BE7B-7D5A6A2BF961.png",
+      "bytes": 102857,
+      "sha256": "a3435e4dd2bb01d433b1796ad81832a07a96c4d72b04765cf342442cb4bb23d4",
+      "test": "VoiceLayoutTests/testResetAfterGestureDoesNotReusePreviousLayout()",
+      "name": "voice-component-teardown-current-before-reset_0_3A70A204-76C8-4E73-BFEF-08EF2DE3CF9D.png"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/4771D751-4A80-4855-8E82-642EA7A54EBF.json",
+      "bytes": 8107,
+      "sha256": "d38e94d24db5f3f8fcad9d6b46c2a53e55f0147568292ba7a914c3b341ade2e8",
+      "test": "VoiceLayoutTests/testResetAfterGestureDoesNotReusePreviousLayout()",
+      "name": "voice-component-reset-new-layout_0_33E24E2D-0442-46BC-9B09-C02DA7452359.json"
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci30-evidence/ios-01-a-20260918-151503/storage-attachments/1B1F28B4-EC21-4DBD-BA5B-424BB1E69DA6.png",
+      "bytes": 102857,
+      "sha256": "a3435e4dd2bb01d433b1796ad81832a07a96c4d72b04765cf342442cb4bb23d4",
+      "test": "VoiceLayoutTests/testResetAfterGestureDoesNotReusePreviousLayout()",
+      "name": "voice-component-reset-new-layout_0_76EC3720-9C47-4160-8EB5-C16ED59CE170.png"
+    }
+  ],
+  "voice_asset_count": 38,
+  "visual_review": "Parent reviewed original screenshots; packaging only rechecks file hashes, not a new visual/device acceptance",
+  "ci31": {
+    "run": 35364243217,
+    "same_target": "1b20ec2971061dbc002d1748f0f252d87b69d0f7",
+    "status_at_packaging": "PENDING parent evidence; one authorized environment rerun"
+  }
+}

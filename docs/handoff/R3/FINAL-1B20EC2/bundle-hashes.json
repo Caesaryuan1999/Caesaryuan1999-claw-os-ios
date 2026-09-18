@@ -1,0 +1,76 @@
+{
+  "baseline": "34a8b3e5ad4df210117e2e03b308576796ba55b2",
+  "source_target": "1b20ec2971061dbc002d1748f0f252d87b69d0f7",
+  "files": [
+    {
+      "file": "allowlist.json",
+      "bytes": 21292,
+      "sha256": "9e176851423291adcceb13e28b531a9490844813a153ef965d5f8bd87c63b160"
+    },
+    {
+      "file": "baseline-prerequisites.json",
+      "bytes": 1597,
+      "sha256": "721989738f7ba8feb2aa522b2707ce4eb98b16b03de1b8e33da4a35610edfd4f"
+    },
+    {
+      "file": "ci30-evidence-index.json",
+      "bytes": 20766,
+      "sha256": "681f49260ee013222c4ee42710b5c42e3b07498dd04151f4736cb1fad3c21ee2"
+    },
+    {
+      "file": "CLAW-IOS-R3-source-test-ci.patch",
+      "bytes": 1165207,
+      "sha256": "448633865dec72f1c178dce9ff0f4690b14bdc7eed039c38b1fe91259d85580f"
+    },
+    {
+      "file": "commits.tsv",
+      "bytes": 9617,
+      "sha256": "5cc5f54877ce24d3b869a0b2b03bf003779fdcf96c20bfde9c534cce8caa02e2"
+    },
+    {
+      "file": "file-manifest.json",
+      "bytes": 80093,
+      "sha256": "1c32133cde11cad7de4bd4f62a45d414b19c38b0258cfae3c33e855acedcda9a"
+    },
+    {
+      "file": "native-methods.json",
+      "bytes": 45732,
+      "sha256": "895de0ae2206c82ce09438391aa73d661dd3ef3bd395410714f43278317eda6a"
+    },
+    {
+      "file": "packaging-checks.json",
+      "bytes": 1237,
+      "sha256": "5dff6803bb6ee680d4471e28acd909e217bf16c908aeed7a0e261548e543c1b7"
+    },
+    {
+      "file": "paths.tsv",
+      "bytes": 16792,
+      "sha256": "2e49ca5a44b90654b9205eeb1074f0d1e5ef372b6f664f4a5778d803e1777769"
+    },
+    {
+      "file": "README.md",
+      "bytes": 8461,
+      "sha256": "a5611a80be76329e472544381cf35811cbf88d2d28699c667f18a038d4cc9f1e"
+    },
+    {
+      "file": "repo-state-before.json",
+      "bytes": 828,
+      "sha256": "7148dd4f547084e68aaca4abcea4dc834e96b517b306847baf14555155e5d852"
+    },
+    {
+      "file": "scope-review.json",
+      "bytes": 47208,
+      "sha256": "aa3c72171a8adb11a2c1be335426d5e226b652ca21e5be6998a4557deece19c4"
+    },
+    {
+      "file": "seal_package.py",
+      "bytes": 10199,
+      "sha256": "7d25e650f35e221e0a8f111b0c6c2ab9480f21f1d5b9fac3dd695878ede1b63d"
+    },
+    {
+      "file": "verify_forward_apply.py",
+      "bytes": 8257,
+      "sha256": "0c2435108fc3c375375eaf39d761468f79d14c2cf4a2c09f8ae8de278d8ef28d"
+    }
+  ]
+}

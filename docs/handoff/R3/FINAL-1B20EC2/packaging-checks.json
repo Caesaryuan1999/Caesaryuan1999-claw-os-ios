@@ -1,0 +1,27 @@
+{
+  "baseline": "34a8b3e5ad4df210117e2e03b308576796ba55b2",
+  "target": "1b20ec2971061dbc002d1748f0f252d87b69d0f7",
+  "latest_production_commit": "603476bf93b652821af7f83afdba00bb023c3cf4",
+  "source_range_diff_check": "PASS",
+  "actual_forward_apply": "PASS",
+  "real_baseline_entries": 512,
+  "mode_blob_sha_matches": "102/102",
+  "unselected_entries_unchanged": true,
+  "real_current_index_unchanged": true,
+  "private_blob_read_or_checkout": false,
+  "production_ci_tests_modified_by_packaging": false,
+  "native_inventory": {
+    "sdk": 44,
+    "ui_runner": 175,
+    "vlc": 7,
+    "voice": 6,
+    "total": 232,
+    "navigation_separate": 3
+  },
+  "native_execution": "CI30 exact target 232 native + 3 navigation PASS; package PASS; cold NOT_RUN due boot readiness timeout; CI31 pending",
+  "lineending_worktree_sha_differences": 74,
+  "raw_patch_artifact_note": "Native Git patch context whitespace is preserved; source-range diff --check passed",
+  "packaging_first_stage_check": "Windows-generated metadata CRLF forced as raw staged blobs caused whitespace check failure; metadata only normalized to LF and restaged. Patch/source bytes unchanged.",
+  "prior_packages_preserved": true,
+  "prior_failure_evidence_preserved": true
+}
