@@ -1,0 +1,34 @@
+{
+  "frozen_source": "e6e07aff8215ea003312a518d6f83e0c1da0ee84",
+  "local_source_and_dependency_files": [
+    {
+      "path": "Tinodios/VideoPreviewController.swift",
+      "sha256": "57949a06dbaaf3c23a71489a69ebcdd5f3895ee963ce9b135fd46544ec6c4429",
+      "bytes": 28138
+    },
+    {
+      "path": "TinodeSDK/Tinode.swift",
+      "sha256": "3df82aae42260e219d3bbb57380dab34a4440f094cbd5090f1750956977127ef",
+      "bytes": 73115
+    },
+    {
+      "path": "Tinodios/ClawSecondaryUIState.swift",
+      "sha256": "6b21b9b94fa64e9503255f489b2dd00ed03d83ac782170f41574f46775274f79",
+      "bytes": 24646
+    },
+    {
+      "path": "Podfile.lock",
+      "sha256": "9d9e6bc8457d647cf571d1087bb317ecde5115e514d58c7b07263db8adf8caa6",
+      "bytes": 7626
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "sha256": "b7a13bbee2ba348e32ade4d70684641b1dd853c72290fd68c5a10b1f1d6322ff",
+      "bytes": 113063
+    }
+  ],
+  "local_vlc_headers": "No Pods in exclusive tree; scoped rg --files under work found no VLCMedia/VLCMediaPlayer/VLCLibrary headers. Remote official source is not local binary/header validation.",
+  "code_tests_or_ci_changes": false,
+  "runtime_probe": "NOT_RUN",
+  "sources_read_via_git_show": true
+}
