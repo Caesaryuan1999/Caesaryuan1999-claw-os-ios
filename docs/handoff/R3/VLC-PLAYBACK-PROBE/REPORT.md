@@ -41,3 +41,12 @@ TEST_RUNNER_前缀按[Apple官方测试环境说明](https://developer.apple.com
 - 测量限额见实施前PLAN；不扩大播放器范围。全部结果走已有storage.xcresult/log，不增加workflow权限、真实服务、签名或推送。
 
 原FINAL-E6E07AFF包不重封为新候选；它仍对应已验证生产/CI基线。待总控独立审查精确提交后执行新的Mac测量，本单元只提供决定最小播放修复的证据。
+# Attachment export follow-up to ef50ca3
+
+The initial probe commit is `ef50ca3afed19781186fc5c79d5617521eaf2909`. Its four native methods are unchanged. This follow-up modifies only the existing CI shell script and `.github/workflows/ios-smoke.yml`; cumulative code/wiring scope is four files. Podfile and production remain unchanged.
+
+The existing EXIT-trap attachment exporter now runs the same implementation for `navigation.xcresult` and `storage.xcresult`. On the Mac runner it first captures current `xcrun xcresulttool help export attachments` and requires both `--path` and `--output-path`, then executes the confirmed export command. Original PNG/JSON and the original xcresulttool `manifest.json` remain unmodified in `storage-attachments/`. Fixed `storage-export-status.json` records each exported file's SHA-256/size, PNG dimensions, JSON observation identification, command result, and elapsed time. Workflow uploads `storage-export*` and `storage-attachments/**` even on failure.
+
+Missing storage bundle is `NOT_RUN`. A present bundle with failed export, no PNG, or no VLC observation JSON is `FAIL`; successfully exported evidence is only `PASS_EXPORTED_ONLY` with `NOT_ASSESSED_BY_EXPORT`. This does not assert that all four probes passed or that their security observations are safe. An existing test failure always retains its original exit status, even if either export succeeds or fails; when tests succeeded, either export failure fails the step. One export failure cannot be overwritten by the other export succeeding.
+
+Windows validation: the actual embedded exporter ran against controlled subprocess boundaries in 13 cases (original bytes/hash, absent bundles, help/command failure, timeouts, malformed/missing PNG/JSON). The actual cleanup shell function ran five combinations covering original-test failure priority and either export failing. All 18 passed; Bash syntax and diff checks passed. These are adapter/CI tests, not execution of Apple's tool or native VLC. Expected Mac counts remain 200 native (SDK 41 + storage 159) plus navigation 3; new four VLC methods and this export await Mac execution. Original `source-manifest.json` describes the ef50ca3 probe; `attachment-export-source-manifest.json` describes the two-file follow-up.

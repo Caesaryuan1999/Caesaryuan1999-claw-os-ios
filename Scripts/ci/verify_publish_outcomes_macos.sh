@@ -36,14 +36,19 @@ cleanup_fixture() {
     xcrun xcresulttool get test-results summary --path "$result_bundle" \
       > "${result_bundle%.xcresult}-summary.json" 2> "${result_bundle%.xcresult}-summary.err" || true
   done
-  if python3 - "$result_dir" <<'EXPORT_NAVIGATION'
+  local result_kind
+  for result_kind in navigation storage; do
+  if python3 - "$result_dir" "$result_kind" <<'EXPORT_ATTACHMENTS'
 import hashlib, json, pathlib, subprocess, sys, time
 result = pathlib.Path(sys.argv[1]).resolve()
-bundle = result / "navigation.xcresult"
-output = result / "navigation-attachments"
-report = {"status": "NOT_RUN", "source": "navigation.xcresult",
+kind = sys.argv[2]
+assert kind in ("navigation", "storage")
+bundle = result / (kind + ".xcresult")
+output = result / (kind + "-attachments")
+report = {"status": "NOT_RUN", "source": bundle.name,
           "scope": "Original XCTest attachments only; no image conversion or reconstruction",
-          "commands": [], "screenshots": []}
+          "safety": "NOT_ASSESSED_BY_EXPORT",
+          "commands": [], "screenshots": [], "json_attachments": [], "files": []}
 exit_code = 0
 
 def invoke(stage, arguments, timeout):
@@ -63,48 +68,60 @@ try:
         report["status"] = "FAIL"
         # Xcode 16.3 documents this command; runtime help is authoritative for this runner.
         help_result = invoke("help", ["xcrun", "xcresulttool", "help", "export", "attachments"], 30)
-        (result / "navigation-export-help.txt").write_text(help_result.stdout, encoding="utf-8")
-        (result / "navigation-export-help.err").write_text(help_result.stderr, encoding="utf-8")
+        (result / (kind + "-export-help.txt")).write_text(help_result.stdout, encoding="utf-8")
+        (result / (kind + "-export-help.err")).write_text(help_result.stderr, encoding="utf-8")
         help_text = help_result.stdout + help_result.stderr
         if help_result.returncode != 0 or not all(flag in help_text for flag in ("--path", "--output-path")):
             raise RuntimeError("Current xcresulttool help does not confirm required attachment export arguments")
         output.mkdir(exist_ok=False)
         exported = invoke("export", ["xcrun", "xcresulttool", "export", "attachments",
                           "--path", str(bundle), "--output-path", str(output)], 60)
-        (result / "navigation-export.stdout").write_text(exported.stdout, encoding="utf-8")
-        (result / "navigation-export.stderr").write_text(exported.stderr, encoding="utf-8")
+        (result / (kind + "-export.stdout")).write_text(exported.stdout, encoding="utf-8")
+        (result / (kind + "-export.stderr")).write_text(exported.stderr, encoding="utf-8")
         if exported.returncode != 0:
             raise RuntimeError("xcresulttool attachment export failed")
-        for path in sorted(output.rglob("*.png")):
+        for path in sorted(output.rglob("*")):
             if not path.resolve().is_relative_to(output):
-                raise RuntimeError("Exported screenshot escaped attachment directory")
+                raise RuntimeError("Exported attachment escaped attachment directory")
+            if not path.is_file():
+                continue
             data = path.read_bytes()
+            entry = {"file": path.relative_to(output).as_posix(),
+                     "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+            report["files"].append(entry)
+            if path.suffix.lower() == ".json":
+                value = json.loads(data)
+                report["json_attachments"].append({**entry, "vlc_probe_observation":
+                    isinstance(value, dict) and "fixture" in value and "dependencyEvidence" in value})
+            if path.suffix.lower() != ".png":
+                continue
             if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n" or data[12:16] != b"IHDR":
                 raise RuntimeError("Exported screenshot is not a PNG")
             width, height = int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
             if width <= 0 or height <= 0:
                 raise RuntimeError("Exported screenshot has no pixels")
-            report["screenshots"].append({"file": path.relative_to(output).as_posix(),
-                "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data),
-                "width": width, "height": height})
+            report["screenshots"].append({**entry, "width": width, "height": height})
         if not report["screenshots"]:
             raise RuntimeError("Attachment export produced no viewable XCTest screenshots")
+        if kind == "storage" and not any(item["vlc_probe_observation"] for item in report["json_attachments"]):
+            raise RuntimeError("Storage export produced no VLC probe observation JSON")
         report["status"] = "PASS_EXPORTED_ONLY"
     else:
-        report["reason"] = "Navigation result bundle was not produced"
+        report["reason"] = kind.capitalize() + " result bundle was not produced"
 except Exception as error:
     report.update(status="FAIL", failure=str(error), error_type=type(error).__name__)
     exit_code = 1
 finally:
-    (result / "navigation-export-status.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-print("Navigation attachment export: " + report["status"])
+    (result / (kind + "-export-status.json")).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+print(kind.capitalize() + " attachment export: " + report["status"])
 raise SystemExit(exit_code)
-EXPORT_NAVIGATION
+EXPORT_ATTACHMENTS
   then
-    export_status=0
+    :
   else
-    export_status=$?
+    export_status=1
   fi
+  done
   if [[ "$created_fixture" == true ]]; then
     rm -f -- "$repo_dir/GoogleService-Info.plist"
   fi

@@ -1,0 +1,112 @@
+{
+  "scope": "Actual inline export Python and actual cleanup shell function, external xcresulttool controlled on Windows; NOT native export execution",
+  "checks": [
+    {
+      "case": "storage_original_png_json_and_hash",
+      "status": "PASS",
+      "actual_exit": 0,
+      "export_status": "PASS_EXPORTED_ONLY"
+    },
+    {
+      "case": "navigation_original_png_json_and_hash",
+      "status": "PASS",
+      "actual_exit": 0,
+      "export_status": "PASS_EXPORTED_ONLY"
+    },
+    {
+      "case": "storage_absent_not_run",
+      "status": "PASS",
+      "actual_exit": 0,
+      "export_status": "NOT_RUN"
+    },
+    {
+      "case": "navigation_absent_not_run",
+      "status": "PASS",
+      "actual_exit": 0,
+      "export_status": "NOT_RUN"
+    },
+    {
+      "case": "help-failed",
+      "status": "PASS",
+      "actual_exit": 1,
+      "export_status": "FAIL"
+    },
+    {
+      "case": "help-flags",
+      "status": "PASS",
+      "actual_exit": 1,
+      "export_status": "FAIL"
+    },
+    {
+      "case": "help-timeout",
+      "status": "PASS",
+      "actual_exit": 1,
+      "export_status": "FAIL"
+    },
+    {
+      "case": "export-failed",
+      "status": "PASS",
+      "actual_exit": 1,
+      "export_status": "FAIL"
+    },
+    {
+      "case": "export-timeout",
+      "status": "PASS",
+      "actual_exit": 1,
+      "export_status": "FAIL"
+    },
+    {
+      "case": "bad-png",
+      "status": "PASS",
+      "actual_exit": 1,
+      "export_status": "FAIL"
+    },
+    {
+      "case": "bad-json",
+      "status": "PASS",
+      "actual_exit": 1,
+      "export_status": "FAIL"
+    },
+    {
+      "case": "no-png",
+      "status": "PASS",
+      "actual_exit": 1,
+      "export_status": "FAIL"
+    },
+    {
+      "case": "no-probe",
+      "status": "PASS",
+      "actual_exit": 1,
+      "export_status": "FAIL"
+    },
+    {
+      "case": "exit_priority_test7_navigation0_storage0",
+      "status": "PASS",
+      "actual_exit": 7
+    },
+    {
+      "case": "exit_priority_test7_navigation1_storage1",
+      "status": "PASS",
+      "actual_exit": 7
+    },
+    {
+      "case": "exit_priority_test0_navigation1_storage0",
+      "status": "PASS",
+      "actual_exit": 1
+    },
+    {
+      "case": "exit_priority_test0_navigation0_storage1",
+      "status": "PASS",
+      "actual_exit": 1
+    },
+    {
+      "case": "exit_priority_test0_navigation0_storage0",
+      "status": "PASS",
+      "actual_exit": 0
+    }
+  ],
+  "count": 18,
+  "bash_syntax": "PASS",
+  "probe_and_production_unchanged": true,
+  "native_execution": "NOT_RUN; existing 196+new4 VLC and navigation3 unchanged"
+}

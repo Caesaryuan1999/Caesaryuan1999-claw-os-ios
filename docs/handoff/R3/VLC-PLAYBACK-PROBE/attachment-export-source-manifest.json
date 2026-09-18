@@ -1,0 +1,22 @@
+{
+  "base": "ef50ca3afed19781186fc5c79d5617521eaf2909",
+  "scope": "Two CI wiring paths only; all native tests and production unchanged",
+  "paths": [
+    {
+      "path": ".github/workflows/ios-smoke.yml",
+      "git_blob": "dcad99f5e7c686614d92b1342024188bb7a46be7",
+      "bytes": 3603,
+      "sha256": "f6e0f98173186cdf86389910e01d8332952c6827ef4c68ecbb2240ae1383c61b"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "git_blob": "6b4e22f0c65e832a16d26d90b316084a3602b911",
+      "bytes": 12207,
+      "sha256": "7f1fad582248966f0f440c157f46395a0197f8a971a492c5f79cb977174f78f0"
+    }
+  ],
+  "windows_adapter_cases": 18,
+  "native_execution": "NOT_RUN",
+  "native_expected": 200,
+  "navigation_expected": 3
+}
