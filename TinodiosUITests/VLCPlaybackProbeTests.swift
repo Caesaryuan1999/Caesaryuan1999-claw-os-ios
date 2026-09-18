@@ -363,6 +363,87 @@ final class VLCPlaybackProbeTests: XCTestCase {
         return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: nil)], timeout: limit) == .completed
     }
 
+    private struct ObservationWindow {
+        let elapsed: TimeInterval
+        let waits: [String]
+        let reason: String
+        let accepted: Bool
+        var evidence: [String: Any] {
+            ["elapsedMicroseconds": Int64(max(0, elapsed) * 1_000_000),
+             "waitCategories": waits, "segments": waits.count,
+             "supplementalWaits": max(0, waits.count - 1),
+             "deadlineReached": elapsed >= 5, "accepted": accepted, "reason": reason]
+        }
+    }
+
+    /// Test transport scheduling only. No player model, sleep, or tolerance below five seconds.
+    private func observeFullWindow(started: TimeInterval,
+                                   now: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+                                   remainingBudget: () -> TimeInterval, sample: () -> Void,
+                                   wait: (TimeInterval) -> XCTWaiter.Result) -> ObservationWindow {
+        let absoluteDeadline = started + 5
+        var categories = [String]()
+        var reason = "segment_limit"
+        var aborted = !started.isFinite || !absoluteDeadline.isFinite
+        for _ in 0..<8 {
+            if aborted { reason = "clock_invalid"; break }
+            sample()
+            let current = now()
+            guard current.isFinite, current >= started else { reason = "clock_invalid"; aborted = true; break }
+            let remaining = absoluteDeadline - current
+            if remaining <= 0 { break }
+            guard remainingBudget() >= remaining else { reason = "method_budget"; aborted = true; break }
+            let result = wait(remaining)
+            categories.append(result == .timedOut ? "timedOut" :
+                (result == .interrupted ? "interrupted" : "rejected_" + String(result.rawValue)))
+            guard result == .timedOut else { reason = "wait_rejected"; aborted = true; break }
+        }
+        sample()
+        let measured = now() - started
+        let elapsed = measured.isFinite && measured >= 0 ? measured : 0
+        let accepted = !aborted && measured.isFinite && elapsed >= 5 && remainingBudget() >= 0
+        if accepted { reason = "complete" }
+        else if !aborted && remainingBudget() < 0 { reason = "method_budget" }
+        return ObservationWindow(elapsed: elapsed, waits: categories, reason: reason, accepted: accepted)
+    }
+
+    private func verifyObservationDeadlineBoundaries() {
+        // Four controlled cases execute this exact helper; they are not VLC observations.
+        var time: TimeInterval = 0
+        var requested = [TimeInterval]()
+        let supplemented = observeFullWindow(started: 0, now: { time }, remainingBudget: { 120 - time },
+            sample: {}, wait: { duration in
+                requested.append(duration)
+                time = requested.count == 1 ? 4.999 : 5
+                return .timedOut
+            })
+        XCTAssertTrue(supplemented.accepted)
+        XCTAssertEqual(supplemented.elapsed, 5)
+        XCTAssertEqual(requested.count, 2)
+        guard requested.count == 2 else { return }
+        XCTAssertEqual(requested[0], 5)
+        XCTAssertEqual(requested[1], 0.001, accuracy: 0.00000001)
+
+        time = 0
+        let normal = observeFullWindow(started: 0, now: { time }, remainingBudget: { 120 - time },
+            sample: {}, wait: { remaining in time += remaining; return .timedOut })
+        XCTAssertTrue(normal.accepted)
+        XCTAssertEqual(normal.waits, ["timedOut"])
+
+        let noProgress = observeFullWindow(started: 0, now: { 0 }, remainingBudget: { 120 },
+            sample: {}, wait: { _ in .timedOut })
+        XCTAssertFalse(noProgress.accepted)
+        XCTAssertEqual(noProgress.waits.count, 8)
+        XCTAssertEqual(noProgress.reason, "segment_limit")
+
+        time = 0
+        let interrupted = observeFullWindow(started: 0, now: { time }, remainingBudget: { 120 - time },
+            sample: {}, wait: { _ in time = 5; return .interrupted })
+        XCTAssertFalse(interrupted.accepted, "Passing the deadline cannot turn interruption into a valid observation")
+        XCTAssertEqual(interrupted.waits, ["interrupted"])
+        XCTAssertEqual(interrupted.reason, "wait_rejected")
+    }
+
     @discardableResult private func cleanup(_ playback: VLCProbePlayer) -> Bool {
         playback.stop()
         if until(5, { playback.stopped() }) { playback.hide(); return true }
@@ -660,6 +741,7 @@ final class VLCPlaybackProbeTests: XCTestCase {
     }
 
     func testRealVLCReopenChangedContentAnd403RecordsCacheAndCookieBehavior() throws {
+        verifyObservationDeadlineBoundaries()
         let red = try clip(blue: false); let blue = try clip(blue: true)
         var results = [[String: Any]]()
         for cacheable in [false, true] {
@@ -711,13 +793,13 @@ final class VLCPlaybackProbeTests: XCTestCase {
                             "timeMs": metrics["timeMs"] ?? 0])
                     }
                 }
-                sample()
-                let polling = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in sample(); return false }, object: nil)
-                // A standalone waiter reaching its timeout means only that the
-                // observation window elapsed. HTTP/frame assertions below decide validity.
-                let waited = XCTWaiter.wait(for: [polling], timeout: 5)
-                sample()
-                let elapsed = ProcessInfo.processInfo.systemUptime - started
+                let window = observeFullWindow(started: started,
+                    remainingBudget: { self.deadline.timeIntervalSinceNow }, sample: sample, wait: { remaining in
+                        let polling = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in sample(); return false }, object: nil)
+                        return XCTWaiter.wait(for: [polling], timeout: remaining)
+                    })
+                let elapsed = window.elapsed
+                currentCase["observationWindow"] = window.evidence
                 let thirdMetrics = third.metrics()
                 let requests = server.observations()
                 let matching = requests.filter {
@@ -742,7 +824,7 @@ final class VLCPlaybackProbeTests: XCTestCase {
                 let stoppedOrTerminal = third.stopped() || third.terminal()
                 currentCase["thirdStoppedOrTerminal"] = stoppedOrTerminal
                 progress = ["stage": "reopen-403-observed", "currentCase": currentCase, "completedCases": results]
-                guard waited == .timedOut, elapsed >= 5,
+                guard window.accepted, elapsed >= 5,
                       decodedDespite403 || (completed403 && stoppedOrTerminal) else {
                     throw VLCProbeFailure.response
                 }
@@ -908,15 +990,20 @@ final class VLCPlaybackProbeTests: XCTestCase {
         let lease = ownedLease(playback, file: file, context: context)
         defer { closeOwned(playback, lease: lease) }
         _ = try libraryEvidence(playback)
-        let start = Date()
-        let window = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in false }, object: nil)
-        XCTAssertEqual(XCTWaiter.wait(for: [window], timeout: 5), .timedOut)
-        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(start), 5)
+        let start = ProcessInfo.processInfo.systemUptime
+        let window = observeFullWindow(started: start,
+            remainingBudget: { self.deadline.timeIntervalSinceNow }, sample: {}, wait: { remaining in
+                let polling = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in false }, object: nil)
+                return XCTWaiter.wait(for: [polling], timeout: remaining)
+            })
+        progress = ["stage": "local-playlist-window", "observationWindow": window.evidence,
+                    "metrics": playback.metrics(), "requests": server.observations()]
+        guard window.accepted, window.elapsed >= 5 else { throw VLCProbeFailure.response }
         let requests = server.observations()
         let externalRead = !requests.isEmpty
         try attach("vlc-local-playlist-reference", ["fixture": "MEASUREMENT_VALID",
             "localEntry": true, "onlySyntheticLoopbackReference": true,
-            "externalReferenceRequested": externalRead, "requests": requests,
+            "externalReferenceRequested": externalRead, "requests": requests, "observationWindow": window.evidence,
             "metrics": playback.metrics(),
             "safety": externalRead ? "CONFIRMED_SECONDARY_NETWORK_ACCESS" : "NOT_OBSERVED_NOT_NETWORK_ISOLATION_PROOF"])
     }

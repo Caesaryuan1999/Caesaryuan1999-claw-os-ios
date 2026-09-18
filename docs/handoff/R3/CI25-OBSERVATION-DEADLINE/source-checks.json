@@ -1,0 +1,122 @@
+{
+  "level": "Windows source checks only; four controlled Swift cases and live VLC NOT_RUN",
+  "base": "49194cc56f5c1dfd894efd9a9be6877560e219d3",
+  "sourceSHA256": "5a9ae7e75a4f8461d02293288961d94132f22fd684dcc1e8062dcbdc80430cab",
+  "checks": [
+    {
+      "name": "all seven methods remain in the selected XCTestCase",
+      "pass": true
+    },
+    {
+      "name": "testRealVLCFramesTimeDecodeAndCapturedCredentialURL byte-identical body",
+      "pass": true
+    },
+    {
+      "name": "testRealVLCRedirectBehaviorRecordsOriginAndCredentialObservations byte-identical body",
+      "pass": true
+    },
+    {
+      "name": "testRealVLCOwnerRetirementBeforeBodyReleaseRecordsContinuedReadAndDecode byte-identical body",
+      "pass": true
+    },
+    {
+      "name": "testOwnedDownloadedFileProducesRealVLCFrameTimeAndSeek byte-identical body",
+      "pass": true
+    },
+    {
+      "name": "testOwnedLeaseRetirementStopsRealPlayingAndPausedVLCBeforeFileRemoval byte-identical body",
+      "pass": true
+    },
+    {
+      "name": "until unchanged",
+      "pass": true
+    },
+    {
+      "name": "cleanup unchanged",
+      "pass": true
+    },
+    {
+      "name": "clip unchanged",
+      "pass": true
+    },
+    {
+      "name": "readFixture unchanged",
+      "pass": true
+    },
+    {
+      "name": "decoded unchanged",
+      "pass": true
+    },
+    {
+      "name": "snapshot unchanged",
+      "pass": true
+    },
+    {
+      "name": "ownedFixture unchanged",
+      "pass": true
+    },
+    {
+      "name": "ownedLease unchanged",
+      "pass": true
+    },
+    {
+      "name": "closeOwned unchanged",
+      "pass": true
+    },
+    {
+      "name": "HTTP source and actual player unchanged",
+      "pass": true
+    },
+    {
+      "name": "monotonic five-second absolute deadline",
+      "pass": true
+    },
+    {
+      "name": "strict minimum and whole-method budget",
+      "pass": true
+    },
+    {
+      "name": "maximum eight segments",
+      "pass": true
+    },
+    {
+      "name": "only legal timeout may be supplemented",
+      "pass": true
+    },
+    {
+      "name": "four same-helper controlled cases",
+      "pass": true
+    },
+    {
+      "name": "controlled cases actually invoked",
+      "pass": true
+    },
+    {
+      "name": "both actual observation windows use same helper",
+      "pass": true
+    },
+    {
+      "name": "response and frame condition retained",
+      "pass": true
+    },
+    {
+      "name": "original response evidence binding retained",
+      "pass": true
+    },
+    {
+      "name": "new safe timing evidence",
+      "pass": true
+    },
+    {
+      "name": "production files untouched",
+      "pass": true
+    }
+  ],
+  "nativeMethodsUnchanged": {
+    "sdk": 44,
+    "uiRunner": 175,
+    "vlcHost": 7,
+    "total": 226,
+    "navigationSeparate": 3
+  }
+}

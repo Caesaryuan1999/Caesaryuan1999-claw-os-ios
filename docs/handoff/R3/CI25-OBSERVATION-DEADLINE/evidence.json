@@ -1,0 +1,66 @@
+{
+  "sourceSHA": "abc23071b23671323d7bce89340ea6ffb513cb3b",
+  "artifact": 10546863017,
+  "zipSHA256": "1161c85058f9fb81dedae8d64c476852e7d0bb1264c13d38a292c7750b867630",
+  "member": "ios-01-a-20260918-123947/storage-attachments/D6DED7EA-C015-4291-9155-B0A1CDDE30E3.json",
+  "memberSHA256": "ffb83120b49a9f5f10b0d266d5db33d1893821029861bb364a7d72356ffde0bd",
+  "elapsedMs": 4999,
+  "completed403ResponseWrite": true,
+  "thirdStoppedOrTerminal": true,
+  "maxDecoded": 0,
+  "maxDisplayed": 0,
+  "firstFrame": "A_red",
+  "secondFrame": "B_blue",
+  "matching403": [
+    {
+      "requestSequence": 5,
+      "fixtureRevision": 2,
+      "responseStatus": 403,
+      "headerWrite": "completed",
+      "bodyWrite": "completed",
+      "responseWriteCompleted": true
+    },
+    {
+      "requestSequence": 6,
+      "fixtureRevision": 2,
+      "responseStatus": 403,
+      "headerWrite": "completed",
+      "bodyWrite": "completed",
+      "responseWriteCompleted": true
+    },
+    {
+      "requestSequence": 7,
+      "fixtureRevision": 2,
+      "responseStatus": 403,
+      "headerWrite": "completed",
+      "bodyWrite": "completed",
+      "responseWriteCompleted": true
+    },
+    {
+      "requestSequence": 8,
+      "fixtureRevision": 2,
+      "responseStatus": 403,
+      "headerWrite": "completed",
+      "bodyWrite": "completed",
+      "responseWriteCompleted": true
+    },
+    {
+      "requestSequence": 9,
+      "fixtureRevision": 2,
+      "responseStatus": 403,
+      "headerWrite": "completed",
+      "bodyWrite": "completed",
+      "responseWriteCompleted": true
+    },
+    {
+      "requestSequence": 10,
+      "fixtureRevision": 2,
+      "responseStatus": 403,
+      "headerWrite": "completed",
+      "bodyWrite": "completed",
+      "responseWriteCompleted": true
+    }
+  ],
+  "waiterResult": "NOT_RECORDED",
+  "deduction": "integer elapsedMs4999 implies uptime elapsed less than5; elapsed>=5 guard fails regardless of unrecorded waiter result"
+}
