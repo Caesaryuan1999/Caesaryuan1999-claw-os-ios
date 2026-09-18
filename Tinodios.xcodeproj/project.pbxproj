@@ -153,6 +153,10 @@
 		C1A040022026091800000001 /* ClawSecondaryUIState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A040012026091800000001 /* ClawSecondaryUIState.swift */; };
 		C1A040022026091800000002 /* ClawSecondaryUIState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A040012026091800000001 /* ClawSecondaryUIState.swift */; };
 		C1A040022026091800000003 /* SecondaryUIStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A040012026091800000002 /* SecondaryUIStateTests.swift */; };
+		C1A041022026091800000001 /* OwnedImageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A041012026091800000001 /* OwnedImageTests.swift */; };
+		C1A041022026091800000002 /* RoundImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0DF03162279F027000F9492 /* RoundImageView.swift */; };
+		C1A041022026091800000003 /* AsyncImageTextAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BB539E256B14A1000FE949 /* AsyncImageTextAttachment.swift */; };
+		C1A041022026091800000004 /* EntityTextAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B03066422805F2AA00497EF4 /* EntityTextAttachment.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -388,6 +392,7 @@
 		C1A0F0012026091800000001 /* PublicDirectoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicDirectoryTests.swift; sourceTree = "<group>"; };
 		C1A040012026091800000001 /* ClawSecondaryUIState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawSecondaryUIState.swift; sourceTree = "<group>"; };
 		C1A040012026091800000002 /* SecondaryUIStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryUIStateTests.swift; sourceTree = "<group>"; };
+		C1A041012026091800000001 /* OwnedImageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnedImageTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -562,6 +567,7 @@
 				C1A0D0012026091800000001 /* ConversationRemovalTests.swift */,
 				C1A0F0012026091800000001 /* PublicDirectoryTests.swift */,
 				C1A040012026091800000002 /* SecondaryUIStateTests.swift */,
+				C1A041012026091800000001 /* OwnedImageTests.swift */,
 				0AE21E4F28D21849008F486C /* TinodiosUITestsLaunchTests.swift */,
 			);
 			path = TinodiosUITests;
@@ -1142,6 +1148,10 @@
 				C1A0F0022026091800000002 /* PublicDirectoryTests.swift in Sources */,
 				C1A040022026091800000002 /* ClawSecondaryUIState.swift in Sources */,
 				C1A040022026091800000003 /* SecondaryUIStateTests.swift in Sources */,
+				C1A041022026091800000001 /* OwnedImageTests.swift in Sources */,
+				C1A041022026091800000002 /* RoundImageView.swift in Sources */,
+				C1A041022026091800000003 /* AsyncImageTextAttachment.swift in Sources */,
+				C1A041022026091800000004 /* EntityTextAttachment.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

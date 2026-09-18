@@ -14,6 +14,7 @@ import TinodeSDK
      // and downsized.
      var promises: [PromisedReply<UIImage>]?
 
+     private let imageContext = Utils.ownedImageContext()
      required public init() {}
 
      public var completionPromise: PromisedReply<Void> {
@@ -71,15 +72,20 @@ import TinodeSDK
              if self.promises == nil {
                  self.promises = []
              }
-             let done = Utils.fetchTinodeResource(from: Utils.tinodeResourceUrl(from: ref)).thenApply {
-                 let thumbnail = $0?.resize(
-                     width: CGFloat(maxWidth), height: CGFloat(maxHeight), clip: true)
-                 if let thumbnailBits = thumbnail?.pixelData(forMimeType: "image/jpeg") {
-                     result.data!["val"] = .bytes(thumbnailBits)
-                     result.data!["mime"] = .string("image/jpeg")
-                     result.data!["size"] = .int(thumbnailBits.count)
-                 }
-                 return nil
+             let context = self.imageContext
+             let done = Utils.fetchTinodeResource(from: context?.resourceURL(from: ref), context: context).thenApply { image in
+                 guard let context = context else { return PromisedReply<UIImage>(error: ClawOwnedImageError.sessionExpired) }
+                 let applied = context.withCurrent { () -> Bool in
+                     let thumbnail = image?.resize(
+                         width: CGFloat(maxWidth), height: CGFloat(maxHeight), clip: true)
+                     if let thumbnailBits = thumbnail?.pixelData(forMimeType: "image/jpeg") {
+                         result.data!["val"] = .bytes(thumbnailBits)
+                         result.data!["mime"] = .string("image/jpeg")
+                         result.data!["size"] = .int(thumbnailBits.count)
+                     }
+                     return true
+                 } ?? false
+                 return applied ? nil : PromisedReply<UIImage>(error: ClawOwnedImageError.sessionExpired)
              }
              self.promises!.append(done)
          }

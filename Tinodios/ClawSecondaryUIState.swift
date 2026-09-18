@@ -2,6 +2,8 @@ import Foundation
 import UserNotifications
 import UIKit
 import CryptoKit
+import TinodeSDK
+import Kingfisher
 
 /// The same decision is used by the settings screen and native tests.
 struct ClawNotificationAuthorization {
@@ -160,5 +162,179 @@ enum ClawMediaFiles {
         let destination = directory.appendingPathComponent(name + ".png", isDirectory: false)
         try bytes.write(to: destination, options: .withoutOverwriting)
         return destination
+    }
+}
+
+enum ClawOwnedImageError: Error { case invalidURL, sessionExpired, cancelled }
+
+/// No global account lookup. Production callers supply their captured Cache slot gate.
+final class ClawOwnedImageContext {
+    let owner: Tinode
+    let serviceURL: URL
+    let session: ClawMediaSession
+    private let currentGeneration: () -> UInt64
+    private let inCurrentSlot: (_ body: () -> Void) -> Bool
+
+    init?(owner: Tinode, serviceURL: URL, generation: UInt64,
+          currentGeneration: @escaping () -> UInt64,
+          inCurrentSlot: @escaping (_ body: () -> Void) -> Bool) {
+        guard ClawMediaFiles.origin(serviceURL) != nil,
+              let uid = owner.withActiveSession({ () -> String? in
+                  guard let uid = owner.myUid, owner.store?.myUid == uid else { return nil }
+                  return uid
+              }) ?? nil else { return nil }
+        self.owner = owner
+        self.serviceURL = serviceURL
+        self.session = ClawMediaSession(owner: ObjectIdentifier(owner), uid: uid, generation: generation)
+        self.currentGeneration = currentGeneration
+        self.inCurrentSlot = inCurrentSlot
+    }
+
+    @discardableResult
+    func withCurrent<Value>(_ operation: () -> Value) -> Value? {
+        owner.withActiveSession {
+            var result: Value?
+            let entered = inCurrentSlot {
+                guard session.accepts(owner: owner, uid: owner.myUid, storedUID: owner.store?.myUid,
+                                      generation: currentGeneration()) else { return }
+                result = operation()
+            }
+            return entered ? result : nil
+        } ?? nil
+    }
+
+    var isCurrent: Bool { withCurrent { true } ?? false }
+
+    func resourceURL(from ref: String) -> URL? {
+        withCurrent {
+            guard let url = URL(string: ref, relativeTo: serviceURL)?.absoluteURL,
+                  ClawMediaFiles.isAllowedMediaURL(url, service: serviceURL) else { return nil }
+            return url
+        } ?? nil
+    }
+
+    func resource(for url: URL?) -> Kingfisher.ImageResource? {
+        withCurrent {
+            guard let url = url?.absoluteURL,
+                  let key = ClawMediaFiles.cacheKey(origin: serviceURL, uid: session.uid, url: url) else { return nil }
+            return Kingfisher.ImageResource(downloadURL: url, cacheKey: key)
+        } ?? nil
+    }
+
+    /// Used by the real Kingfisher modifier and native URLRequest tests.
+    func request(_ original: URLRequest) -> URLRequest? {
+        withCurrent {
+            guard let url = original.url, ClawMediaFiles.isAllowedMediaURL(url, service: serviceURL) else { return nil }
+            var request = original
+            for header in ["X-Tinode-APIKey", "X-Tinode-Auth", "Authorization", "Cookie"] {
+                request.setValue(nil, forHTTPHeaderField: header)
+            }
+            if ClawMediaFiles.origin(url) == ClawMediaFiles.origin(serviceURL) {
+                owner.getRequestHeaders().forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
+            }
+            return request
+        } ?? nil
+    }
+
+    func redirectedRequest(_ request: URLRequest) -> URLRequest? { nil }
+}
+
+final class ClawOwnedImageSlot {
+    private let lock = NSLock()
+    private var generation = UUID()
+    @discardableResult func invalidate() -> UUID {
+        lock.lock(); defer { lock.unlock() }
+        generation = UUID()
+        return generation
+    }
+    func accepts(_ ticket: UUID) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return ticket == generation
+    }
+}
+
+final class ClawOwnedImageLoad {
+    private let lock = NSLock()
+    private var task: DownloadTask?
+    private var transport: ImageDownloader?
+    private var stopped = false
+    private var cancelled = false
+
+    init(transport: ImageDownloader) { self.transport = transport }
+
+    func bind(_ task: DownloadTask?) {
+        lock.lock()
+        if stopped { lock.unlock(); task?.cancel(); return }
+        self.task = task
+        lock.unlock()
+    }
+
+    func cancel() {
+        lock.lock()
+        cancelled = true
+        stopped = true
+        let oldTask = task
+        let oldTransport = transport
+        task = nil
+        transport = nil
+        lock.unlock()
+        oldTask?.cancel()
+        oldTransport?.cancelAll()
+    }
+
+    func finish() -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        let valid = !cancelled
+        stopped = true
+        task = nil
+        transport = nil
+        return valid
+    }
+}
+
+final class ClawOwnedImageLoader {
+    typealias Completion = (Swift.Result<UIImage, Error>) -> Void
+    typealias Transport = (Kingfisher.ImageResource, KingfisherOptionsInfo, @escaping Completion) -> DownloadTask?
+    static let shared = ClawOwnedImageLoader()
+    private let retrieve: Transport
+
+    init(retrieve: @escaping Transport = { resource, options, completion in
+        KingfisherManager.shared.retrieveImage(with: resource, options: options) { result in
+            switch result {
+            case .success(let value): completion(.success(value.image))
+            case .failure(let error): completion(.failure(error))
+            }
+        }
+    }) {
+        self.retrieve = retrieve
+    }
+
+    @discardableResult
+    func load(from url: URL?, context: ClawOwnedImageContext?, completion: @escaping Completion) -> ClawOwnedImageLoad? {
+        guard let context = context, context.isCurrent else {
+            DispatchQueue.main.async { completion(.failure(ClawOwnedImageError.sessionExpired)) }
+            return nil
+        }
+        guard let resource = context.resource(for: url) else {
+            DispatchQueue.main.async { completion(.failure(ClawOwnedImageError.invalidURL)) }
+            return nil
+        }
+        let downloader = ImageDownloader(name: "claw-owned-" + UUID().uuidString)
+        downloader.sessionConfiguration = .ephemeral
+        let load = ClawOwnedImageLoad(transport: downloader)
+        let modifier = AnyModifier { context.request($0) }
+        let redirect = AnyRedirectHandler { _, _, request, done in done(context.redirectedRequest(request)) }
+        let options: KingfisherOptionsInfo = [.requestModifier(modifier), .redirectHandler(redirect), .downloader(downloader)]
+        let task = retrieve(resource, options) { result in
+            // Consumers recheck their context and request generation immediately
+            // around mutation. Never resolve a Promise while holding SDK/Cache locks.
+            DispatchQueue.main.async {
+                guard load.finish() else { completion(.failure(ClawOwnedImageError.cancelled)); return }
+                guard context.isCurrent else { completion(.failure(ClawOwnedImageError.sessionExpired)); return }
+                completion(result)
+            }
+        }
+        load.bind(task)
+        return load
     }
 }

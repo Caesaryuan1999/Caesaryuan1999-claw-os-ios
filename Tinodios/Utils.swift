@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import UIKit
+import Kingfisher
 import TinodeSDK
 import TinodiosDB
 #if !CLAW_PUBLIC_DIRECTORY_TESTS
@@ -474,31 +476,6 @@ public class Utils {
             // Must succeed.
             $0 as! DefaultComTopic
         }
-    }
-
-    // Creates a URL out of Tinode ref.
-    public static func tinodeResourceUrl(from ref: String) -> URL? {
-        let u = URL(string: ref, relativeTo: Cache.tinode.baseURL(useWebsocketProtocol: false))
-        return u
-    }
-
-    // Initializes a download for a resource (typically, an image) from the provided url.
-    public static func fetchTinodeResource(from url: URL?) -> PromisedReply<UIImage> {
-        let modifier = AnyModifier { request in
-            var request = request
-            LargeFileHelper.addCommonHeaders(to: &request, using: Cache.tinode)
-            return request
-        }
-        let p = PromisedReply<UIImage>()
-        KingfisherManager.shared.retrieveImage(with: url!.downloadURL, options: [.requestModifier(modifier)], completionHandler: { result in
-            switch result {
-            case .success(let value):
-                try? p.resolve(result: value.image)
-            case .failure(let error):
-                try? p.reject(error: error)
-            }
-        })
-        return p
     }
 
     public static func generateQRCode(from string: String) -> UIImage? {
@@ -1029,6 +1006,49 @@ enum ClawProfileLayout {
 }
 
 #endif
+
+#if CLAW_PUBLIC_DIRECTORY_TESTS
+// The actual media bridge below is compiled into the native test target; the
+// unrelated app-only Utils methods remain excluded.
+public class Utils {}
+#endif
+
+extension Utils {
+    static func ownedImageContext() -> ClawOwnedImageContext? {
+#if CLAW_PUBLIC_DIRECTORY_TESTS
+        // Native consumers inject a real SDK/store and a controlled current-slot gate.
+        return nil
+#else
+        let owner = Cache.tinode
+        return Cache.ifCurrent(owner) { () -> ClawOwnedImageContext? in
+            guard let service = owner.baseURL(useWebsocketProtocol: false) else { return nil }
+            return ClawOwnedImageContext(owner: owner, serviceURL: service, generation: Cache.sessionGeneration,
+                currentGeneration: { Cache.sessionGeneration },
+                inCurrentSlot: { body in Cache.ifCurrent(owner) { body(); return true } ?? false })
+        } ?? nil
+#endif
+    }
+
+    public static func tinodeResourceUrl(from ref: String) -> URL? {
+        ownedImageContext()?.resourceURL(from: ref)
+    }
+
+    public static func fetchTinodeResource(from url: URL?) -> PromisedReply<UIImage> {
+        fetchTinodeResource(from: url, context: ownedImageContext())
+    }
+
+    static func fetchTinodeResource(from url: URL?, context: ClawOwnedImageContext?,
+                                   loader: ClawOwnedImageLoader = .shared) -> PromisedReply<UIImage> {
+        let promise = PromisedReply<UIImage>()
+        loader.load(from: url, context: context) { result in
+            switch result {
+            case .success(let image): try? promise.resolve(result: image)
+            case .failure(let error): try? promise.reject(error: error)
+            }
+        }
+        return promise
+    }
+}
 
 enum AccountNames {
     static let basicTagPrefix = "basic:"

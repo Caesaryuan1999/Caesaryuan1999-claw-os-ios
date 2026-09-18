@@ -31,9 +31,25 @@ public class RoundImageView: UIImageView {
         }
     }
 
+    // Native tests replace only the capture/transport boundaries; the real
+    // consumer, account gate and reuse generation remain unchanged.
+    var ownedImageContextProvider: () -> ClawOwnedImageContext? = { Utils.ownedImageContext() }
+    var ownedImageLoader = ClawOwnedImageLoader.shared
+    private let imageSlot = ClawOwnedImageSlot()
+    private var imageLoad: ClawOwnedImageLoad?
+
+    private func invalidateImageRequest() {
+        imageSlot.invalidate()
+        imageLoad?.cancel()
+        imageLoad = nil
+    }
+
+    deinit { imageLoad?.cancel() }
+
     // MARK: - Properties
     public var iconType: IconType = .none {
         didSet {
+            invalidateImageRequest()
             // Placeholder symbols must fit inside the avatar; photos and letter tiles use fill.
             self.contentMode = .scaleAspectFit
             self.image = RoundImageView.defaultIcon(forType: iconType)
@@ -51,6 +67,7 @@ public class RoundImageView: UIImageView {
 
     public var initials: String? {
         didSet {
+            invalidateImageRequest()
             setImageFrom(initials: initials)
         }
     }
@@ -76,6 +93,7 @@ public class RoundImageView: UIImageView {
 
     /// Use the product logo without changing the avatar view's size or corner radius.
     public func setBrandingIcon() {
+        invalidateImageRequest()
         initials = nil
         contentMode = .scaleAspectFill
         backgroundColor = nil
@@ -116,6 +134,8 @@ public class RoundImageView: UIImageView {
     }
 
     public func set(pub: TheCard?, id: String?, deleted: Bool) {
+        invalidateImageRequest()
+        let context = ownedImageContextProvider()
         if let icon = pub?.photo?.image {
             // Use thumbnail, if present.
             // Clean up.
@@ -154,23 +174,19 @@ public class RoundImageView: UIImageView {
             }
         }
 
-        // Download the full image, if available, and use it instead of thumbnail or letters.
-        if let ref = pub?.photo?.ref, let url = URL(string: ref, relativeTo: Cache.tinode.baseURL(useWebsocketProtocol: false)) {
-            let modifier = AnyModifier { request in
-                var request = request
-                LargeFileHelper.addCommonHeaders(to: &request, using: Cache.tinode)
-                return request
-            }
-
-            KingfisherManager.shared.retrieveImage(with: url.downloadURL, options: [.requestModifier(modifier)], completionHandler: { result in
-                if case .success(let value) = result {
+        // A view may already represent another contact when this request completes.
+        if let ref = pub?.photo?.ref, let context = context, let url = context.resourceURL(from: ref) {
+            let ticket = imageSlot.invalidate()
+            imageLoad = ownedImageLoader.load(from: url, context: context) { [weak self] result in
+                guard let self = self else { return }
+                context.withCurrent {
+                    guard self.imageSlot.accepts(ticket), case .success(let image) = result else { return }
                     self.initials = nil
                     self.contentMode = .scaleAspectFill
                     self.backgroundColor = nil
-                    self.image = deleted ? value.image.noir : value.image
+                    self.image = deleted ? image.noir : image
                 }
-                // Ignoring the error: just keep the placeholder image.
-            })
+            }
         }
     }
 

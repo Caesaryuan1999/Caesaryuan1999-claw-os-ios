@@ -1,0 +1,63 @@
+{
+  "base": "7bacc0dd7f0dfc3660b12c624cfcae4665ff9a7f",
+  "production_files": [
+    "Tinodios/ClawSecondaryUIState.swift",
+    "Tinodios/Utils.swift",
+    "Tinodios/widgets/RoundImageView.swift",
+    "Tinodios/format/AsyncImageTextAttachment.swift",
+    "Tinodios/format/ThumbnailTransformer.swift"
+  ],
+  "files": [
+    {
+      "path": "Tinodios/ClawSecondaryUIState.swift",
+      "sha256": "d63bbd63ac3d1e30751c71c511d0a19e01adebf0faa08a008e619933cb05874b"
+    },
+    {
+      "path": "Tinodios/Utils.swift",
+      "sha256": "262c8e6ffe3e1396265986300d7ab91cd9f89e868e9c2552361f525ad19ae5de"
+    },
+    {
+      "path": "Tinodios/widgets/RoundImageView.swift",
+      "sha256": "9bc8e351bd3c30f6d09ce9b2c4f10ae50f240f5cead7b5cd321bf7baf5dbb55e"
+    },
+    {
+      "path": "Tinodios/format/AsyncImageTextAttachment.swift",
+      "sha256": "42a3f538caf2f8add127ac97fae37512276688a759f77b04f2efffd3e2bd8fee"
+    },
+    {
+      "path": "Tinodios/format/ThumbnailTransformer.swift",
+      "sha256": "6a3dfbfab7fee7d187e7bccee0f0668f2a41847b286382b130d48179b1e9602f"
+    },
+    {
+      "path": "TinodiosUITests/OwnedImageTests.swift",
+      "sha256": "00360090ae2f8def3f61d577ccceadfbb20e4a552c72556df3ac0c4c74feed3f"
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "sha256": "437ad2c6226dbda4c31f5c5ff7723bafa2f4241dd915db75b9dc1e81bfbeb285"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "sha256": "03a3d33a4e5f2271050138aec44cda3ef08d6c87c27b164e2ae47c5ebb984f77"
+    },
+    {
+      "path": "Scripts/ci/test_owned_image_policy.py",
+      "sha256": "12fc7cb518d462e42ba80bcb6ae5b1c921da86d018b9ac839248a5e2e7c3ac32"
+    }
+  ],
+  "native_methods": [
+    "testProductionModifierUsesCapturedHeadersOnlyForSameOrigin",
+    "testNilResourceFailsActualUtilsPromiseWithoutStartingTransport",
+    "testOriginalOwnerGateRejectsRetirementAndStoreOrSlotChange",
+    "testRealKingfisherCacheLoadsOfflineAAndCannotServeB",
+    "testActualRoundViewKeepsBImageWhenACompletesLate",
+    "testActualRoundViewDefaultAndBrandResetsInvalidatePendingImage",
+    "testActualAttachmentSuccessPostprocessesAndRedraws",
+    "testActualAttachmentLogoutRejectsImageAndRedraw",
+    "testActualAttachmentURLReplacementRejectsOldRequest",
+    "testActualUtilsPromiseSettlesAfterOwnerRetiresWithoutSuccess"
+  ],
+  "new_native_count": 10,
+  "cumulative_expected": 162,
+  "mac_execution": "NOT_RUN for this delta"
+}
