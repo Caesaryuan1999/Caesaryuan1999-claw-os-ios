@@ -5,6 +5,7 @@ import XCTest
 import UIKit
 import Contacts
 import TinodeSDK
+import TinodiosDB
 @testable import Tinodios
 
 final class AssistantLayoutTests: XCTestCase {
