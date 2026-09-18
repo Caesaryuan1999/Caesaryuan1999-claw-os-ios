@@ -1,0 +1,62 @@
+{
+  "base": "785461b2006dbc0260472ebfe3cd36907fcbca27",
+  "production_modified": false,
+  "native_expected_pending_CI22": {
+    "SDK": 43,
+    "UIrunner": 163,
+    "VLC_host": 4,
+    "total": 210,
+    "navigation_separate": 3
+  },
+  "sources": [
+    {
+      "path": "Tinodios/widgets/SendMessageBar.swift",
+      "git_blob": "08257e5af521bd680bd2a927a66f2bb84fa0bdbd",
+      "raw_sha256": "91e570fc4150ed3fbfbe972bf8d9bd9f7cce89aa443df4c41fa761095d99c197",
+      "raw_bytes": 33779,
+      "role": "proposed_production"
+    },
+    {
+      "path": "Tinodios/widgets/SendMessageBar.xib",
+      "git_blob": "89c25a8019e5cc66f0c8e35867fc10b36397d115",
+      "raw_sha256": "f92fbfdc3cad5622a6d64f642351eb5ce3452510f4de193d9144a365dcd9eee1",
+      "raw_bytes": 40519,
+      "role": "proposed_production"
+    },
+    {
+      "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+      "git_blob": "0f07f56ba6788d837788b00ab887db7ae8b3ac9e",
+      "raw_sha256": "bd0f36de7ef0c770eba5475a5444d8676e4040b573520cbcfed174c64e24ed4a",
+      "raw_bytes": 13070,
+      "role": "proposed_production"
+    },
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "git_blob": "9e4d50e5e16bdf18a8f207a2bae0af65e76afe60",
+      "raw_sha256": "83033f8812e9d8836609d4361b99b003f81a14423d6003cc76033aaf701aedf1",
+      "raw_bytes": 69632,
+      "role": "proposed_production"
+    },
+    {
+      "path": "Tinodios/MediaRecorder.swift",
+      "git_blob": "4a5aa81e73390bc47d140e5d1542baeef2b92f90",
+      "raw_sha256": "df47c4c810e1e31f25ead85247cf413cde169f51a88352b98e8b4433a94c6070",
+      "raw_bytes": 19730,
+      "role": "read_only_reference"
+    },
+    {
+      "path": "Tinodios/MessageViewController+Keyboard.swift",
+      "git_blob": "fc706c61bd538e99edd2c6a672a27b0c3e61bba5",
+      "raw_sha256": "de5154153383f7c5df8607d382309163cbca75048e4e9ffb8b0e5436eef1c599",
+      "raw_bytes": 2462,
+      "role": "read_only_reference"
+    },
+    {
+      "path": "Tinodios/Utils.swift",
+      "git_blob": "974d9be8974b182169f43e0e9e9317e4e91e8b89",
+      "raw_sha256": "262c8e6ffe3e1396265986300d7ab91cd9f89e868e9c2552361f525ad19ae5de",
+      "raw_bytes": 81892,
+      "role": "read_only_reference"
+    }
+  ]
+}

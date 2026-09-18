@@ -1,0 +1,39 @@
+{
+  "file_key": "CreMqit00K1MAJju69YoOv",
+  "method": "get_design_context",
+  "read_date": "2026-09-18",
+  "skill": "figma-design-to-code",
+  "nodes": [
+    {
+      "node": "95:1408",
+      "status": "fulfilled",
+      "hasScreenshot": true,
+      "referenceCharacters": 12500
+    },
+    {
+      "node": "173:1952",
+      "status": "fulfilled",
+      "hasScreenshot": true,
+      "referenceCharacters": 14035
+    },
+    {
+      "node": "173:2012",
+      "status": "fulfilled",
+      "hasScreenshot": true,
+      "referenceCharacters": 14024
+    },
+    {
+      "node": "173:2072",
+      "status": "fulfilled",
+      "hasScreenshot": true,
+      "referenceCharacters": 14045
+    },
+    {
+      "node": "177:1982",
+      "status": "fulfilled",
+      "hasScreenshot": true,
+      "referenceCharacters": 14047
+    }
+  ],
+  "scope": "All five original design screenshots visually read. Design only; not runtime evidence."
+}
