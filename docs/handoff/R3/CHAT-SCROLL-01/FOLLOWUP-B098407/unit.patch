@@ -1,0 +1,238 @@
+diff --git a/Tinodios/MessageViewController.swift b/Tinodios/MessageViewController.swift
+index 7ebb6305a60852126c50663170edc2cb986f5f88..17ff3715883a6975b2f4ab5963e98f991ceb4735 100644
+--- a/Tinodios/MessageViewController.swift
++++ b/Tinodios/MessageViewController.swift
+@@ -1679,11 +1679,18 @@ extension MessageViewController {
+             return ChatViewportSnapshot(anchors: [], offset: .zero, atBottom: false,
+                                         interaction: chatInteractionRevision)
+         }
++        // A contentOffset change can precede UICollectionView's visible-cell
++        // cache update. Capture current layout geometry, including newly visible
++        // neighbors, without suppressing scroll delegate intent invalidation.
++        list.layoutIfNeeded()
+         let top = list.contentOffset.y + list.adjustedContentInset.top
+         let bottom = list.contentOffset.y + list.bounds.height - list.adjustedContentInset.bottom
+-        let attributes = list.indexPathsForVisibleItems.compactMap {
+-            list.layoutAttributesForItem(at: $0)
+-        }.filter { $0.indexPath.item < messages.count && $0.frame.maxY > top && $0.frame.minY < bottom }
++        let viewport = CGRect(x: list.contentOffset.x + list.adjustedContentInset.left, y: top,
++                              width: max(0, list.bounds.width - list.adjustedContentInset.left - list.adjustedContentInset.right),
++                              height: max(0, bottom - top))
++        let attributes = (list.collectionViewLayout.layoutAttributesForElements(in: viewport) ?? [])
++            .filter { $0.representedElementCategory == .cell && $0.indexPath.section == 0 &&
++                messages.indices.contains($0.indexPath.item) && $0.frame.intersects(viewport) }
+             .sorted { $0.frame.minY < $1.frame.minY }
+         let anchors = attributes.map { attribute -> ChatViewportAnchor in
+             let message = messages[attribute.indexPath.item]
+diff --git a/TinodiosUITests/ChatScrollTests.swift b/TinodiosUITests/ChatScrollTests.swift
+index 9fba6a07fb6fa2777eac468ad20154529aa70bab..7b080707e3d0fa99126c768e81962cbc3287ac23 100644
+--- a/TinodiosUITests/ChatScrollTests.swift
++++ b/TinodiosUITests/ChatScrollTests.swift
+@@ -15,6 +15,7 @@ final class ChatScrollTests: XCTestCase {
+     private var window: UIWindow!
+     private var previousWindow: UIWindow?
+     private var layout: UICollectionViewFlowLayout!
++    private var navigationEvents: NavigationEvents!
+ 
+     private func main<T>(_ work: () throws -> T) rethrows -> T {
+         if Thread.isMainThread { return try work() }
+@@ -44,9 +45,15 @@ final class ChatScrollTests: XCTestCase {
+             controller.collectionView.dataSource = cells
+             window = UIWindow(frame: UIScreen.main.bounds)
+             if let scene = previousWindow?.windowScene { window.windowScene = scene }
+-            window.rootViewController = UINavigationController(rootViewController: controller)
++            let previousPage = UIViewController()
++            let navigation = UINavigationController(rootViewController: previousPage)
++            navigationEvents = NavigationEvents()
++            navigation.delegate = navigationEvents
++            navigation.setViewControllers([previousPage, controller], animated: false)
++            window.rootViewController = navigation
+             window.makeKeyAndVisible()
+             window.layoutIfNeeded(); controller.view.layoutIfNeeded()
++            try navigationSettled(navigation, showing: controller, after: 0)
+             XCTAssertNotNil(controller.collectionView.window)
+         }
+     }
+@@ -57,7 +64,7 @@ final class ChatScrollTests: XCTestCase {
+                 window?.isHidden = true
+                 controller?.collectionView.dataSource = nil
+                 window?.rootViewController = nil
+-                controller = nil; cells = nil; window = nil
++                controller = nil; cells = nil; window = nil; navigationEvents = nil
+                 previousWindow?.makeKey(); previousWindow = nil
+             }
+             if controller != nil { try evidence("final-viewport") }
+@@ -88,6 +95,22 @@ final class ChatScrollTests: XCTestCase {
+         controller.collectionView.layoutIfNeeded()
+     }
+ 
++    private func navigationSettled(_ navigation: UINavigationController, showing expected: UIViewController,
++                                   after showCount: Int, extra: () -> Bool = { true }) throws {
++        let end = ProcessInfo.processInfo.systemUptime + 3
++        while !(navigationEvents.showCount > showCount && navigationEvents.lastShown === expected &&
++                navigation.topViewController === expected && navigation.visibleViewController === expected &&
++                expected.parent === navigation && expected.viewIfLoaded?.window === window &&
++                navigation.transitionCoordinator == nil && extra()) {
++            guard ProcessInfo.processInfo.systemUptime < end else {
++                XCTFail("Navigation lifecycle deadline; didShow=\(navigationEvents.showCount), expectedShown=\(navigationEvents.lastShown === expected), top=\(navigation.topViewController === expected), parent=\(expected.parent === navigation), window=\(expected.viewIfLoaded?.window === window)")
++                throw Failure.deadline
++            }
++            window.layoutIfNeeded(); navigation.view.layoutIfNeeded()
++            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
++        }
++    }
++
+     private func readHistory() {
+         controller.scrollViewWillBeginDragging(controller.collectionView)
+         controller.collectionView.setContentOffset(CGPoint(x: 0, y: 430), animated: false)
+@@ -192,11 +215,27 @@ final class ChatScrollTests: XCTestCase {
+             try present(rows(1...42), ticket) // Delayed duplicate ticket.
+             try assertAnchor(anchor)
+             let late = controller.captureChatSubmissionIntent()
++            let consumedBeforeMovement = controller.chatConsumedSubmission
+             // No pan callback: the real scroll delegate must also reject unknown movement.
+             controller.collectionView.setContentOffset(CGPoint(x: 0, y: 310), animated: false)
+             let current = controller.captureChatViewport()
++            // Independent per-item geometry: do not derive expected neighbors
++            // from the same visible-item enumeration used by the consumer.
++            let sixth = try XCTUnwrap(layout.layoutAttributesForItem(at: IndexPath(item: 5, section: 0)))
++            let seventh = try XCTUnwrap(layout.layoutAttributesForItem(at: IndexPath(item: 6, section: 0)))
++            let viewportTop = controller.collectionView.contentOffset.y + controller.collectionView.adjustedContentInset.top
++            let viewportBottom = controller.collectionView.contentOffset.y + controller.collectionView.bounds.height - controller.collectionView.adjustedContentInset.bottom
++            XCTAssertLessThanOrEqual(sixth.frame.minY, viewportTop)
++            XCTAssertGreaterThan(sixth.frame.maxY, viewportTop)
++            XCTAssertGreaterThan(seventh.frame.minY, viewportTop)
++            XCTAssertLessThan(seventh.frame.maxY, viewportBottom)
++            XCTAssertEqual(Array(current.anchors.prefix(2)).map { $0.dbID }, [6, 7])
++            XCTAssertEqual(try XCTUnwrap(current.anchors.first?.offset), sixth.frame.minY - viewportTop, accuracy: 1)
++            XCTAssertEqual(current.offset.y, 310, accuracy: 1)
+             try present(rows(1...43), late)
+             try assertAnchor(current)
++            XCTAssertEqual(controller.collectionView.contentOffset.y, 310, accuracy: 1)
++            XCTAssertEqual(controller.chatConsumedSubmission, consumedBeforeMovement)
+         }
+     }
+ 
+@@ -243,19 +282,27 @@ final class ChatScrollTests: XCTestCase {
+             let retainedSource = try XCTUnwrap(controller.chatDisplaySource)
+             let beforeDisappearing = controller.chatInteractionRevision
+             controller.reportedMovingFromParent = true
+-            controller.viewWillDisappear(false)
++            controller.beginAppearanceTransition(false, animated: false)
++            controller.endAppearanceTransition()
+             controller.reportedMovingFromParent = false
+-            controller.viewWillAppear(false) // Cancellation returns to this same contained page.
++            controller.beginAppearanceTransition(true, animated: false)
++            controller.endAppearanceTransition() // Controlled cancellation returns to this same contained page.
+             XCTAssertGreaterThan(controller.chatInteractionRevision, beforeDisappearing)
+             XCTAssertEqual(controller.chatDisplaySource, retainedSource)
+             controller.displayChatMessages(messages: rows(1...42), source: retainedSource, intent: .preserve)
+             try settled()
+             XCTAssertEqual(controller.messages.count, 42)
++            try evidence("cancelled-pop-page-retained")
+ 
+-            // Real navigation removal: supply a previous page so pop is not a no-op.
++            // Real navigation removal: fixture has a previous page, so pop is not a no-op.
+             let navigation = try XCTUnwrap(controller.navigationController)
+-            navigation.setViewControllers([UIViewController(), controller], animated: false)
++            XCTAssertEqual(navigation.viewControllers.count, 2)
++            let previousPage = navigation.viewControllers[0]
++            let shown = navigationEvents.showCount
++            let removals = controller.completedRemovals
+             XCTAssertTrue(navigation.popViewController(animated: false) === controller)
++            try navigationSettled(navigation, showing: previousPage, after: shown,
++                                  extra: { self.controller.completedRemovals > removals })
+             XCTAssertNil(controller.parent)
+             XCTAssertTrue(controller.chatPageRetired)
+             XCTAssertNil(controller.chatDisplaySource)
+@@ -267,32 +314,33 @@ final class ChatScrollTests: XCTestCase {
+     func testPreviewButtonCapturesBeforeHandoffAndLateWorkCannotMintTicket() throws {
+         try main {
+             try present(rows(1...40)); readHistory()
+-            let preview = NeutralFilePreview()
++            let preview = try XCTUnwrap(UIStoryboard(name: "Main", bundle: Bundle(for: FilePreviewController.self))
++                .instantiateViewController(withIdentifier: "FilePreviewController") as? FilePreviewController)
++            preview.previewContent = FilePreviewContent(data: Data([1, 2, 3]), refUrl: nil,
++                fileName: "fixture.txt", contentType: "text/plain", size: 3, pendingMessagePreview: nil)
+             let navigation = try XCTUnwrap(controller.navigationController)
++            let beforePush = navigationEvents.showCount
+             navigation.pushViewController(preview, animated: false)
++            try navigationSettled(navigation, showing: preview, after: beforePush)
+             // Real original page is offscreen; capture is still allowed for its own top preview.
+             let capture = controller.chatPreviewIntentCapture(for: preview)
+             preview.captureDisplayIntent = capture
+-            preview.previewContent = FilePreviewContent(data: Data([1, 2, 3]), refUrl: nil,
+-                fileName: "fixture.txt", contentType: "text/plain", size: 3, pendingMessagePreview: nil)
+-            let sendButton = UIButton(type: .system)
+-            preview.view.addSubview(sendButton); preview.sendButton = sendButton
++            let sendButton = try XCTUnwrap(preview.sendButton)
++            XCTAssertTrue(sendButton.isEnabled)
+             var received: ChatDisplayIntent?
+             let token = NotificationCenter.default.addObserver(forName: Notification.Name(MessageViewController.kNotificationSendAttachment),
+                 object: nil, queue: .main) { note in
+                     received = note.userInfo?[ChatDisplayIntent.notificationKey] as? ChatDisplayIntent
+                 }
+             defer { NotificationCenter.default.removeObserver(token) }
+-            preview.sendFileAttachment(sendButton) // Actual button method captures before notification and pop.
++            let beforePop = navigationEvents.showCount
++            preview.sendFileAttachment(sendButton) // Actual storyboard button method captures before notification and pop.
+             let intent = try XCTUnwrap(received)
+             guard case .submission(let ticket) = intent else { return XCTFail("Legitimate offscreen preview lost its ticket") }
+             let serial = controller.chatSubmissionRevision
+             controller.invalidateChatDisplayIntent() // User interaction while thumbnail/data work is pending.
+-            let end = ProcessInfo.processInfo.systemUptime + 3
+-            while navigation.transitionCoordinator != nil || controller.view.window == nil {
+-                guard ProcessInfo.processInfo.systemUptime < end else { throw Failure.deadline }
+-                RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
+-            }
++            try navigationSettled(navigation, showing: controller, after: beforePop,
++                                  extra: { preview.parent == nil && !navigation.viewControllers.contains(where: { $0 === preview }) })
+             readHistory(); let before = controller.captureChatViewport()
+             try present(rows(1...41), intent)
+             XCTAssertEqual(controller.chatSubmissionRevision, serial)
+@@ -349,14 +397,19 @@ final class ChatScrollTests: XCTestCase {
+ 
+     private func evidence(_ name: String) throws {
+         let view = controller.view!
+-        let image = UIGraphicsImageRenderer(bounds: view.bounds).image { _ in view.drawHierarchy(in: view.bounds, afterScreenUpdates: true) }
+-        let png = XCTAttachment(image: image); png.name = "chat-scroll-\(name)"; png.lifetime = .keepAlways; add(png)
++        if view.window != nil {
++            let image = UIGraphicsImageRenderer(bounds: view.bounds).image { _ in view.drawHierarchy(in: view.bounds, afterScreenUpdates: true) }
++            let png = XCTAttachment(image: image); png.name = "chat-scroll-\(name)"; png.lifetime = .keepAlways; add(png)
++        }
+         let viewport = controller.captureChatViewport()
+         let data: [String: Any] = ["scope": "neutral cells, production MessageVC consumer and real UICollectionView",
+             "count": controller.messages.count, "offsetY": viewport.offset.y,
+             "anchorIDs": viewport.anchors.map { $0.dbID }, "anchorOffsets": viewport.anchors.map { $0.offset },
+             "atBottom": viewport.atBottom, "interaction": controller.chatInteractionRevision,
+-            "queueCount": controller.chatPresentationQueue.count, "rendering": controller.chatPresentationRunning]
++            "queueCount": controller.chatPresentationQueue.count, "rendering": controller.chatPresentationRunning,
++            "navigationDidShowCount": navigationEvents?.showCount ?? 0,
++            "controllerCompletedRemovals": controller.completedRemovals,
++            "controllerHasParent": controller.parent != nil, "controllerInWindow": controller.viewIfLoaded?.window != nil]
+         let json = XCTAttachment(data: try JSONSerialization.data(withJSONObject: data, options: [.sortedKeys]), uniformTypeIdentifier: "public.json")
+         json.name = "chat-scroll-\(name)-geometry"; json.lifetime = .keepAlways; add(json)
+     }
+@@ -369,10 +422,20 @@ private final class NeutralChatController: MessageViewController {
+     override var inputAccessoryView: UIView? { nil }
+     var reportedMovingFromParent = false
+     override var isMovingFromParent: Bool { reportedMovingFromParent || super.isMovingFromParent }
++    var completedRemovals = 0
++    override func didMove(toParent parent: UIViewController?) {
++        super.didMove(toParent: parent)
++        if parent == nil { completedRemovals += 1 }
++    }
+ }
+ 
+-private final class NeutralFilePreview: FilePreviewController {
+-    override func viewDidLoad() {} // Only the actual confirm handler is exercised, not storyboard layout.
++private final class NavigationEvents: NSObject, UINavigationControllerDelegate {
++    weak var lastShown: UIViewController?
++    var showCount = 0
++    func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
++        lastShown = viewController
++        showCount += 1
++    }
+ }
+ 
+ private final class CaptureOnlyInteractor: MessageInteractor {

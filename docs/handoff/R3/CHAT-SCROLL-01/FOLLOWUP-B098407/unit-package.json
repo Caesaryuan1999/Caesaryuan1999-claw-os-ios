@@ -1,0 +1,72 @@
+{
+  "base": "fdedf825490ea9fa420b54033e8c48d65f8fc8aa",
+  "sourceTarget": "b0984075ca79ffef93658f702005dd19a773616b",
+  "patch": {
+    "path": "unit.patch",
+    "sha256": "718837601a66f7e344b0f37c7c6e4f8ae0f9f63dfac3a25e314f1e37874c8da8",
+    "bytes": 16477
+  },
+  "paths": {
+    "Tinodios/MessageViewController.swift": {
+      "mode": "100644",
+      "gitBlob": "17ff3715883a6975b2f4ab5963e98f991ceb4735",
+      "gitBytesSHA256": "b4c5c344589f871e9c779921ec5941ab5c615a2fca97b63f6de591f66f681537",
+      "bytes": 85057
+    },
+    "TinodiosUITests/ChatScrollTests.swift": {
+      "mode": "100644",
+      "gitBlob": "7b080707e3d0fa99126c768e81962cbc3287ac23",
+      "gitBytesSHA256": "37d2737810c08eb7ca61fe569df356dd95a946d2efe2e048fd64e50184280070",
+      "bytes": 27599
+    }
+  },
+  "independentIndexForwardApply": "PASS --check then actual --cached apply",
+  "requiredBasePaths": {
+    "Tinodios/MessageViewController.swift": {
+      "mode": "100644",
+      "gitBlob": "7ebb6305a60852126c50663170edc2cb986f5f88",
+      "gitBytesSHA256": "551e94302200d92031cdf61e93fa0fb2b6251309f63f70411e67fa4f41fcbe8d",
+      "bytes": 84434
+    },
+    "TinodiosUITests/ChatScrollTests.swift": {
+      "mode": "100644",
+      "gitBlob": "9fba6a07fb6fa2777eac468ad20154529aa70bab",
+      "gitBytesSHA256": "86d3626ebe997cc4cfc2beef66495b3e4f05de3ae89f6e6f450594da8940eea0",
+      "bytes": 23042
+    }
+  },
+  "baseEntryCount": 884,
+  "resultEntryCount": 884,
+  "unselectedEntriesUnchanged": true,
+  "originalIndexUnchanged": true,
+  "resultTree": "6efbdcd586b4b1b77f0d36c9326d387f7e8c2df5",
+  "validation": "Windows packaging/source only; CI33 PENDING; no native result asserted by packaging",
+  "nativeExpected": {
+    "existing": 232,
+    "new": 10,
+    "total": 242,
+    "navigationSeparate": 3
+  },
+  "newMethodsInThisFollowup": 0,
+  "ci33": {
+    "run": "35375538413",
+    "job": "105699232079",
+    "source": "b0984075ca79ffef93658f702005dd19a773616b",
+    "statusAtPackaging": "PENDING"
+  },
+  "prerequisitePackage": {
+    "deliveryCommit": "e30e7bcd13458cb6a6cb569686eefcf35ee571e6",
+    "source": "fdedf825490ea9fa420b54033e8c48d65f8fc8aa",
+    "patchSHA256": "29cc92f25a9b21100c9fb38b29796460810d946f146a7d365a3b60cb2e48e9f3"
+  },
+  "excluded": [
+    "private configuration",
+    "SharedUtils",
+    "credentials/push/signing",
+    "Pods/build/runtime",
+    "historical WIP",
+    "docs/evidence"
+  ],
+  "restore": "In an isolated checkout of the exact base with private configuration preserved: git apply --check unit.patch; git apply unit.patch. Verify listed Git blobs/modes before CI. No reset/clean or database deletion.",
+  "rollback": "Use preserved base code/checkpoint in a separate checkout; retain the current account database and private configuration. This patch makes no schema changes."
+}

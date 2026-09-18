@@ -1,0 +1,27 @@
+{
+  "sourceBase": "fdedf825490ea9fa420b54033e8c48d65f8fc8aa",
+  "sourceTarget": "b0984075ca79ffef93658f702005dd19a773616b",
+  "encoding": "UTF-8/LF; raw entities verified against Git bytes",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2662,
+      "sha256": "72163c7ada41153daad404097c0447d917a81c90db57fc117ab91c63ff442708"
+    },
+    {
+      "path": "package_unit.py",
+      "bytes": 4557,
+      "sha256": "ab09b6652379db8a8d8bb145adf55e9f4ca769047eb2a12636acb1cfd7d04076"
+    },
+    {
+      "path": "unit.patch",
+      "bytes": 16477,
+      "sha256": "718837601a66f7e344b0f37c7c6e4f8ae0f9f63dfac3a25e314f1e37874c8da8"
+    },
+    {
+      "path": "unit-package.json",
+      "bytes": 2797,
+      "sha256": "b94f7d069a9f3e612ac89196b58f48b446dbdfc7bddebaa4d701e6e580b13371"
+    }
+  ]
+}
