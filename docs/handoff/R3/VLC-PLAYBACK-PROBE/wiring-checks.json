@@ -1,0 +1,48 @@
+{
+  "baseline": "06553a0df3574db0468cfff27223f660be3d4e4d",
+  "methods": [
+    "testRealVLCFramesTimeDecodeAndCapturedCredentialURL",
+    "testRealVLCRedirectBehaviorRecordsOriginAndCredentialObservations",
+    "testRealVLCOwnerRetirementBeforeBodyReleaseRecordsContinuedReadAndDecode",
+    "testRealVLCReopenChangedContentAnd403RecordsCacheAndCookieBehavior"
+  ],
+  "new_measurement_methods": 4,
+  "existing_native_unchanged": 196,
+  "navigation_unchanged": 3,
+  "expected_native_total": 200,
+  "expected_storage_total": 159,
+  "actual_code_files": 3,
+  "Podfile_and_lock_unchanged": true,
+  "existing_selectors_and_test_sources_unchanged": true,
+  "CI_evidence_actual_python_block_tests": [
+    {
+      "case": "valid",
+      "passed": true,
+      "expected": "success"
+    },
+    {
+      "case": "wrong_version",
+      "passed": true,
+      "expected": "fail_closed"
+    },
+    {
+      "case": "wrong_archive",
+      "passed": true,
+      "expected": "fail_closed"
+    },
+    {
+      "case": "missing_api",
+      "passed": true,
+      "expected": "fail_closed"
+    },
+    {
+      "case": "escaped_slice",
+      "passed": true,
+      "expected": "fail_closed"
+    }
+  ],
+  "bash_syntax": "PASS",
+  "Swift_compile": "NOT_RUN_WINDOWS",
+  "VLC_network_decode_runtime": "NOT_RUN_WINDOWS",
+  "safety_conclusion": "NONE; measurement completion is not safety acceptance"
+}

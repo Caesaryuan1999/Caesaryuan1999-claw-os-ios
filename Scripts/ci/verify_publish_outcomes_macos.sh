@@ -140,6 +140,41 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme TinodeSDK \
   -only-testing:TinodeSDKTests/TinodeSDKTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/sdk.log"
+# Real VLC dependency probe: use installed simulator headers, never an online/latest SDK guess.
+vlc_pod_evidence="$(python3 - <<'VLC_POD_EVIDENCE'
+import hashlib, json, pathlib, plistlib
+root = pathlib.Path("Pods/MobileVLCKit")
+spec = json.loads(pathlib.Path("Pods/Local Podspecs/MobileVLCKit.podspec.json").read_text())
+assert spec["version"] == "3.6.0", "VLC probe requires the frozen pod version"
+assert spec["source"]["sha256"] == "1a5077beeb7bf943a3fbbb91523752e50a10d490a3046cb9808d906784ddbc36", "Unexpected VLC pod archive contract"
+frameworks = list(root.glob("*.xcframework"))
+assert len(frameworks) == 1, "Expected one installed MobileVLCKit xcframework"
+xcframework = frameworks[0]
+info = plistlib.loads((xcframework / "Info.plist").read_bytes())
+slices = [s for s in info["AvailableLibraries"] if s.get("SupportedPlatform") == "ios"
+          and s.get("SupportedPlatformVariant") == "simulator"]
+assert len(slices) == 1, "Expected one iOS simulator slice"
+entry = slices[0]
+framework = xcframework / entry["LibraryIdentifier"] / entry["LibraryPath"]
+assert framework.resolve().is_relative_to(root.resolve()), "VLC slice escaped pod directory"
+headers = []
+for name, expected in [("VLCMedia.h", "statistics"), ("VLCMediaPlayer.h", "saveVideoSnapshotAt:"),
+                       ("VLCLibrary.h", "changeset")]:
+    path = framework / "Headers" / name
+    data = path.read_bytes()
+    assert expected in data.decode("utf-8"), "Installed VLC header lacks a required probe API"
+    headers.append({"name": name, "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
+bundle = plistlib.loads((framework / "Info.plist").read_bytes())
+binary = framework / bundle["CFBundleExecutable"]
+assert binary.resolve().is_relative_to(root.resolve()), "VLC binary escaped pod directory"
+print(json.dumps({"podVersion": spec["version"], "archiveSHA256": spec["source"]["sha256"],
+    "simulatorArchitectures": entry["SupportedArchitectures"], "headers": headers,
+    "frameworkVersion": bundle.get("CFBundleShortVersionString", ""),
+    "binarySHA256": hashlib.sha256(binary.read_bytes()).hexdigest()}, separators=(",", ":")))
+VLC_POD_EVIDENCE
+)"
+# xcodebuild forwards TEST_RUNNER_ variables to the test runner without that prefix.
+export TEST_RUNNER_CLAW_VLC_POD_EVIDENCE="$vlc_pod_evidence"
 xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \
   -parallel-testing-enabled NO \
@@ -151,9 +186,11 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -only-testing:TinodiosUITests/PublicDirectoryTests \
   -only-testing:TinodiosUITests/SecondaryUIStateTests \
   -only-testing:TinodiosUITests/OwnedImageTests \
+  -only-testing:TinodiosUITests/VLCPlaybackProbeTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
-# Real App navigation is reported separately from the 181 SDK/storage/business methods.
+unset TEST_RUNNER_CLAW_VLC_POD_EVIDENCE
+# Real App navigation is separate from 196 existing native methods and 4 VLC measurement methods.
 # Same selected device and closed loopback endpoint; no login or OTP submission.
 xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \

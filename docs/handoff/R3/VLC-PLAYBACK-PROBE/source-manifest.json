@@ -1,0 +1,31 @@
+{
+  "production_baseline": "e6e07aff8215ea003312a518d6f83e0c1da0ee84",
+  "production_unchanged": true,
+  "code_files": [
+    {
+      "path": "TinodiosUITests/VLCPlaybackProbeTests.swift",
+      "staged_git_blob": "b68f0ec9d92ea278c1ec1c1fbcb28d03918f3b49",
+      "git_sha256": "78460cdfa6afb646eba765096c4267d41c676ef80cb638e9f27312bea64df362",
+      "git_bytes": 31640,
+      "worktree_sha256": "78460cdfa6afb646eba765096c4267d41c676ef80cb638e9f27312bea64df362"
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "staged_git_blob": "5f941829312b9af85c451df4866d4178d7069aa7",
+      "git_sha256": "6b1454749915a6ecab32f02c2d15532557f6f3dd572a3c40d4cc571397e91e96",
+      "git_bytes": 113559,
+      "worktree_sha256": "ecf464d3e8816ce62e8efedef97def9a9c6ae213dea7ef2206c9a1764de6d2f8"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "staged_git_blob": "6fd3dee2111ac4d3589d075e354f8260e5f609a4",
+      "git_sha256": "b16bcfee204e123a1541298f0386264de98c900765e2d215542a426c842d13ce",
+      "git_bytes": 11324,
+      "worktree_sha256": "b93462b8fcadbc013b1377269bbe388fe53f98430d867a4f5d2462b12e8a4e44"
+    }
+  ],
+  "native_runtime": "NOT_RUN",
+  "measurement_method_count": 4,
+  "expected_existing_native": 196,
+  "expected_navigation": 3
+}
