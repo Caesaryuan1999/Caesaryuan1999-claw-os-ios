@@ -1,0 +1,20 @@
+{
+  "level": "Windows static source comparison; not Swift execution or screenshot validation",
+  "base": "65e689554702cc81d4baae33ba8b007d7c8273dd",
+  "checks": {
+    "all_previous_assertion_lines_preserved": true,
+    "same_three_test_methods": true,
+    "registration_return_method_unchanged": true,
+    "legacy_method_unchanged": true,
+    "actual_input_helper_unchanged": true,
+    "actual_keyboard_dismissal_unchanged": true,
+    "four_keyboard_capture_consumers": true,
+    "before_and_after_live_state": true,
+    "no_production_or_ci_delta": true,
+    "no_input_values_in_json_state": true,
+    "both_raw_capture_apis": true
+  },
+  "expected_native_methods": 182,
+  "expected_navigation_methods": 3,
+  "source_sha256": "dd87f0704e75fe75480ffb242dc1a930243f2891bd6d03c3f7090a23891fec21"
+}

@@ -50,20 +50,22 @@ final class IdentityNavigationUITests: XCTestCase {
         let email = app.textFields["邮箱"]
         enter("navigation@example.invalid", into: email)
         XCTAssertEqual(email.value as? String, "navigation@example.invalid")
-        capture("login-email-keyboard")
+        captureKeyboard("login-email-keyboard", field: email)
         dismissKeyboardByTappingMargin()
 
         let password = app.secureTextFields["密码"]
-        enter("NavigationOnly42", into: password)
+        let syntheticPassword = "NavigationOnly42"
+        enter(syntheticPassword, into: password)
         XCTAssertFalse((password.value as? String ?? "").isEmpty)
-        capture("login-password-keyboard")
+        captureKeyboard("login-password-keyboard", field: password,
+                        expectedSecureLength: syntheticPassword.count)
         dismissKeyboardByTappingMargin()
 
         openIdentity("注册账号", title: "创建账号")
         let phone = app.textFields["手机号"]
         enter("00000000000", into: phone)
         XCTAssertEqual(phone.value as? String, "00000000000")
-        capture("registration-phone-keyboard")
+        captureKeyboard("registration-phone-keyboard", field: phone)
         dismissKeyboardByTappingMargin()
         returnToLogin()
 
@@ -72,7 +74,7 @@ final class IdentityNavigationUITests: XCTestCase {
         let resetEmail = app.textFields["邮箱"]
         enter("navigation@example.invalid", into: resetEmail)
         XCTAssertEqual(resetEmail.value as? String, "navigation@example.invalid")
-        capture("password-reset-email-keyboard")
+        captureKeyboard("password-reset-email-keyboard", field: resetEmail)
         dismissKeyboardByTappingMargin()
         returnToLogin()
     }
@@ -193,6 +195,75 @@ final class IdentityNavigationUITests: XCTestCase {
         awaitState("Tapping the form background must dismiss the keyboard") {
             !self.app.keyboards.firstMatch.exists
         }
+    }
+
+    private func captureKeyboard(_ name: String, field: XCUIElement, expectedSecureLength: Int? = nil) {
+        recordKeyboardState(name + "-before", field: field, expectedSecureLength: expectedSecureLength)
+        capture(name)
+        let screen = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screen.name = name + "-screen"
+        screen.lifetime = .keepAlways
+        add(screen)
+        recordKeyboardState(name + "-after", field: field, expectedSecureLength: expectedSecureLength)
+    }
+
+    private func recordKeyboardState(_ name: String, field: XCUIElement, expectedSecureLength: Int?) {
+        let keyboard = app.keyboards.firstMatch
+        let keyboardExists = keyboard.exists
+        let keyboardHittable = keyboardExists && keyboard.isHittable
+        let keyboardFrame = keyboard.frame
+        let fieldFrame = field.frame
+        let appFrame = app.frame
+        let fieldVisible = fullyVisible(field)
+        let foreground = app.state == .runningForeground
+        // Never attach input values, placeholder text or an accessibility tree.
+        var state: [String: Any] = [
+            "stage": name,
+            "uptimeSeconds": ProcessInfo.processInfo.systemUptime,
+            "appForeground": foreground,
+            "keyboardExists": keyboardExists,
+            "keyboardHittable": keyboardHittable,
+            "keyboardFrame": geometry(keyboardFrame),
+            "fieldFrame": geometry(fieldFrame),
+            "appFrame": geometry(appFrame),
+            "fieldFullyVisible": fieldVisible,
+            "fieldOverlapsKeyboard": fieldFrame.intersects(keyboardFrame)
+        ]
+        var secureValueIsPopulated = true
+        var secureLength = 0
+        if let expectedLength = expectedSecureLength {
+            let value = field.value as? String ?? ""
+            secureLength = value.count
+            secureValueIsPopulated = !value.isEmpty && value != field.label
+                && value != (field.placeholderValue ?? "")
+            state["secureValuePopulatedNotPlaceholder"] = secureValueIsPopulated
+            state["secureValueCharacterCount"] = secureLength
+            state["expectedSyntheticCharacterCount"] = expectedLength
+        }
+        do {
+            let data = try JSONSerialization.data(withJSONObject: state, options: [.sortedKeys])
+            let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+            attachment.name = name + "-state"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        } catch {
+            XCTFail("Could not encode safe keyboard geometry evidence")
+        }
+        XCTAssertTrue(foreground, "Keyboard evidence requires the foreground app")
+        XCTAssertTrue(keyboardExists && keyboardHittable, "A hittable software keyboard must remain present")
+        XCTAssertFalse(keyboardFrame.isEmpty, "Keyboard geometry must be nonempty")
+        XCTAssertTrue(appFrame.intersects(keyboardFrame), "Keyboard must intersect the actual screen")
+        XCTAssertTrue(fieldVisible, "Input must be fully visible while the keyboard is present")
+        XCTAssertFalse(fieldFrame.intersects(keyboardFrame), "Keyboard must not cover the input")
+        if let expectedLength = expectedSecureLength {
+            XCTAssertTrue(secureValueIsPopulated, "Secure value must differ from the empty placeholder")
+            XCTAssertEqual(secureLength, expectedLength, "Secure value must retain the synthetic input length")
+        }
+    }
+
+    private func geometry(_ frame: CGRect) -> [String: Double] {
+        ["x": Double(frame.minX), "y": Double(frame.minY),
+         "width": Double(frame.width), "height": Double(frame.height)]
     }
 
     private func capture(_ name: String) {
