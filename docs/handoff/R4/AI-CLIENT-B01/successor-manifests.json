@@ -1,0 +1,127 @@
+{
+  "scope": "Actual Git forward application; not compilation or native execution",
+  "original_index_unchanged": true,
+  "units": [
+    {
+      "name": "a-page-order",
+      "baseline": "02e4ebcb54e4aa7451224e7935b8bb78b840c8ba",
+      "target_source": "3cb55192054a12707a00cac6de8b8f21e3fc4521",
+      "paths": [
+        {
+          "path": "TinodiosUITests/AssistantHistoryTests.swift",
+          "mode": "100644",
+          "blob": "f25f8aa74f64a6db5a4cfab95973ba0d419287e7",
+          "bytes": 30730,
+          "sha256": "763a53dcd09c438cb7eff330aed5d8dda314cf25f62f699424c78d8b26bcbc77"
+        }
+      ],
+      "patch": {
+        "path": "a-page-order.patch",
+        "bytes": 1915,
+        "sha256": "74d2acafbc9e727c1555b1e60cebfe32ef7a1aae4de05f55231d2f926441321c"
+      },
+      "forward_apply": {
+        "independent_index_directory": "C:\\Users\\12287\\AppData\\Local\\Temp\\claw-ios-a-page-order-kwpl7edp",
+        "tree": "64a15d3e194409247830cde8d306169bfc8cc794",
+        "whole_tree_matches": true,
+        "unselected_entries_unchanged": true
+      }
+    },
+    {
+      "name": "b-successor",
+      "baseline": "3cb55192054a12707a00cac6de8b8f21e3fc4521",
+      "target_source": "e9eba400129c734315e8176d00e5b2a52e2bc74f",
+      "paths": [
+        {
+          "path": "Tinodios/ClawAssistantModels.swift",
+          "mode": "100644",
+          "blob": "062d0cce4d8276d595d16b4eb8a50a77970ebb77",
+          "bytes": 15421,
+          "sha256": "3b752e673eab2ae262ef502ba0908ac29facdb13456f5a4c7e1bb66667585134"
+        },
+        {
+          "path": "Tinodios/ClawAssistantService.swift",
+          "mode": "100644",
+          "blob": "5b82c06515bb2b729c7a1b0bb198e19949ebbe34",
+          "bytes": 17871,
+          "sha256": "abd8adf49769aded37ed7f508cd865fa1fc6b0d4f7d31b463371fcccd1fc7009"
+        },
+        {
+          "path": "Tinodios/ClawAssistantRun.swift",
+          "mode": "100644",
+          "blob": "94f8bf0a9d50ac83c999f1b3a6d8a8ed954f53cf",
+          "bytes": 21948,
+          "sha256": "0d9d200ed9e1a7cb484c8c10482dbaef1c39f54bf73d75fe2e1fb43bc3ba7099"
+        },
+        {
+          "path": "Tinodios/ClawAssistantStream.swift",
+          "mode": "100644",
+          "blob": "edf5fe458a572da5e658611f8ae53f379a2fe958",
+          "bytes": 13016,
+          "sha256": "4c472e1f166918fa3a9ed628a524071bc3d63c3532286e8c5db7e8b955d323d4"
+        },
+        {
+          "path": "TinodiosUITests/AssistantRunTests.swift",
+          "mode": "100644",
+          "blob": "a2bab4b1c172d3a661f735116b87d87a3abf8f57",
+          "bytes": 33454,
+          "sha256": "e5cb0b0a5d20b2c5af20dd5a8989d8923bbf6b2f361110ff4770c2e5ae4ea33f"
+        },
+        {
+          "path": "TinodiosUITests/AssistantStreamTests.swift",
+          "mode": "100644",
+          "blob": "f4cda80ea203957c8a9d8f9ce5ffc2ed4e1008c7",
+          "bytes": 20538,
+          "sha256": "51b1a7b8e4c28a8f8808b9d36f8df4cf4459edca4b1f71eb9f0117a822c53b47"
+        }
+      ],
+      "patch": {
+        "path": "b-successor.patch",
+        "bytes": 33112,
+        "sha256": "d5c231f8b5c6ee32a8c43cb2e0eb9d15cc95f4c246de87be5160fcd7e4ef1085"
+      },
+      "forward_apply": {
+        "independent_index_directory": "C:\\Users\\12287\\AppData\\Local\\Temp\\claw-ios-b-successor-08zqa2um",
+        "tree": "46eeddf4f09bc54ee678483bb6e33a64828fcce1",
+        "whole_tree_matches": true,
+        "unselected_entries_unchanged": true
+      }
+    },
+    {
+      "name": "core-title",
+      "baseline": "e9eba400129c734315e8176d00e5b2a52e2bc74f",
+      "target_source": "b004af0d5c5d8ce2f7560fad04ed8711694c8e23",
+      "paths": [
+        {
+          "path": "Tinodios/widgets/ChatListViewCell.swift",
+          "mode": "100644",
+          "blob": "9c6124d13329457213a709bcb3e0607a66f1c404",
+          "bytes": 18572,
+          "sha256": "d976cd915a558d9149cbe895a25410c457b1b7f12d31fe5dc96139231d14b9da"
+        },
+        {
+          "path": "TinodiosUITests/CoreListLayoutTests.swift",
+          "mode": "100644",
+          "blob": "13727a1d06385410eb203b426f7717516efe4d81",
+          "bytes": 34461,
+          "sha256": "d7bbdde69fcf803b3b8075b171512a9ecdc0044c7efe65c9dca5e900d64a0789"
+        }
+      ],
+      "patch": {
+        "path": "core-title.patch",
+        "bytes": 8855,
+        "sha256": "98431f19e8ed0a346c7f282d3e20d8d6336df2c41e765c6f9f707af6adcd680f"
+      },
+      "forward_apply": {
+        "independent_index_directory": "C:\\Users\\12287\\AppData\\Local\\Temp\\claw-ios-core-title-9f7ry327",
+        "tree": "ef5f3642e4eb0ba0bc08f228044fd759900727ff",
+        "whole_tree_matches": true,
+        "unselected_entries_unchanged": true
+      }
+    }
+  ],
+  "final_source": "b004af0d5c5d8ce2f7560fad04ed8711694c8e23",
+  "native_execution": "NOT_RUN",
+  "expected_native": 293,
+  "navigation_separate": 3
+}

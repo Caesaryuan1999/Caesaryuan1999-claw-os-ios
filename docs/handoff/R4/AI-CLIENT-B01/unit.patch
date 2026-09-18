@@ -1,0 +1,1732 @@
+diff --git a/Scripts/ci/verify_publish_outcomes_macos.sh b/Scripts/ci/verify_publish_outcomes_macos.sh
+index b87f5e2104b1b06fd4a81d3fb70fb8e642e4ba05..af8e4600d959fd28331cce9cca62ba83e34a5f40 100644
+--- a/Scripts/ci/verify_publish_outcomes_macos.sh
++++ b/Scripts/ci/verify_publish_outcomes_macos.sh
+@@ -401,6 +401,8 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
+   -only-testing:TinodiosVoiceLayoutTests/CoreListLayoutTests \
+   -only-testing:TinodiosVoiceLayoutTests/AssistantHistoryTests \
+   -only-testing:TinodiosVoiceLayoutTests/AssistantLayoutTests \
++  -only-testing:TinodiosVoiceLayoutTests/AssistantRunTests \
++  -only-testing:TinodiosVoiceLayoutTests/AssistantStreamTests \
+   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
+   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
+ unset TEST_RUNNER_CLAW_VLC_POD_EVIDENCE
+diff --git a/Tinodios.xcodeproj/project.pbxproj b/Tinodios.xcodeproj/project.pbxproj
+index e651380762358579a21accd513f2dd5a552ff39e..651cd7e10b27feff48a92eb1db73d8a349748ac6 100644
+--- a/Tinodios.xcodeproj/project.pbxproj
++++ b/Tinodios.xcodeproj/project.pbxproj
+@@ -7,6 +7,11 @@
+ 	objects = {
+ 
+ /* Begin PBXBuildFile section */
++		C1A080000000000000000002 /* ClawAssistantRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A080000000000000000001; };
++		C1A080000000000000000004 /* ClawAssistantStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A080000000000000000003; };
++		C1A080000000000000000006 /* AssistantRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A080000000000000000005; };
++		C1A080000000000000000008 /* AssistantStreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A080000000000000000007; };
++
+ 		C1A070000000000000000002 /* ClawAssistantModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000001; };
+ 		C1A070000000000000000004 /* ClawAssistantService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000003; };
+ 		C1A070000000000000000006 /* ClawAssistantSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000005; };
+@@ -278,6 +283,11 @@
+ /* End PBXCopyFilesBuildPhase section */
+ 
+ /* Begin PBXFileReference section */
++		C1A080000000000000000001 /* ClawAssistantRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantRun.swift; sourceTree = "<group>"; };
++		C1A080000000000000000003 /* ClawAssistantStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantStream.swift; sourceTree = "<group>"; };
++		C1A080000000000000000005 /* AssistantRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantRunTests.swift; sourceTree = "<group>"; };
++		C1A080000000000000000007 /* AssistantStreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantStreamTests.swift; sourceTree = "<group>"; };
++
+ 		C1A070000000000000000001 /* ClawAssistantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantModels.swift; sourceTree = "<group>"; };
+ 		C1A070000000000000000003 /* ClawAssistantService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantService.swift; sourceTree = "<group>"; };
+ 		C1A070000000000000000005 /* ClawAssistantSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantSession.swift; sourceTree = "<group>"; };
+@@ -652,6 +662,8 @@
+ 				C1A070000000000000000009 /* ClawAssistantViewController.swift */,
+ 				C1A07000000000000000000B /* ClawAssistantHistoryViewController.swift */,
+ 				C1A07000000000000000000D /* ClawAssistantConversationViewController.swift */,
++				C1A080000000000000000001 /* ClawAssistantRun.swift */,
++				C1A080000000000000000003 /* ClawAssistantStream.swift */,
+ 				C1A0A0012026091800000001 /* ClawIdentityService.swift */,
+ 				C1A0A0012026091800000002 /* ClawIdentityFlow.swift */,
+ 				C1A040012026091800000001 /* ClawSecondaryUIState.swift */,
+@@ -711,6 +723,8 @@
+ 				C1A050000000000000000001 /* ChatScrollTests.swift */,
+ 				C1A07000000000000000000F /* AssistantHistoryTests.swift */,
+ 				C1A070000000000000000011 /* AssistantLayoutTests.swift */,
++				C1A080000000000000000005 /* AssistantRunTests.swift */,
++				C1A080000000000000000007 /* AssistantStreamTests.swift */,
+ 				C1A060000000000000000001 /* CoreListLayoutTests.swift */,
+ 				C1A047012026091800000002 /* SendMessageBarResetSource.swift */,
+ 				C1A041012026091800000001 /* OwnedImageTests.swift */,
+@@ -1310,6 +1324,8 @@
+ 				C1A07000000000000000000A /* ClawAssistantViewController.swift in Sources */,
+ 				C1A07000000000000000000C /* ClawAssistantHistoryViewController.swift in Sources */,
+ 				C1A07000000000000000000E /* ClawAssistantConversationViewController.swift in Sources */,
++				C1A080000000000000000002 /* ClawAssistantRun.swift in Sources */,
++				C1A080000000000000000004 /* ClawAssistantStream.swift in Sources */,
+ 				C1A0A0022026091800000001 /* ClawIdentityService.swift in Sources */,
+ 				C1A0A0022026091800000002 /* ClawIdentityFlow.swift in Sources */,
+ 				C1A040022026091800000001 /* ClawSecondaryUIState.swift in Sources */,
+@@ -1385,7 +1401,7 @@
+ 			files = (C1A043022026091800000001, C1A04400000000000000001D, );
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 		};
+-		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A070000000000000000010, C1A070000000000000000012, ); runOnlyForDeploymentPostprocessing = 0; };
++		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A070000000000000000010, C1A070000000000000000012, C1A080000000000000000006, C1A080000000000000000008, ); runOnlyForDeploymentPostprocessing = 0; };
+ /* End PBXSourcesBuildPhase section */
+ 
+ /* Begin PBXTargetDependency section */
+diff --git a/Tinodios/ClawAssistantModels.swift b/Tinodios/ClawAssistantModels.swift
+index 893b4f016a7ff01f21cbb1104d4d9013ad2802f6..3528088fad450ebde4b6caba0ac23d08c2d9149c 100644
+--- a/Tinodios/ClawAssistantModels.swift
++++ b/Tinodios/ClawAssistantModels.swift
+@@ -64,12 +64,175 @@ struct ClawAssistantCapabilities: ClawAssistantValidated {
+     let generation: Feature
+     let stream: Feature
+     let limits: Limits
++    let run_protocol: String?
++    let message_states: ClawAssistantMessageStates?
++    private enum CodingKeys: String, CodingKey {
++        case version, history, generation, stream, limits, run_protocol, message_states
++    }
++    init(from decoder: Decoder) throws {
++        let values = try decoder.container(keyedBy: CodingKeys.self)
++        version = try values.decode(String.self, forKey: .version)
++        history = try values.decode(Feature.self, forKey: .history)
++        generation = try values.decode(Feature.self, forKey: .generation)
++        stream = try values.decode(Feature.self, forKey: .stream)
++        limits = try values.decode(Limits.self, forKey: .limits)
++        // Unknown B fields must not break the original A-only history reader.
++        run_protocol = try? values.decode(String.self, forKey: .run_protocol)
++        message_states = try? values.decode(ClawAssistantMessageStates.self, forKey: .message_states)
++    }
+     func validate() throws {
+         guard version == "claw-ai-v1", limits.body_bytes == 65536,
+               limits.text_bytes == 32000, limits.page_size_max == 100 else {
+             throw ClawAssistantError.incompatible
+         }
+-        // Even a future server advertising generation=true cannot enable B in this client.
++        // A callers do not use the B fields to enable generation.
++    }
++}
++
++// B is explicitly negotiated. A message decoding and the A UI remain unchanged.
++struct ClawAssistantMessageStates: Decodable {
++    let user: [String]
++    let assistant: [String]
++}
++
++extension ClawAssistantCapabilities {
++    func validateRuns() throws {
++        try validate()
++        guard run_protocol == "claw-ai-run-v1",
++              let states = message_states,
++              Set(states.user) == Set(["partial", "interrupted", "completed"]), states.user.count == 3,
++              Set(states.assistant) == Set(["partial", "completed", "stopped", "interrupted", "failed"]),
++              states.assistant.count == 5 else { throw ClawAssistantError.incompatible }
++    }
++}
++
++struct ClawAssistantRunInput: Encodable, Equatable {
++    let request_id: String
++    let text: String
++    let retry_of: String?
++    func body() throws -> Data {
++        guard ClawAssistantWire.uuid(request_id), retry_of.map(ClawAssistantWire.uuid) ?? true,
++              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
++              text.utf8.count <= 32000 else { throw ClawAssistantError.invalidResponse }
++        // Validate emptiness only: the transmitted/hash input is the original text.
++        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
++        let data = try encoder.encode(self)
++        guard data.count <= 65536 else { throw ClawAssistantError.responseTooLarge }
++        return data
++    }
++}
++
++struct ClawAssistantConversationPageValue: ClawAssistantValidated {
++    let value: ClawAssistantConversation
++    init(from decoder: Decoder) throws { value = try ClawAssistantConversation(from: decoder) }
++    func validate() throws { try value.validate() }
++}
++
++enum ClawAssistantRunWire {
++    static let active = Set(["queued", "running"])
++    static let terminal = Set(["completed", "stopped", "interrupted", "failed"])
++    static let reasons = Set(["", "user_stop", "process_lost", "auth_revoked", "provider_error",
++                              "output_limit", "event_limit", "shutdown", "legacy_history"])
++    static let outputLimit = 256 * 1024
++    static func next(_ value: String) -> String? {
++        guard ClawAssistantWire.decimal(value), let number = Int64(value), number < Int64.max else { return nil }
++        return String(number + 1)
++    }
++}
++
++struct ClawAssistantRunReceipt: ClawAssistantValidated, Equatable {
++    let legacy: Bool?
++    let conversation_id: String
++    let run_id: String
++    let request_id: String
++    let question_message_id: String
++    let answer_message_id: String
++    let state: String
++    let last_event: String
++    let revision: String
++    let created_at: String
++    var isLegacy: Bool { legacy == true }
++    var isTerminal: Bool { ClawAssistantRunWire.terminal.contains(state) }
++    func validate() throws {
++        guard ClawAssistantWire.uuid(conversation_id), ClawAssistantWire.uuid(run_id),
++              ClawAssistantWire.uuid(request_id), ClawAssistantWire.decimal(last_event),
++              ClawAssistantWire.decimal(revision), ClawAssistantWire.date(created_at) != nil,
++              ClawAssistantRunWire.active.contains(state) || isTerminal,
++              ClawAssistantWire.uuid(question_message_id) || (isLegacy && question_message_id.isEmpty),
++              ClawAssistantWire.uuid(answer_message_id) || (isLegacy && answer_message_id.isEmpty),
++              !isLegacy || isTerminal else { throw ClawAssistantError.invalidResponse }
++    }
++}
++
++struct ClawAssistantRunSnapshot: ClawAssistantValidated, Equatable {
++    let receipt: ClawAssistantRunReceipt
++    let text: String
++    let updated_at: String
++    let reason: String
++    private enum CodingKeys: String, CodingKey { case text, updated_at, reason }
++    init(from decoder: Decoder) throws {
++        receipt = try ClawAssistantRunReceipt(from: decoder)
++        let values = try decoder.container(keyedBy: CodingKeys.self)
++        text = try values.decode(String.self, forKey: .text)
++        updated_at = try values.decode(String.self, forKey: .updated_at)
++        reason = try values.decode(String.self, forKey: .reason)
++    }
++    func validate() throws {
++        try receipt.validate()
++        guard text.utf8.count <= ClawAssistantRunWire.outputLimit,
++              ClawAssistantWire.date(updated_at) != nil, ClawAssistantRunWire.reasons.contains(reason),
++              receipt.isTerminal || reason.isEmpty else { throw ClawAssistantError.invalidResponse }
++    }
++}
++
++struct ClawAssistantRunEvent: ClawAssistantValidated, Equatable {
++    let id: String
++    let kind: String
++    let delta: String?
++    let state: String?
++    let reason: String?
++    let revision: String
++    func validate() throws {
++        guard ClawAssistantWire.decimal(id), id != "0", ClawAssistantWire.decimal(revision) else {
++            throw ClawAssistantError.invalidResponse
++        }
++        switch kind {
++        case "accepted":
++            guard state == "queued", delta == nil, reason == nil else { throw ClawAssistantError.invalidResponse }
++        case "delta":
++            guard let delta = delta, !delta.isEmpty, delta.utf8.count <= 4096,
++                  state == nil, reason == nil else { throw ClawAssistantError.invalidResponse }
++        case "terminal":
++            guard let state = state, ClawAssistantRunWire.terminal.contains(state), delta == nil,
++                  reason.map({ ClawAssistantRunWire.reasons.contains($0) }) ?? true else {
++                throw ClawAssistantError.invalidResponse
++            }
++        default: throw ClawAssistantError.incompatible
++        }
++    }
++}
++
++struct ClawAssistantRunEvents: ClawAssistantValidated {
++    let conversation_id: String
++    let run_id: String
++    let items: [ClawAssistantRunEvent]
++    let next_after_event: String
++    let last_event: String
++    let state: String
++    func validate() throws {
++        guard ClawAssistantWire.uuid(conversation_id), ClawAssistantWire.uuid(run_id), items.count <= 100,
++              ClawAssistantWire.decimal(last_event),
++              ClawAssistantRunWire.active.contains(state) || ClawAssistantRunWire.terminal.contains(state),
++              next_after_event.isEmpty || next_after_event == items.last?.id else { throw ClawAssistantError.invalidResponse }
++        var previous: String?
++        for item in items {
++            try item.validate()
++            guard !ClawAssistantWire.less(last_event, item.id),
++                  previous.map({ ClawAssistantRunWire.next($0) == item.id }) ?? true else {
++                throw ClawAssistantError.invalidResponse
++            }
++            previous = item.id
++        }
+     }
+ }
+ 
+diff --git a/Tinodios/ClawAssistantRun.swift b/Tinodios/ClawAssistantRun.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..aceab763113a4577f0cd200508b96638a944fab0
+--- /dev/null
++++ b/Tinodios/ClawAssistantRun.swift
+@@ -0,0 +1,379 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import Foundation
++
++private final class ClawAssistantReadDelay: ClawAssistantCancellation {
++    let item: DispatchWorkItem
++    init(delay: TimeInterval, work: @escaping () -> Void) {
++        item = DispatchWorkItem(block: work)
++        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
++    }
++    func cancel() { item.cancel() }
++}
++
++/// B1 is not attached to UI. No disk journal or automatic POST replay exists here.
++/// All entry points and state observations are on main; SDK/Cache locks only protect state commits.
++final class ClawAssistantRun {
++    enum Submission: Equatable { case idle, pending, unknown, accepted, rejected(ClawAssistantError) }
++    enum Stop: Equatable { case idle, pending, unknown, confirmed, rejected(ClawAssistantError) }
++    struct Ticket: Equatable {
++        let conversationID: String
++        let input: ClawAssistantRunInput
++        let body: Data
++    }
++    struct Projection: Equatable {
++        let receipt: ClawAssistantRunReceipt
++        var text: String
++        var state: String
++        var reason: String
++        var lastEvent: String
++        var revision: String
++        var terminal: Bool { ClawAssistantRunWire.terminal.contains(state) }
++    }
++    typealias Schedule = (TimeInterval, @escaping () -> Void) -> ClawAssistantCancellation
++    private let session: ClawAssistantSession
++    private var capabilities: ClawAssistantCapabilities
++    private let schedule: Schedule
++    private var retirement: NSObjectProtocol?
++    private var readOperation = UUID()
++    private var writeOperation = UUID()
++    private var stopOperation = UUID()
++    private var readTask: ClawAssistantCancellation?
++    private var streamTask: ClawAssistantCancellation?
++    private var writeTask: ClawAssistantCancellation?
++    private var stopTask: ClawAssistantCancellation?
++    private var delayTask: ClawAssistantCancellation?
++    private var conversationReady = false
++    private var visible = false
++    private var retired = false
++    private var tombstoned = false
++    private var failures = 0
++    private var seen: [String: ClawAssistantRunEvent] = [:]
++    private var readAddress: (conversationID: String, runID: String)?
++    private(set) var ticket: Ticket?
++    private(set) var receipt: ClawAssistantRunReceipt?
++    private(set) var projection: Projection?
++    private(set) var submission = Submission.idle
++    private(set) var stopping = Stop.idle
++    private(set) var lastError: ClawAssistantError?
++    var changed: (() -> Void)?
++
++    init(session: ClawAssistantSession, capabilities: ClawAssistantCapabilities,
++         schedule: @escaping Schedule = { ClawAssistantReadDelay(delay: $0, work: $1) }) throws {
++        try capabilities.validateRuns()
++        guard session.isCurrent else { throw ClawAssistantError.retired }
++        self.session = session; self.capabilities = capabilities; self.schedule = schedule
++        retirement = NotificationCenter.default.addObserver(forName: ClawAssistantSession.changed,
++            object: nil, queue: .main) { [weak self, weak session] note in
++                guard let session = session, note.object as? ClawAssistantSession === session else { return }
++                self?.retire()
++            }
++    }
++    deinit {
++        if let retirement = retirement { NotificationCenter.default.removeObserver(retirement) }
++        readTask?.cancel(); streamTask?.cancel(); writeTask?.cancel(); stopTask?.cancel(); delayTask?.cancel()
++    }
++    private var current: Bool { !retired && !tombstoned && session.isCurrent }
++    private func notify() { changed?() }
++
++    /// Explicit user action only. Generation remains disabled in the A UI.
++    @discardableResult
++    func submit(text: String, conversationID: String? = nil) -> Bool {
++        precondition(Thread.isMainThread)
++        guard current, capabilities.generation.available, submission != .pending, submission != .unknown,
++              receipt == nil || projection?.terminal == true,
++              stopping != .pending, stopping != .unknown else { return false }
++        let cid = conversationID ?? UUID().uuidString.lowercased()
++        let input = ClawAssistantRunInput(request_id: UUID().uuidString.lowercased(), text: text, retry_of: nil)
++        return prepare(cid: cid, input: input, exists: conversationID != nil)
++    }
++
++    /// history must be the caller's complete current conversation snapshot, not the editor's text.
++    @discardableResult
++    func retryAnswer(_ original: ClawAssistantRunSnapshot, history: [ClawAssistantMessage]) -> Bool {
++        precondition(Thread.isMainThread)
++        guard current, capabilities.generation.available, submission != .pending, submission != .unknown,
++              stopping != .pending, stopping != .unknown,
++              receipt == nil || projection?.terminal == true,
++              !original.receipt.isLegacy, ["interrupted", "failed"].contains(original.receipt.state),
++              (try? original.validate()) != nil,
++              let question = history.last(where: { $0.role == "user" }),
++              question.message_id == original.receipt.question_message_id,
++              question.conversation_id == original.receipt.conversation_id,
++              history.allSatisfy({ $0.conversation_id == original.receipt.conversation_id }) else { return false }
++        let input = ClawAssistantRunInput(request_id: UUID().uuidString.lowercased(), text: question.text,
++                                          retry_of: original.receipt.run_id)
++        return prepare(cid: original.receipt.conversation_id, input: input, exists: true)
++    }
++    private func prepare(cid: String, input: ClawAssistantRunInput, exists: Bool) -> Bool {
++        guard ClawAssistantWire.uuid(cid), let body = try? input.body() else { return false }
++        cancelReads(); receipt = nil; projection = nil; readAddress = nil; seen.removeAll()
++        ticket = Ticket(conversationID: cid, input: input, body: body)
++        conversationReady = exists; stopping = .idle; failures = 0; lastError = nil
++        dispatchSubmission(retry: false); return true
++    }
++
++    /// A POST, never labelled a read-only reconciliation. Retains the exact in-memory key/body.
++    @discardableResult
++    func retrySubmission() -> Bool {
++        precondition(Thread.isMainThread)
++        guard current, submission == .unknown, ticket != nil, receipt == nil else { return false }
++        dispatchSubmission(retry: true); return true
++    }
++    private func dispatchSubmission(retry: Bool) {
++        guard current, let ticket = ticket else { return }
++        let op = UUID(); writeOperation = op
++        submission = .pending; lastError = nil; notify()
++        if !conversationReady {
++            writeTask = session.service.createConversation(ticket.conversationID, capabilities: capabilities,
++                retrySubmission: retry) { [weak self] result in
++                    self?.receive(result, valid: { $0.writeOperation == op }) { model, result in
++                        switch result {
++                        case .success(let value) where value.value.conversation_id == ticket.conversationID && !value.value.deleted:
++                            model.conversationReady = true
++                            return { [weak model] in model?.dispatchSubmission(retry: retry) }
++                        default: model.submissionFailure(result.error ?? .invalidResponse, wasUnknown: retry)
++                        }
++                        return nil
++                    }
++                }
++            return
++        }
++        writeTask = session.service.submitRun(ticket.conversationID, input: ticket.input,
++            capabilities: capabilities, retrySubmission: retry) { [weak self] result in
++                self?.receive(result, valid: { $0.writeOperation == op }) { model, result in
++                    switch result {
++                    case .success(let value) where value.conversation_id == ticket.conversationID &&
++                        value.request_id == ticket.input.request_id && !value.isLegacy:
++                        model.receipt = value; model.submission = .accepted
++                        // Receipt has no output prefix: do not consume its last_event without GET text.
++                        return model.visible ? { [weak model] in model?.recover() } : nil
++                    default: model.submissionFailure(result.error ?? .invalidResponse, wasUnknown: retry)
++                    }
++                    return nil
++                }
++            }
++    }
++    private func submissionFailure(_ error: ClawAssistantError, wasUnknown: Bool) {
++        lastError = error
++        if !wasUnknown, case .server(let status, let code) = error,
++           ((400..<500).contains(status) && status != 408 || status == 503 && code == "provider_not_configured") {
++            submission = .rejected(error)
++        } else { submission = .unknown }
++    }
++
++    /// Recovered authoritative history supplies rid after process death. Never guesses it from text.
++    @discardableResult
++    func recover(conversationID: String, runID: String) -> Bool {
++        precondition(Thread.isMainThread)
++        guard current, ClawAssistantWire.uuid(conversationID), ClawAssistantWire.uuid(runID),
++              submission != .pending, submission != .unknown,
++              receipt.map({ $0.conversation_id == conversationID && $0.run_id == runID }) ?? true else { return false }
++        read(conversationID, runID: runID); return true
++    }
++    func recover() {
++        precondition(Thread.isMainThread)
++        guard current else { return }
++        if let receipt = receipt { read(receipt.conversation_id, runID: receipt.run_id) }
++        else if let address = readAddress { read(address.conversationID, runID: address.runID) }
++    }
++    /// Explicit manual recovery re-negotiates capabilities; it never retries a POST.
++    func renegotiateAndRecover() {
++        precondition(Thread.isMainThread)
++        guard current, submission != .pending, submission != .unknown else { return }
++        cancelReads()
++        let op = readOperation
++        readTask = session.service.capabilities { [weak self] result in
++            self?.receive(result, valid: { $0.readOperation == op }) { model, result in
++                switch result {
++                case .success(let capabilities):
++                    do { try capabilities.validateRuns() }
++                    catch { model.lastError = .incompatible; return nil }
++                    model.capabilities = capabilities
++                    return { [weak model] in model?.recover() }
++                case .failure(let error): model.lastError = error; return nil
++                }
++            }
++        }
++    }
++    func setVisible(_ value: Bool) {
++        precondition(Thread.isMainThread)
++        guard visible != value else { return }
++        visible = value
++        if !value { cancelReads() }
++        else if current, receipt != nil || readAddress != nil { recover() }
++    }
++    private func cancelReads() {
++        readOperation = UUID()
++        let tasks = [readTask, streamTask, delayTask]
++        readTask = nil; streamTask = nil; delayTask = nil
++        tasks.forEach { $0?.cancel() }
++    }
++    private func read(_ cid: String, runID: String) {
++        cancelReads()
++        readAddress = (cid, runID)
++        let op = readOperation
++        readTask = session.service.run(cid, runID: runID, capabilities: capabilities) { [weak self] result in
++            self?.receive(result, valid: { $0.readOperation == op }) { model, result in
++                switch result {
++                case .success(let snapshot):
++                    guard model.install(snapshot, cid: cid, rid: runID) else {
++                        return { [weak model] in model?.readFailed(.invalidResponse) }
++                    }
++                    model.lastError = nil
++                    if snapshot.receipt.isTerminal { model.failures = 0; model.stopping = model.stopping == .idle ? .idle : .confirmed }
++                    return { [weak model] in model?.openStream() }
++                case .failure(let error): return { [weak model] in model?.readFailed(error) }
++                }
++            }
++        }
++    }
++    private func install(_ value: ClawAssistantRunSnapshot, cid: String, rid: String) -> Bool {
++        guard value.receipt.conversation_id == cid, value.receipt.run_id == rid,
++              receipt.map({ $0.request_id == value.receipt.request_id && $0.run_id == rid }) ?? true else { return false }
++        if let old = projection {
++            guard !ClawAssistantWire.less(value.receipt.last_event, old.lastEvent),
++                  !ClawAssistantWire.less(value.receipt.revision, old.revision),
++                  !old.terminal || value.receipt.state == old.state else { return false }
++            if value.receipt.last_event == old.lastEvent && value.text != old.text { return false }
++        }
++        receipt = value.receipt
++        projection = Projection(receipt: value.receipt, text: value.text, state: value.receipt.state,
++                                reason: value.reason, lastEvent: value.receipt.last_event, revision: value.receipt.revision)
++        seen.removeAll(); return true
++    }
++    private func openStream() {
++        guard current, visible, let value = projection, !value.terminal, !value.receipt.isLegacy else { return }
++        guard capabilities.stream.available else {
++            lastError = .server(503, "history_unavailable"); notify(); return
++        }
++        let op = readOperation
++        streamTask = session.service.stream(value.receipt.conversation_id, runID: value.receipt.run_id,
++            after: value.lastEvent, capabilities: capabilities, event: { [weak self] event in
++                self?.receive(Result<ClawAssistantRunEvent, ClawAssistantError>.success(event),
++                    valid: { $0.readOperation == op }) { model, result in
++                        guard case .success(let event) = result else { return nil }
++                        let previous = model.projection?.lastEvent
++                        guard model.apply(event) else { return { [weak model] in model?.readFailed(.invalidResponse) } }
++                        if model.projection?.lastEvent != previous { model.failures = 0; model.lastError = nil }
++                        if model.projection?.terminal == true {
++                            if model.stopping != .idle { model.stopping = .confirmed }
++                            return { [weak model] in model?.cancelReads() }
++                        }
++                        return nil
++                    }
++            }, completion: { [weak self] end in
++                DispatchQueue.main.async {
++                    guard let self = self, self.current, self.readOperation == op,
++                          self.projection?.terminal == false else { return }
++                    switch end {
++                    case .cancelled: break
++                    case .deadline: self.recover() // Normal rotation never resets consecutive failures.
++                    case .eof: self.readFailed(.transport)
++                    case .failure(let error):
++                        if case .server(401, _) = error { self.session.blockAuthorization(); self.retire() }
++                        else if case .server(410, _) = error { self.retireDeleted() }
++                        else { self.readFailed(error) }
++                    }
++                }
++            })
++    }
++    private func apply(_ event: ClawAssistantRunEvent) -> Bool {
++        guard var value = projection else { return false }
++        if !ClawAssistantWire.less(value.lastEvent, event.id) {
++            return seen[event.id].map({ $0 == event }) ?? true // Already included by authoritative GET.
++        }
++        guard !value.terminal, ClawAssistantRunWire.next(value.lastEvent) == event.id,
++              ClawAssistantWire.less(value.revision, event.revision), seen.count < 1024,
++              Int64(event.id).map({ $0 <= 1024 }) ?? false else { return false }
++        switch event.kind {
++        case "accepted":
++            guard value.state == "queued", event.id == "1", value.text.isEmpty else { return false }
++        case "delta":
++            guard let delta = event.delta, value.text.utf8.count + delta.utf8.count <= ClawAssistantRunWire.outputLimit else { return false }
++            value.text += delta; value.state = "running"
++        case "terminal": value.state = event.state ?? ""; value.reason = event.reason ?? ""
++        default: return false
++        }
++        value.lastEvent = event.id; value.revision = event.revision
++        projection = value; seen[event.id] = event; return true
++    }
++    private func readFailed(_ error: ClawAssistantError) {
++        guard current else { return }
++        cancelReads(); lastError = error; notify()
++        guard visible, readAddress != nil, projection?.terminal != true else { return }
++        if case .server(let status, _) = error, status == 403 || status == 404 { return }
++        guard failures < 3 else { return }
++        let delays: [TimeInterval] = [1, 2, 4]
++        let seconds = delays[failures]; failures += 1
++        let op = readOperation
++        delayTask = schedule(seconds) { [weak self] in
++            guard let self = self, self.current, self.visible, self.readOperation == op else { return }
++            self.recover()
++        }
++    }
++    @discardableResult
++    func stop() -> Bool {
++        precondition(Thread.isMainThread)
++        guard current, let value = projection, !value.terminal, !value.receipt.isLegacy, stopping != .pending else { return false }
++        let wasUnknown = stopping == .unknown
++        let op = UUID(); stopOperation = op; stopping = .pending; notify()
++        stopTask = session.service.run(value.receipt.conversation_id, runID: value.receipt.run_id,
++            capabilities: capabilities, stop: true) { [weak self] result in
++                self?.receive(result, valid: { $0.stopOperation == op }) { model, result in
++                    if case .success(let snapshot) = result, snapshot.receipt.isTerminal,
++                       model.install(snapshot, cid: value.receipt.conversation_id, rid: value.receipt.run_id) {
++                        model.stopping = .confirmed; model.lastError = nil; model.failures = 0
++                        return { [weak model] in model?.cancelReads() }
++                    }
++                    // A stream/GET terminal wins over a late stop failure.
++                    if model.projection?.terminal == true { model.stopping = .confirmed; return nil }
++                    let error = result.error ?? .invalidResponse; model.lastError = error
++                    if !wasUnknown, case .server(let status, _) = error, (400..<500).contains(status), status != 408 {
++                        model.stopping = .rejected(error)
++                    } else { model.stopping = .unknown }
++                    return nil
++                }
++            }
++        return true
++    }
++    @discardableResult
++    func markDeleted(conversationID: String) -> Bool {
++        precondition(Thread.isMainThread)
++        let currentID = receipt?.conversation_id ?? ticket?.conversationID ?? readAddress?.conversationID
++        guard currentID == conversationID else { return false }
++        retireDeleted(); return true
++    }
++    private func retireDeleted() {
++        tombstoned = true; retire()
++    }
++    func retire() {
++        precondition(Thread.isMainThread)
++        guard !retired else { return }
++        retired = true; visible = false; writeOperation = UUID(); stopOperation = UUID()
++        cancelReads(); writeTask?.cancel(); stopTask?.cancel(); writeTask = nil; stopTask = nil
++        ticket = nil; receipt = nil; projection = nil; readAddress = nil; seen.removeAll(); lastError = .retired; notify()
++    }
++    private func receive<T>(_ result: Result<T, ClawAssistantError>, valid: @escaping (ClawAssistantRun) -> Bool,
++                            apply: @escaping (ClawAssistantRun, Result<T, ClawAssistantError>) -> (() -> Void)?) {
++        DispatchQueue.main.async { [weak self] in
++            guard let self = self else { return }
++            guard self.current else { self.retire(); return }
++            guard valid(self) else { return }
++            if case .failure(.server(401, _)) = result { self.session.blockAuthorization(); self.retire(); return }
++            if case .failure(.server(410, _)) = result { self.retireDeleted(); return }
++            var next: (() -> Void)?
++            let committed = self.session.withCurrent { () -> Bool in
++                guard valid(self), !self.retired, !self.tombstoned else { return false }
++                next = apply(self, result); return true
++            } ?? false
++            if committed {
++                self.notify()
++                if self.current, valid(self) { next?() }
++            }
++        }
++    }
++}
++
++private extension Result where Failure == ClawAssistantError {
++    var error: ClawAssistantError? { if case .failure(let error) = self { return error }; return nil }
++}
+diff --git a/Tinodios/ClawAssistantService.swift b/Tinodios/ClawAssistantService.swift
+index 4757c5cf0c51ecff09dfae6d3b3b1ca7915231b1..0faf78db939f5fb6ddfd132cf43804204502800e 100644
+--- a/Tinodios/ClawAssistantService.swift
++++ b/Tinodios/ClawAssistantService.swift
+@@ -3,7 +3,7 @@ import Foundation
+ 
+ protocol ClawAssistantCancellation: AnyObject { func cancel() }
+ 
+-/// Only A read/delete operations exist here. No POST, run, stream or implicit create.
++/// A operations remain unchanged. B entry points require explicit protocol negotiation.
+ final class ClawAssistantService {
+     static let responseLimit = 24 * 1024 * 1024 // covers 100 * 32000 * 6 + metadata
+     private let origin: URL
+@@ -13,7 +13,7 @@ final class ClawAssistantService {
+     private let isCurrent: () -> Bool
+     private let lock = NSLock()
+     private var ended = false
+-    private var requests: [UUID: ClawAssistantHTTPTask] = [:]
++    private var requests: [UUID: ClawAssistantCancellation] = [:]
+ 
+     static func origin(_ url: URL) throws -> URL {
+         guard var c = URLComponents(url: url, resolvingAgainstBaseURL: false),
+@@ -95,8 +95,104 @@ final class ClawAssistantService {
+         return request("conversations/\(id)", method: "DELETE", completion: completion)
+     }
+ 
++    @discardableResult
++    func createConversation(_ id: String, capabilities: ClawAssistantCapabilities,
++        retrySubmission: Bool = false,
++        completion: @escaping (Result<ClawAssistantConversationPageValue, ClawAssistantError>) -> Void)
++        -> ClawAssistantCancellation? {
++        guard (try? capabilities.validateRuns()) != nil, capabilities.generation.available || retrySubmission,
++              ClawAssistantWire.uuid(id) else { completion(.failure(.unavailable)); return nil }
++        let body = Data(("{\"conversation_id\":\"" + id + "\"}").utf8)
++        return request("conversations", method: "POST", body: body, successCodes: [200, 201], completion: completion)
++    }
++
++    @discardableResult
++    func submitRun(_ id: String, input: ClawAssistantRunInput, capabilities: ClawAssistantCapabilities,
++        retrySubmission: Bool = false,
++        completion: @escaping (Result<ClawAssistantRunReceipt, ClawAssistantError>) -> Void)
++        -> ClawAssistantCancellation? {
++        guard (try? capabilities.validateRuns()) != nil,
++              capabilities.generation.available || retrySubmission, ClawAssistantWire.uuid(id) else {
++            completion(.failure(.unavailable)); return nil
++        }
++        do {
++            return request("conversations/\(id)/runs", method: "POST", body: try input.body(),
++                           successCodes: [200, 202], completion: completion)
++        } catch let error as ClawAssistantError { completion(.failure(error)); return nil }
++          catch { completion(.failure(.invalidResponse)); return nil }
++    }
++
++    @discardableResult
++    func run(_ id: String, runID: String, capabilities: ClawAssistantCapabilities, stop: Bool = false,
++        completion: @escaping (Result<ClawAssistantRunSnapshot, ClawAssistantError>) -> Void)
++        -> ClawAssistantCancellation? {
++        guard (try? capabilities.validateRuns()) != nil, ClawAssistantWire.uuid(id), ClawAssistantWire.uuid(runID) else {
++            completion(.failure(.incompatible)); return nil
++        }
++        return request("conversations/\(id)/runs/\(runID)" + (stop ? "/stop" : ""),
++                       method: stop ? "POST" : "GET", completion: completion)
++    }
++
++    @discardableResult
++    func events(_ id: String, runID: String, after: String, capabilities: ClawAssistantCapabilities,
++        completion: @escaping (Result<ClawAssistantRunEvents, ClawAssistantError>) -> Void)
++        -> ClawAssistantCancellation? {
++        guard (try? capabilities.validateRuns()) != nil, ClawAssistantWire.uuid(id), ClawAssistantWire.uuid(runID),
++              ClawAssistantWire.decimal(after) else { completion(.failure(.invalidResponse)); return nil }
++        return request("conversations/\(id)/runs/\(runID)/events",
++                       query: [URLQueryItem(name: "after_event", value: after), URLQueryItem(name: "limit", value: "100")],
++                       completion: { (result: Result<ClawAssistantRunEvents, ClawAssistantError>) in
++            completion(result.flatMap { value in
++                guard value.conversation_id == id, value.run_id == runID,
++                      value.items.first.map({ ClawAssistantRunWire.next(after) == $0.id }) ?? true else {
++                    return .failure(.invalidResponse)
++                }
++                return .success(value)
++            })
++        })
++    }
++
++    @discardableResult
++    func stream(_ id: String, runID: String, after: String, capabilities: ClawAssistantCapabilities,
++        event: @escaping (ClawAssistantRunEvent) -> Void,
++        completion: @escaping (ClawAssistantStreamEnd) -> Void) -> ClawAssistantCancellation? {
++        guard (try? capabilities.validateRuns()) != nil, ClawAssistantWire.uuid(id), ClawAssistantWire.uuid(runID),
++              ClawAssistantWire.decimal(after) else { completion(.failure(.invalidResponse)); return nil }
++        guard capabilities.stream.available else {
++            completion(.failure(.server(503, "history_unavailable"))); return nil
++        }
++        guard isCurrent() else { completion(.failure(.retired)); return nil }
++        let requestID = UUID()
++        var outgoing = authorizedRequest(origin.appendingPathComponent("v0/ai/conversations/\(id)/runs/\(runID)/stream"),
++                                         method: "GET", body: nil)
++        outgoing.setValue("text/event-stream", forHTTPHeaderField: "Accept")
++        outgoing.setValue(after, forHTTPHeaderField: "Last-Event-ID")
++        let task = ClawAssistantStream(request: outgoing, configuration: configuration, isCurrent: isCurrent,
++            event: event, completion: { [weak self] result in
++                guard let self = self else { return }
++                self.lock.lock(); self.requests.removeValue(forKey: requestID); self.lock.unlock()
++                completion(result)
++            })
++        lock.lock()
++        guard !ended else { lock.unlock(); completion(.failure(.retired)); return nil }
++        requests[requestID] = task; lock.unlock()
++        task.start(); return task
++    }
++
++    private func authorizedRequest(_ url: URL, method: String, body: Data?) -> URLRequest {
++        var request = URLRequest(url: url)
++        request.httpMethod = method; request.httpBody = body
++        request.setValue("token " + token, forHTTPHeaderField: "Authorization")
++        request.setValue(apiKey, forHTTPHeaderField: "X-Tinode-APIKey")
++        request.setValue("application/json", forHTTPHeaderField: "Accept")
++        request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
++        if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
++        return request
++    }
++
+     private func request<T: ClawAssistantValidated>(_ path: String, method: String = "GET",
+-        query: [URLQueryItem] = [], completion: @escaping (Result<T, ClawAssistantError>) -> Void)
++        query: [URLQueryItem] = [], body: Data? = nil, successCodes: Set<Int> = [200],
++        completion: @escaping (Result<T, ClawAssistantError>) -> Void)
+         -> ClawAssistantCancellation? {
+         guard isCurrent() else { completion(.failure(.retired)); return nil }
+         guard var parts = URLComponents(url: origin.appendingPathComponent("v0/ai/" + path), resolvingAgainstBaseURL: false) else {
+@@ -104,14 +200,9 @@ final class ClawAssistantService {
+         }
+         if !query.isEmpty { parts.queryItems = query }
+         guard let url = parts.url else { completion(.failure(.invalidResponse)); return nil }
+-        var request = URLRequest(url: url)
+-        request.httpMethod = method
+-        request.setValue("token " + token, forHTTPHeaderField: "Authorization")
+-        request.setValue(apiKey, forHTTPHeaderField: "X-Tinode-APIKey")
+-        request.setValue("application/json", forHTTPHeaderField: "Accept")
+-        request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
++        let request = authorizedRequest(url, method: method, body: body)
+         let id = UUID()
+-        let task = ClawAssistantHTTPTask(request: request, configuration: configuration) { [weak self] result in
++        let task = ClawAssistantHTTPTask(request: request, configuration: configuration, successCodes: successCodes) { [weak self] result in
+             guard let self = self else { return }
+             self.lock.lock(); self.requests.removeValue(forKey: id); let ended = self.ended; self.lock.unlock()
+             guard !ended, self.isCurrent() else { completion(.failure(.retired)); return }
+@@ -139,6 +230,7 @@ final class ClawAssistantHTTPTask: NSObject, URLSessionDataDelegate, ClawAssista
+     private let lock = NSRecursiveLock()
+     private let request: URLRequest
+     private let configuration: URLSessionConfiguration
++    private let successCodes: Set<Int>
+     private var completion: ((Result<Data, ClawAssistantError>) -> Void)?
+     private var session: URLSession?
+     private var task: URLSessionDataTask?
+@@ -146,9 +238,10 @@ final class ClawAssistantHTTPTask: NSObject, URLSessionDataDelegate, ClawAssista
+     private var response: HTTPURLResponse?
+     private var finished = false
+ 
+-    init(request: URLRequest, configuration: URLSessionConfiguration,
++    init(request: URLRequest, configuration: URLSessionConfiguration, successCodes: Set<Int> = [200],
+          completion: @escaping (Result<Data, ClawAssistantError>) -> Void) {
+         self.request = request; self.configuration = configuration; self.completion = completion
++        self.successCodes = successCodes
+     }
+     func start() {
+         lock.lock(); defer { lock.unlock() }
+@@ -209,13 +302,14 @@ final class ClawAssistantHTTPTask: NSObject, URLSessionDataDelegate, ClawAssista
+         guard !ended else { return }
+         guard error == nil else { finish(.failure(.transport)); return }
+         guard let response = response else { finish(.failure(.invalidResponse)); return }
+-        guard response.statusCode == 200 else {
++        guard successCodes.contains(response.statusCode) else {
+             struct Envelope: Decodable { struct Detail: Decodable { let code: String }; let error: Detail }
+             let code = (try? JSONDecoder().decode(Envelope.self, from: body))?.error.code ?? ""
+             // Do not pass arbitrary server text into logs or UI.
+             let allowed = ["invalid_request", "authentication_required", "permission_denied", "not_found",
+                            "conversation_deleted", "snapshot_changed", "request_conflict", "body_too_large",
+-                           "unsupported_media_type", "history_unavailable", "provider_not_configured", "internal_error"]
++                           "unsupported_media_type", "history_unavailable", "provider_not_configured", "internal_error",
++                           "execution_unavailable", "run_in_progress", "retry_not_allowed", "context_too_large", "cursor_ahead"]
+             if response.statusCode == 401 { finish(.failure(.server(401, "authentication_required"))) }
+             else if response.statusCode == 409 && code == "snapshot_changed" { finish(.failure(.historyChanged)) }
+             else if allowed.contains(code) { finish(.failure(.server(response.statusCode, code))) }
+diff --git a/Tinodios/ClawAssistantStream.swift b/Tinodios/ClawAssistantStream.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d923a61428e57c0d160346ee579bd7140cd27cf
+--- /dev/null
++++ b/Tinodios/ClawAssistantStream.swift
+@@ -0,0 +1,215 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import Foundation
++
++enum ClawAssistantStreamEnd {
++    case eof, deadline, cancelled
++    case failure(ClawAssistantError)
++}
++
++/// Incremental framing. UTF-8 is decoded only after a complete line, never per network chunk.
++struct ClawAssistantSSEParser {
++    enum Frame { case event(ClawAssistantRunEvent), access(ClawAssistantError) }
++    static let frameLimit = 64 * 1024
++    private var line = Data()
++    private var payload = Data()
++    private var kind: String?
++    private var id: String?
++    private var frameBytes = 0
++    private var skipLF = false
++    private var firstLine = true
++
++    mutating func append(_ bytes: Data) throws -> [Frame] {
++        var frames: [Frame] = []
++        for byte in bytes {
++            if skipLF { skipLF = false; if byte == 10 { continue } }
++            if byte == 10 || byte == 13 {
++                if let frame = try finishLine() { frames.append(frame) }
++                skipLF = byte == 13
++            } else {
++                guard line.count < Self.frameLimit, frameBytes < Self.frameLimit else {
++                    throw ClawAssistantError.responseTooLarge
++                }
++                line.append(byte); frameBytes += 1
++            }
++        }
++        return frames
++    }
++
++    private mutating func finishLine() throws -> Frame? {
++        if firstLine {
++            firstLine = false
++            if line.starts(with: [0xEF, 0xBB, 0xBF]) { line.removeFirst(3) }
++        }
++        guard let value = String(data: line, encoding: .utf8) else { throw ClawAssistantError.invalidResponse }
++        line.removeAll(keepingCapacity: true)
++        if value.isEmpty {
++            defer { kind = nil; id = nil; payload.removeAll(keepingCapacity: true); frameBytes = 0 }
++            guard !payload.isEmpty else {
++                guard kind == nil, id == nil else { throw ClawAssistantError.invalidResponse }
++                return nil
++            }
++            payload.removeLast() // SSE joins data lines with LF and removes the final LF.
++            if kind == "access_error" {
++                struct Control: Decodable { let code: String }
++                guard id == nil, let control = try? JSONDecoder().decode(Control.self, from: payload) else {
++                    throw ClawAssistantError.invalidResponse
++                }
++                let codes = ["authentication_required": 401, "conversation_deleted": 410,
++                             "not_found": 404, "history_unavailable": 503, "permission_denied": 403]
++                guard let status = codes[control.code] else { throw ClawAssistantError.incompatible }
++                return .access(.server(status, control.code))
++            }
++            guard let decoded = try? JSONDecoder().decode(ClawAssistantRunEvent.self, from: payload),
++                  kind == decoded.kind, id == decoded.id else { throw ClawAssistantError.invalidResponse }
++            try decoded.validate()
++            return .event(decoded)
++        }
++        if value.hasPrefix(":") {
++            // Keep-alive comments do not consume a persistent id or an unbounded frame budget.
++            frameBytes -= value.utf8.count
++            return nil
++        }
++        let pieces = value.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
++        let field = String(pieces[0])
++        var text = pieces.count == 2 ? String(pieces[1]) : ""
++        if text.hasPrefix(" ") { text.removeFirst() }
++        switch field {
++        case "event":
++            guard kind == nil else { throw ClawAssistantError.invalidResponse }; kind = text
++        case "id":
++            guard id == nil, ClawAssistantWire.decimal(text), text != "0" else {
++                throw ClawAssistantError.invalidResponse
++            }
++            id = text
++        case "data":
++            guard payload.count + text.utf8.count + 1 <= Self.frameLimit else { throw ClawAssistantError.responseTooLarge }
++            payload.append(contentsOf: text.utf8); payload.append(10)
++        default: break // Unknown SSE fields, including retry, never alter client deadlines/retry policy.
++        }
++        return nil
++    }
++
++    func validateEOF() throws {
++        guard line.isEmpty, payload.isEmpty, kind == nil, id == nil else { throw ClawAssistantError.invalidResponse }
++    }
++}
++
++/// This deadline does not slide on data or heartbeats. The injected clock also tests the real decision.
++struct ClawAssistantStreamDeadline {
++    let end: TimeInterval
++    init(now: TimeInterval) { end = now + 60 }
++    func expired(now: TimeInterval) -> Bool { now >= end }
++}
++
++/// Separate ephemeral session: a busy reader never queues stop behind its body consumption.
++final class ClawAssistantStream: NSObject, URLSessionDataDelegate, ClawAssistantCancellation {
++    private let lock = NSRecursiveLock()
++    private let request: URLRequest
++    private let configuration: URLSessionConfiguration
++    private let isCurrent: () -> Bool
++    private let event: (ClawAssistantRunEvent) -> Void
++    private var completion: ((ClawAssistantStreamEnd) -> Void)?
++    private var session: URLSession?
++    private var task: URLSessionDataTask?
++    private var timer: DispatchSourceTimer?
++    private var deadline: ClawAssistantStreamDeadline?
++    private var parser = ClawAssistantSSEParser()
++    private var opened = false
++    private var finished = false
++
++    init(request: URLRequest, configuration: URLSessionConfiguration, isCurrent: @escaping () -> Bool,
++         event: @escaping (ClawAssistantRunEvent) -> Void, completion: @escaping (ClawAssistantStreamEnd) -> Void) {
++        self.request = request; self.isCurrent = isCurrent; self.event = event; self.completion = completion
++        self.configuration = configuration.copy() as! URLSessionConfiguration
++        self.configuration.timeoutIntervalForRequest = 60
++        self.configuration.timeoutIntervalForResource = 60
++        self.configuration.httpCookieStorage = nil; self.configuration.httpShouldSetCookies = false
++        self.configuration.urlCache = nil; self.configuration.urlCredentialStorage = nil
++        self.configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
++        self.configuration.httpAdditionalHeaders = nil
++    }
++    func start() {
++        guard isCurrent() else { finish(.failure(.retired)); return }
++        lock.lock(); defer { lock.unlock() }
++        guard !finished, session == nil else { return }
++        deadline = ClawAssistantStreamDeadline(now: ProcessInfo.processInfo.systemUptime)
++        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
++        self.session = session
++        let task = session.dataTask(with: request); self.task = task
++        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
++        self.timer = timer
++        timer.schedule(deadline: .now() + 60)
++        timer.setEventHandler { [weak self] in self?.finish(.deadline) }
++        timer.resume(); task.resume()
++    }
++    func cancel() { finish(.cancelled) }
++    private func finish(_ result: ClawAssistantStreamEnd) {
++        lock.lock()
++        guard !finished else { lock.unlock(); return }
++        finished = true
++        let completion = self.completion; self.completion = nil
++        let session = self.session; self.session = nil; task = nil
++        let timer = self.timer; self.timer = nil; parser = ClawAssistantSSEParser()
++        lock.unlock()
++        timer?.cancel(); session?.invalidateAndCancel(); completion?(result)
++    }
++    private func allowed() -> Bool {
++        // Never call the SDK/Cache gate while holding the stream lock.
++        guard isCurrent() else { finish(.failure(.retired)); return false }
++        lock.lock()
++        let ended = finished
++        let expired = deadline?.expired(now: ProcessInfo.processInfo.systemUptime) ?? false
++        lock.unlock()
++        if expired { finish(.deadline); return false }
++        return !ended
++    }
++    func urlSession(_ session: URLSession, task: URLSessionTask,
++                    willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
++                    completionHandler: @escaping (URLRequest?) -> Void) {
++        completionHandler(nil); finish(.failure(.invalidResponse))
++    }
++    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
++                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
++        guard allowed() else { completionHandler(.cancel); return }
++        guard let http = response as? HTTPURLResponse, http.url == request.url else {
++            completionHandler(.cancel); finish(.failure(.invalidResponse)); return
++        }
++        if http.statusCode == 401 {
++            completionHandler(.cancel); finish(.failure(.server(401, "authentication_required"))); return
++        }
++        if http.statusCode == 204 { completionHandler(.cancel); finish(.eof); return }
++        guard http.statusCode == 200, http.mimeType?.lowercased() == "text/event-stream" else {
++            completionHandler(.cancel)
++            let codes = [403: "permission_denied", 404: "not_found", 410: "conversation_deleted"]
++            if let code = codes[http.statusCode] { finish(.failure(.server(http.statusCode, code))) }
++            else { finish(.failure(.invalidResponse)) }
++            return
++        }
++        lock.lock(); opened = true; let ended = finished; lock.unlock()
++        completionHandler(ended ? .cancel : .allow)
++    }
++    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
++        guard allowed() else { return }
++        let frames: [ClawAssistantSSEParser.Frame]
++        lock.lock()
++        guard !finished, opened else { lock.unlock(); return }
++        do { frames = try parser.append(data) }
++        catch { lock.unlock(); finish(.failure((error as? ClawAssistantError) ?? .invalidResponse)); return }
++        lock.unlock()
++        for frame in frames {
++            guard allowed() else { return }
++            switch frame {
++            case .event(let value): event(value)
++            case .access(let error): finish(.failure(error)); return
++            }
++        }
++    }
++    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
++        guard allowed() else { return }
++        lock.lock(); let parser = self.parser; let opened = self.opened; lock.unlock()
++        guard error == nil else { finish(.failure(.transport)); return }
++        do { try parser.validateEOF() }
++        catch { finish(.failure(.invalidResponse)); return }
++        finish(opened ? .eof : .failure(.invalidResponse))
++    }
++}
+diff --git a/TinodiosUITests/AssistantRunTests.swift b/TinodiosUITests/AssistantRunTests.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..c229fb4c85e96b546b7ea4fb88416b6c97d5b0e2
+--- /dev/null
++++ b/TinodiosUITests/AssistantRunTests.swift
+@@ -0,0 +1,432 @@
++// Copyright (c) 2026 CLAW OS contributors.
++// Actual B service/run/session and real SDK/SQLite. URLProtocol is synthetic transport, not a model provider.
++import XCTest
++import Foundation
++import TinodeSDK
++import TinodiosDB
++@testable import Tinodios
++
++enum AssistantBFixture {
++    static let cid = AssistantFixture.first
++    static let rid = AssistantFixture.third
++    static let requestID = "00000000-0000-4000-8000-000000000004"
++    static let answerID = "00000000-0000-4000-8000-000000000005"
++    static func capabilities(generation: Bool = true, stream: Bool = true) throws -> ClawAssistantCapabilities {
++        try decode(capabilitiesValue(generation: generation, stream: stream))
++    }
++    static func capabilitiesValue(generation: Bool = true, stream: Bool = true) -> [String: Any] {
++        var value = AssistantFixture.capabilities
++        value["generation"] = ["available": generation]
++        value["stream"] = ["available": stream]
++        value["run_protocol"] = "claw-ai-run-v1"
++        value["message_states"] = ["user": ["partial", "interrupted", "completed"],
++                                   "assistant": ["partial", "completed", "stopped", "interrupted", "failed"]]
++        return value
++    }
++    static func decode<T: Decodable>(_ value: Any) throws -> T {
++        try JSONDecoder().decode(T.self, from: JSONSerialization.data(withJSONObject: value))
++    }
++    static func snapshot(text: String = "前缀", cursor: String = "2", revision: String = "2",
++                         state: String = "running", requestID: String = AssistantBFixture.requestID) -> [String: Any] {
++        ["conversation_id": cid, "run_id": rid, "request_id": requestID,
++         "question_message_id": AssistantFixture.second, "answer_message_id": answerID,
++         "state": state, "last_event": cursor, "revision": revision,
++         "created_at": AssistantFixture.date, "updated_at": AssistantFixture.date, "reason": "", "text": text]
++    }
++    static func event(_ id: String, kind: String = "delta", text: String = "中文🙂", state: String? = nil) -> [String: Any] {
++        var value: [String: Any] = ["id": id, "kind": kind, "revision": id]
++        if kind == "delta" { value["delta"] = text }
++        if let state = state { value["state"] = state }
++        return value
++    }
++    static func frame(_ value: [String: Any], newline: String = "\n") throws -> Data {
++        let json = try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
++        return Data(("id: \(value["id"] as! String)" + newline + "event: \(value["kind"] as! String)" + newline +
++                     "data: " + String(data: json, encoding: .utf8)! + newline + newline).utf8)
++    }
++    static func open(_ transport: AssistantFixtureProtocol) {
++        let response = HTTPURLResponse(url: transport.request.url!, statusCode: 200, httpVersion: "HTTP/1.1",
++                                       headerFields: ["Content-Type": "text/event-stream", "Cache-Control": "no-store"])!
++        transport.client?.urlProtocol(transport, didReceive: response, cacheStoragePolicy: .notAllowed)
++    }
++    static func body(_ request: URLRequest) -> Data {
++        if let data = request.httpBody { return data }
++        guard let stream = request.httpBodyStream else { return Data() }
++        stream.open(); defer { stream.close() }
++        var data = Data(); var buffer = [UInt8](repeating: 0, count: 4096)
++        while true { let size = stream.read(&buffer, maxLength: buffer.count); if size <= 0 { break }; data.append(contentsOf: buffer.prefix(size)) }
++        return data
++    }
++}
++
++private final class AssistantTestDelay: ClawAssistantCancellation {
++    var cancelled = false
++    func cancel() { cancelled = true }
++}
++
++final class AssistantRunTests: XCTestCase {
++    private var fixture: AssistantFixture!
++    private var run: ClawAssistantRun?
++    override func setUpWithError() throws {
++        continueAfterFailure = false
++        try AssistantFixture.main { fixture = try AssistantFixture(); AssistantFixtureProtocol.requests = [] }
++    }
++    override func tearDownWithError() throws {
++        AssistantFixture.main {
++            run?.retire(); run = nil; fixture?.retire(); fixture = nil; AssistantFixtureProtocol.handler = nil
++        }
++    }
++
++    func testBRequiresExplicitCapabilitiesAndLegacyPointersStayReadOnly() throws {
++        try AssistantFixture.main {
++            let a: ClawAssistantCapabilities = try AssistantBFixture.decode(AssistantFixture.capabilities)
++            XCTAssertThrowsError(try ClawAssistantRun(session: fixture.scope, capabilities: a))
++            var legacy = AssistantBFixture.snapshot(state: "interrupted")
++            legacy["legacy"] = true; legacy["question_message_id"] = ""; legacy["answer_message_id"] = ""
++            let value: ClawAssistantRunSnapshot = try AssistantBFixture.decode(legacy)
++            XCTAssertNoThrow(try value.validate())
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++            XCTAssertFalse(run!.retryAnswer(value, history: []))
++            legacy["legacy"] = false
++            let invalid: ClawAssistantRunSnapshot = try AssistantBFixture.decode(legacy)
++            XCTAssertThrowsError(try invalid.validate())
++            var aMessage = AssistantFixture.message(state: "completed")
++            aMessage["run_id"] = AssistantBFixture.rid
++            let old: ClawAssistantMessage = try AssistantBFixture.decode(aMessage)
++            XCTAssertThrowsError(try old.validate()) // B does not silently broaden A's history parser.
++            var future = AssistantFixture.capabilities
++            future["run_protocol"] = ["future": true]; future["message_states"] = "future-shape"
++            let stillA: ClawAssistantCapabilities = try AssistantBFixture.decode(future)
++            XCTAssertNoThrow(try stillA.validate()); XCTAssertThrowsError(try stillA.validateRuns())
++            XCTAssertNoThrow(try ClawAssistantRunInput(request_id: AssistantBFixture.requestID,
++                text: String(repeating: "a", count: 32000), retry_of: nil).body())
++            XCTAssertThrowsError(try ClawAssistantRunInput(request_id: AssistantBFixture.requestID,
++                text: String(repeating: "a", count: 32001), retry_of: nil).body())
++            XCTAssertThrowsError(try ClawAssistantRunInput(request_id: AssistantBFixture.requestID,
++                text: String(repeating: "\u{0}", count: 11000), retry_of: nil).body()) // Escaped JSON body > 64KiB.
++            var events: [String: Any] = ["conversation_id": AssistantBFixture.cid, "run_id": AssistantBFixture.rid,
++                "items": [AssistantBFixture.event("2"), AssistantBFixture.event("3")],
++                "next_after_event": "3", "last_event": "3", "state": "running"]
++            let page: ClawAssistantRunEvents = try AssistantBFixture.decode(events)
++            XCTAssertNoThrow(try page.validate())
++            events["items"] = [AssistantBFixture.event("2"), AssistantBFixture.event("4")]
++            let gap: ClawAssistantRunEvents = try AssistantBFixture.decode(events)
++            XCTAssertThrowsError(try gap.validate())
++            XCTAssertTrue(AssistantFixtureProtocol.requests.isEmpty)
++        }
++    }
++
++    func testExplicitCreateAndSubmitMatchReceiptsThenGetAuthoritativePrefix() throws {
++        try AssistantFixture.main {
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++            var cid = ""; var requestID = ""
++            fixture.owner.isConnectionAuthenticated = false // Existing valid HTTP scope survives pure WS loss.
++            AssistantFixtureProtocol.handler = { transport in
++                XCTAssertEqual(transport.request.value(forHTTPHeaderField: "Authorization"), "token " + AssistantFixture.token)
++                XCTAssertEqual(transport.request.value(forHTTPHeaderField: "X-Tinode-APIKey"), "synthetic-ai-key")
++                if transport.request.url!.path == "/v0/ai/conversations" {
++                    let body = try! JSONSerialization.jsonObject(with: AssistantBFixture.body(transport.request)) as! [String: String]
++                    cid = body["conversation_id"]!
++                    transport.reply(AssistantFixture.conversation(cid), status: 201)
++                } else if transport.request.httpMethod == "POST" {
++                    let body = try! JSONSerialization.jsonObject(with: AssistantBFixture.body(transport.request)) as! [String: String]
++                    XCTAssertEqual(body["text"], " 原文🙂\n"); XCTAssertNil(body["retry_of"])
++                    requestID = body["request_id"]!
++                    var result = AssistantBFixture.snapshot(requestID: requestID); result["conversation_id"] = cid
++                    transport.reply(result, status: 202)
++                } else {
++                    var result = AssistantBFixture.snapshot(requestID: requestID); result["conversation_id"] = cid
++                    transport.reply(result)
++                }
++            }
++            XCTAssertTrue(run!.submit(text: " 原文🙂\n"))
++            try AssistantFixture.until { self.run?.submission == .accepted }
++            XCTAssertNil(run?.projection) // Hidden page must not auto-start a read after its POST receipt.
++            run!.recover()
++            try AssistantFixture.until { self.run?.projection != nil }
++            XCTAssertEqual(run?.submission, .accepted); XCTAssertEqual(run?.projection?.text, "前缀")
++            XCTAssertEqual(run?.projection?.lastEvent, "2")
++            XCTAssertEqual(AssistantFixtureProtocol.requests.map { $0.httpMethod! }, ["POST", "POST", "GET"])
++            XCTAssertFalse(run!.submit(text: "第二次")) // Active accepted run cannot be overwritten locally.
++        }
++    }
++
++    func testLostSubmitReceiptRequiresExplicitSameKeyAndOriginalBytes() throws {
++        try AssistantFixture.main {
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++            var bodies: [Data] = []
++            AssistantFixtureProtocol.handler = { transport in
++                if transport.request.httpMethod == "POST" {
++                    bodies.append(AssistantBFixture.body(transport.request))
++                    if bodies.count == 1 { transport.fail(); return }
++                    let input = try! JSONSerialization.jsonObject(with: bodies.last!) as! [String: String]
++                    transport.reply(AssistantBFixture.snapshot(requestID: input["request_id"]!), status: 200)
++                } else {
++                    transport.reply(AssistantBFixture.snapshot(requestID: self.run!.ticket!.input.request_id))
++                }
++            }
++            XCTAssertTrue(run!.submit(text: " 保留原字节🙂 ", conversationID: AssistantBFixture.cid))
++            try AssistantFixture.until { self.run?.submission == .unknown }
++            XCTAssertEqual(bodies.count, 1)
++            run!.setVisible(true); run!.setVisible(false)
++            XCTAssertEqual(bodies.count, 1)
++            XCTAssertTrue(run!.retrySubmission())
++            try AssistantFixture.until { self.run?.submission == .accepted }
++            run!.recover()
++            try AssistantFixture.until { self.run?.projection != nil }
++            XCTAssertEqual(bodies.count, 2); XCTAssertEqual(bodies[0], bodies[1])
++        }
++    }
++
++    func testUnexpectedSuccessAndMismatchedReceiptRemainUnknown() throws {
++        try AssistantFixture.main {
++            for status in [205, 202] {
++                run?.retire()
++                run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++                AssistantFixtureProtocol.handler = { $0.reply(AssistantBFixture.snapshot(), status: status) }
++                XCTAssertTrue(run!.submit(text: "合成", conversationID: AssistantBFixture.cid))
++                try AssistantFixture.until { self.run?.submission == .unknown }
++                XCTAssertNil(run?.receipt); XCTAssertNil(run?.projection)
++            }
++        }
++    }
++
++    func testGetPrefixDuplicateEventsGapAndTerminalCannotRegress() throws {
++        try AssistantFixture.main {
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++            var pipe: AssistantFixtureProtocol?
++            AssistantFixtureProtocol.handler = { transport in
++                if transport.request.url!.path.hasSuffix("/stream") { pipe = transport; AssistantBFixture.open(transport) }
++                else { transport.reply(AssistantBFixture.snapshot()) }
++            }
++            run!.setVisible(true)
++            XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
++            try AssistantFixture.until { pipe != nil }
++            let old = try AssistantBFixture.frame(AssistantBFixture.event("2", text: "绝不能重复前缀"))
++            let delta = try AssistantBFixture.frame(AssistantBFixture.event("3", text: "尾"))
++            pipe!.client?.urlProtocol(pipe!, didLoad: old + delta + delta)
++            try AssistantFixture.until { self.run?.projection?.lastEvent == "3" }
++            XCTAssertEqual(run?.projection?.text, "前缀尾")
++            let end = try AssistantBFixture.frame(AssistantBFixture.event("4", kind: "terminal", state: "completed"))
++            pipe!.client?.urlProtocol(pipe!, didLoad: end)
++            try AssistantFixture.until { self.run?.projection?.terminal == true }
++            run!.recover() // An older active GET must not replace the known terminal or its text.
++            try AssistantFixture.until { self.run?.lastError == .invalidResponse }
++            XCTAssertEqual(run?.projection?.state, "completed"); XCTAssertEqual(run?.projection?.text, "前缀尾")
++        }
++    }
++
++    func testReadFailuresUseBoundedOneTwoFourDelaysWithoutAutomaticPost() throws {
++        try AssistantFixture.main {
++            var delays: [TimeInterval] = []; var callbacks: [() -> Void] = []
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities(), schedule: { delay, body in
++                delays.append(delay); callbacks.append(body); return AssistantTestDelay()
++            })
++            AssistantFixtureProtocol.handler = { $0.fail() }
++            run!.setVisible(true)
++            XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
++            for count in 1...3 {
++                try AssistantFixture.until { callbacks.count == count }
++                callbacks[count - 1]()
++            }
++            try AssistantFixture.until { AssistantFixtureProtocol.requests.count == 4 }
++            XCTAssertEqual(delays, [1, 2, 4]); XCTAssertEqual(callbacks.count, 3)
++            XCTAssertTrue(AssistantFixtureProtocol.requests.allSatisfy { $0.httpMethod == "GET" })
++            run!.setVisible(false)
++            callbacks[2]()
++            XCTAssertEqual(AssistantFixtureProtocol.requests.count, 4)
++        }
++    }
++
++    func testStopRequestIsIndependentAndUnknownSurvivesAnActiveGet() throws {
++        try AssistantFixture.main {
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++            var stream: AssistantFixtureProtocol?; var stopRequests = 0; var streams = 0
++            AssistantFixtureProtocol.handler = { transport in
++                if transport.request.url!.path.hasSuffix("/stream") { streams += 1; stream = transport; AssistantBFixture.open(transport) }
++                else if transport.request.url!.path.hasSuffix("/stop") {
++                    stopRequests += 1; XCTAssertTrue(AssistantBFixture.body(transport.request).isEmpty)
++                    XCTAssertNil(transport.request.url!.query)
++                    if stopRequests == 1 { transport.fail() }
++                    else { transport.reply(AssistantBFixture.snapshot(text: "完成", cursor: "3", revision: "3", state: "completed")) }
++                } else { transport.reply(AssistantBFixture.snapshot()) }
++            }
++            run!.setVisible(true); XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
++            try AssistantFixture.until { stream != nil }
++            XCTAssertTrue(run!.stop())
++            try AssistantFixture.until { self.run?.stopping == .unknown }
++            run!.recover()
++            try AssistantFixture.until { streams == 2 }
++            XCTAssertEqual(run?.stopping, .unknown); XCTAssertEqual(stopRequests, 1)
++            XCTAssertTrue(run!.stop())
++            try AssistantFixture.until { self.run?.stopping == .confirmed }
++            XCTAssertEqual(run?.projection?.state, "completed") // Never rename completed to stopped.
++            XCTAssertEqual(run?.projection?.text, "完成")
++        }
++    }
++
++    func testOwnerRetirementAndTombstoneRejectDelayedBodies() throws {
++        try AssistantFixture.main {
++            for deleted in [true, false] {
++                run?.retire()
++                if !fixture.slotActive { fixture.slotActive = true }
++                run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++                var pending: AssistantFixtureProtocol?
++                AssistantFixtureProtocol.handler = { pending = $0 }
++                XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
++                try AssistantFixture.until { pending != nil }
++                if deleted { XCTAssertTrue(run!.markDeleted(conversationID: AssistantBFixture.cid)) }
++                else { fixture.slotActive = false }
++                pending!.reply(AssistantBFixture.snapshot(text: "旧正文"))
++                if !deleted { try AssistantFixture.until { self.run?.lastError == .retired } }
++                XCTAssertNil(run?.projection); XCTAssertNil(run?.ticket)
++            }
++        }
++    }
++
++    func testHTTP401HTMLRetiresOnlyOriginalAssistantScope() throws {
++        try AssistantFixture.main {
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++            AssistantFixtureProtocol.handler = { $0.replyUnauthorized(contentType: "text/html") }
++            XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
++            try AssistantFixture.until { self.fixture.scope.isBlocked }
++            XCTAssertNil(run?.projection); XCTAssertTrue(fixture.owner.isSessionActive)
++            XCTAssertEqual(fixture.database.sqlStore?.myUid, "usrSyntheticAssistantA")
++        }
++    }
++
++    func testRetryUsesOriginalQuestionBytesAndRejectsLegacyStoppedOrLaterQuestion() throws {
++        try AssistantFixture.main {
++            var source = AssistantBFixture.snapshot(state: "interrupted")
++            var rawQuestion = AssistantFixture.message(text: " 原问题🙂 ")
++            rawQuestion["role"] = "user"; rawQuestion["run_id"] = AssistantBFixture.rid
++            let question: ClawAssistantMessage = try AssistantBFixture.decode(rawQuestion)
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++            source["state"] = "stopped"
++            XCTAssertFalse(run!.retryAnswer(try AssistantBFixture.decode(source), history: [question]))
++            source["state"] = "failed"; source["legacy"] = true
++            XCTAssertFalse(run!.retryAnswer(try AssistantBFixture.decode(source), history: [question]))
++            source["legacy"] = false
++            var later = rawQuestion; later["message_id"] = AssistantBFixture.answerID; later["seq"] = "2"
++            XCTAssertFalse(run!.retryAnswer(try AssistantBFixture.decode(source), history: [question, try AssistantBFixture.decode(later)]))
++            var input: [String: String]?
++            AssistantFixtureProtocol.handler = { transport in
++                input = try! JSONSerialization.jsonObject(with: AssistantBFixture.body(transport.request)) as? [String: String]
++                transport.reply(AssistantFixture.error("retry_not_allowed"), status: 409)
++            }
++            XCTAssertTrue(run!.retryAnswer(try AssistantBFixture.decode(source), history: [question]))
++            try AssistantFixture.until { input != nil }
++            XCTAssertEqual(input?["text"], " 原问题🙂 "); XCTAssertEqual(input?["retry_of"], AssistantBFixture.rid)
++            XCTAssertNotEqual(input?["request_id"], AssistantBFixture.requestID)
++            try AssistantFixture.until { self.run?.submission == .rejected(.server(409, "retry_not_allowed")) }
++        }
++    }
++
++    func testProviderUnavailableRejectsNewSubmissionButOriginalKeyReplayCanRead() throws {
++        try AssistantFixture.main {
++            let disabled = try AssistantBFixture.capabilities(generation: false)
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: disabled)
++            XCTAssertFalse(run!.submit(text: "草稿", conversationID: AssistantBFixture.cid))
++            XCTAssertTrue(AssistantFixtureProtocol.requests.isEmpty)
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantBFixture.snapshot(state: "completed")) }
++            let input = ClawAssistantRunInput(request_id: AssistantBFixture.requestID, text: "原文", retry_of: nil)
++            var restored: ClawAssistantRunReceipt?
++            fixture.scope.service.submitRun(AssistantBFixture.cid, input: input, capabilities: disabled, retrySubmission: true) {
++                if case .success(let value) = $0 { DispatchQueue.main.async { restored = value } }
++            }
++            try AssistantFixture.until { restored != nil }
++            XCTAssertEqual(restored?.request_id, input.request_id)
++        }
++    }
++
++    func testGap204AndEOFKeepPrefixAndRecoverByGetBeforeOpeningAnotherReader() throws {
++        try AssistantFixture.main {
++            var callbacks: [() -> Void] = []; var delays: [TimeInterval] = []
++            var pipe: AssistantFixtureProtocol?; var reads = 0; var streams = 0
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities(), schedule: { delay, body in
++                delays.append(delay); callbacks.append(body); return AssistantTestDelay()
++            })
++            AssistantFixtureProtocol.handler = { transport in
++                if transport.request.url!.path.hasSuffix("/stream") {
++                    streams += 1; pipe = transport
++                    if streams == 2 {
++                        let response = HTTPURLResponse(url: transport.request.url!, statusCode: 204,
++                            httpVersion: "HTTP/1.1", headerFields: nil)!
++                        transport.client?.urlProtocol(transport, didReceive: response, cacheStoragePolicy: .notAllowed)
++                        transport.client?.urlProtocolDidFinishLoading(transport)
++                    } else {
++                        AssistantBFixture.open(transport)
++                        if streams == 3 { transport.client?.urlProtocolDidFinishLoading(transport) }
++                    }
++                } else { reads += 1; transport.reply(AssistantBFixture.snapshot()) }
++            }
++            run!.setVisible(true)
++            XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
++            try AssistantFixture.until { pipe != nil }
++            pipe!.client?.urlProtocol(pipe!, didLoad: try AssistantBFixture.frame(AssistantBFixture.event("4", text: "不能越过3")))
++            try AssistantFixture.until { callbacks.count == 1 }
++            XCTAssertEqual(run?.projection?.text, "前缀"); XCTAssertEqual(run?.projection?.lastEvent, "2")
++            callbacks[0]()
++            try AssistantFixture.until { callbacks.count == 2 }
++            XCTAssertEqual(reads, 2); XCTAssertEqual(run?.projection?.state, "running")
++            callbacks[1]()
++            try AssistantFixture.until { callbacks.count == 3 }
++            XCTAssertEqual(reads, 3); XCTAssertEqual(delays, [1, 2, 4])
++            XCTAssertEqual(run?.projection?.text, "前缀"); XCTAssertFalse(run?.projection?.terminal ?? true)
++            XCTAssertTrue(AssistantFixtureProtocol.requests.allSatisfy { $0.httpMethod == "GET" })
++            run!.setVisible(false); callbacks[2]()
++            XCTAssertEqual(reads, 3)
++        }
++    }
++
++    func testManualCapabilityRecheckKeepsPrefixWhenStreamBecomesUnavailable() throws {
++        try AssistantFixture.main {
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++            var enabled = true; var streams = 0; var capReads = 0
++            AssistantFixtureProtocol.handler = { transport in
++                let path = transport.request.url!.path
++                if path.hasSuffix("/capabilities") {
++                    capReads += 1; transport.reply(AssistantBFixture.capabilitiesValue(stream: enabled))
++                } else if path.hasSuffix("/stream") { streams += 1; AssistantBFixture.open(transport) }
++                else { transport.reply(AssistantBFixture.snapshot()) }
++            }
++            run!.setVisible(true)
++            XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
++            try AssistantFixture.until { streams == 1 }
++            enabled = false; run!.renegotiateAndRecover()
++            try AssistantFixture.until { self.run?.lastError == .server(503, "history_unavailable") }
++            XCTAssertEqual(run?.projection?.text, "前缀"); XCTAssertEqual(run?.projection?.state, "running")
++            XCTAssertEqual(streams, 1); XCTAssertEqual(capReads, 1)
++            enabled = true; run!.renegotiateAndRecover()
++            try AssistantFixture.until { streams == 2 }
++            XCTAssertEqual(capReads, 2); XCTAssertNil(run?.lastError)
++            XCTAssertTrue(AssistantFixtureProtocol.requests.allSatisfy { $0.httpMethod == "GET" })
++        }
++    }
++
++    func testConversationSwitchDropsOldPrefixAndForeignTombstoneCannotClearNewTicket() throws {
++        try AssistantFixture.main {
++            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
++            var pending: AssistantFixtureProtocol?
++            AssistantFixtureProtocol.handler = { transport in
++                if transport.request.httpMethod == "POST" { pending = transport }
++                else { transport.reply(AssistantBFixture.snapshot(text: "A旧正文", state: "completed")) }
++            }
++            XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
++            try AssistantFixture.until { self.run?.projection?.terminal == true }
++            XCTAssertFalse(run!.recover(conversationID: AssistantFixture.second, runID: AssistantBFixture.rid))
++            XCTAssertTrue(run!.submit(text: "B原问题", conversationID: AssistantFixture.second))
++            try AssistantFixture.until { pending != nil }
++            XCTAssertNil(run?.projection); XCTAssertNil(run?.receipt)
++            XCTAssertEqual(run?.ticket?.conversationID, AssistantFixture.second)
++            XCTAssertFalse(run!.markDeleted(conversationID: AssistantBFixture.cid))
++            XCTAssertEqual(run?.ticket?.input.text, "B原问题")
++            let requestID = try XCTUnwrap(run?.ticket?.input.request_id)
++            XCTAssertTrue(run!.markDeleted(conversationID: AssistantFixture.second))
++            var late = AssistantBFixture.snapshot(requestID: requestID)
++            late["conversation_id"] = AssistantFixture.second
++            pending!.reply(late, status: 202)
++            XCTAssertNil(run?.ticket); XCTAssertNil(run?.projection); XCTAssertNil(run?.receipt)
++        }
++    }
++}
+diff --git a/TinodiosUITests/AssistantStreamTests.swift b/TinodiosUITests/AssistantStreamTests.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..231c6e7f61a3bff3447ab7a609e82e97c252a1dc
+--- /dev/null
++++ b/TinodiosUITests/AssistantStreamTests.swift
+@@ -0,0 +1,242 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import XCTest
++import Foundation
++import Network
++@testable import Tinodios
++
++/// Loopback-only real TCP fixture. No configured server, model or credential is contacted.
++private final class AssistantSocketServer {
++    struct Request { let method: String; let path: String; let headers: [String: String]; let body: Data }
++    final class Reply {
++        let connection: NWConnection
++        init(_ connection: NWConnection) { self.connection = connection }
++        func send(_ data: Data, completion: (() -> Void)? = nil) {
++            connection.send(content: data, completion: .contentProcessed { _ in completion?() })
++        }
++        func json(_ value: Any, status: Int = 200) {
++            let body = try! JSONSerialization.data(withJSONObject: value)
++            send(Data("HTTP/1.1 \(status) Fixture\r\nContent-Type: application/json\r\nContent-Length: \(body.count)\r\nConnection: close\r\n\r\n".utf8) + body) {
++                self.connection.cancel()
++            }
++        }
++        func open() { send(Data("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n".utf8)) }
++        func close() { connection.cancel() }
++        func fragments(_ values: [Data], index: Int = 0, done: (() -> Void)? = nil) {
++            guard index < values.count else { done?(); return }
++            send(values[index]) { self.fragments(values, index: index + 1, done: done) }
++        }
++    }
++    private let queue = DispatchQueue(label: "claw.assistant.test.socket")
++    private let listener: NWListener
++    private var peers: [NWConnection] = []
++    private var handler: ((Request, Reply) -> Void)?
++    init() throws {
++        let parameters = NWParameters.tcp
++        parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
++        listener = try NWListener(using: parameters, on: .any)
++        let ready = DispatchSemaphore(value: 0)
++        var port: UInt16?
++        listener.stateUpdateHandler = { state in
++            switch state {
++            case .ready: port = self.listener.port?.rawValue; ready.signal()
++            case .failed: ready.signal()
++            default: break
++            }
++        }
++        listener.start(queue: queue)
++        guard ready.wait(timeout: .now() + 3) == .success, queue.sync(execute: { port != nil }) else {
++            listener.cancel(); throw AssistantFixture.Failure.fixture
++        }
++        boundPort = port!
++        listener.newConnectionHandler = { [weak self] connection in
++            guard let self = self, self.peers.count < 32 else { connection.cancel(); return }
++            self.peers.append(connection); connection.start(queue: self.queue)
++            self.read(connection, bytes: Data())
++        }
++    }
++    private var boundPort: UInt16 = 0
++    var url: URL { URL(string: "http://127.0.0.1:\(boundPort)/")! }
++    func install(_ handler: @escaping (Request, Reply) -> Void) { queue.sync { self.handler = handler } }
++    func stop() {
++        queue.sync {
++            listener.stateUpdateHandler = nil; listener.newConnectionHandler = nil
++            listener.cancel(); peers.forEach { $0.cancel() }; peers.removeAll(); handler = nil
++        }
++    }
++    private func read(_ peer: NWConnection, bytes: Data) {
++        peer.receive(minimumIncompleteLength: 1, maximumLength: 4096) { [weak self] data, _, end, error in
++            guard let self = self, error == nil, let data = data, !data.isEmpty else { peer.cancel(); return }
++            let all = bytes + data
++            guard all.count <= 80 * 1024 else { peer.cancel(); return }
++            if let range = all.range(of: Data("\r\n\r\n".utf8)),
++               let header = String(data: all[..<range.lowerBound], encoding: .utf8) {
++                let lines = header.components(separatedBy: "\r\n")
++                let first = (lines.first ?? "").split(separator: " ")
++                guard first.count == 3 else { peer.cancel(); return }
++                var headers: [String: String] = [:]
++                for line in lines.dropFirst() {
++                    if let colon = line.firstIndex(of: ":") {
++                        headers[String(line[..<colon]).lowercased()] = String(line[line.index(after: colon)...]).trimmingCharacters(in: .whitespaces)
++                    }
++                }
++                let length = Int(headers["content-length"] ?? "0") ?? -1
++                guard length >= 0, length <= 65536 else { peer.cancel(); return }
++                let body = all[range.upperBound...]
++                if body.count >= length {
++                    self.handler?(Request(method: String(first[0]), path: String(first[1]), headers: headers,
++                                          body: Data(body.prefix(length))), Reply(peer))
++                    return
++                }
++            }
++            if end { peer.cancel() } else { self.read(peer, bytes: all) }
++        }
++    }
++}
++
++final class AssistantStreamTests: XCTestCase {
++    override func setUpWithError() throws { continueAfterFailure = false }
++
++    func testProductionParserHandlesEveryUTF8BoundaryCRLFMultilineAndHeartbeat() throws {
++        let frame = try AssistantBFixture.frame(AssistantBFixture.event("1"), newline: "\r\n")
++        var parser = ClawAssistantSSEParser()
++        var events: [ClawAssistantRunEvent] = []
++        let bytes = Data(": heartbeat\r\n\r\n".utf8) + frame
++        for byte in bytes {
++            for value in try parser.append(Data([byte])) { if case .event(let value) = value { events.append(value) } }
++        }
++        XCTAssertEqual(events.count, 1); XCTAssertEqual(events[0].delta, "中文🙂")
++        let multi = Data("id: 2\revent: terminal\rdata: {\"id\":\"2\",\"kind\":\"terminal\",\rdata: \"revision\":\"2\",\"state\":\"completed\"}\r\r".utf8)
++        let terminal = try parser.append(multi)
++        XCTAssertEqual(terminal.count, 1)
++        if case .event(let event) = terminal[0] { XCTAssertNil(event.reason); XCTAssertEqual(event.state, "completed") }
++        else { XCTFail("Expected persistent terminal") }
++        XCTAssertNoThrow(try parser.validateEOF())
++    }
++
++    func testMalformedIDsUnknownStatesLargeFramesAndTruncatedUTF8FailClosed() throws {
++        let cases = [
++            "id: 2\nevent: delta\ndata: {\"id\":\"1\",\"kind\":\"delta\",\"revision\":\"1\",\"delta\":\"a\"}\n\n",
++            "id: 9223372036854775808\n\n",
++            "id: 1\nevent: terminal\ndata: {\"id\":\"1\",\"kind\":\"terminal\",\"revision\":\"1\",\"state\":\"future\"}\n\n",
++            "event: access_error\ndata: {\"code\":\"provider_raw_secret\"}\n\n"
++        ]
++        for text in cases { var parser = ClawAssistantSSEParser(); XCTAssertThrowsError(try parser.append(Data(text.utf8))) }
++        var big = ClawAssistantSSEParser()
++        XCTAssertThrowsError(try big.append(Data(repeating: 65, count: ClawAssistantSSEParser.frameLimit + 1)))
++        var delta = ClawAssistantSSEParser()
++        XCTAssertThrowsError(try delta.append(AssistantBFixture.frame(AssistantBFixture.event("1", text: String(repeating: "a", count: 4097)))))
++        var utf8 = ClawAssistantSSEParser()
++        XCTAssertThrowsError(try utf8.append(Data([0x64, 0x61, 0x74, 0x61, 0x3A, 0xF0, 0x0A])))
++        var partial = ClawAssistantSSEParser()
++        XCTAssertNoThrow(try partial.append(Data("data: {".utf8))); XCTAssertThrowsError(try partial.validateEOF())
++        XCTAssertTrue(ClawAssistantWire.decimal("9223372036854775807"))
++        XCTAssertFalse(ClawAssistantWire.decimal("9223372036854775808"))
++    }
++
++    func testAccessControlHasNoPersistentIDAndDeadlineNeverSlides() throws {
++        var parser = ClawAssistantSSEParser()
++        let values = try parser.append(Data("event: access_error\ndata: {\"code\":\"authentication_required\"}\n\n".utf8))
++        XCTAssertEqual(values.count, 1)
++        if case .access(let error) = values[0] { XCTAssertEqual(error, .server(401, "authentication_required")) }
++        else { XCTFail("Expected access control") }
++        var invalid = ClawAssistantSSEParser()
++        XCTAssertThrowsError(try invalid.append(Data("id: 1\nevent: access_error\ndata: {\"code\":\"authentication_required\"}\n\n".utf8)))
++        let deadline = ClawAssistantStreamDeadline(now: 100)
++        for offset in [0.0, 1.0, 59.999] { XCTAssertFalse(deadline.expired(now: 100 + offset)) }
++        XCTAssertTrue(deadline.expired(now: 160)); XCTAssertTrue(deadline.expired(now: 161))
++    }
++
++    func testRealSocketChunksProduceEventsBeforeEOFAndStopUsesAnotherConnection() throws {
++        let server = try AssistantSocketServer(); defer { server.stop() }
++        let gotEvent = expectation(description: "real stream event before EOF")
++        let gotStop = expectation(description: "independent HTTP stop")
++        let streamEnd = expectation(description: "cancelled reader")
++        let caps = try AssistantBFixture.capabilities()
++        let service = try ClawAssistantService(origin: server.url, apiKey: "synthetic-key", token: AssistantFixture.token,
++                                               isCurrent: { true })
++        defer { service.cancelAll() }
++        let frame = try AssistantBFixture.frame(AssistantBFixture.event("3"), newline: "\r\n")
++        server.install { request, reply in
++            XCTAssertEqual(request.headers["authorization"], "token " + AssistantFixture.token)
++            XCTAssertEqual(request.headers["x-tinode-apikey"], "synthetic-key")
++            XCTAssertNil(request.headers["cookie"])
++            if request.path.hasSuffix("/stream") {
++                XCTAssertEqual(request.headers["last-event-id"], "2"); XCTAssertFalse(request.path.contains("?"))
++                reply.open(); reply.fragments(frame.map { Data([$0]) }) // Deliberately leave connection open.
++            } else if request.path.hasSuffix("/stop") {
++                XCTAssertEqual(request.method, "POST"); XCTAssertTrue(request.body.isEmpty)
++                reply.json(AssistantBFixture.snapshot(cursor: "3", revision: "3", state: "stopped"))
++            } else { XCTFail("Unexpected fixture route"); reply.json(AssistantFixture.error("not_found"), status: 404) }
++        }
++        let stream = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "2", capabilities: caps,
++            event: { event in XCTAssertEqual(event.delta, "中文🙂"); gotEvent.fulfill() },
++            completion: { end in if case .cancelled = end { streamEnd.fulfill() } else { XCTFail("Expected explicit cancellation") } })
++        wait(for: [gotEvent], timeout: 5)
++        service.run(AssistantBFixture.cid, runID: AssistantBFixture.rid, capabilities: caps, stop: true) { result in
++            if case .success(let value) = result { XCTAssertEqual(value.receipt.state, "stopped"); gotStop.fulfill() }
++            else { XCTFail("Real control request failed") }
++        }
++        wait(for: [gotStop], timeout: 5)
++        stream?.cancel(); wait(for: [streamEnd], timeout: 3)
++    }
++
++    func testRealSocketRedirectAndNonJSON401NeverDeliverBody() throws {
++        let server = try AssistantSocketServer(); defer { server.stop() }
++        let lock = NSLock(); var redirectedRequests = 0; var mode = 302
++        server.install { request, reply in
++            lock.lock(); let status = mode
++            if request.path == "/redirect-target" { redirectedRequests += 1 }
++            lock.unlock()
++            if status == 302 {
++                let header = "HTTP/1.1 302 Found\r\nLocation: \(server.url.absoluteString)redirect-target\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
++                reply.send(Data(header.utf8)) { reply.close() }
++            } else {
++                reply.send(Data("HTTP/1.1 401 Unauthorized\r\nContent-Type: text/html\r\nContent-Length: 4\r\nConnection: close\r\n\r\nnope".utf8)) { reply.close() }
++            }
++        }
++        let service = try ClawAssistantService(origin: server.url, apiKey: "synthetic-key", token: AssistantFixture.token, isCurrent: { true })
++        defer { service.cancelAll() }
++        for status in [302, 401] {
++            lock.lock(); mode = status; lock.unlock()
++            let done = expectation(description: "real refused response")
++            _ = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "0", capabilities: try AssistantBFixture.capabilities(),
++                event: { _ in XCTFail("Refused response leaked a frame") }, completion: { end in
++                    guard case .failure(let error) = end else { XCTFail("Expected refusal"); return }
++                    XCTAssertEqual(error, status == 401 ? .server(401, "authentication_required") : .invalidResponse)
++                    done.fulfill()
++                })
++            wait(for: [done], timeout: 5)
++        }
++        lock.lock(); let actualRedirects = redirectedRequests; lock.unlock()
++        XCTAssertEqual(actualRedirects, 0)
++    }
++
++    func testRealSocketHeartbeatCannotExtendAbsoluteSixtySecondDeadline() throws {
++        let server = try AssistantSocketServer(); defer { server.stop() }
++        let queue = DispatchQueue(label: "claw.assistant.test.heartbeats")
++        let timer = DispatchSource.makeTimerSource(queue: queue)
++        let lock = NSLock(); var pipe: AssistantSocketServer.Reply?; var comments = 0
++        server.install { _, reply in lock.lock(); pipe = reply; lock.unlock(); reply.open() }
++        timer.schedule(deadline: .now() + 1, repeating: 1)
++        timer.setEventHandler {
++            lock.lock(); let reply = pipe; if reply != nil { comments += 1 }; lock.unlock()
++            reply?.send(Data(": synthetic heartbeat\n\n".utf8))
++        }
++        timer.resume(); defer { timer.cancel() }
++        let service = try ClawAssistantService(origin: server.url, apiKey: "synthetic-key", token: AssistantFixture.token, isCurrent: { true })
++        defer { service.cancelAll() }
++        let done = expectation(description: "absolute stream deadline despite heartbeats")
++        let started = ProcessInfo.processInfo.systemUptime
++        _ = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "0", capabilities: try AssistantBFixture.capabilities(),
++            event: { _ in XCTFail("Heartbeat is not a persistent event") }, completion: { end in
++                let elapsed = ProcessInfo.processInfo.systemUptime - started
++                guard case .deadline = end else { XCTFail("Expected production absolute deadline"); done.fulfill(); return }
++                XCTAssertGreaterThanOrEqual(elapsed, 60); XCTAssertLessThan(elapsed, 64)
++                lock.lock(); let count = comments; lock.unlock(); XCTAssertGreaterThan(count, 50)
++                let attachment = XCTAttachment(string: "{\"kind\":\"synthetic-loopback-deadline\",\"elapsed\":\(elapsed),\"comments\":\(count)}")
++                attachment.name = "assistant-stream-deadline.json"; attachment.lifetime = .keepAlways; self.add(attachment)
++                done.fulfill()
++            })
++        wait(for: [done], timeout: 65)
++    }
++}

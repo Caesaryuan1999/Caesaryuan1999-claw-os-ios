@@ -1,0 +1,129 @@
+{
+  "evidence_level": "Windows source/Git checks, not Swift execution",
+  "baseline": "cf63be2d5661f6561789c411f9a1d74827a068f7",
+  "exact_staged_paths": [
+    "Scripts/ci/verify_publish_outcomes_macos.sh",
+    "Tinodios.xcodeproj/project.pbxproj",
+    "Tinodios/ClawAssistantModels.swift",
+    "Tinodios/ClawAssistantRun.swift",
+    "Tinodios/ClawAssistantService.swift",
+    "Tinodios/ClawAssistantStream.swift",
+    "TinodiosUITests/AssistantRunTests.swift",
+    "TinodiosUITests/AssistantStreamTests.swift"
+  ],
+  "old_swift_tests_byte_unchanged": [
+    "TinodeSDKTests/DraftyTest.swift",
+    "TinodeSDKTests/TinodeSDKTests.swift",
+    "TinodiosUITests/AssistantHistoryTests.swift",
+    "TinodiosUITests/AssistantLayoutTests.swift",
+    "TinodiosUITests/ChatScrollTests.swift",
+    "TinodiosUITests/ConversationRemovalTests.swift",
+    "TinodiosUITests/CoreListLayoutTests.swift",
+    "TinodiosUITests/IdentityFlowTests.swift",
+    "TinodiosUITests/IdentityNavigationUITests.swift",
+    "TinodiosUITests/MediaRecorderLifecycleTests.swift",
+    "TinodiosUITests/OwnedImageTests.swift",
+    "TinodiosUITests/PublicDirectoryTests.swift",
+    "TinodiosUITests/SecondaryUIStateTests.swift",
+    "TinodiosUITests/SendMessageBarResetTests.swift",
+    "TinodiosUITests/TinodiosUITests.swift",
+    "TinodiosUITests/TinodiosUITestsLaunchTests.swift",
+    "TinodiosUITests/VLCPlaybackProbeTests.swift",
+    "TinodiosUITests/VoiceLayoutTests.swift"
+  ],
+  "frozen_files_byte_unchanged": [
+    "Tinodios/ClawAssistantSession.swift",
+    "Tinodios/ClawAssistantHistory.swift",
+    "Tinodios/ClawAssistantViewController.swift",
+    "Tinodios/ClawAssistantHistoryViewController.swift",
+    "Tinodios/ClawAssistantConversationViewController.swift",
+    "Tinodios/Cache.swift",
+    "Podfile",
+    "Podfile.lock",
+    ".github/workflows/ios-smoke.yml"
+  ],
+  "ci_delta_only_two_selectors": true,
+  "new_methods": {
+    "TinodiosUITests/AssistantRunTests.swift": [
+      "testBRequiresExplicitCapabilitiesAndLegacyPointersStayReadOnly",
+      "testExplicitCreateAndSubmitMatchReceiptsThenGetAuthoritativePrefix",
+      "testLostSubmitReceiptRequiresExplicitSameKeyAndOriginalBytes",
+      "testUnexpectedSuccessAndMismatchedReceiptRemainUnknown",
+      "testGetPrefixDuplicateEventsGapAndTerminalCannotRegress",
+      "testReadFailuresUseBoundedOneTwoFourDelaysWithoutAutomaticPost",
+      "testStopRequestIsIndependentAndUnknownSurvivesAnActiveGet",
+      "testOwnerRetirementAndTombstoneRejectDelayedBodies",
+      "testHTTP401HTMLRetiresOnlyOriginalAssistantScope",
+      "testRetryUsesOriginalQuestionBytesAndRejectsLegacyStoppedOrLaterQuestion",
+      "testProviderUnavailableRejectsNewSubmissionButOriginalKeyReplayCanRead",
+      "testGap204AndEOFKeepPrefixAndRecoverByGetBeforeOpeningAnotherReader",
+      "testManualCapabilityRecheckKeepsPrefixWhenStreamBecomesUnavailable",
+      "testConversationSwitchDropsOldPrefixAndForeignTombstoneCannotClearNewTicket"
+    ],
+    "TinodiosUITests/AssistantStreamTests.swift": [
+      "testProductionParserHandlesEveryUTF8BoundaryCRLFMultilineAndHeartbeat",
+      "testMalformedIDsUnknownStatesLargeFramesAndTruncatedUTF8FailClosed",
+      "testAccessControlHasNoPersistentIDAndDeadlineNeverSlides",
+      "testRealSocketChunksProduceEventsBeforeEOFAndStopUsesAnotherConnection",
+      "testRealSocketRedirectAndNonJSON401NeverDeliverBody",
+      "testRealSocketHeartbeatCannotExtendAbsoluteSixtySecondDeadline"
+    ]
+  },
+  "inputs": [
+    {
+      "path": "Tinodios/ClawAssistantModels.swift",
+      "blob": "3528088fad450ebde4b6caba0ac23d08c2d9149c",
+      "git_sha256": "0b7b9efc60d479515841f9281b020b756908f94c984d7c696cf0bb1e1de2f159",
+      "raw_sha256": "0b7b9efc60d479515841f9281b020b756908f94c984d7c696cf0bb1e1de2f159"
+    },
+    {
+      "path": "Tinodios/ClawAssistantService.swift",
+      "blob": "0faf78db939f5fb6ddfd132cf43804204502800e",
+      "git_sha256": "062dc4a957c0093da50c186a170e7f3c8e19cc747192760655ced34f81ed379c",
+      "raw_sha256": "062dc4a957c0093da50c186a170e7f3c8e19cc747192760655ced34f81ed379c"
+    },
+    {
+      "path": "Tinodios/ClawAssistantRun.swift",
+      "blob": "aceab763113a4577f0cd200508b96638a944fab0",
+      "git_sha256": "5055cfbaf2b20ffb3ddbf7f6ac8293197ffce364416a0b78647b3eaee911f244",
+      "raw_sha256": "5055cfbaf2b20ffb3ddbf7f6ac8293197ffce364416a0b78647b3eaee911f244"
+    },
+    {
+      "path": "Tinodios/ClawAssistantStream.swift",
+      "blob": "7d923a61428e57c0d160346ee579bd7140cd27cf",
+      "git_sha256": "59009ecadd8eefe38d426e73d1f3e6c2ab50f6f3a8c2929c105abb647e3bab10",
+      "raw_sha256": "59009ecadd8eefe38d426e73d1f3e6c2ab50f6f3a8c2929c105abb647e3bab10"
+    },
+    {
+      "path": "TinodiosUITests/AssistantRunTests.swift",
+      "blob": "c229fb4c85e96b546b7ea4fb88416b6c97d5b0e2",
+      "git_sha256": "a089719a20640d4fa443201a58b69e3732300afbab15d1652c5625b498ce3d28",
+      "raw_sha256": "a089719a20640d4fa443201a58b69e3732300afbab15d1652c5625b498ce3d28"
+    },
+    {
+      "path": "TinodiosUITests/AssistantStreamTests.swift",
+      "blob": "231c6e7f61a3bff3447ab7a609e82e97c252a1dc",
+      "git_sha256": "5afc94d5ce94451360df2172b1d34027a74e499d9645659611760bbc66cb1b5c",
+      "raw_sha256": "5afc94d5ce94451360df2172b1d34027a74e499d9645659611760bbc66cb1b5c"
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "blob": "651cd7e10b27feff48a92eb1db73d8a349748ac6",
+      "git_sha256": "969460e5e045c3ea0ab5479d282f1b3fcc9d3ba1ee5bd375b22e3a570feb15b6",
+      "raw_sha256": "969460e5e045c3ea0ab5479d282f1b3fcc9d3ba1ee5bd375b22e3a570feb15b6"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "blob": "af8e4600d959fd28331cce9cca62ba83e34a5f40",
+      "git_sha256": "445cb722db82285fbaebca542c3f07c50d95ff583f05a21faffc5a838ddcdca4",
+      "raw_sha256": "445cb722db82285fbaebca542c3f07c50d95ff583f05a21faffc5a838ddcdca4"
+    }
+  ],
+  "native_expected": {
+    "inherited": 269,
+    "new": 20,
+    "total": 289,
+    "navigation_separate": 3
+  },
+  "new_native_execution": "NOT_RUN"
+}

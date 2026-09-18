@@ -1,0 +1,104 @@
+{
+  "scope": "Windows Git/source evidence only; no Swift or URLSession execution",
+  "baseline": "3cb55192054a12707a00cac6de8b8f21e3fc4521",
+  "original_B1_source": "02e4ebcb54e4aa7451224e7935b8bb78b840c8ba",
+  "exact_paths": [
+    "Tinodios/ClawAssistantModels.swift",
+    "Tinodios/ClawAssistantRun.swift",
+    "Tinodios/ClawAssistantService.swift",
+    "Tinodios/ClawAssistantStream.swift",
+    "TinodiosUITests/AssistantRunTests.swift",
+    "TinodiosUITests/AssistantStreamTests.swift"
+  ],
+  "unselected_index_blobs_unchanged": true,
+  "original_20_B_method_names_preserved": true,
+  "source_counterexamples_and_guards": {
+    "old_prepare_did_not_retire_stop": true,
+    "new_prepare_retires_stop_before_receipt_clear": true,
+    "submit_rechecks_after_notification": true,
+    "stop_rechecks_after_notification": true,
+    "full_stable_identity": true,
+    "old_stream_invented_status_codes": true,
+    "new_error_envelope_matches_status": true,
+    "new_errors_bounded": true,
+    "before_consumer_duplicate_and_continuity_gate": true,
+    "callback_and_append_capacity": true,
+    "event_page_tail_complete": true,
+    "requested_cursor_in_range": true
+  },
+  "new_methods": {
+    "TinodiosUITests/AssistantRunTests.swift": [
+      "testBRequiresExplicitCapabilitiesAndLegacyPointersStayReadOnly",
+      "testExplicitCreateAndSubmitMatchReceiptsThenGetAuthoritativePrefix",
+      "testLostSubmitReceiptRequiresExplicitSameKeyAndOriginalBytes",
+      "testUnexpectedSuccessAndMismatchedReceiptRemainUnknown",
+      "testGetPrefixDuplicateEventsGapAndTerminalCannotRegress",
+      "testReadFailuresUseBoundedOneTwoFourDelaysWithoutAutomaticPost",
+      "testStopRequestIsIndependentAndUnknownSurvivesAnActiveGet",
+      "testEventsServiceRejectsIncompleteFinalPagesAndImpossibleCursors",
+      "testStopReplyMustMatchEveryCapturedRunIdentity",
+      "testSynchronousChangeRetirementCannotCreateSubmitOrStopRequests",
+      "testOwnerRetirementAndTombstoneRejectDelayedBodies",
+      "testHTTP401HTMLRetiresOnlyOriginalAssistantScope",
+      "testRetryUsesOriginalQuestionBytesAndRejectsLegacyStoppedOrLaterQuestion",
+      "testProviderUnavailableRejectsNewSubmissionButOriginalKeyReplayCanRead",
+      "testGap204AndEOFKeepPrefixAndRecoverByGetBeforeOpeningAnotherReader",
+      "testManualCapabilityRecheckKeepsPrefixWhenStreamBecomesUnavailable",
+      "testConversationSwitchDropsOldPrefixAndForeignTombstoneCannotClearNewTicket"
+    ],
+    "TinodiosUITests/AssistantStreamTests.swift": [
+      "testProductionParserHandlesEveryUTF8BoundaryCRLFMultilineAndHeartbeat",
+      "testMalformedIDsUnknownStatesLargeFramesAndTruncatedUTF8FailClosed",
+      "testAccessControlHasNoPersistentIDAndDeadlineNeverSlides",
+      "testRealSocketChunksProduceEventsBeforeEOFAndStopUsesAnotherConnection",
+      "testRealSocketRedirectAndNonJSON401NeverDeliverBody",
+      "testRealSocketOldStopIsRetiredBeforeNewConversationSubmission",
+      "testRealSocketHeartbeatCannotExtendAbsoluteSixtySecondDeadline"
+    ]
+  },
+  "inputs": [
+    {
+      "path": "Tinodios/ClawAssistantModels.swift",
+      "blob": "062d0cce4d8276d595d16b4eb8a50a77970ebb77",
+      "git_sha256": "3b752e673eab2ae262ef502ba0908ac29facdb13456f5a4c7e1bb66667585134",
+      "raw_sha256": "3b752e673eab2ae262ef502ba0908ac29facdb13456f5a4c7e1bb66667585134"
+    },
+    {
+      "path": "Tinodios/ClawAssistantService.swift",
+      "blob": "5b82c06515bb2b729c7a1b0bb198e19949ebbe34",
+      "git_sha256": "abd8adf49769aded37ed7f508cd865fa1fc6b0d4f7d31b463371fcccd1fc7009",
+      "raw_sha256": "abd8adf49769aded37ed7f508cd865fa1fc6b0d4f7d31b463371fcccd1fc7009"
+    },
+    {
+      "path": "Tinodios/ClawAssistantRun.swift",
+      "blob": "94f8bf0a9d50ac83c999f1b3a6d8a8ed954f53cf",
+      "git_sha256": "0d9d200ed9e1a7cb484c8c10482dbaef1c39f54bf73d75fe2e1fb43bc3ba7099",
+      "raw_sha256": "0d9d200ed9e1a7cb484c8c10482dbaef1c39f54bf73d75fe2e1fb43bc3ba7099"
+    },
+    {
+      "path": "Tinodios/ClawAssistantStream.swift",
+      "blob": "edf5fe458a572da5e658611f8ae53f379a2fe958",
+      "git_sha256": "4c472e1f166918fa3a9ed628a524071bc3d63c3532286e8c5db7e8b955d323d4",
+      "raw_sha256": "4c472e1f166918fa3a9ed628a524071bc3d63c3532286e8c5db7e8b955d323d4"
+    },
+    {
+      "path": "TinodiosUITests/AssistantRunTests.swift",
+      "blob": "a2bab4b1c172d3a661f735116b87d87a3abf8f57",
+      "git_sha256": "e5cb0b0a5d20b2c5af20dd5a8989d8923bbf6b2f361110ff4770c2e5ae4ea33f",
+      "raw_sha256": "e5cb0b0a5d20b2c5af20dd5a8989d8923bbf6b2f361110ff4770c2e5ae4ea33f"
+    },
+    {
+      "path": "TinodiosUITests/AssistantStreamTests.swift",
+      "blob": "f4cda80ea203957c8a9d8f9ce5ffc2ed4e1008c7",
+      "git_sha256": "51b1a7b8e4c28a8f8808b9d36f8df4cf4459edca4b1f71eb9f0117a822c53b47",
+      "raw_sha256": "51b1a7b8e4c28a8f8808b9d36f8df4cf4459edca4b1f71eb9f0117a822c53b47"
+    }
+  ],
+  "native_expected": {
+    "inherited": 269,
+    "B1": 24,
+    "total": 293,
+    "navigation_separate": 3
+  },
+  "native_execution": "NOT_RUN"
+}

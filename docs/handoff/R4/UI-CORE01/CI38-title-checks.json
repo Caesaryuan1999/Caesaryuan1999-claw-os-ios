@@ -1,0 +1,21 @@
+{
+  "scope": "Windows source preservation; not UIKit execution",
+  "parent": "e9eba400129c734315e8176d00e5b2a52e2bc74f",
+  "paths": [
+    "Tinodios/widgets/ChatListViewCell.swift",
+    "TinodiosUITests/CoreListLayoutTests.swift"
+  ],
+  "methods": [
+    "testConversationNibOptInKeepsDataAndRestoresLegacyReuse",
+    "testContactNibOptInSelectionAndDefaultConsumerRemainDistinct",
+    "testOriginalNibsAt320GrowForAccessibilityInBothAppearances",
+    "testRealFindConsumesContactsAndEmptyStateWithoutDirectoryCalls",
+    "testRealAccountMissingThenPublicAliasUsesOriginalDataConsumer",
+    "testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries"
+  ],
+  "original_assertions_retained": 96,
+  "fixture_timestamp_unchanged": true,
+  "three_second_deadline_unchanged": true,
+  "native_execution": "NOT_RUN",
+  "new_native_methods": 0
+}

@@ -1,0 +1,174 @@
+{
+  "source": "b004af0d5c5d8ce2f7560fad04ed8711694c8e23",
+  "scope": "Named handoff artifacts, original patch/evidence bytes preserved",
+  "entities": [
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/REPORT.md",
+      "bytes": 6141,
+      "sha256": "44f0541898f2840adb7c08194e12df50ad4ee3d732bb30a8bb322962c0f3d065",
+      "crlf": 0,
+      "lone_lf": 47
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/a-page-order.patch",
+      "bytes": 1915,
+      "sha256": "74d2acafbc9e727c1555b1e60cebfe32ef7a1aae4de05f55231d2f926441321c",
+      "crlf": 0,
+      "lone_lf": 28
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/b-successor.patch",
+      "bytes": 33112,
+      "sha256": "d5c231f8b5c6ee32a8c43cb2e0eb9d15cc95f4c246de87be5160fcd7e4ef1085",
+      "crlf": 0,
+      "lone_lf": 507
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/check_project.rb",
+      "bytes": 1041,
+      "sha256": "f6c83d3821a5100e40a8fc2ceb6dc64859a1e0ca2475417620d11139d271784b",
+      "crlf": 0,
+      "lone_lf": 18
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/check_sources.py",
+      "bytes": 3132,
+      "sha256": "fafadf70e04aff1cd798f4f00a20cec65c2d286c1258962d0e98b63c7aa7597b",
+      "crlf": 0,
+      "lone_lf": 54
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/check_successor.py",
+      "bytes": 4726,
+      "sha256": "671d05ec95964b209b74f531e065818aecb2545d6601a0fa995528c6e845ffc5",
+      "crlf": 0,
+      "lone_lf": 74
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/core-title.patch",
+      "bytes": 8855,
+      "sha256": "98431f19e8ed0a346c7f282d3e20d8d6336df2c41e765c6f9f707af6adcd680f",
+      "crlf": 0,
+      "lone_lf": 136
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/project-check.json",
+      "bytes": 714,
+      "sha256": "c41c32e6dea96e06334daecbcc34ed6d4c068d5cc4d866066f2e5ea219a9f0ca",
+      "crlf": 0,
+      "lone_lf": 25
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/seal_successors.py",
+      "bytes": 3724,
+      "sha256": "4776ca06baddf58de13b51739d4f6e01d495924c2778ef5d17c1f34d7f17bc0f",
+      "crlf": 0,
+      "lone_lf": 71
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/seal_unit.py",
+      "bytes": 3214,
+      "sha256": "99904a2045f5341c6f5f9b0ab6927c0d005608d53fbe8661344f8c8bd32744e2",
+      "crlf": 0,
+      "lone_lf": 65
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/seal_docs.py",
+      "bytes": 2870,
+      "sha256": "52c911f5810ef8758c41027060e027d45b6a680ef964606c881546102c42ae0f",
+      "crlf": 0,
+      "lone_lf": 52
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/source-checks.json",
+      "bytes": 6027,
+      "sha256": "cf2a7fc073ba23d2440d905f040a1a94f572c0570c691f4ee249885e2d9df36b",
+      "crlf": 0,
+      "lone_lf": 129
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/static-policies.json",
+      "bytes": 17649,
+      "sha256": "229a7add3e1b65165064763911cc2ff3b2165bc646716460c2318bde8afbeab4",
+      "crlf": 360,
+      "lone_lf": 0
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/successor-manifests.json",
+      "bytes": 4799,
+      "sha256": "ee5ff890f8fcf9953a7360356cca0577cfb8ff079de2491d7fc90c684a0deb77",
+      "crlf": 0,
+      "lone_lf": 127
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/successor-source-checks.json",
+      "bytes": 4977,
+      "sha256": "e23f10bb10f204716a4ec5542437e8048ede949939324096a8676a48c778b0c9",
+      "crlf": 0,
+      "lone_lf": 104
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/successor-static-policies.json",
+      "bytes": 17649,
+      "sha256": "b6863a26273741a52b3e3c945fc1f9856026bf5c886f0c19eb724e41ebb370fc",
+      "crlf": 360,
+      "lone_lf": 0
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/unit-manifest.json",
+      "bytes": 2808,
+      "sha256": "2a33e97c68e404deaeeffaf39c6772b10b75b7a3facee34c8e2a41612fccaae6",
+      "crlf": 0,
+      "lone_lf": 79
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/unit.patch",
+      "bytes": 102474,
+      "sha256": "4717ccc07b572cda7ca51f8811824da8400421cd66147fb3678038bd37d148ab",
+      "crlf": 0,
+      "lone_lf": 1732
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT-B01/wire_project.py",
+      "bytes": 2562,
+      "sha256": "ebfd2d8be3a601bdd755e4f4cf1d8a2612261c52280262999f55ef795186ba15",
+      "crlf": 0,
+      "lone_lf": 40
+    },
+    {
+      "path": "docs/handoff/R4/AI-CLIENT01/CI38-PAGE-ORDER.md",
+      "bytes": 1585,
+      "sha256": "8230c0061a8ec4bb4ef4cf60f82c64404680b9e51cbeb48205058e8d9d7e7fc5",
+      "crlf": 0,
+      "lone_lf": 11
+    },
+    {
+      "path": "docs/handoff/R4/UI-CORE01/CI38-TITLE-FIX.md",
+      "bytes": 2442,
+      "sha256": "4b3794127f1b7d8eb4d1efe3d5470e4103569205d37d079997b04deba9638c05",
+      "crlf": 0,
+      "lone_lf": 21
+    },
+    {
+      "path": "docs/handoff/R4/UI-CORE01/CI38-title-checks.json",
+      "bytes": 848,
+      "sha256": "47ca7a97dae2cecd3dfdff77514a1020f8afacdecb64370e58baa29554405802",
+      "crlf": 0,
+      "lone_lf": 21
+    },
+    {
+      "path": "docs/handoff/R4/UI-CORE01/CI38-title-static.json",
+      "bytes": 17649,
+      "sha256": "2a21523feb1ad28a6bdc0161bfb754b85ca5bc1f3cbbc987150ccb3f0f720f00",
+      "crlf": 360,
+      "lone_lf": 0
+    },
+    {
+      "path": "docs/handoff/R4/UI-CORE01/check_ci38_title.py",
+      "bytes": 1375,
+      "sha256": "8ccd12c04f3e4d3d761ad52bf80c8561399ff028b1f428d7e1d71089d53c8630",
+      "crlf": 0,
+      "lone_lf": 23
+    }
+  ]
+}
