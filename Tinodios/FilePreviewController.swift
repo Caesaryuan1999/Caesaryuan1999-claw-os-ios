@@ -23,6 +23,7 @@ struct FilePreviewContent {
 class FilePreviewController: UIViewController, UIScrollViewDelegate {
 
     var previewContent: FilePreviewContent?
+    var captureDisplayIntent: (() -> ChatDisplayIntent)?
     var replyPreviewDelegate: PendingMessagePreviewDelegate?
     private var sending = false
     @IBOutlet weak var sendButton: UIButton!
@@ -43,10 +44,12 @@ class FilePreviewController: UIViewController, UIScrollViewDelegate {
 
     @IBAction func sendFileAttachment(_ sender: UIButton) {
         guard let content = previewContent, !sending else { return }
+        let displayIntent = captureDisplayIntent?() ?? .passive
         sending = true
         sendButton.isEnabled = false
         // The existing message flow owns upload and publish state.
-        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content)
+        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content,
+            userInfo: [ChatDisplayIntent.notificationKey: displayIntent])
         // Return to MessageViewController.
         navigationController?.popViewController(animated: true)
     }

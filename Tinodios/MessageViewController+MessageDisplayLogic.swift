@@ -71,22 +71,23 @@ extension MessageViewController: MessageDisplayLogic {
         }
     }
 
-    func displayPinnedMessages(pins: [Int], selected: Int) {
+    func displayPinnedMessages(pins: [Int], selected: Int, source: ChatDisplaySource?) {
+        guard let source = source, chatDisplaySource == source else { return }
         assert(Thread.isMainThread)
         guard collectionView != nil else { return }
 
-        self.pinnedMessageSeqs = pins
-        if selected >= 0 && selected < pins.count {
-            self.pinnedSelectionIndex = selected
+        reloadChatLayoutPreservingViewport { [weak self] in
+            self?.pinnedMessageSeqs = pins
+            if selected >= 0 && selected < pins.count {
+                self?.pinnedSelectionIndex = selected
+            }
         }
-        collectionView.reloadSections(IndexSet(integer: 0))
-        collectionView.layoutIfNeeded()
     }
 
-    func reloadPinned(forSeq seq: Int) {
+    func reloadPinned(forSeq seq: Int, source: ChatDisplaySource?) {
+        guard let source = source, chatDisplaySource == source else { return }
         if self.pinnedMessageSeqs.contains(where: { $0 == seq }) {
-            collectionView.reloadSections(IndexSet(integer: 0))
-            collectionView.layoutIfNeeded()
+            reloadChatLayoutPreservingViewport()
         }
     }
 
@@ -100,103 +101,95 @@ extension MessageViewController: MessageDisplayLogic {
         navBarAvatarView.presentTypingAnimation(steps: 30)
     }
 
-    func reloadAllMessages() {
+    func reloadAllMessages(source: ChatDisplaySource?) {
+        guard let source = source, chatDisplaySource == source else { return }
         assert(Thread.isMainThread)
-        collectionView.reloadSections(IndexSet(integer: 0))
+        reloadChatLayoutPreservingViewport()
     }
 
-    func displayChatMessages(messages: [StoredMessage], _ scrollToMostRecentMessage: Bool) {
+    func displayChatMessages(messages newData: [StoredMessage], source: ChatDisplaySource, intent: ChatDisplayIntent) {
         assert(Thread.isMainThread)
-        guard collectionView != nil else { return }
-        let oldData = self.messages
-        let newData: [StoredMessage] = messages
-
-        // Both empty: no change.
-        guard !oldData.isEmpty || !newData.isEmpty else { return }
-
-        self.messageSeqIdIndex = newData.enumerated().reduce([Int: Int]()) { (dict, item) -> [Int: Int] in
-            var dict = dict
-            dict[item.element.seqId] = item.offset
-            return dict
-        }
-        self.messageDbIdIndex = newData.enumerated().reduce([Int64: Int]()) { (dict, item) -> [Int64: Int] in
-            var dict = dict
-            dict[item.element.msgId] = item.offset
-            return dict
-        }
-
-        // Update batch stats.
-        let now = Date()
-        let delta = newData.count - oldData.count
-        if now.millisecondsSince1970 > self.lastMessageReceived.millisecondsSince1970 + Constants.kUpdateBatchTimeDeltaThresholdMs {
-            self.updateBatchSize = delta
-        } else {
-            self.updateBatchSize += delta
-        }
-        self.lastMessageReceived = now
-
-        if oldData.isEmpty || newData.isEmpty || self.updateBatchSize > Constants.kUpdateBatchFullRefreshThreshold {
-            self.messages = newData
-            collectionView.reloadSections(IndexSet(integer: 0))
-            collectionView.layoutIfNeeded()
-            if scrollToMostRecentMessage {
-                collectionView.scrollToBottom()
+        guard chatDisplaySource == source else { return }
+        enqueueChatPresentation { [weak self] done in
+            guard let self = self, self.chatDisplaySource == source, let list = self.collectionView else {
+                done(); return
             }
-        } else {
-            // Get indexes of inserted and deleted items.
+            let oldData = self.messages
+            guard !oldData.isEmpty || !newData.isEmpty else { done(); return }
+            let viewport = self.captureChatViewport()
+            if !oldData.isEmpty && newData.isEmpty { self.chatEmptyFollowLatest = viewport.atBottom }
+            let firstNonempty = !self.chatPresentedNonempty && !newData.isEmpty
+            if !newData.isEmpty { self.chatPresentedNonempty = true }
+            let install = {
+                self.messages = newData
+                self.messageSeqIdIndex = newData.enumerated().reduce(into: [Int: Int]()) { result, entry in
+                    result[entry.element.seqId] = entry.offset
+                }
+                self.messageDbIdIndex = newData.enumerated().reduce(into: [Int64: Int]()) { result, entry in
+                    result[entry.element.msgId] = entry.offset
+                }
+            }
+            let finish = {
+                self.finishChatViewport(viewport, source: source, intent: intent, firstNonempty: firstNonempty)
+                done()
+            }
+            // Keep the original batching threshold; it has no bearing on user intent.
+            let now = Date()
+            let delta = newData.count - oldData.count
+            if now.millisecondsSince1970 > self.lastMessageReceived.millisecondsSince1970 + Constants.kUpdateBatchTimeDeltaThresholdMs {
+                self.updateBatchSize = delta
+            } else {
+                self.updateBatchSize += delta
+            }
+            self.lastMessageReceived = now
+            if oldData.isEmpty || newData.isEmpty || self.updateBatchSize > Constants.kUpdateBatchFullRefreshThreshold {
+                self.withChatProgrammaticLayout {
+                    install()
+                    list.reloadSections(IndexSet(integer: 0))
+                    list.layoutIfNeeded()
+                }
+                finish()
+                return
+            }
+
+            // Diff against the array actually on screen, never a queued snapshot.
             let diff = Utils.diffMessageArray(sortedOld: oldData, sortedNew: newData)
-
-            // Each insertion or deletion may change the appearance of the preceeding and following messages.
-            // Calculate indexes of all items which need to be updated.
-            var refresh: [Int] = []
+            var refresh = Set<Int>()
             for index in diff.mutated {
-                if index > 0 {
-                    // Refresh the preceeding item.
-                    refresh.append(index - 1)
-                }
-                if index < newData.count - 1 {
-                    // Refresh the following item.
-                    refresh.append(index + 1)
-                }
-                if index < newData.count {
-                    refresh.append(index)
+                for neighbor in (index - 1)...(index + 1) where neighbor >= 0 && neighbor < newData.count {
+                    refresh.insert(neighbor)
                 }
             }
-            // Ensure uniqueness of values. No need to reload newly inserted values.
-            // The app will crash if the same index is marked as removed and refreshed. Which seems
-            // to be an Apple bug because removed index is against the old array, refreshed against the new.
-            refresh = Array(Set(refresh).subtracting(Set(diff.inserted)))
-
+            refresh.subtract(diff.inserted)
+            let refreshPaths = refresh.sorted().map { IndexPath(item: $0, section: 0) }
+            let refreshPhase = {
+                guard self.chatDisplaySource == source else { done(); return }
+                guard !refreshPaths.isEmpty else { finish(); return }
+                self.withChatProgrammaticLayout {
+                    list.performBatchUpdates({ list.reloadItems(at: refreshPaths) }, completion: { _ in finish() })
+                }
+            }
             if !diff.inserted.isEmpty || !diff.removed.isEmpty {
-                collectionView.performBatchUpdates({ () -> Void in
-                    self.messages = newData
-                    if diff.removed.count > 0 {
-                        collectionView.deleteItems(at: diff.removed.map { IndexPath(item: $0, section: 0) })
-                    }
-                    if diff.inserted.count > 0 {
-                        collectionView.insertItems(at: diff.inserted.map { IndexPath(item: $0, section: 0) })
-                    }
-                }, completion: nil)
-            }
-            if !refresh.isEmpty {
-                collectionView.performBatchUpdates({ () -> Void in
-                    self.messages = newData
-                    self.collectionView.reloadItems(at: refresh.map { IndexPath(item: $0, section: 0) })
-                    self.collectionView.layoutIfNeeded()
-                    if scrollToMostRecentMessage {
-                        self.collectionView.scrollToBottom()
-                    }
-                }, completion: nil)
+                self.withChatProgrammaticLayout {
+                    list.performBatchUpdates({
+                        install()
+                        list.deleteItems(at: diff.removed.map { IndexPath(item: $0, section: 0) })
+                        list.insertItems(at: diff.inserted.map { IndexPath(item: $0, section: 0) })
+                    }, completion: { _ in refreshPhase() })
+                }
+            } else {
+                install()
+                refreshPhase()
             }
         }
     }
 
-    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int) {
+    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int, source: ChatDisplaySource?) {
+        guard let source = source, chatDisplaySource == source else { return }
         assert(Thread.isMainThread)
         guard self.collectionView != nil else { return }
-        let hiIdUpper = hiId + 1
-        let rowIds = (loId..<hiIdUpper).map { self.messageSeqIdIndex[$0] }.filter { $0 != nil }
-        self.collectionView.reloadItems(at: rowIds.map { IndexPath(item: $0!, section: 0) })
+        guard loId <= hiId else { return }
+        reloadChatLayoutPreservingViewport(reloadRange: loId...hiId)
     }
 
     func updateProgress(forMsgId msgId: Int64, progress: Float) {

@@ -26,7 +26,7 @@ protocol MessageBusinessLogic: AnyObject {
     func cleanup()
     func leaveTopic()
 
-    func sendMessage(content: Drafty)
+    func sendMessage(content: Drafty, displayIntent: ChatDisplayIntent)
     func sendReadNotification(explicitSeq: Int?, when deadline: DispatchTime)
     func sendTypingNotification()
     func enablePeersMessaging()
@@ -35,11 +35,11 @@ protocol MessageBusinessLogic: AnyObject {
     func blockTopic()
 
     func submitRecordedAudio(_ def: UploadDef, owner: Tinode, uid: String,
-                             generation: UInt64, topicName: String) -> Bool
-    func uploadAudio(_ def: UploadDef)
-    func uploadFile(_ def: UploadDef)
-    func uploadImage(_ def: UploadDef)
-    func uploadVideo(_ def: UploadDef)
+                             generation: UInt64, topicName: String, displayIntent: ChatDisplayIntent) -> Bool
+    func uploadAudio(_ def: UploadDef, displayIntent: ChatDisplayIntent)
+    func uploadFile(_ def: UploadDef, displayIntent: ChatDisplayIntent)
+    func uploadImage(_ def: UploadDef, displayIntent: ChatDisplayIntent)
+    func uploadVideo(_ def: UploadDef, displayIntent: ChatDisplayIntent)
 
     func prepareQuoted(to msg: Message?, isReply: Bool) -> PromisedReply<PendingMessage>?
     func dismissPendingMessage()
@@ -49,6 +49,11 @@ protocol MessageBusinessLogic: AnyObject {
     func pinMessage(seqId: Int, pin: Bool)
     func reloadPinned(forSeq: Int)
     var pendingMessage: PendingMessage? { get }
+}
+
+extension MessageBusinessLogic {
+    // Legacy non-button callers receive no active scroll privilege.
+    func sendMessage(content: Drafty) { sendMessage(content: content, displayIntent: .passive) }
 }
 
 protocol MessageDataStore {
@@ -191,7 +196,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         }
 
         if let pins = topic?.pinned {
-            self.presenter?.displayPinnedMessages(pins: pins, selected: 0)
+            self.presenter?.displayPinnedMessages(pins: pins, selected: 0, source: topic.flatMap { chatSource(for: $0) })
         }
 
         return self.topic != nil
@@ -217,6 +222,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             return true
         }
         let tinode = Cache.tinode
+        let source = chatSource(for: topic)
         guard tinode.isConnectionAuthenticated else {
             // If connection is not ready, wait for completion.
             // MessageInteractor.attachToTopic() will be called again from the onLogin callback.
@@ -247,7 +253,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                     self?.messageInteractorQueue.async {
                         self?.topic?.syncAll().then(
                             onSuccess: { [weak self] _ in
-                                self?.loadMessagesFromCache()
+                                self?.loadMessagesFromCache(displayIntent: .passive, source: source, originalTopic: topic)
                                 return nil
                             },
                             onFailure: { err in
@@ -259,7 +265,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                     if self?.topicId == -1 {
                         self?.topicId = BaseDb.sharedInstance.topicDb?.getId(topic: self?.topicName)
                     }
-                    self?.loadMessagesFromCache()
+                    self?.loadMessagesFromCache(displayIntent: .passive, source: source, originalTopic: topic)
                     self?.presenter?.applyTopicPermissions(withError: nil)
                     return nil
                 },
@@ -352,10 +358,23 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         self.pendingMessage = .forwarded(message: message, from: forwardedFrom, preview: preview)
     }
 
-    func sendMessage(content: Drafty) {
+    func sendMessage(content: Drafty, displayIntent: ChatDisplayIntent = .passive) {
         guard let topic = self.topic else { return }
+        let source = displayIntent.source ?? chatSource(for: topic)
+        let localIntent: ChatDisplayIntent
+        let laterIntent: ChatDisplayIntent
+        if displayIntent.preservesReadingPosition {
+            localIntent = .preserve
+            laterIntent = .preserve
+        } else if case .edit? = pendingMessage {
+            localIntent = .preserve
+            laterIntent = .preserve
+        } else {
+            localIntent = displayIntent
+            laterIntent = .passive
+        }
         defer {
-            loadMessagesFromCache()
+            loadMessagesFromCache(displayIntent: localIntent, source: source, originalTopic: topic)
         }
         var message = content
         var head: [String: JSONValue]? = nil
@@ -376,15 +395,15 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         }
         topic.publish(content: message, withExtraHeaders: head).then(
             onSuccess: { [weak self] _ in
-                self?.loadMessagesFromCache()
+                self?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic)
                 if editedSeq > 0 {
-                    self?.reloadPinned(forSeq: editedSeq)
+                    self?.presenter?.reloadPinned(forSeq: editedSeq, source: source)
                 }
                 return nil
             },
             onFailure: { [weak self] err in
                 Cache.log.error("sendMessage error: %@", err.localizedDescription)
-                self?.loadMessagesFromCache()
+                self?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic)
                 if PublishFailureDisposition.forError(err) == .unconfirmed {
                     DispatchQueue.main.async {
                         UiUtils.showToast(message: "消息可能已发送，请先查看最新聊天记录。")
@@ -447,13 +466,29 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
 
     /// Load the most recent `kMessagesPerPage` messages from cache.
     func loadMessagesFromCache(scrollToMostRecentMessage: Bool = true) {
-        guard let t = self.topic else { return }
+        loadMessagesFromCache(displayIntent: scrollToMostRecentMessage ? .passive : .preserve)
+    }
+
+    private func chatSource(for topic: DefaultComTopic) -> ChatDisplaySource? {
+        guard let presenter = presenter else { return nil }
+        return ChatDisplaySource(page: presenter.chatPageID, topic: topic)
+    }
+
+    private func loadMessagesFromCache(displayIntent: ChatDisplayIntent,
+                                       source originalSource: ChatDisplaySource? = nil,
+                                       originalTopic: DefaultComTopic? = nil) {
+        guard let t = originalTopic ?? self.topic else { return }
+        // Source is fixed before either the DB queue or the main-thread hop.
+        let source = originalSource ?? chatSource(for: t)
         let numToLoad = self.pagesToLoad * MessageInteractor.kMessagesPerPage
         self.messageInteractorQueue.async {
             if let messagePage = BaseDb.sharedInstance.sqlStore?.getMessagePage(topic: t, from: Int.max, limit: numToLoad, forward: false) {
+                guard self.topic === t else { return }
                 // Replace messages with the new page.
                 self.messages = messagePage.map { $0 as! StoredMessage }.reversed()
-                self.presenter?.presentMessages(messages: self.messages, scrollToMostRecentMessage)
+                if let source = source {
+                    self.presenter?.presentMessages(messages: self.messages, source: source, intent: displayIntent)
+                }
             }
         }
     }
@@ -465,6 +500,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             return
         }
 
+        let source = chatSource(for: t)
         let firstSeqId = self.messages.first?.seqId ?? Int.max
         if firstSeqId <= 1 {
             self.presenter?.endRefresh()
@@ -493,13 +529,16 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 if let err = error {
                     Cache.log.error("Failed to load message page: %@", err.localizedDescription)
                 } else if let messagePage = messages, !messagePage.isEmpty {
+                    guard self?.topic === t else { return }
                     var page = messagePage.map { $0 as! StoredMessage }
                     // Page is returned in descending order, reverse.
                     page.reverse()
                     // Append older messages to the end of the fetched page.
                     page.append(contentsOf: self?.messages ?? [])
                     self?.messages = page
-                    self?.presenter?.presentMessages(messages: page, false)
+                    if let source = source {
+                        self?.presenter?.presentMessages(messages: page, source: source, intent: .preserve)
+                    }
                 }
             })
         }
@@ -509,6 +548,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         guard let topic = topic, let store = topic.store else {
             return
         }
+        let source = chatSource(for: topic)
         if message.isUnconfirmed || message.status == BaseDb.Status.sending.rawValue || message.status == BaseDb.Status.sendingC3.rawValue {
             // A local draft ID cannot retract a possibly accepted server message.
             DispatchQueue.main.async {
@@ -539,7 +579,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             let committed = commitLocalDeletes(
                 store: store, topic: topic,
                 dbMessageIds: localDbMessageIds, seqIds: localSeqIds)
-            loadMessagesFromCache()
+            loadMessagesFromCache(displayIntent: .preserve, source: source, originalTopic: topic)
             if !committed {
                 DispatchQueue.main.async {
                     UiUtils.showToast(message: NSLocalizedString("操作失败", comment: "Message deletion failure"))
@@ -560,7 +600,9 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             !remoteSeqSet.contains($0.seqId) && !localDbMessageIds.contains($0.msgId)
         }
         messages = visibleMessages
-        presenter?.presentMessages(messages: visibleMessages, false)
+        if let source = source {
+            presenter?.presentMessages(messages: visibleMessages, source: source, intent: .preserve)
+        }
 
         topic.delMessages(ids: uniqueSeqIds, hard: hard).then(
             onSuccess: { [weak self] _ in
@@ -570,7 +612,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                     dbMessageIds: localDbMessageIds, seqIds: localSeqIds)
                 DispatchQueue.main.async {
                     self.deleteSeqIdsInFlight.subtract(uniqueSeqIds)
-                    self.loadMessagesFromCache()
+                    self.loadMessagesFromCache(displayIntent: .preserve, source: source, originalTopic: topic)
                     if !committed {
                         UiUtils.showToast(message: NSLocalizedString("操作失败", comment: "Message deletion failure"))
                     }
@@ -580,7 +622,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             onFailure: { [weak self] err in
                 DispatchQueue.main.async {
                     self?.deleteSeqIdsInFlight.subtract(uniqueSeqIds)
-                    self?.loadMessagesFromCache()
+                    self?.loadMessagesFromCache(displayIntent: .preserve, source: source, originalTopic: topic)
                     UiUtils.showToast(message: String(format: NSLocalizedString("删除失败：%@", comment: "Message deletion failure"), err.localizedDescription))
                 }
                 return nil
@@ -658,7 +700,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
     }
 
     func reloadPinned(forSeq seq: Int) {
-        self.presenter?.reloadPinned(forSeq: seq)
+        self.presenter?.reloadPinned(forSeq: seq, source: topic.flatMap { chatSource(for: $0) })
     }
 
     static private func existingInteractor(for topicName: String?) -> MessageInteractor? {
@@ -680,27 +722,33 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         return result
     }
 
-    func uploadImage(_ def: UploadDef) {
-        uploadMessageAttachment(type: .image, def)
+    func uploadImage(_ def: UploadDef, displayIntent: ChatDisplayIntent = .passive) {
+        uploadMessageAttachment(type: .image, def, displayIntent: displayIntent)
     }
 
-    func uploadFile(_ def: UploadDef) {
-        uploadMessageAttachment(type: .file, def)
+    func uploadFile(_ def: UploadDef, displayIntent: ChatDisplayIntent = .passive) {
+        uploadMessageAttachment(type: .file, def, displayIntent: displayIntent)
     }
 
     // True means the original local message/upload entry accepted the handoff.
     // It is never a server-ACK or delivered result.
     func submitRecordedAudio(_ def: UploadDef, owner: Tinode, uid: String,
-                             generation: UInt64, topicName: String) -> Bool {
+                             generation: UInt64, topicName: String, displayIntent: ChatDisplayIntent = .passive) -> Bool {
         guard let topic = topic, topic.name == topicName, let duration = def.duration,
               let preview = def.preview, !def.data.isEmpty else { return false }
+        let source = displayIntent.source ?? chatSource(for: topic)
+        let localIntent: ChatDisplayIntent
+        let laterIntent: ChatDisplayIntent
+        if displayIntent.preservesReadingPosition { localIntent = .preserve; laterIntent = .preserve }
+        else if case .edit? = pendingMessage { localIntent = .preserve; laterIntent = .preserve }
+        else { localIntent = displayIntent; laterIntent = .passive }
         let scope = RecordedAudioScope(owner: owner, uid: uid, generation: generation, topic: topic)
         guard scope.isCurrent else { return false }
         let maxInband = owner.getServerLimit(for: Tinode.kMaxMessageSize,
             withDefault: MessageViewController.kMaxInbandAttachmentSize) * 3 / 4 - 1024
         if def.data.count > maxInband {
             guard let helper = Cache.largeFileHelper(for: owner), scope.isCurrent else { return false }
-            return uploadMessageAttachment(type: .audio, def, audioScope: scope, audioHelper: helper)
+            return uploadMessageAttachment(type: .audio, def, displayIntent: localIntent, audioScope: scope, audioHelper: helper)
         }
         guard var content = try? Drafty(plainText: " ").insertAudio(at: 0, mime: def.mimeType,
                 bits: def.data, preview: preview, duration: duration, fname: nil, refurl: nil,
@@ -719,11 +767,11 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         guard scope.isCurrent else { return false }
         let promise = topic.publish(content: content, withExtraHeaders: head)
         promise.then(onSuccess: { [weak self] _ in
-            scope.present { self?.loadMessagesFromCache() }
+            scope.present { self?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic) }
             return nil
         }, onFailure: { [weak self] error in
             scope.present {
-                self?.loadMessagesFromCache()
+                self?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic)
                 if PublishFailureDisposition.forError(error) == .unconfirmed {
                     UiUtils.showToast(message: "消息可能已发送，请先查看最新聊天记录。")
                 } else if case TinodeError.requestNotSent(let reason) = error {
@@ -737,27 +785,34 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         if scope.isCurrent {
             dismissPendingMessage()
             presenter?.dismissPendingMessagePreviewBar()
-            loadMessagesFromCache()
+            loadMessagesFromCache(displayIntent: localIntent, source: source, originalTopic: topic)
         }
         return true
     }
 
-    func uploadAudio(_ def: UploadDef) {
-        uploadMessageAttachment(type: .audio, def)
+    func uploadAudio(_ def: UploadDef, displayIntent: ChatDisplayIntent = .passive) {
+        uploadMessageAttachment(type: .audio, def, displayIntent: displayIntent)
     }
 
-    func uploadVideo(_ def: UploadDef) {
-        uploadMessageAttachment(type: .video, def)
+    func uploadVideo(_ def: UploadDef, displayIntent: ChatDisplayIntent = .passive) {
+        uploadMessageAttachment(type: .video, def, displayIntent: displayIntent)
     }
 
     @discardableResult
     private func uploadMessageAttachment(type: AttachmentType, _ def: UploadDef,
+                                         displayIntent: ChatDisplayIntent = .passive,
                                          audioScope: RecordedAudioScope? = nil,
                                          audioHelper: LargeFileHelper? = nil) -> Bool {
         guard let topic = topic else { return false }
         let owner = audioScope?.owner ?? Cache.tinode
         guard audioScope?.isCurrent ?? true else { return false }
         guard audioScope == nil || audioHelper != nil else { return false }
+        let source = displayIntent.source ?? chatSource(for: topic)
+        let localIntent: ChatDisplayIntent
+        let laterIntent: ChatDisplayIntent
+        if displayIntent.preservesReadingPosition { localIntent = .preserve; laterIntent = .preserve }
+        else if case .edit? = pendingMessage { localIntent = .preserve; laterIntent = .preserve }
+        else { localIntent = displayIntent; laterIntent = .passive }
         let audioBase = owner.baseURL(useWebsocketProtocol: false)
         let mimeType = def.mimeType ?? {
             switch type {
@@ -897,7 +952,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                             _ = topic.store?.msgFailed(topic: topic, dbMessageId: msg.msgId)
                         }
                     }
-                    interactor?.loadMessagesFromCache()
+                    interactor?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic)
                 }
                 guard error == nil else {
                     switch error! {
@@ -953,13 +1008,13 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                             throw error
                         })
                         .thenFinally({
-                            if let scope = audioScope { scope.present { interactor?.loadMessagesFromCache() } }
-                            else { interactor?.loadMessagesFromCache() }
+                            if let scope = audioScope { scope.present { interactor?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic) } }
+                            else { interactor?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic) }
                         })
                     success = true
                 }
             }
-            if audioScope?.isCurrent ?? true { self.loadMessagesFromCache() }
+            if audioScope?.isCurrent ?? true { self.loadMessagesFromCache(displayIntent: localIntent, source: source, originalTopic: topic) }
             return true
         }
         return false
@@ -1040,22 +1095,22 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         case "recv":
             if let oldRecv = self.lastSeenRecv {
                 if let newRecv = info.seq, oldRecv < newRecv {
-                    self.presenter?.reloadMessages(fromSeqId: oldRecv + 1, toSeqId: newRecv)
+                    self.presenter?.reloadMessages(fromSeqId: oldRecv + 1, toSeqId: newRecv, source: topic.flatMap { chatSource(for: $0) })
                     self.lastSeenRecv = newRecv
                 }
             } else {
                 self.lastSeenRead = info.seq
-                self.presenter?.reloadAllMessages()
+                self.presenter?.reloadAllMessages(source: topic.flatMap { chatSource(for: $0) })
             }
         case "read":
             if let oldRead = self.lastSeenRead {
                 if let newRead = info.seq, oldRead < newRead {
-                    self.presenter?.reloadMessages(fromSeqId: oldRead + 1, toSeqId: newRead)
+                    self.presenter?.reloadMessages(fromSeqId: oldRead + 1, toSeqId: newRead, source: topic.flatMap { chatSource(for: $0) })
                     self.lastSeenRead = newRead
                 }
             } else {
                 self.lastSeenRead = info.seq
-                self.presenter?.reloadAllMessages()
+                self.presenter?.reloadAllMessages(source: topic.flatMap { chatSource(for: $0) })
             }
         default:
             break
@@ -1067,7 +1122,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             self.newSubsAvailable = false
             // Reload messages so we can correctly display messages from
             // new users (subscriptions).
-            self.presenter?.reloadAllMessages()
+            self.presenter?.reloadAllMessages(source: topic.flatMap { chatSource(for: $0) })
         }
     }
     override func onMetaDesc(desc: Description<TheCard, PrivateType>) {
@@ -1087,7 +1142,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
     }
     override func onMetaAux(aux: [String:JSONValue]) {
         guard let topic = topic else { return }
-        self.presenter?.displayPinnedMessages(pins: topic.pinned, selected: -1)
+        self.presenter?.displayPinnedMessages(pins: topic.pinned, selected: -1, source: chatSource(for: topic))
     }
 
     override func onAllMessagesReceived(count: Int) {

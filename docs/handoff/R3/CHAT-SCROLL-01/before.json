@@ -1,0 +1,51 @@
+{
+  "head": "0a54fcf1ecb35a6f3511815ed59c7750f692ea2d",
+  "native_red": "NOT_RUN Windows",
+  "sources": [
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "sha256": "6f492f506a61ca4c3bdcfa0de418e3b226b4fdd0420f5e2efd05bfcc62f1fd04",
+      "blob": "c8299244acf44ada8281290f69d01542bfdc6b94"
+    },
+    {
+      "path": "Tinodios/MessageViewController+MessageDisplayLogic.swift",
+      "sha256": "55e0c02d592e6c12bb76a4deb311f59e5ccb3796f272f27956076ef9f8a588fd",
+      "blob": "2f017606f5293c6766e2bf28c109bc2abce514dd"
+    },
+    {
+      "path": "Tinodios/MessagePresenter.swift",
+      "sha256": "12ca9a5f9dbef018dfbe01043908b40b0b68f696333b1c16d0f1ce75bac774bd",
+      "blob": "41211bffafacb1a6ff75fee790f2de751efec73b"
+    },
+    {
+      "path": "Tinodios/MessageInteractor.swift",
+      "sha256": "3ae645e90aec3a43f287348d517d778cc18c8593f5bb0f3afda1fd10e93ea37d",
+      "blob": "d133ad68bca0d1a337d2ddf6f6cb15306c50f43f"
+    },
+    {
+      "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+      "sha256": "6b6f52eefab42566c78cb339b1c05171d7e6c4a3cf11b6628158b17f3569022e",
+      "blob": "0051e4f76ba54f606526998e971cd88e82488075"
+    },
+    {
+      "path": "Tinodios/FilePreviewController.swift",
+      "sha256": "e022774a34079508be26de7cda06aad6f68328753c7fedff2fe459c4c240dca0",
+      "blob": "0af7b279f960484acac586573ddccbd8707111ec"
+    },
+    {
+      "path": "Tinodios/ImagePreviewController.swift",
+      "sha256": "4960cd096b680fd2e8f4dd7984773d90a5c0e4e0740f0e8ecb86b11d49ed2e46",
+      "blob": "56cf381dd6ef43a36cefaf357af2b2aa52b3e0b6"
+    },
+    {
+      "path": "Tinodios/VideoPreviewController.swift",
+      "sha256": "67430aaf03f9488b1f07fb49f8a8b5b26b837490a0b7b6f7ece205a3a9754634",
+      "blob": "e9aacc51a75c3e051a8cdb2da9c82c2dc8a4ecb8"
+    },
+    {
+      "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+      "sha256": "33a165997aa01189170bc53594dd03a6132b09832dffcd0a7e6d6ef099406724",
+      "blob": "6f5947513f4f41d66c2b5cd0b1a633732eab996c"
+    }
+  ]
+}

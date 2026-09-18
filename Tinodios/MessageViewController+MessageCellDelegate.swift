@@ -767,6 +767,7 @@ extension MessageViewController: MessageCellDelegate {
     }
 
     func scrollToAndAnimate(seqId: Int) {
+        invalidateChatDisplayIntent()
         guard let index = messageSeqIdIndex[seqId] else { return }
         let path = IndexPath(item: index, section: 0)
         if let cell = collectionView.cellForItem(at: path) as? MessageCell {

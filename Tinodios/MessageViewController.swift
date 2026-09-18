@@ -10,6 +10,55 @@ import UIKit
 import TinodeSDK
 import TinodiosDB
 
+// App-only display metadata. Never serialized into message headers or storage.
+struct ChatDisplaySource: Equatable {
+    let page: UUID
+    let topic: DefaultComTopic
+    init(page: UUID, topic: DefaultComTopic) {
+        self.page = page
+        self.topic = topic
+    }
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.page == rhs.page && lhs.topic === rhs.topic }
+}
+
+struct ChatSubmissionDisplayTicket {
+    let source: ChatDisplaySource
+    let interaction: UInt64
+    let submission: UInt64
+    let editing: Bool
+}
+
+enum ChatDisplayIntent {
+    case passive
+    case preserve
+    case submission(ChatSubmissionDisplayTicket)
+    static let notificationKey = "claw.chat.displayIntent"
+    var source: ChatDisplaySource? {
+        if case .submission(let ticket) = self { return ticket.source }
+        return nil
+    }
+    var preservesReadingPosition: Bool {
+        switch self {
+        case .preserve: return true
+        case .submission(let ticket): return ticket.editing
+        case .passive: return false
+        }
+    }
+}
+
+struct ChatViewportAnchor {
+    let dbID: Int64
+    let seq: Int
+    let offset: CGFloat
+}
+
+struct ChatViewportSnapshot {
+    let anchors: [ChatViewportAnchor]
+    let offset: CGPoint
+    let atBottom: Bool
+    let interaction: UInt64
+}
+
 enum MessageBubbleLayoutPolicy {
     // Content-sized bubbles with a conservative ceiling for long messages.
     // This keeps short messages compact and lets Dynamic Type wrap naturally.
@@ -37,13 +86,13 @@ protocol MessageDisplayLogic: AnyObject {
     func updateTitleBar(pub: TheCard?, online: Bool?, deleted: Bool)
     func setOnline(online: Bool?)
     func runTypingAnimation()
-    func displayChatMessages(messages: [StoredMessage], _ scrollToMostRecentMessage: Bool)
-    func reloadAllMessages()
-    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int)
+    func displayChatMessages(messages: [StoredMessage], source: ChatDisplaySource, intent: ChatDisplayIntent)
+    func reloadAllMessages(source: ChatDisplaySource?)
+    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int, source: ChatDisplaySource?)
     func updateProgress(forMsgId msgId: Int64, progress: Float)
     func applyTopicPermissions(withError: Error?)
-    func displayPinnedMessages(pins: [Int], selected: Int)
-    func reloadPinned(forSeq: Int)
+    func displayPinnedMessages(pins: [Int], selected: Int, source: ChatDisplaySource?)
+    func reloadPinned(forSeq: Int, source: ChatDisplaySource?)
     func endRefresh()
     func dismissVC()
     // Display or dismiss preview (e.g. reply preview) in the send message bar.
@@ -59,6 +108,18 @@ protocol PendingMessagePreviewDelegate: AnyObject {
 }
 
 class MessageViewController: UIViewController {
+    let chatPageID = UUID()
+    var chatInteractionRevision: UInt64 = 0
+    var chatSubmissionRevision: UInt64 = 0
+    var chatConsumedSubmission: UInt64?
+    var chatPresentedNonempty = false
+    var chatEmptyFollowLatest = false
+    var chatPageRetired = false
+    var chatProgrammaticDepth = 0
+    var chatLastObservedOffset: CGPoint?
+    var chatPresentationRunning = false
+    var chatPresentationQueue: [(@escaping () -> Void) -> Void] = []
+
     // Other controllers may send these notification to MessageViewController which will execute corresponding send message action.
     public static let kNotificationSendAttachment = "SendAttachment"
 
@@ -200,6 +261,7 @@ class MessageViewController: UIViewController {
     /// Button [GO to latest message].
     private weak var goToLatestButton: UIButton!
     private var goToLatestButtonBottomAnchor: NSLayoutConstraint!
+    private var goToLatestButtonMinimumHeight: NSLayoutConstraint!
     var bulkSelectionMode = false
     var selectedBulkMessageSeqIds = Set<Int>()
     private var bulkSelectionOriginalTitle: String?
@@ -343,7 +405,7 @@ class MessageViewController: UIViewController {
         self.imagePicker = ImagePicker(presentationController: self, delegate: self, editable: false, allowVideo: true)
 
         let interactor = MessageInteractor()
-        let presenter = MessagePresenter()
+        let presenter = MessagePresenter(pageID: chatPageID)
         interactor.presenter = presenter
         presenter.viewController = self
 
@@ -379,7 +441,7 @@ class MessageViewController: UIViewController {
         self.messages.forEach { ($0 as? StoredMessage)?.cachedContent = nil }
         // Force a full redraw so the view can readjust the messages
         // in the view for the new screen dimensions.
-        self.collectionView?.reloadDataAndKeepOffset()
+        reloadChatLayoutPreservingViewport()
     }
 
     // MARK: lifecycle
@@ -572,11 +634,14 @@ class MessageViewController: UIViewController {
         buttonGoToLatest.backgroundColor = ClawTheme.surface
         buttonGoToLatest.layer.borderWidth = 1
         buttonGoToLatest.layer.borderColor = ClawTheme.border.cgColor
-        ClawTheme.styleIconButton(
-            buttonGoToLatest,
-            symbolName: "chevron.down",
-            pointSize: 16,
-            tintColor: ClawTheme.primary)
+        buttonGoToLatest.setTitle("回到最新消息", for: .normal)
+        buttonGoToLatest.accessibilityLabel = "回到最新消息"
+        buttonGoToLatest.setTitleColor(ClawTheme.primary, for: .normal)
+        buttonGoToLatest.titleLabel?.font = .preferredFont(forTextStyle: .callout)
+        buttonGoToLatest.titleLabel?.adjustsFontForContentSizeCategory = true
+        buttonGoToLatest.titleLabel?.numberOfLines = 0
+        buttonGoToLatest.titleLabel?.textAlignment = .center
+        buttonGoToLatest.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
         buttonGoToLatest.layer.cornerRadius = 22
         buttonGoToLatest.layer.shadowColor = UIColor.black.cgColor
         buttonGoToLatest.layer.shadowOpacity = 0.12
@@ -591,9 +656,11 @@ class MessageViewController: UIViewController {
         // Button on the bottom-right.
         self.goToLatestButton.translatesAutoresizingMaskIntoConstraints = false
         self.goToLatestButtonBottomAnchor = self.goToLatestButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -(inputAccessoryView?.frame.height ?? 0) - 16)
+        self.goToLatestButtonMinimumHeight = self.goToLatestButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44)
         NSLayoutConstraint.activate([
-            self.goToLatestButton.widthAnchor.constraint(equalToConstant: 44.0),
-            self.goToLatestButton.heightAnchor.constraint(equalToConstant: 44.0),
+            self.goToLatestButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 44.0),
+            self.goToLatestButtonMinimumHeight,
+            self.goToLatestButton.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 8),
             self.goToLatestButtonBottomAnchor,
             self.goToLatestButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -8)])
     }
@@ -631,7 +698,13 @@ class MessageViewController: UIViewController {
         }
 
         self.collectionViewBottomAnchor.constant = -(inputAccessoryView?.frame.height ?? 0)
-        self.goToLatestButtonBottomAnchor.constant = -(inputAccessoryView?.frame.height ?? 0) - 16
+        let accessoryHeight = inputAccessoryView?.frame.height ?? 0
+        self.goToLatestButtonBottomAnchor.constant = -accessoryHeight - 16 - (accessoryHeight > 0 ? 0 : view.safeAreaInsets.bottom)
+        if let title = goToLatestButton.titleLabel {
+            let width = max(1, view.bounds.width - view.safeAreaInsets.left - view.safeAreaInsets.right - 48)
+            title.preferredMaxLayoutWidth = width
+            goToLatestButtonMinimumHeight.constant = max(44, title.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height + 20)
+        }
 
         // Otherwise setting contentInset after viewDidAppear will be animated.
         if isInitialLayout {
@@ -673,25 +746,33 @@ class MessageViewController: UIViewController {
     }
 
     @objc func goToLastMessage() {
-        collectionView.scrollToBottom(animated: true)
+        invalidateChatDisplayIntent()
+        chatEmptyFollowLatest = true
+        guard let collectionView = collectionView else { return }
+        withChatProgrammaticLayout {
+            collectionView.layoutIfNeeded()
+            collectionView.setContentOffset(CGPoint(x: collectionView.contentOffset.x, y: chatMaximumOffset), animated: false)
+        }
+        updateChatLatestButton()
     }
 
     @objc func sendAttachment(notification: NSNotification) {
+        let displayIntent = notification.userInfo?[ChatDisplayIntent.notificationKey] as? ChatDisplayIntent ?? .passive
         // Attachment size less base64 expansion and overhead.
         let maxInbandSize = self.maxInbandSize
         switch notification.object {
         case let content as FilePreviewContent:
             if content.data.count > maxInbandSize {
-                self.interactor?.uploadFile(UploadDef(filename: content.fileName, mimeType: content.contentType, data: content.data))
+                self.interactor?.uploadFile(UploadDef(filename: content.fileName, mimeType: content.contentType, data: content.data), displayIntent: displayIntent)
             } else {
-                _ = interactor?.sendMessage(content: Drafty().attachFile(mime: content.contentType, bits: content.data, fname: content.fileName))
+                _ = interactor?.sendMessage(content: Drafty().attachFile(mime: content.contentType, bits: content.data, fname: content.fileName), displayIntent: displayIntent)
             }
         case let content as ImagePreviewContent:
             guard case let ImagePreviewContent.ImageContent.uiimage(image) = content.imgContent else { return }
 
             guard let data = image.pixelData(forMimeType: content.contentType) else { return }
             if data.count > maxInbandSize {
-                self.interactor?.uploadImage(UploadDef(caption: content.caption, filename: content.fileName, mimeType: content.contentType, image: image, data: data, width: image.size.width * image.scale, height: image.size.height * image.scale))
+                self.interactor?.uploadImage(UploadDef(caption: content.caption, filename: content.fileName, mimeType: content.contentType, image: image, data: data, width: image.size.width * image.scale, height: image.size.height * image.scale), displayIntent: displayIntent)
             } else {
                 let imageWidth = max(content.width ?? Int(image.size.width * image.scale), 1)
                 let imageHeight = max(content.height ?? Int(image.size.height * image.scale), 1)
@@ -699,16 +780,16 @@ class MessageViewController: UIViewController {
                 if let caption = content.caption {
                     _ = drafty.appendLineBreak().append(Drafty(plainText: caption))
                 }
-                _ = interactor?.sendMessage(content: drafty)
+                _ = interactor?.sendMessage(content: drafty, displayIntent: displayIntent)
             }
         case let content as VideoPreviewContent:
-            sendVideoAttachment(withContent: content)
+            sendVideoAttachment(withContent: content, displayIntent: displayIntent)
         default:
             break
         }
     }
 
-    private func sendVideoAttachment(withContent content: VideoPreviewContent) {
+    private func sendVideoAttachment(withContent content: VideoPreviewContent, displayIntent: ChatDisplayIntent) {
         guard case let VideoPreviewContent.VideoSource.local(url, poster) = content.videoSrc else { return }
         let maxAttachmentSize = Cache.tinode.getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: MessageViewController.kMaxAttachmentSize)
         do {
@@ -763,12 +844,12 @@ class MessageViewController: UIViewController {
                                                                width: CGFloat(videoWidth),
                                                                height: CGFloat(videoHeight),
                                                                duration: duration, preview: preview, previewMime: previewMime,
-                                                               previewOutOfBand: previewSize > Constants.kMaxPosterSize))
+                                                               previewOutOfBand: previewSize > Constants.kMaxPosterSize), displayIntent: displayIntent)
                     } else if let drafty = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: data, refurl: nil, duration: duration, width: videoWidth, height: videoHeight, fname: fileName, size: data.count, preMime: previewMime, preview: preview, previewRef: nil) {
                         if let caption = content.caption {
                             _ = drafty.appendLineBreak().append(Drafty(plainText: caption))
                         }
-                        _ = self.interactor?.sendMessage(content: drafty)
+                        _ = self.interactor?.sendMessage(content: drafty, displayIntent: displayIntent)
                     }
                 }
             } catch {
@@ -782,6 +863,8 @@ class MessageViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        invalidateChatDisplayIntent()
+        if isMovingFromParent || isBeingDismissed { chatPageRetired = true }
         voicePageActive = false
         discardVoiceRecording()
     }
@@ -883,6 +966,7 @@ class MessageViewController: UIViewController {
         guard voiceRecorder === recorder, voiceScopeIsCurrent(), voiceTopicName == topicName,
               UIApplication.shared.applicationState == .active, let owner = voiceOwner,
               let uid = voiceUID, let generation = voiceGeneration, let name = voiceTopicName else { return }
+        let displayIntent = captureChatSubmissionIntent()
         stopRecordingPlayback(discard: true)
         do {
             let (recording, data) = try recorder.prepareSubmission(minimumDuration: Constants.kMinDuration)
@@ -890,7 +974,7 @@ class MessageViewController: UIViewController {
             let def = UploadDef(mimeType: Utils.mimeForUrl(url: recording.url, ifMissing: "audio/m4a"),
                                 data: data, duration: recording.duration, preview: recording.preview)
             guard interactor?.submitRecordedAudio(def, owner: owner, uid: uid,
-                    generation: generation, topicName: name) == true else {
+                    generation: generation, topicName: name, displayIntent: displayIntent) == true else {
                 voiceUI(recorder) { UiUtils.showToast(message: "录音尚未提交，请检查当前账号与会话后重试。") }
                 return
             }
@@ -920,14 +1004,17 @@ class MessageViewController: UIViewController {
             let destinationVC = segue.destination as! ImagePreviewController
             destinationVC.previewContent = (sender as! ImagePreviewContent)
             destinationVC.replyPreviewDelegate = self
+            destinationVC.captureDisplayIntent = chatPreviewIntentCapture(for: destinationVC)
         case "ShowFilePreview":
             let destinationVC = segue.destination as! FilePreviewController
             destinationVC.previewContent = (sender as! FilePreviewContent)
             destinationVC.replyPreviewDelegate = self
+            destinationVC.captureDisplayIntent = chatPreviewIntentCapture(for: destinationVC)
         case "ShowVideoPreview":
             let destinationVC = segue.destination as! VideoPreviewController
             destinationVC.previewContent = (sender as! VideoPreviewContent)
             destinationVC.replyPreviewDelegate = self
+            destinationVC.captureDisplayIntent = chatPreviewIntentCapture(for: destinationVC)
         case "Messages2Call":
             let destinationVC = segue.destination as! CallViewController
             if let call = sender as? CallManager.Call {
@@ -1523,14 +1610,180 @@ extension MessageViewController: ForwardToDelegate {
     }
 }
 
-extension MessageViewController: UICollectionViewDelegate {
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let isHidden = scrollView.contentOffset.y + scrollView.frame.size.height + 40 >= scrollView.contentSize.height
-        if self.goToLatestButton.isHidden != isHidden {
-            UIView.transition(with: self.goToLatestButton, duration: 0.4, options: .transitionCrossDissolve, animations: {
-                self.goToLatestButton.isHidden = isHidden
-            }, completion: nil)
+extension MessageViewController {
+    var chatDisplaySource: ChatDisplaySource? {
+        guard !chatPageRetired, let topic = topic else { return nil }
+        return ChatDisplaySource(page: chatPageID, topic: topic)
+    }
+
+    func invalidateChatDisplayIntent() {
+        assert(Thread.isMainThread)
+        chatInteractionRevision &+= 1
+        if messages.isEmpty { chatEmptyFollowLatest = false }
+    }
+
+    func captureChatSubmissionIntent() -> ChatDisplayIntent {
+        assert(Thread.isMainThread)
+        chatSubmissionRevision &+= 1
+        let editing: Bool
+        if case .edit? = interactor?.pendingMessage { editing = true } else { editing = false }
+        guard let source = chatDisplaySource else { return .preserve }
+        return .submission(ChatSubmissionDisplayTicket(source: source,
+            interaction: chatInteractionRevision, submission: chatSubmissionRevision, editing: editing))
+    }
+
+    func chatPreviewIntentCapture(for preview: UIViewController) -> () -> ChatDisplayIntent {
+        let originalSource = chatDisplaySource
+        return { [weak self, weak preview] in
+            // The chat is normally offscreen while its preview is on top. This
+            // is an ownership check for UI intent, not a send authorization gate.
+            guard let self = self, let preview = preview,
+                  originalSource != nil, self.chatDisplaySource == originalSource,
+                  let stack = self.navigationController?.viewControllers,
+                  stack.contains(where: { $0 === self }), stack.last === preview else { return .preserve }
+            return self.captureChatSubmissionIntent()
         }
+    }
+
+    var chatMaximumOffset: CGFloat {
+        guard let list = collectionView else { return 0 }
+        return max(-list.adjustedContentInset.top,
+                   list.contentSize.height - list.bounds.height + list.adjustedContentInset.bottom)
+    }
+
+    func updateChatLatestButton() {
+        guard let list = collectionView, let button = goToLatestButton else { return }
+        button.isHidden = list.contentOffset.y >= chatMaximumOffset - 40
+    }
+
+    func withChatProgrammaticLayout(_ operation: () -> Void) {
+        chatProgrammaticDepth += 1
+        defer {
+            chatLastObservedOffset = collectionView?.contentOffset
+            chatProgrammaticDepth -= 1
+        }
+        operation()
+    }
+
+    func captureChatViewport() -> ChatViewportSnapshot {
+        guard let list = collectionView else {
+            return ChatViewportSnapshot(anchors: [], offset: .zero, atBottom: false,
+                                        interaction: chatInteractionRevision)
+        }
+        let top = list.contentOffset.y + list.adjustedContentInset.top
+        let bottom = list.contentOffset.y + list.bounds.height - list.adjustedContentInset.bottom
+        let attributes = list.indexPathsForVisibleItems.compactMap {
+            list.layoutAttributesForItem(at: $0)
+        }.filter { $0.indexPath.item < messages.count && $0.frame.maxY > top && $0.frame.minY < bottom }
+            .sorted { $0.frame.minY < $1.frame.minY }
+        let anchors = attributes.map { attribute -> ChatViewportAnchor in
+            let message = messages[attribute.indexPath.item]
+            return ChatViewportAnchor(dbID: message.msgId, seq: message.seqId,
+                                      offset: attribute.frame.minY - top)
+        }
+        let atBottom = messages.isEmpty
+            ? (chatPresentedNonempty ? chatEmptyFollowLatest : chatInteractionRevision == 0 || chatEmptyFollowLatest)
+            : list.contentOffset.y >= chatMaximumOffset - 40
+        return ChatViewportSnapshot(anchors: anchors, offset: list.contentOffset,
+            atBottom: atBottom, interaction: chatInteractionRevision)
+    }
+
+    func finishChatViewport(_ snapshot: ChatViewportSnapshot, source: ChatDisplaySource,
+                            intent: ChatDisplayIntent, firstNonempty: Bool = false) {
+        guard chatDisplaySource == source, snapshot.interaction == chatInteractionRevision,
+              let list = collectionView else { return }
+        withChatProgrammaticLayout {
+            list.layoutIfNeeded()
+            var latest = false
+            switch intent {
+            case .preserve: break
+            case .passive:
+                latest = snapshot.atBottom || (firstNonempty && chatInteractionRevision == 0)
+            case .submission(let ticket):
+                if ticket.editing { break }
+                if ticket.source == source, ticket.interaction == chatInteractionRevision,
+                   ticket.submission == chatSubmissionRevision, chatConsumedSubmission != ticket.submission,
+                   !messages.isEmpty {
+                    chatConsumedSubmission = ticket.submission
+                    latest = true
+                } else {
+                    latest = snapshot.atBottom
+                }
+            }
+            var y = snapshot.offset.y
+            if latest {
+                y = chatMaximumOffset
+            } else {
+                for anchor in snapshot.anchors {
+                    let byID = anchor.dbID > 0 ? messages.firstIndex { $0.msgId == anchor.dbID } : nil
+                    let index = byID ?? (anchor.seq > 0 ? messages.firstIndex { $0.seqId == anchor.seq } : nil)
+                    if let index = index, let attributes = list.layoutAttributesForItem(at: IndexPath(item: index, section: 0)) {
+                        y = attributes.frame.minY - anchor.offset - list.adjustedContentInset.top
+                        break
+                    }
+                }
+            }
+            y = min(chatMaximumOffset, max(-list.adjustedContentInset.top, y))
+            list.setContentOffset(CGPoint(x: snapshot.offset.x, y: y), animated: false)
+        }
+        updateChatLatestButton()
+    }
+
+    // Only UIKit work is serialized. Later snapshots do not replace the array
+    // until both phases of the currently presented batch have completed.
+    func enqueueChatPresentation(_ operation: @escaping (@escaping () -> Void) -> Void) {
+        assert(Thread.isMainThread)
+        chatPresentationQueue.append(operation)
+        drainChatPresentations()
+    }
+
+    func drainChatPresentations() {
+        guard !chatPresentationRunning, !chatPresentationQueue.isEmpty else { return }
+        chatPresentationRunning = true
+        let operation = chatPresentationQueue.removeFirst()
+        operation { [weak self] in
+            guard let self = self else { return }
+            self.chatPresentationRunning = false
+            self.drainChatPresentations()
+        }
+    }
+
+    func reloadChatLayoutPreservingViewport(reloadRange: ClosedRange<Int>? = nil, _ changes: (() -> Void)? = nil) {
+        guard let source = chatDisplaySource else { return }
+        enqueueChatPresentation { [weak self] done in
+            guard let self = self, self.chatDisplaySource == source, let list = self.collectionView else {
+                done(); return
+            }
+            let viewport = self.captureChatViewport()
+            self.withChatProgrammaticLayout {
+                changes?()
+                if let range = reloadRange {
+                    let paths = self.messageSeqIdIndex.filter { range.contains($0.key) }.map { IndexPath(item: $0.value, section: 0) }
+                    list.reloadItems(at: paths)
+                } else {
+                    list.reloadSections(IndexSet(integer: 0))
+                }
+                list.layoutIfNeeded()
+            }
+            self.finishChatViewport(viewport, source: source, intent: .preserve)
+            done()
+        }
+    }
+}
+
+extension MessageViewController: UICollectionViewDelegate {
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        invalidateChatDisplayIntent()
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        if chatProgrammaticDepth == 0, let previous = chatLastObservedOffset,
+           previous != scrollView.contentOffset {
+            // Includes accessibility and other unattributed viewport movement.
+            invalidateChatDisplayIntent()
+        }
+        chatLastObservedOffset = scrollView.contentOffset
+        updateChatLatestButton()
     }
 
     func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {

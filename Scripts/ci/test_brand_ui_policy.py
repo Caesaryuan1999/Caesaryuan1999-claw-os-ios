@@ -124,7 +124,12 @@ def main() -> None:
 
     message = MESSAGE.read_text(encoding="utf-8")
     assert 'ClawTheme.symbol("phone.fill"' in message
-    assert 'symbolName: "chevron.down"' in message
+    assert 'buttonGoToLatest.setTitle("回到最新消息", for: .normal)' in message
+    assert 'buttonGoToLatest.accessibilityLabel = "回到最新消息"' in message
+    assert 'widthAnchor.constraint(greaterThanOrEqualToConstant: 44.0)' in message
+    assert 'heightAnchor.constraint(greaterThanOrEqualToConstant: 44)' in message
+    assert 'view.safeAreaLayoutGuide.leadingAnchor' in message
+    assert 'adjustsFontForContentSizeCategory = true' in message
     assert 'title: "语音通话"' in message
     assert 'title: "视频通话"' in message
 

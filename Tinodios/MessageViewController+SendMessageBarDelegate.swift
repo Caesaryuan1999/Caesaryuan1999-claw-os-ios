@@ -18,7 +18,8 @@ extension MessageViewController: SendMessageBarDelegate {
     static let kMaxAttachmentSize: Int64 = 1 << 23
 
     func sendMessageBar(sendText: String) {
-        interactor?.sendMessage(content: Drafty(content: sendText))
+        let displayIntent = captureChatSubmissionIntent()
+        interactor?.sendMessage(content: Drafty(content: sendText), displayIntent: displayIntent)
     }
 
     func sendMessageBar(attachment: MessageAttachmentAction) {

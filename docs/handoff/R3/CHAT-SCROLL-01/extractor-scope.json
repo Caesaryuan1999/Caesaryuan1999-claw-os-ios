@@ -1,0 +1,10 @@
+{
+  "existingHarnessSHA256": "11da9dfc9ffe6d234926ec9086708831dd06d57ac01eda5decfcba4425a76fb8",
+  "generatedAudioSHA256": "62ff08d5df5b0cf45b0f85a17a6e6a137fd6cb67d95e946db8a39b00810110b5",
+  "audio": "Actual current completion/initial cases + unchanged complete Drafty helper; four actual extractor Git cases",
+  "reset": "Unchanged SendMessageBar capture/reset extractor; no new display types",
+  "recorder": "Actual MediaRecorder source in unit target unchanged; does not depend on MessageInteractor",
+  "localDelete": "Actual SDK/DB/ClawSecondaryUIState sources unchanged; no extraction of MessageInteractor",
+  "fullInteractor": "Only App sources, compiled with MessageVC metadata; new ChatScrollTests imports App",
+  "swiftExecution": "NOT_RUN Windows"
+}

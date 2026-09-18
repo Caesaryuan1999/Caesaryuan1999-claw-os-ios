@@ -1,0 +1,110 @@
+{
+  "level": "Windows source/wiring only; Swift/UIKit NOT_RUN",
+  "checks": [
+    "nine production files only",
+    "SDK DB recorder helpers XIB frozen",
+    "automatic terminal uses no delayed bottom helper",
+    "source fixed before cache queue",
+    "two phases serialized",
+    "quote pin hook only delta",
+    "capture before prepareSubmission",
+    "FilePreviewController.swift immutable confirm before work",
+    "ImagePreviewController.swift immutable confirm before work",
+    "VideoPreviewController.swift immutable confirm before work",
+    "video read retains original UI intent",
+    "draftyAudio business body unchanged",
+    "draftyImage business body unchanged",
+    "draftyVideo business body unchanged",
+    "draftyFile business body unchanged",
+    "CI only one selector addition",
+    "ten native methods without skip",
+    "original native tests byte stable",
+    "real consumer and UIKit coverage",
+    "source wired to existing App hosted target"
+  ],
+  "nativeExpected": {
+    "existing": 232,
+    "newChatScroll": 10,
+    "total": 242,
+    "navigationSeparate": 3
+  },
+  "methods": [
+    "testLargePassiveBatchPreservesHistoryAndBottomFollows",
+    "testPrependHeightChangeAndDeletedAnchorUseRealAttributes",
+    "testOverlappingRealTwoPhaseBatchesDoNotReplaceActiveArray",
+    "testUserMovementBetweenBatchPhasesInvalidatesSubmission",
+    "testNewSubmissionConsumedOnceThenAckAndUnknownScrollPreserve",
+    "testEditCaptureAndPinnedLocalReloadKeepHistory",
+    "testQuoteNoOpAndOriginalPageSourceRejectLatePresentation",
+    "testPreviewButtonCapturesBeforeHandoffAndLateWorkCannotMintTicket",
+    "testFirstNonemptyOnlyOnceAndZeroSequenceDraftsKeepIdentity",
+    "testLatestButtonIsRealVisibleAdaptiveAndInvalidatesOldRestore"
+  ],
+  "sources": [
+    {
+      "path": "Tinodios/FilePreviewController.swift",
+      "sha256": "fb6831a53255b5da84cd04a602d3f074968ac7d75b99dd2fd1d11ba943110168",
+      "gitBlob": "9e865ce00e0962f2fec732c95bd4c8d8da22c272"
+    },
+    {
+      "path": "Tinodios/ImagePreviewController.swift",
+      "sha256": "f362c12f903a800811849c7745e4cc8e1433f9c0d89fc40f04c9830cbfd38ac1",
+      "gitBlob": "16c023be1991aac5ba1686eeca7b9931e97052d2"
+    },
+    {
+      "path": "Tinodios/MessageInteractor.swift",
+      "sha256": "041cc693bae25d2b511f1ecad4e34c28ead59c0646f52aa68e1f9183b27b4ee2",
+      "gitBlob": "df66a0f28e14760034fb9c4805adb361b38ee998"
+    },
+    {
+      "path": "Tinodios/MessagePresenter.swift",
+      "sha256": "937cdca5ee208230ce712cf531c38cf00a1f64688b7e5200e32d5411869a5d50",
+      "gitBlob": "9e8a1de554bb7a0941bd2b457fab2a4d499aa1e7"
+    },
+    {
+      "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+      "sha256": "f332e16cba9cf2d3bac4ff5d651cd4cef5b58c663a73299a4ab00d5b783f8c08",
+      "gitBlob": "2fd1a394813b9e4e6358a2ef6849c2236b6eeefc"
+    },
+    {
+      "path": "Tinodios/MessageViewController+MessageDisplayLogic.swift",
+      "sha256": "3f7a0627cde6c33d8ce178f458b563332525b238c61b6c1af41fd836da002556",
+      "gitBlob": "d72c82c04e2fa33912ac63f62f1c6f4c88e36aca"
+    },
+    {
+      "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+      "sha256": "fd77fdfdbc78e3505b2408093288690b548403f07603cc5cdb9a2c8665b6651f",
+      "gitBlob": "7a186f8cbcb26447c3db7d03bd57044d430f8ffa"
+    },
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "sha256": "25f97fa84f132889ec63dfedae6f4f61d98ec6620d84955101a2fa70cbc24c54",
+      "gitBlob": "417cae6a5812dda2e0f112677b402b6383d65802"
+    },
+    {
+      "path": "Tinodios/VideoPreviewController.swift",
+      "sha256": "b65bfdacdd34f45f42edd7402b2faa188f07bab51fe0f770484d7ade5738982f",
+      "gitBlob": "42b6b6eb264263c4d5a293409c967a8aaba2b1f1"
+    },
+    {
+      "path": "TinodiosUITests/ChatScrollTests.swift",
+      "sha256": "20f9c521e256d3411ce1e0cbe8d4490c625abb824d3c94e237fd15d288fa339c",
+      "gitBlob": "359543d9cf74b86d142642b8c68629db7fb5a34a"
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "sha256": "23e2657c09f0f1abf977df359b8cfea633b3b63cd153892935cc6cd5e6cd4dd3",
+      "gitBlob": "9f79c03c6bd48526d085a181492ea296584d4ec8"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "sha256": "6566540e4fdcd4cc81f342c34a2675016e42c0714b186d4c61cb589cd9e08d99",
+      "gitBlob": "3cbcfb58714dc8f6f6d327898bfad003d6837be6"
+    },
+    {
+      "path": "Scripts/ci/test_brand_ui_policy.py",
+      "sha256": "360ffbdbfe53689ae616eaf4fe26968fcb4ce4932e67c0d53c10288a037a3972",
+      "gitBlob": "138dd3b1145aa34993a62b6370d264ef4b421fb7"
+    }
+  ]
+}

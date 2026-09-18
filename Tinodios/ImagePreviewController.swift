@@ -33,6 +33,7 @@ class ImagePreviewController: UIViewController, UIScrollViewDelegate {
     @IBOutlet weak var imageView: UIImageView!
 
     var previewContent: ImagePreviewContent?
+    var captureDisplayIntent: (() -> ChatDisplayIntent)?
     var replyPreviewDelegate: PendingMessagePreviewDelegate?
     private let mediaState = ClawMediaPreviewState()
     private var mediaOwner: Tinode?
@@ -278,6 +279,7 @@ extension ImagePreviewController: SendImageBarDelegate {
     func sendImageBar(caption: String?) {
         guard let originalContent = self.previewContent else { return }
         guard case let .uiimage(originalImage) = originalContent.imgContent else { return }
+        let displayIntent = captureDisplayIntent?() ?? .passive
 
         let mimeType = originalContent.contentType == "image/png" ?  "image/png" : "image/jpeg"
         // Ensure image linear dimensions are under the limits.
@@ -295,7 +297,8 @@ extension ImagePreviewController: SendImageBarDelegate {
         )
 
         // This notification is received by the MessageViewController.
-        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content)
+        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content,
+            userInfo: [ChatDisplayIntent.notificationKey: displayIntent])
         // Return to MessageViewController.
         navigationController?.popViewController(animated: true)
     }

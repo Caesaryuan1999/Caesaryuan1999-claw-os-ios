@@ -93,6 +93,7 @@ class VideoPreviewController: UIViewController {
             }
         }
     }
+    var captureDisplayIntent: (() -> ChatDisplayIntent)?
     var replyPreviewDelegate: PendingMessagePreviewDelegate?
 
     var duration: Int = 0 {
@@ -712,6 +713,7 @@ extension VideoPreviewController: SendImageBarDelegate {
               let media = player.media,
               !didSubmitVideo else { return }
 
+        let displayIntent = captureDisplayIntent?() ?? .passive
         didSubmitVideo = true
         sendVideoBar.sendButton.isEnabled = false
 
@@ -742,7 +744,8 @@ extension VideoPreviewController: SendImageBarDelegate {
                 )
 
                 // This notification is received by the MessageViewController.
-                NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content2)
+                NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content2,
+                    userInfo: [ChatDisplayIntent.notificationKey: displayIntent])
                 // Return to MessageViewController.
                 self.navigationController?.popViewController(animated: true)
             }
