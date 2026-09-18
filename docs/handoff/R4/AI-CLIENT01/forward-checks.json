@@ -1,0 +1,17 @@
+{
+  "base": "d21d69fcd69ecc5946df2cad134bddef98a24a96",
+  "target": "f3640f69171490c8278796e8026ae1fdb32058ed",
+  "scope": "Git source recovery only; native NOT_RUN",
+  "path_count": 13,
+  "actual_apply": true,
+  "mode_blob_all_tree_match": true,
+  "tree": "0ead04002dca1ee7b5442cd398ff79f6f15df3a9",
+  "base_index_entries": 912,
+  "target_index_entries": 921,
+  "original_index_sha256_before_after": "d3e8b7aa5a0b3e3a8bec85ca3547ce36935e2fc63f4b6b3c6360c43d7a0ce9b1",
+  "original_index_unchanged": true,
+  "safe_materialized_sha_match": 13,
+  "private_index_directory": "C:\\Users\\12287\\AppData\\Local\\Temp\\claw-ai-a-forward-_u91h9s7",
+  "patch_bytes": 127050,
+  "patch_sha256": "9022e7eeced47ca4b7a43459346d0251e73c186182e1b44b0bffdd2d1e837fe6"
+}

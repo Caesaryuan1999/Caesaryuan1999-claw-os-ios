@@ -1,0 +1,97 @@
+{
+  "base": "d21d69fcd69ecc5946df2cad134bddef98a24a96",
+  "target": "f3640f69171490c8278796e8026ae1fdb32058ed",
+  "paths": [
+    {
+      "path": "Tinodios/NewChatTabController.swift",
+      "mode": "100644",
+      "blob": "73526b937156d8048edba117cb4916e5aa075f8d",
+      "bytes": 21561,
+      "git_bytes_sha256": "b8e481645f07f052dc1d0141ab22825b5f0e9c979f290121d29f16f6a7f1cd14"
+    },
+    {
+      "path": "Tinodios/Cache.swift",
+      "mode": "100644",
+      "blob": "4154c4e96fbcc7a7ee414d4191d44943f29fb1cf",
+      "bytes": 13964,
+      "git_bytes_sha256": "419ebbb6090985f50beef222ecf50a3df6a2f2eac3d3d8ef8a91d907d06fec9e"
+    },
+    {
+      "path": "Tinodios/ClawAssistantModels.swift",
+      "mode": "100644",
+      "blob": "992a86e0671ce9a401d3c3e7be7aff72edc46568",
+      "bytes": 7619,
+      "git_bytes_sha256": "b4864191d16b3a6815ba8a9bac216c735b783d0f5f7194f14597d5b2a6eef12e"
+    },
+    {
+      "path": "Tinodios/ClawAssistantService.swift",
+      "mode": "100644",
+      "blob": "80ed55547d93ed612722ab6db9cddb18e5aed01a",
+      "bytes": 11615,
+      "git_bytes_sha256": "843094bd75d1d8d6a2eb29aacf0615aa8dfec15ead6ab73dfd4599a128156165"
+    },
+    {
+      "path": "Tinodios/ClawAssistantSession.swift",
+      "mode": "100644",
+      "blob": "de78d33069ac20c2363c0822a281dc40aa74891b",
+      "bytes": 5351,
+      "git_bytes_sha256": "dfae0bcbac257aa1bddf661e8420628e7eea582b25e2373d3030b6a39bb60a14"
+    },
+    {
+      "path": "Tinodios/ClawAssistantHistory.swift",
+      "mode": "100644",
+      "blob": "9b11585f43d2555f9cd7f6b954a591dff69d00fd",
+      "bytes": 13710,
+      "git_bytes_sha256": "e3508726b8ca3953529967c85f1d907a9797c30a5660b36aa460eef759b947c3"
+    },
+    {
+      "path": "Tinodios/ClawAssistantViewController.swift",
+      "mode": "100644",
+      "blob": "38996c22673ed297bca0ffc2c094e01f6a932646",
+      "bytes": 9309,
+      "git_bytes_sha256": "ebd77de764cf223de56f4bbe03e3eb60b40637599e212c40572dd6d05651152f"
+    },
+    {
+      "path": "Tinodios/ClawAssistantHistoryViewController.swift",
+      "mode": "100644",
+      "blob": "4e807c7e00ae2b4ee876b94f78e62f684ba52137",
+      "bytes": 9488,
+      "git_bytes_sha256": "34002439eae3f9fb1ac8688d0d7eef6b52fc5cbbb752ad55de8cf225a0345299"
+    },
+    {
+      "path": "Tinodios/ClawAssistantConversationViewController.swift",
+      "mode": "100644",
+      "blob": "4d7e5f07c8250493f79b3916177e489996cb2054",
+      "bytes": 7205,
+      "git_bytes_sha256": "1402a36b15c3905bfcbcd0a2ff84accb1b32c31192d85b8d36293388053bba87"
+    },
+    {
+      "path": "TinodiosUITests/AssistantHistoryTests.swift",
+      "mode": "100644",
+      "blob": "79df7aab88e50a1aa20001272afb6bac44878caf",
+      "bytes": 27583,
+      "git_bytes_sha256": "227f4f25d6288959c9e07dfe200df062d9ae85590f6883a2fa42f407b2f28ca4"
+    },
+    {
+      "path": "TinodiosUITests/AssistantLayoutTests.swift",
+      "mode": "100644",
+      "blob": "e7ab4b477a89df6a4ddd389563e4e7e9c684cf1c",
+      "bytes": 15830,
+      "git_bytes_sha256": "a3cd4281e763b1271d8c58023623a3ed061326a573d001a7d2c90a4e18eb1c8f"
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "mode": "100644",
+      "blob": "e651380762358579a21accd513f2dd5a552ff39e",
+      "bytes": 132844,
+      "git_bytes_sha256": "35fc108e32d51099dcef9ca994911fdab5b60c1efd056f0937ae099b8ca1fc10"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "mode": "100644",
+      "blob": "b87f5e2104b1b06fd4a81d3fb70fb8e642e4ba05",
+      "bytes": 24376,
+      "git_bytes_sha256": "bed0a3572fe756a1a444ee4c151af4c214124ca7c1a3877bc2c3669b8f59a539"
+    }
+  ]
+}

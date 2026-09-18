@@ -1,0 +1,21 @@
+{
+  "scope": "Real Xcodeproj parser; not Xcode build/link",
+  "ruby": "3.3.12",
+  "xcodeproj": "1.28.1",
+  "membership": {
+    "TinodiosVoiceLayoutTests": [
+      "AssistantHistoryTests.swift",
+      "AssistantLayoutTests.swift"
+    ],
+    "Tinodios": [
+      "ClawAssistantConversationViewController.swift",
+      "ClawAssistantHistory.swift",
+      "ClawAssistantHistoryViewController.swift",
+      "ClawAssistantModels.swift",
+      "ClawAssistantService.swift",
+      "ClawAssistantSession.swift",
+      "ClawAssistantViewController.swift"
+    ]
+  },
+  "pass": true
+}

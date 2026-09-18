@@ -1,0 +1,2215 @@
+diff --git a/Scripts/ci/verify_publish_outcomes_macos.sh b/Scripts/ci/verify_publish_outcomes_macos.sh
+index ffd8dea3b3fd7c68f7417af5c8fe3a7a4130b4d5..b87f5e2104b1b06fd4a81d3fb70fb8e642e4ba05 100644
+--- a/Scripts/ci/verify_publish_outcomes_macos.sh
++++ b/Scripts/ci/verify_publish_outcomes_macos.sh
+@@ -399,6 +399,8 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
+   -only-testing:TinodiosVoiceLayoutTests/VoiceLayoutTests \
+   -only-testing:TinodiosVoiceLayoutTests/ChatScrollTests \
+   -only-testing:TinodiosVoiceLayoutTests/CoreListLayoutTests \
++  -only-testing:TinodiosVoiceLayoutTests/AssistantHistoryTests \
++  -only-testing:TinodiosVoiceLayoutTests/AssistantLayoutTests \
+   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
+   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
+ unset TEST_RUNNER_CLAW_VLC_POD_EVIDENCE
+diff --git a/Tinodios.xcodeproj/project.pbxproj b/Tinodios.xcodeproj/project.pbxproj
+index db8c60e24e643e3465cb039f57636d9575e825f2..e651380762358579a21accd513f2dd5a552ff39e 100644
+--- a/Tinodios.xcodeproj/project.pbxproj
++++ b/Tinodios.xcodeproj/project.pbxproj
+@@ -7,6 +7,16 @@
+ 	objects = {
+ 
+ /* Begin PBXBuildFile section */
++		C1A070000000000000000002 /* ClawAssistantModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000001; };
++		C1A070000000000000000004 /* ClawAssistantService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000003; };
++		C1A070000000000000000006 /* ClawAssistantSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000005; };
++		C1A070000000000000000008 /* ClawAssistantHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000007; };
++		C1A07000000000000000000A /* ClawAssistantViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000009; };
++		C1A07000000000000000000C /* ClawAssistantHistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A07000000000000000000B; };
++		C1A07000000000000000000E /* ClawAssistantConversationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A07000000000000000000D; };
++		C1A070000000000000000010 /* AssistantHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A07000000000000000000F; };
++		C1A070000000000000000012 /* AssistantLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000011; };
++
+ 		C1A060000000000000000002 /* CoreListLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A060000000000000000001; };
+ 		C1A050000000000000000002 /* ChatScrollTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A050000000000000000001; };
+ 		0A0016E721E7236900088188 /* MessageInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0016E621E7236900088188 /* MessageInteractor.swift */; };
+@@ -268,6 +278,16 @@
+ /* End PBXCopyFilesBuildPhase section */
+ 
+ /* Begin PBXFileReference section */
++		C1A070000000000000000001 /* ClawAssistantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantModels.swift; sourceTree = "<group>"; };
++		C1A070000000000000000003 /* ClawAssistantService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantService.swift; sourceTree = "<group>"; };
++		C1A070000000000000000005 /* ClawAssistantSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantSession.swift; sourceTree = "<group>"; };
++		C1A070000000000000000007 /* ClawAssistantHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantHistory.swift; sourceTree = "<group>"; };
++		C1A070000000000000000009 /* ClawAssistantViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantViewController.swift; sourceTree = "<group>"; };
++		C1A07000000000000000000B /* ClawAssistantHistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantHistoryViewController.swift; sourceTree = "<group>"; };
++		C1A07000000000000000000D /* ClawAssistantConversationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantConversationViewController.swift; sourceTree = "<group>"; };
++		C1A07000000000000000000F /* AssistantHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantHistoryTests.swift; sourceTree = "<group>"; };
++		C1A070000000000000000011 /* AssistantLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantLayoutTests.swift; sourceTree = "<group>"; };
++
+ 		C1A060000000000000000001 /* CoreListLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreListLayoutTests.swift; sourceTree = "<group>"; };
+ 		C1A050000000000000000001 /* ChatScrollTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatScrollTests.swift; sourceTree = "<group>"; };
+ 		0A0016E621E7236900088188 /* MessageInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInteractor.swift; sourceTree = "<group>"; };
+@@ -625,6 +645,13 @@
+ 				B0BE302A27B8A3B600B04631 /* TopicSecurityViewController.swift */,
+ 				0AEE8BED226456080022EC3F /* UiUtils.swift */,
+ 				0A35BA9F2283A37500AA5E2F /* Utils.swift */,
++				C1A070000000000000000001 /* ClawAssistantModels.swift */,
++				C1A070000000000000000003 /* ClawAssistantService.swift */,
++				C1A070000000000000000005 /* ClawAssistantSession.swift */,
++				C1A070000000000000000007 /* ClawAssistantHistory.swift */,
++				C1A070000000000000000009 /* ClawAssistantViewController.swift */,
++				C1A07000000000000000000B /* ClawAssistantHistoryViewController.swift */,
++				C1A07000000000000000000D /* ClawAssistantConversationViewController.swift */,
+ 				C1A0A0012026091800000001 /* ClawIdentityService.swift */,
+ 				C1A0A0012026091800000002 /* ClawIdentityFlow.swift */,
+ 				C1A040012026091800000001 /* ClawSecondaryUIState.swift */,
+@@ -682,6 +709,8 @@
+ 				C1A047012026091800000001 /* SendMessageBarResetTests.swift */,
+ 				C1A048000000000000000001 /* VoiceLayoutTests.swift */,
+ 				C1A050000000000000000001 /* ChatScrollTests.swift */,
++				C1A07000000000000000000F /* AssistantHistoryTests.swift */,
++				C1A070000000000000000011 /* AssistantLayoutTests.swift */,
+ 				C1A060000000000000000001 /* CoreListLayoutTests.swift */,
+ 				C1A047012026091800000002 /* SendMessageBarResetSource.swift */,
+ 				C1A041012026091800000001 /* OwnedImageTests.swift */,
+@@ -1274,6 +1303,13 @@
+ 				B0A612B72294289000569DFE /* MessageViewController+SendMessageBarDelegate.swift in Sources */,
+ 				B0BA208523D5D8CF00C59BD4 /* FilePreviewController.swift in Sources */,
+ 				0A35BAA02283A37500AA5E2F /* Utils.swift in Sources */,
++				C1A070000000000000000002 /* ClawAssistantModels.swift in Sources */,
++				C1A070000000000000000004 /* ClawAssistantService.swift in Sources */,
++				C1A070000000000000000006 /* ClawAssistantSession.swift in Sources */,
++				C1A070000000000000000008 /* ClawAssistantHistory.swift in Sources */,
++				C1A07000000000000000000A /* ClawAssistantViewController.swift in Sources */,
++				C1A07000000000000000000C /* ClawAssistantHistoryViewController.swift in Sources */,
++				C1A07000000000000000000E /* ClawAssistantConversationViewController.swift in Sources */,
+ 				C1A0A0022026091800000001 /* ClawIdentityService.swift in Sources */,
+ 				C1A0A0022026091800000002 /* ClawIdentityFlow.swift in Sources */,
+ 				C1A040022026091800000001 /* ClawSecondaryUIState.swift in Sources */,
+@@ -1349,7 +1385,7 @@
+ 			files = (C1A043022026091800000001, C1A04400000000000000001D, );
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 		};
+-		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, ); runOnlyForDeploymentPostprocessing = 0; };
++		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A070000000000000000010, C1A070000000000000000012, ); runOnlyForDeploymentPostprocessing = 0; };
+ /* End PBXSourcesBuildPhase section */
+ 
+ /* Begin PBXTargetDependency section */
+diff --git a/Tinodios/Cache.swift b/Tinodios/Cache.swift
+index 46496fa69b970fad6cfeedcb3dc963df286816f9..4154c4e96fbcc7a7ee414d4191d44943f29fb1cf 100644
+--- a/Tinodios/Cache.swift
++++ b/Tinodios/Cache.swift
+@@ -17,6 +17,7 @@ class Cache {
+     private var tinodeInstance: Tinode?
+     private var timer = RepeatingTimer(timeInterval: 60 * 60 * 4) // Once every 4 hours.
+     private var largeFileHelper: LargeFileHelper?
++    private var assistantScope: ClawAssistantSession?
+     private let lock = NSRecursiveLock()
+     private var generation: UInt64 = 0
+ 
+@@ -60,12 +61,17 @@ class Cache {
+     @discardableResult
+     public static func invalidate(ifCurrent expected: Tinode? = nil) -> Bool {
+         var retiredRecorder: MediaRecorder?
++        var retiredAssistant: ClawAssistantSession?
+         // Physical AV stop and page callbacks must run after both locks are released.
+-        defer { retiredRecorder?.finishRetirement() }
++        defer {
++            retiredRecorder?.finishRetirement()
++            retiredAssistant?.finishRetirement()
++        }
+         guard let current = shared.locked({ shared.tinodeInstance }) else {
+             return shared.locked {
+                 guard expected == nil, shared.tinodeInstance == nil else { return false }
+                 retiredRecorder = shared.detachRecorderLocked()
++                retiredAssistant = shared.detachAssistantLocked()
+                 SharedUtils.removeAuthToken()
+                 BaseDb.sharedInstance.sqlStore?.logout()
+                 shared.generation &+= 1
+@@ -77,6 +83,7 @@ class Cache {
+             shared.locked {
+                 guard shared.tinodeInstance === current else { return false }
+             retiredRecorder = shared.detachRecorderLocked()
++            retiredAssistant = shared.detachAssistantLocked()
+             SharedUtils.removeAuthToken()
+             shared.timer.suspend()
+             shared.largeFileHelper?.invalidateSession()
+@@ -92,6 +99,50 @@ class Cache {
+             }
+         }
+     }
++    private func detachAssistantLocked() -> ClawAssistantSession? {
++        let scope = assistantScope
++        assistantScope = nil
++        scope?.markRetired(clearAccount: true)
++        return scope
++    }
++
++    static func assistantSession() throws -> ClawAssistantSession {
++        let owner = tinode
++        var previous: ClawAssistantSession?
++        defer { previous?.finishRetirement() }
++        guard let result = ifCurrent(owner, { () -> Result<ClawAssistantSession, ClawAssistantError> in
++            let connection = Tinode.getConnectionParams()
++            guard let url = URL(string: (connection.1 ? "https://" : "http://") + connection.0 + "/"),
++                  let origin = try? ClawAssistantService.origin(url) else { return .failure(.insecureOrigin) }
++            let generation = shared.generation
++            if let scope = shared.assistantScope, scope.matches(owner: owner, generation: generation, origin: origin) {
++                return .success(scope)
++            }
++            guard owner.isConnectionAuthenticated, let uid = owner.myUid, owner.store?.myUid == uid,
++                  let token = owner.authToken, SharedUtils.getAuthToken() == token else {
++                return .failure(.signInRequired)
++            }
++            do {
++                let account = shared.assistantScope?.account
++                let scope = try ClawAssistantSession(owner: owner, generation: generation, origin: origin,
++                    account: account, gate: { work in
++                        Cache.ifCurrent(owner) {
++                            let current = Tinode.getConnectionParams()
++                            guard shared.generation == generation, current.0 == connection.0,
++                                  current.1 == connection.1 else { return false }
++                            work(); return true
++                        } ?? false
++                    })
++                previous = shared.assistantScope
++                previous?.markRetired(clearAccount: previous?.account !== scope.account)
++                shared.assistantScope = scope
++                return .success(scope)
++            } catch let error as ClawAssistantError { return .failure(error) }
++              catch { return .failure(.signInRequired) }
++        }) else { throw ClawAssistantError.retired }
++        return try result.get()
++    }
++
+     public static func isContactSynchronizerActive() -> Bool {
+         return Cache.shared.timer.state == .resumed
+     }
+diff --git a/Tinodios/ClawAssistantConversationViewController.swift b/Tinodios/ClawAssistantConversationViewController.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..4d7e5f07c8250493f79b3916177e489996cb2054
+--- /dev/null
++++ b/Tinodios/ClawAssistantConversationViewController.swift
+@@ -0,0 +1,122 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import UIKit
++
++final class ClawAssistantConversationViewController: ClawAssistantPage, UITextViewDelegate {
++    private let conversation: ClawAssistantConversation?
++    private let status = ClawAssistantUI.label()
++    private let messages = UIStackView()
++    private let input = UITextView()
++    private let draftNotice = ClawAssistantUI.label(size: 13)
++    private let send = ClawAssistantUI.button("发送", primary: true)
++    private let reload = ClawAssistantUI.button("重新加载")
++    private let reconcile = ClawAssistantUI.button("重新核对")
++    private let delete = ClawAssistantUI.button("删除对话")
++    private var scroll: UIScrollView?
++    private var keyboard: NSObjectProtocol?
++    private var shownMessages: [ClawAssistantMessage] = []
++    init(session: ClawAssistantSession, conversation: ClawAssistantConversation? = nil) {
++        self.conversation = conversation
++        super.init(session: session)
++    }
++    required init?(coder: NSCoder) { conversation = nil; super.init(coder: coder) }
++    deinit { if let keyboard = keyboard { NotificationCenter.default.removeObserver(keyboard) } }
++    override func viewDidLoad() {
++        super.viewDidLoad()
++        title = conversation?.displayTitle ?? "开始提问"
++        messages.axis = .vertical; messages.spacing = 20
++        ClawTheme.styleTextView(input)
++        input.font = ClawTheme.font(16); input.adjustsFontForContentSizeCategory = true
++        input.delegate = self; input.isScrollEnabled = true
++        input.heightAnchor.constraint(greaterThanOrEqualToConstant: 180).isActive = true
++        input.accessibilityLabel = "你的问题"; input.accessibilityIdentifier = "claw.ai.draft"
++        send.accessibilityIdentifier = "claw.ai.send"; send.isEnabled = false
++        status.accessibilityIdentifier = "claw.ai.conversation.status"
++        delete.setTitleColor(ClawTheme.danger, for: .normal)
++        let stack = UIStackView(arrangedSubviews: [status, messages, reload, reconcile, delete,
++                                                  ClawAssistantUI.label("你的问题"), input, draftNotice, send, accountButton])
++        scroll = mountStack(stack)
++        reload.addTarget(self, action: #selector(reloadMessages), for: .touchUpInside)
++        reconcile.addTarget(self, action: #selector(reconcileResult), for: .touchUpInside)
++        delete.addTarget(self, action: #selector(deleteConversation), for: .touchUpInside)
++        keyboard = NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification,
++            object: nil, queue: .main) { [weak self] note in
++                guard let self = self, self.view.window != nil,
++                      let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
++                let local = self.view.convert(frame, from: nil)
++                let overlap = max(0, self.view.bounds.maxY - local.minY - self.view.safeAreaInsets.bottom)
++                self.scroll?.contentInset.bottom = overlap
++                self.scroll?.verticalScrollIndicatorInsets.bottom = overlap
++            }
++        render()
++    }
++    override func viewDidAppear(_ animated: Bool) {
++        super.viewDidAppear(animated)
++        if let id = conversation?.conversation_id, current { model?.loadMessages(id) }
++    }
++    override func render() {
++        guard isViewLoaded else { return }
++        super.render()
++        let id = conversation?.conversation_id
++        let deletion = id.flatMap { model?.deletions[$0] }
++        let active = current && deletion != .confirmed
++        title = active ? conversation?.displayTitle ?? "开始提问" : "助手对话"
++        input.isEditable = active
++        let draft = current ? model?.draft ?? "" : ""
++        if input.text != draft { input.text = draft }
++        draftNotice.text = active ? model?.providerNotice : "助手内容已隐藏。"
++        send.isEnabled = false // A never advertises or submits B, regardless of capability flags.
++        send.alpha = 0.55
++        delete.isHidden = id == nil || !current || deletion == .confirmed
++        delete.isEnabled = deletion != .pending
++        delete.setTitle(deletion == .unknown ? "再次删除同一对话" : "删除对话", for: .normal)
++        reconcile.isHidden = deletion != .unknown || !current
++        reconcile.isEnabled = model?.listLoading == false
++        reload.isHidden = id == nil || !active || deletion == .pending || deletion == .unknown
++        reload.isEnabled = id.map { model?.detailLoading.contains($0) == false } ?? false
++        if !current {
++            status.text = "请重新登录后查看助手历史。"
++            input.resignFirstResponder()
++        } else if deletion == .pending {
++            status.text = "正在删除…"
++        } else if deletion == .unknown {
++            status.text = "删除结果暂未确认。重新核对只查询原对话状态，不会重新生成回答。"
++        } else if deletion == .confirmed {
++            status.text = "这段对话已删除。"
++        } else if case .rejected(let error)? = deletion {
++            status.text = error.message
++        } else if let id = id, let error = model?.detailErrors[id] {
++            status.text = error.message
++        } else if let id = id, model?.detailLoading.contains(id) == true {
++            status.text = "正在加载历史…"
++        } else {
++            status.text = id == nil ? "这里只保留本账号的草稿，尚未发送。" : "当前账号的历史对话"
++        }
++        let values = active ? id.flatMap { model?.details[$0] } ?? [] : []
++        if shownMessages != values {
++            shownMessages = values
++            messages.arrangedSubviews.forEach { messages.removeArrangedSubview($0); $0.removeFromSuperview() }
++            for message in values {
++                let heading = ClawAssistantUI.label(message.role == "user" ? "你" : "助手", size: 13, weight: .medium)
++                let body = ClawAssistantUI.label(message.text)
++                body.accessibilityIdentifier = "claw.ai.history.body"
++                let block = UIStackView(arrangedSubviews: [heading, body])
++                block.axis = .vertical; block.spacing = 8
++                if let state = message.stateText {
++                    let label = ClawAssistantUI.label(state, size: 13)
++                    label.textColor = ClawTheme.muted; block.addArrangedSubview(label)
++                }
++                messages.addArrangedSubview(block)
++            }
++        }
++    }
++    func textViewDidChange(_ textView: UITextView) {
++        guard current else { render(); return }
++        model?.setDraft(textView.text)
++        if textView.text.utf8.count > 32000 {
++            draftNotice.text = "问题超过32000字节，尚未发送。请缩短内容；当前草稿仍保留。"
++        }
++    }
++    @objc private func reloadMessages() { if let id = conversation?.conversation_id, current { model?.loadMessages(id) } }
++    @objc private func reconcileResult() { if let id = conversation?.conversation_id, current { model?.reconcileDeletion(id) } }
++    @objc private func deleteConversation() { if let id = conversation?.conversation_id { confirmDeletion(id) } }
++}
+diff --git a/Tinodios/ClawAssistantHistory.swift b/Tinodios/ClawAssistantHistory.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..9b11585f43d2555f9cd7f6b954a591dff69d00fd
+--- /dev/null
++++ b/Tinodios/ClawAssistantHistory.swift
+@@ -0,0 +1,239 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import Foundation
++
++/// Main-thread state machine. Pages are staged separately; callbacks never adopt a new account.
++final class ClawAssistantHistory {
++    enum Deletion: Equatable {
++        case pending, unknown, confirmed, rejected(ClawAssistantError)
++    }
++    private weak var session: ClawAssistantSession?
++    private var observers: [UUID: () -> Void] = [:]
++    private var retirement: NSObjectProtocol?
++    private var capabilityRead = UUID()
++    private var listRead = UUID()
++    private var detailReads: [String: UUID] = [:]
++    private var deleteWrites: [String: UUID] = [:]
++    private var tombstones = Set<String>()
++    private(set) var capabilities: ClawAssistantCapabilities?
++    private(set) var capabilityError: ClawAssistantError?
++    private(set) var capabilityLoading = false
++    private(set) var listLoading = false
++    private(set) var listError: ClawAssistantError?
++    private(set) var hasListSnapshot = false
++    private(set) var conversations: [ClawAssistantConversation] = []
++    private(set) var details: [String: [ClawAssistantMessage]] = [:]
++    private(set) var detailErrors: [String: ClawAssistantError] = [:]
++    private(set) var detailLoading = Set<String>()
++    private(set) var deletions: [String: Deletion] = [:]
++
++    init(session: ClawAssistantSession) {
++        self.session = session
++        retirement = NotificationCenter.default.addObserver(forName: ClawAssistantSession.changed,
++            object: nil, queue: .main) { [weak self, weak session] notification in
++            guard let session = session, notification.object as? ClawAssistantSession === session else { return }
++            self?.clear()
++        }
++    }
++    deinit { if let retirement = retirement { NotificationCenter.default.removeObserver(retirement) } }
++
++    var isCurrent: Bool { session?.isCurrent ?? false }
++    var draft: String { session?.draft ?? "" }
++    func setDraft(_ value: String) {
++        precondition(Thread.isMainThread)
++        session?.updateDraft(value); changed()
++    }
++    var providerNotice: String {
++        if capabilities?.generation.available == true && capabilityError == nil {
++            return draft.isEmpty ? "当前版本暂不支持发送提问，请更新应用。" : "你的问题已保留。请更新应用后再发送。"
++        }
++        return draft.isEmpty ? "服务暂未开通。" : "服务暂未开通，你的问题已保留。"
++    }
++    @discardableResult func observe(_ callback: @escaping () -> Void) -> UUID {
++        precondition(Thread.isMainThread)
++        let id = UUID(); observers[id] = callback; return id
++    }
++    func removeObserver(_ id: UUID) { observers.removeValue(forKey: id) }
++    private func changed() { Array(observers.values).forEach { $0() } }
++    private func clear() {
++        precondition(Thread.isMainThread)
++        capabilityRead = UUID(); listRead = UUID(); detailReads.removeAll(); deleteWrites.removeAll()
++        capabilities = nil; conversations.removeAll(); details.removeAll(); tombstones.removeAll()
++        deletions.removeAll(); detailErrors.removeAll(); detailLoading.removeAll()
++        hasListSnapshot = false; capabilityLoading = false; listLoading = false
++        capabilityError = .signInRequired; listError = .signInRequired
++        changed()
++    }
++    private func receive<T>(_ result: Result<T, ClawAssistantError>, operation: @escaping () -> Bool,
++                            apply: @escaping (Result<T, ClawAssistantError>) -> Void) {
++        DispatchQueue.main.async { [weak self] in
++            guard let self = self, let session = self.session else { return }
++            guard session.isCurrent else { self.clear(); return }
++            guard operation() else { return }
++            if case .failure(.server(401, _)) = result {
++                session.blockAuthorization()
++                return
++            }
++            let applied = session.withCurrent { () -> Bool in
++                guard operation() else { return false }
++                apply(result); return true
++            } ?? false
++            if applied { self.changed() }
++        }
++    }
++
++    func loadCapabilities() {
++        precondition(Thread.isMainThread)
++        guard let session = session, session.isCurrent else { clear(); return }
++        let id = UUID(); capabilityRead = id
++        capabilityLoading = true; capabilityError = nil; changed()
++        session.service.capabilities { [weak self] result in
++            self?.receive(result, operation: { [weak self] in self?.capabilityRead == id }) { [weak self] result in
++                guard let self = self else { return }
++                self.capabilityLoading = false
++                switch result {
++                case .success(let value): self.capabilities = value; self.capabilityError = nil
++                case .failure(let error): self.capabilityError = error
++                }
++            }
++        }
++    }
++
++    func loadConversations() {
++        precondition(Thread.isMainThread)
++        guard let session = session, session.isCurrent else { clear(); return }
++        guard capabilities?.history.available == true else { listError = .unavailable; changed(); return }
++        let id = UUID(); listRead = id; listLoading = true; listError = nil; changed()
++        listPage(id: id, cursor: nil, revision: nil, staged: [], restarts: 0, pages: 0)
++    }
++    private func listPage(id: UUID, cursor: String?, revision: String?, staged: [ClawAssistantConversation],
++                          restarts: Int, pages: Int) {
++        guard let session = session, session.isCurrent, id == listRead else { return }
++        guard pages < 1000 else { listLoading = false; listError = .responseTooLarge; changed(); return }
++        session.service.conversations(cursor: cursor, revision: revision) { [weak self] result in
++            // Validation/commit is gated; further network work is deliberately after receive's locks.
++            var next: (() -> Void)?
++            self?.receive(result, operation: { [weak self] in self?.listRead == id }) { [weak self] result in
++                guard let self = self else { return }
++                switch result {
++                case .failure(.historyChanged) where restarts < 2:
++                    next = { [weak self] in self?.listPage(id: id, cursor: nil, revision: nil,
++                                                          staged: [], restarts: restarts + 1, pages: 0) }
++                case .failure(let error):
++                    self.listLoading = false; self.listError = error
++                case .success(let page):
++                    guard revision == nil || page.snapshot_revision == revision,
++                          page.items.first.map({ $0.conversation_id > (cursor ?? "") }) ?? page.next_cursor.isEmpty,
++                          !page.items.contains(where: { self.tombstones.contains($0.conversation_id) && !$0.deleted }),
++                          staged.count + page.items.count <= 20000 else {
++                        self.listLoading = false; self.listError = .invalidResponse; return
++                    }
++                    let combined = staged + page.items
++                    if page.next_cursor.isEmpty {
++                        self.conversations = combined.filter { !$0.deleted }
++                        for item in combined where item.deleted { self.confirmDeleted(item.conversation_id) }
++                        self.hasListSnapshot = true; self.listLoading = false; self.listError = nil
++                    } else {
++                        next = { [weak self] in self?.listPage(id: id, cursor: page.next_cursor,
++                            revision: page.snapshot_revision, staged: combined, restarts: restarts, pages: pages + 1) }
++                    }
++                }
++            }
++            DispatchQueue.main.async { next?() }
++        }
++    }
++
++    func loadMessages(_ conversationID: String) {
++        precondition(Thread.isMainThread)
++        guard let session = session, session.isCurrent else { clear(); return }
++        guard ClawAssistantWire.uuid(conversationID), !tombstones.contains(conversationID),
++              deletions[conversationID] != .pending else { return }
++        let id = UUID(); detailReads[conversationID] = id
++        detailErrors[conversationID] = nil; detailLoading.insert(conversationID); changed()
++        messagePage(conversationID, id: id, after: "0", revision: nil, staged: [], restarts: 0, pages: 0, bytes: 0)
++    }
++    private func messagePage(_ conversationID: String, id: UUID, after: String, revision: String?,
++                             staged: [ClawAssistantMessage], restarts: Int, pages: Int, bytes: Int) {
++        guard let session = session, session.isCurrent, detailReads[conversationID] == id else { return }
++        guard pages < 1000 else {
++            detailLoading.remove(conversationID); detailErrors[conversationID] = .responseTooLarge; changed(); return
++        }
++        session.service.messages(conversationID, after: after, revision: revision) { [weak self] result in
++            var next: (() -> Void)?
++            self?.receive(result, operation: { [weak self] in
++                self?.detailReads[conversationID] == id && self?.tombstones.contains(conversationID) == false
++            }) { [weak self] result in
++                guard let self = self else { return }
++                switch result {
++                case .failure(.historyChanged) where restarts < 2:
++                    next = { [weak self] in self?.messagePage(conversationID, id: id, after: "0", revision: nil,
++                        staged: [], restarts: restarts + 1, pages: 0, bytes: 0) }
++                case .failure(.server(410, "conversation_deleted")):
++                    self.confirmDeleted(conversationID)
++                case .failure(let error):
++                    self.detailLoading.remove(conversationID); self.detailErrors[conversationID] = error
++                case .success(let page):
++                    let total = bytes + page.items.reduce(0) { $0 + $1.text.utf8.count + 1024 }
++                    let knownIDs = Set(staged.map { $0.message_id })
++                    guard page.conversation_id == conversationID,
++                          revision == nil || page.snapshot_revision == revision,
++                          page.items.first.map({ ClawAssistantWire.less(after, $0.seq) }) ?? page.next_after_seq.isEmpty,
++                          !page.items.contains(where: { knownIDs.contains($0.message_id) }),
++                          total <= 64 * 1024 * 1024 else {
++                        self.detailLoading.remove(conversationID); self.detailErrors[conversationID] = .invalidResponse
++                        return
++                    }
++                    let combined = staged + page.items
++                    if page.next_after_seq.isEmpty {
++                        self.details[conversationID] = combined
++                        self.detailLoading.remove(conversationID); self.detailErrors[conversationID] = nil
++                    } else {
++                        next = { [weak self] in self?.messagePage(conversationID, id: id, after: page.next_after_seq,
++                            revision: page.snapshot_revision, staged: combined, restarts: restarts,
++                            pages: pages + 1, bytes: total) }
++                    }
++                }
++            }
++            DispatchQueue.main.async { next?() }
++        }
++    }
++
++    /// Only the explicit confirmation consumer calls this, including same-ID retry.
++    func deleteConversation(_ conversationID: String) {
++        precondition(Thread.isMainThread)
++        guard let session = session, session.isCurrent else { clear(); return }
++        guard ClawAssistantWire.uuid(conversationID), !tombstones.contains(conversationID),
++              deletions[conversationID] != .pending else { return }
++        let id = UUID(); deleteWrites[conversationID] = id
++        let wasUnknown = deletions[conversationID] == .unknown
++        listRead = UUID(); listLoading = false // A pre-delete snapshot must never resurrect content.
++        detailReads[conversationID] = UUID(); detailLoading.remove(conversationID)
++        deletions[conversationID] = .pending; changed()
++        session.service.delete(conversationID) { [weak self] result in
++            self?.receive(result, operation: { [weak self] in self?.deleteWrites[conversationID] == id }) { [weak self] result in
++                guard let self = self else { return }
++                switch result {
++                case .success(let receipt) where receipt.conversation_id == conversationID:
++                    self.confirmDeleted(conversationID)
++                case .failure(.server(410, "conversation_deleted")):
++                    self.confirmDeleted(conversationID)
++                case .failure(.server(let code, let reason)) where (400..<500).contains(code) && code != 408:
++                    self.deletions[conversationID] = wasUnknown ? .unknown : .rejected(.server(code, reason))
++                default:
++                    self.deletions[conversationID] = .unknown
++                }
++            }
++        }
++    }
++    private func confirmDeleted(_ id: String) {
++        tombstones.insert(id); deletions[id] = .confirmed
++        deleteWrites[id] = UUID() // A late uncertain reply cannot undo an authoritative tombstone.
++        conversations.removeAll { $0.conversation_id == id }
++        details[id] = nil; detailErrors[id] = nil; detailLoading.remove(id); detailReads[id] = UUID()
++    }
++    func reconcileDeletion(_ id: String) {
++        precondition(Thread.isMainThread)
++        guard deletions[id] == .unknown else { return }
++        // Active is NOT proof that a previously dispatched DELETE cannot still commit.
++        loadConversations()
++    }
++}
+diff --git a/Tinodios/ClawAssistantHistoryViewController.swift b/Tinodios/ClawAssistantHistoryViewController.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..4e807c7e00ae2b4ee876b94f78e62f684ba52137
+--- /dev/null
++++ b/Tinodios/ClawAssistantHistoryViewController.swift
+@@ -0,0 +1,152 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import UIKit
++
++final class ClawAssistantHistoryViewController: ClawAssistantPage, UITableViewDataSource, UITableViewDelegate {
++    private let table = UITableView(frame: .zero, style: .plain)
++    private let statusTitle = ClawAssistantUI.label(size: 20, weight: .medium)
++    private let status = ClawAssistantUI.label(size: 15)
++    private let refresh = ClawAssistantUI.button("重新加载")
++    private let back = ClawAssistantUI.button("返回助手")
++    private let header = UIView()
++    private var rows: [ClawAssistantConversation] = []
++    override func viewDidLoad() {
++        super.viewDidLoad()
++        title = "历史对话"
++        table.translatesAutoresizingMaskIntoConstraints = false
++        table.backgroundColor = ClawTheme.background; table.separatorColor = ClawTheme.border
++        table.rowHeight = UITableView.automaticDimension; table.estimatedRowHeight = 76
++        table.dataSource = self; table.delegate = self
++        table.register(ClawAssistantHistoryCell.self, forCellReuseIdentifier: "assistant-history")
++        table.accessibilityIdentifier = "claw.ai.history.list"
++        view.addSubview(table)
++        NSLayoutConstraint.activate([
++            table.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
++            table.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
++            table.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
++            table.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
++        ])
++        let stack = UIStackView(arrangedSubviews: [ClawAssistantUI.label("当前账号", size: 13),
++                                                 statusTitle, status, refresh, back, accountButton])
++        stack.axis = .vertical; stack.spacing = 12; stack.translatesAutoresizingMaskIntoConstraints = false
++        header.addSubview(stack)
++        NSLayoutConstraint.activate([
++            stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
++            stack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
++            stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 16),
++            stack.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -16)
++        ])
++        table.tableHeaderView = header
++        refresh.addTarget(self, action: #selector(reloadHistory), for: .touchUpInside)
++        back.addTarget(self, action: #selector(backToAssistant), for: .touchUpInside)
++        render()
++    }
++    override func viewDidAppear(_ animated: Bool) {
++        super.viewDidAppear(animated)
++        if current, model?.listLoading == false { model?.loadConversations() }
++    }
++    override func viewDidLayoutSubviews() {
++        super.viewDidLayoutSubviews()
++        let width = table.bounds.width
++        guard width > 0 else { return }
++        let height = header.systemLayoutSizeFitting(CGSize(width: width, height: 0),
++            withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel).height
++        if abs(header.frame.height - height) > 0.5 || header.frame.width != width {
++            header.frame = CGRect(x: 0, y: 0, width: width, height: height)
++            table.tableHeaderView = header
++        }
++    }
++    override func render() {
++        guard isViewLoaded else { return }
++        super.render()
++        rows = current ? model?.conversations ?? [] : []
++        let empty = model?.hasListSnapshot == true && rows.isEmpty && model?.listError == nil
++        if !current {
++            statusTitle.text = "登录状态已失效"; status.text = "请前往账号设置重新登录。"
++        } else if model?.listLoading == true {
++            statusTitle.text = "正在同步历史"
++            status.text = rows.isEmpty ? "正在读取当前账号的历史对话。" : "正在核对最新历史，当前显示上次完整内容。"
++        } else if let error = model?.listError {
++            statusTitle.text = "暂时无法读取历史"; status.text = error.message
++        } else if empty {
++            statusTitle.text = "还没有历史对话"; status.text = "已保存的对话会显示在这里。"
++        } else {
++            statusTitle.text = ""; status.text = "仅显示当前账号的助手对话。"
++        }
++        statusTitle.isHidden = statusTitle.text?.isEmpty == true
++        refresh.isHidden = !current || model?.listLoading == true || empty
++        back.isHidden = !current || !empty || model?.listLoading == true
++        refresh.isEnabled = current && model?.listLoading == false
++        table.reloadData(); view.setNeedsLayout()
++    }
++    @objc private func reloadHistory() { if current { model?.loadConversations() } }
++    @objc private func backToAssistant() { navigationController?.popToRootViewController(animated: true) }
++    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { rows.count }
++    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
++        guard let cell = tableView.dequeueReusableCell(withIdentifier: "assistant-history", for: indexPath)
++            as? ClawAssistantHistoryCell, indexPath.row < rows.count else { return UITableViewCell() }
++        let row = rows[indexPath.row]
++        cell.configure(row, deletion: model?.deletions[row.conversation_id])
++        return cell
++    }
++    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
++        tableView.deselectRow(at: indexPath, animated: true)
++        guard current, let session = session, indexPath.row < rows.count else { return }
++        navigationController?.pushViewController(ClawAssistantConversationViewController(
++            session: session, conversation: rows[indexPath.row]), animated: true)
++    }
++    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath)
++        -> UISwipeActionsConfiguration? {
++        guard current, indexPath.row < rows.count else { return nil }
++        let id = rows[indexPath.row].conversation_id
++        guard model?.deletions[id] != .pending else { return nil }
++        let action = UIContextualAction(style: .destructive, title: "删除对话") { [weak self] _, _, done in
++            self?.confirmDeletion(id); done(false)
++        }
++        let configuration = UISwipeActionsConfiguration(actions: [action])
++        configuration.performsFirstActionWithFullSwipe = false
++        return configuration
++    }
++}
++
++private final class ClawAssistantHistoryCell: UITableViewCell {
++    private let name = ClawAssistantUI.label(size: 17, weight: .medium)
++    private let updated = ClawAssistantUI.label(size: 13)
++    private let state = ClawAssistantUI.label(size: 13)
++    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
++        super.init(style: style, reuseIdentifier: reuseIdentifier)
++        backgroundColor = ClawTheme.surface
++        let icon = UILabel()
++        icon.text = "AI"; icon.font = .systemFont(ofSize: 17, weight: .medium)
++        icon.textAlignment = .center; icon.textColor = ClawTheme.primary; icon.backgroundColor = ClawTheme.brandSoft
++        icon.layer.cornerRadius = 12; icon.clipsToBounds = true; icon.isAccessibilityElement = false
++        icon.translatesAutoresizingMaskIntoConstraints = false
++        let metadata = UIStackView(arrangedSubviews: [name, updated, state])
++        metadata.axis = .vertical; metadata.spacing = 3; metadata.translatesAutoresizingMaskIntoConstraints = false
++        updated.textColor = ClawTheme.muted; state.textColor = ClawTheme.warning
++        contentView.addSubview(icon); contentView.addSubview(metadata)
++        NSLayoutConstraint.activate([
++            contentView.heightAnchor.constraint(greaterThanOrEqualToConstant: 76),
++            icon.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
++            icon.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
++            icon.widthAnchor.constraint(equalToConstant: 40), icon.heightAnchor.constraint(equalToConstant: 40),
++            icon.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -16),
++            metadata.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 12),
++            metadata.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
++            metadata.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
++            metadata.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12)
++        ])
++        name.accessibilityIdentifier = "claw.ai.history.title"
++        updated.accessibilityIdentifier = "claw.ai.history.updated"
++    }
++    required init?(coder: NSCoder) { fatalError("Use programmatic history cell") }
++    func configure(_ row: ClawAssistantConversation, deletion: ClawAssistantHistory.Deletion?) {
++        name.text = row.displayTitle
++        if let raw = row.updated_at, let date = ClawAssistantWire.date(raw) {
++            let format = DateFormatter(); format.dateStyle = .medium; format.timeStyle = .short
++            updated.text = format.string(from: date)
++        } else { updated.text = nil }
++        state.text = deletion == .pending ? "正在删除…" : (deletion == .unknown ? "删除结果暂未确认" : nil)
++        state.isHidden = state.text == nil
++        accessibilityLabel = [name.text, updated.text, state.text].compactMap { $0 }.joined(separator: "，")
++    }
++}
+diff --git a/Tinodios/ClawAssistantModels.swift b/Tinodios/ClawAssistantModels.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..992a86e0671ce9a401d3c3e7be7aff72edc46568
+--- /dev/null
++++ b/Tinodios/ClawAssistantModels.swift
+@@ -0,0 +1,185 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import Foundation
++
++enum ClawAssistantError: Error, Equatable {
++    case signInRequired, retired, insecureOrigin, transport, invalidResponse, incompatible
++    case responseTooLarge, historyChanged, unavailable
++    case server(Int, String)
++
++    var message: String {
++        switch self {
++        case .signInRequired, .retired: return "请重新登录后查看助手历史。"
++        case .insecureOrigin: return "助手需要安全连接，请检查连接设置。"
++        case .transport: return "暂时无法连接助手服务，请检查网络后重试。"
++        case .invalidResponse, .incompatible: return "助手历史格式暂不兼容，请更新应用后重试。"
++        case .responseTooLarge: return "本次历史内容过大，无法完整加载，请稍后重试。"
++        case .historyChanged: return "历史已变化，请重新加载。"
++        case .unavailable: return "助手历史暂不可用，请稍后重试。"
++        case .server(let status, let code):
++            if status == 401 { return "登录已失效，请重新登录后查看助手历史。" }
++            if status == 403 { return "当前账号无权使用助手历史。" }
++            if status == 404 { return "暂时无法访问这段对话，请重新加载历史。" }
++            if status == 410 { return "这段对话已删除。" }
++            if code == "provider_not_configured" { return "服务暂未开通。" }
++            if status == 503 { return "助手历史暂不可用，请稍后重试。" }
++            return "暂时无法完成操作，请稍后重试。"
++        }
++    }
++}
++
++enum ClawAssistantWire {
++    static func uuid(_ value: String) -> Bool {
++        value.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
++                    options: .regularExpression) != nil
++    }
++    static func decimal(_ value: String) -> Bool {
++        value.range(of: "^(0|[1-9][0-9]*)$", options: .regularExpression) != nil && value.count <= 20
++    }
++    static func less(_ a: String, _ b: String) -> Bool {
++        a.count == b.count ? a < b : a.count < b.count
++    }
++    static func date(_ value: String) -> Date? {
++        guard value.hasSuffix("Z") else { return nil }
++        let format = ISO8601DateFormatter()
++        format.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
++        if let date = format.date(from: value) { return date }
++        format.formatOptions = [.withInternetDateTime]
++        return format.date(from: value)
++    }
++}
++
++protocol ClawAssistantValidated: Decodable { func validate() throws }
++
++struct ClawAssistantCapabilities: ClawAssistantValidated {
++    struct Feature: Decodable { let available: Bool; let reason: String? }
++    struct Limits: Decodable {
++        let body_bytes: Int
++        let text_bytes: Int
++        let page_size_max: Int
++    }
++    let version: String
++    let history: Feature
++    let generation: Feature
++    let stream: Feature
++    let limits: Limits
++    func validate() throws {
++        guard version == "claw-ai-v1", limits.body_bytes == 65536,
++              limits.text_bytes == 32000, limits.page_size_max == 100 else {
++            throw ClawAssistantError.incompatible
++        }
++        // Even a future server advertising generation=true cannot enable B in this client.
++    }
++}
++
++struct ClawAssistantConversation: Decodable, Equatable {
++    let conversation_id: String
++    let revision: String
++    let deleted: Bool
++    let title: String?
++    let created_at: String?
++    let updated_at: String?
++    var displayTitle: String {
++        guard let title = title, !title.isEmpty else { return "新对话" }
++        return title
++    }
++
++    func validate() throws {
++        guard ClawAssistantWire.uuid(conversation_id), ClawAssistantWire.decimal(revision) else {
++            throw ClawAssistantError.invalidResponse
++        }
++        if deleted {
++            guard title == nil, created_at == nil, updated_at == nil else {
++                throw ClawAssistantError.invalidResponse
++            }
++        } else {
++            guard title != nil, let created = created_at, let updated = updated_at,
++                  ClawAssistantWire.date(created) != nil, ClawAssistantWire.date(updated) != nil else {
++                throw ClawAssistantError.invalidResponse
++            }
++        }
++    }
++}
++
++struct ClawAssistantConversationPage: ClawAssistantValidated {
++    let items: [ClawAssistantConversation]
++    let snapshot_revision: String
++    let next_cursor: String
++    func validate() throws {
++        guard ClawAssistantWire.decimal(snapshot_revision), items.count <= 100,
++              next_cursor.isEmpty || ClawAssistantWire.uuid(next_cursor) else {
++            throw ClawAssistantError.invalidResponse
++        }
++        var previous = ""
++        for item in items {
++            try item.validate()
++            guard item.conversation_id > previous,
++                  !ClawAssistantWire.less(snapshot_revision, item.revision) else {
++                throw ClawAssistantError.invalidResponse
++            }
++            previous = item.conversation_id
++        }
++        guard next_cursor.isEmpty || next_cursor == items.last?.conversation_id else {
++            throw ClawAssistantError.invalidResponse
++        }
++    }
++}
++
++struct ClawAssistantMessage: Decodable, Equatable {
++    let message_id: String
++    let conversation_id: String
++    let run_id: String
++    let seq: String
++    let role: String
++    let text: String
++    let state: String
++    let created_at: String
++    let updated_at: String
++    var stateText: String? {
++        guard role == "assistant" else { return nil }
++        return state == "partial" ? "回答尚未完成" : "回答已中断"
++    }
++    func validate() throws {
++        guard ClawAssistantWire.uuid(message_id), ClawAssistantWire.uuid(conversation_id),
++              run_id.isEmpty || ClawAssistantWire.uuid(run_id), ClawAssistantWire.decimal(seq),
++              seq != "0", ClawAssistantWire.date(created_at) != nil,
++              ClawAssistantWire.date(updated_at) != nil else { throw ClawAssistantError.invalidResponse }
++        guard ["user", "assistant"].contains(role), ["partial", "interrupted"].contains(state) else {
++            throw ClawAssistantError.incompatible
++        }
++    }
++}
++
++struct ClawAssistantMessagePage: ClawAssistantValidated {
++    let conversation_id: String
++    let items: [ClawAssistantMessage]
++    let snapshot_revision: String
++    let next_after_seq: String
++    func validate() throws {
++        guard ClawAssistantWire.uuid(conversation_id), ClawAssistantWire.decimal(snapshot_revision),
++              items.count <= 100, next_after_seq.isEmpty || ClawAssistantWire.decimal(next_after_seq) else {
++            throw ClawAssistantError.invalidResponse
++        }
++        var previous = "0"
++        var ids = Set<String>()
++        for item in items {
++            try item.validate()
++            guard item.conversation_id == conversation_id, ClawAssistantWire.less(previous, item.seq),
++                  ids.insert(item.message_id).inserted else { throw ClawAssistantError.invalidResponse }
++            previous = item.seq
++        }
++        guard next_after_seq.isEmpty || next_after_seq == items.last?.seq else {
++            throw ClawAssistantError.invalidResponse
++        }
++    }
++}
++
++struct ClawAssistantDeleteReceipt: ClawAssistantValidated {
++    let conversation_id: String
++    let deleted: Bool
++    let revision: String
++    func validate() throws {
++        guard ClawAssistantWire.uuid(conversation_id), deleted, ClawAssistantWire.decimal(revision) else {
++            throw ClawAssistantError.invalidResponse
++        }
++    }
++}
+diff --git a/Tinodios/ClawAssistantService.swift b/Tinodios/ClawAssistantService.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..80ed55547d93ed612722ab6db9cddb18e5aed01a
+--- /dev/null
++++ b/Tinodios/ClawAssistantService.swift
+@@ -0,0 +1,220 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import Foundation
++
++protocol ClawAssistantCancellation: AnyObject { func cancel() }
++
++/// Only A read/delete operations exist here. No POST, run, stream or implicit create.
++final class ClawAssistantService {
++    static let responseLimit = 24 * 1024 * 1024 // covers 100 * 32000 * 6 + metadata
++    private let origin: URL
++    private let apiKey: String
++    private let token: String
++    private let configuration: URLSessionConfiguration
++    private let isCurrent: () -> Bool
++    private let lock = NSLock()
++    private var ended = false
++    private var requests: [UUID: ClawAssistantHTTPTask] = [:]
++
++    static func origin(_ url: URL) throws -> URL {
++        guard var c = URLComponents(url: url, resolvingAgainstBaseURL: false),
++              let scheme = c.scheme?.lowercased(), let host = c.host?.lowercased(),
++              c.user == nil, c.password == nil, c.query == nil, c.fragment == nil,
++              c.path.isEmpty || c.path == "/",
++              scheme == "https" || (scheme == "http" && ["127.0.0.1", "::1", "[::1]"].contains(host)) else {
++            throw ClawAssistantError.insecureOrigin
++        }
++        c.scheme = scheme; c.path = "/"
++        guard let normalized = c.url else { throw ClawAssistantError.insecureOrigin }
++        return normalized
++    }
++
++    init(origin: URL, apiKey: String, token: String,
++         configuration: URLSessionConfiguration = .ephemeral,
++         isCurrent: @escaping () -> Bool) throws {
++        self.origin = try Self.origin(origin)
++        guard !apiKey.isEmpty, !token.isEmpty,
++              !apiKey.contains("\r"), !apiKey.contains("\n"),
++              !token.contains("\r"), !token.contains("\n"),
++              Data(base64Encoded: token) != nil else { throw ClawAssistantError.signInRequired }
++        self.apiKey = apiKey; self.token = token; self.isCurrent = isCurrent
++        self.configuration = configuration.copy() as! URLSessionConfiguration
++        self.configuration.urlCache = nil
++        self.configuration.httpCookieStorage = nil
++        self.configuration.httpShouldSetCookies = false
++        self.configuration.urlCredentialStorage = nil
++        self.configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
++        self.configuration.timeoutIntervalForRequest = 20
++        self.configuration.timeoutIntervalForResource = 30
++        self.configuration.httpAdditionalHeaders = nil
++    }
++
++    func cancelAll() {
++        lock.lock(); ended = true
++        let pending = Array(requests.values); requests.removeAll()
++        lock.unlock()
++        pending.forEach { $0.cancel() }
++    }
++
++    @discardableResult
++    func capabilities(_ completion: @escaping (Result<ClawAssistantCapabilities, ClawAssistantError>) -> Void)
++        -> ClawAssistantCancellation? {
++        request("capabilities", completion: completion)
++    }
++
++    @discardableResult
++    func conversations(cursor: String? = nil, revision: String? = nil,
++                       completion: @escaping (Result<ClawAssistantConversationPage, ClawAssistantError>) -> Void)
++        -> ClawAssistantCancellation? {
++        var query = [URLQueryItem(name: "limit", value: "20")]
++        if let cursor = cursor, let revision = revision, ClawAssistantWire.uuid(cursor),
++           ClawAssistantWire.decimal(revision) {
++            query += [URLQueryItem(name: "cursor", value: cursor), URLQueryItem(name: "snapshot_revision", value: revision)]
++        } else if cursor != nil || revision != nil {
++            completion(.failure(.invalidResponse)); return nil
++        }
++        return request("conversations", query: query, completion: completion)
++    }
++
++    @discardableResult
++    func messages(_ id: String, after: String = "0", revision: String? = nil,
++                  completion: @escaping (Result<ClawAssistantMessagePage, ClawAssistantError>) -> Void)
++        -> ClawAssistantCancellation? {
++        guard ClawAssistantWire.uuid(id), ClawAssistantWire.decimal(after),
++              revision.map(ClawAssistantWire.decimal) ?? (after == "0") else {
++            completion(.failure(.invalidResponse)); return nil
++        }
++        var query = [URLQueryItem(name: "limit", value: "20"), URLQueryItem(name: "after_seq", value: after)]
++        if let revision = revision { query.append(URLQueryItem(name: "snapshot_revision", value: revision)) }
++        return request("conversations/\(id)/messages", query: query, completion: completion)
++    }
++
++    @discardableResult
++    func delete(_ id: String, completion: @escaping (Result<ClawAssistantDeleteReceipt, ClawAssistantError>) -> Void)
++        -> ClawAssistantCancellation? {
++        guard ClawAssistantWire.uuid(id) else { completion(.failure(.invalidResponse)); return nil }
++        return request("conversations/\(id)", method: "DELETE", completion: completion)
++    }
++
++    private func request<T: ClawAssistantValidated>(_ path: String, method: String = "GET",
++        query: [URLQueryItem] = [], completion: @escaping (Result<T, ClawAssistantError>) -> Void)
++        -> ClawAssistantCancellation? {
++        guard isCurrent() else { completion(.failure(.retired)); return nil }
++        guard var parts = URLComponents(url: origin.appendingPathComponent("v0/ai/" + path), resolvingAgainstBaseURL: false) else {
++            completion(.failure(.invalidResponse)); return nil
++        }
++        if !query.isEmpty { parts.queryItems = query }
++        guard let url = parts.url else { completion(.failure(.invalidResponse)); return nil }
++        var request = URLRequest(url: url)
++        request.httpMethod = method
++        request.setValue("token " + token, forHTTPHeaderField: "Authorization")
++        request.setValue(apiKey, forHTTPHeaderField: "X-Tinode-APIKey")
++        request.setValue("application/json", forHTTPHeaderField: "Accept")
++        request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
++        let id = UUID()
++        let task = ClawAssistantHTTPTask(request: request, configuration: configuration) { [weak self] result in
++            guard let self = self else { return }
++            self.lock.lock(); self.requests.removeValue(forKey: id); let ended = self.ended; self.lock.unlock()
++            guard !ended, self.isCurrent() else { completion(.failure(.retired)); return }
++            completion(result.flatMap { response in
++                do {
++                    let value = try JSONDecoder().decode(T.self, from: response)
++                    try value.validate()
++                    return .success(value)
++                } catch let error as ClawAssistantError { return .failure(error) }
++                  catch { return .failure(.invalidResponse) }
++            })
++        }
++        lock.lock()
++        guard !ended else { lock.unlock(); completion(.failure(.retired)); return nil }
++        requests[id] = task
++        lock.unlock()
++        // HTTPTask synchronizes start/cancel. A retirement before start cannot resurrect it.
++        task.start()
++        return task
++    }
++}
++
++/// Each bounded request owns an ephemeral session; redirect and cache decisions are real delegates.
++final class ClawAssistantHTTPTask: NSObject, URLSessionDataDelegate, ClawAssistantCancellation {
++    private let lock = NSRecursiveLock()
++    private let request: URLRequest
++    private let configuration: URLSessionConfiguration
++    private var completion: ((Result<Data, ClawAssistantError>) -> Void)?
++    private var session: URLSession?
++    private var task: URLSessionDataTask?
++    private var data = Data()
++    private var response: HTTPURLResponse?
++    private var finished = false
++
++    init(request: URLRequest, configuration: URLSessionConfiguration,
++         completion: @escaping (Result<Data, ClawAssistantError>) -> Void) {
++        self.request = request; self.configuration = configuration; self.completion = completion
++    }
++    func start() {
++        lock.lock(); defer { lock.unlock() }
++        guard !finished, session == nil else { return }
++        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
++        self.session = session
++        let task = session.dataTask(with: request)
++        self.task = task; task.resume()
++    }
++    func cancel() { finish(.failure(.transport)) }
++
++    private func finish(_ result: Result<Data, ClawAssistantError>) {
++        lock.lock()
++        guard !finished else { lock.unlock(); return }
++        finished = true
++        let completion = self.completion; self.completion = nil
++        let session = self.session; self.session = nil
++        self.task = nil; data.removeAll(keepingCapacity: false)
++        lock.unlock()
++        session?.invalidateAndCancel()
++        completion?(result)
++    }
++    func urlSession(_ session: URLSession, task: URLSessionTask,
++                    willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
++                    completionHandler: @escaping (URLRequest?) -> Void) {
++        completionHandler(nil)
++        finish(.failure(.invalidResponse))
++    }
++    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
++                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
++        guard let http = response as? HTTPURLResponse, http.url == request.url,
++              http.mimeType?.lowercased() == "application/json" else {
++            completionHandler(.cancel); finish(.failure(.invalidResponse)); return
++        }
++        guard http.expectedContentLength <= Int64(ClawAssistantService.responseLimit) else {
++            completionHandler(.cancel); finish(.failure(.responseTooLarge)); return
++        }
++        lock.lock(); self.response = http; let ended = finished; lock.unlock()
++        completionHandler(ended ? .cancel : .allow)
++    }
++    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
++        lock.lock()
++        guard !finished else { lock.unlock(); return }
++        guard data.count <= ClawAssistantService.responseLimit - self.data.count else {
++            lock.unlock(); finish(.failure(.responseTooLarge)); return
++        }
++        self.data.append(data); lock.unlock()
++    }
++    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
++        lock.lock(); let response = self.response; let body = data; let ended = finished; lock.unlock()
++        guard !ended else { return }
++        guard error == nil else { finish(.failure(.transport)); return }
++        guard let response = response else { finish(.failure(.invalidResponse)); return }
++        guard response.statusCode == 200 else {
++            struct Envelope: Decodable { struct Detail: Decodable { let code: String }; let error: Detail }
++            let code = (try? JSONDecoder().decode(Envelope.self, from: body))?.error.code ?? ""
++            // Do not pass arbitrary server text into logs or UI.
++            let allowed = ["invalid_request", "authentication_required", "permission_denied", "not_found",
++                           "conversation_deleted", "snapshot_changed", "request_conflict", "body_too_large",
++                           "unsupported_media_type", "history_unavailable", "provider_not_configured", "internal_error"]
++            if response.statusCode == 401 { finish(.failure(.server(401, "authentication_required"))) }
++            else if response.statusCode == 409 && code == "snapshot_changed" { finish(.failure(.historyChanged)) }
++            else if allowed.contains(code) { finish(.failure(.server(response.statusCode, code))) }
++            else { finish(.failure(.invalidResponse)) }
++            return
++        }
++        finish(.success(body))
++    }
++}
+diff --git a/Tinodios/ClawAssistantSession.swift b/Tinodios/ClawAssistantSession.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..de78d33069ac20c2363c0822a281dc40aa74891b
+--- /dev/null
++++ b/Tinodios/ClawAssistantSession.swift
+@@ -0,0 +1,122 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import Foundation
++import TinodeSDK
++
++/// Separate lifetime from HTTP tokens: same-account refresh may retain a draft;
++/// logout retires this memory. It is never persisted or shared with another UID/origin.
++final class ClawAssistantAccountMemory {
++    let uid: String
++    let origin: URL
++    let generation: UInt64
++    private let lock = NSLock()
++    private var text = ""
++    private var retired = false
++    init(uid: String, origin: URL, generation: UInt64) {
++        self.uid = uid; self.origin = origin; self.generation = generation
++    }
++    var draft: String {
++        lock.lock(); defer { lock.unlock() }
++        return retired ? "" : text
++    }
++    func updateDraft(_ value: String) {
++        lock.lock(); defer { lock.unlock() }
++        guard !retired else { return }
++        text = value
++    }
++    func retire() {
++        lock.lock(); retired = true; text = ""; lock.unlock()
++    }
++}
++
++final class ClawAssistantSession {
++    static let changed = Notification.Name("ClawAssistantSessionChanged")
++    let owner: Tinode
++    let uid: String
++    let generation: UInt64
++    let origin: URL
++    let account: ClawAssistantAccountMemory
++    private let token: String
++    private let gate: (_ work: () -> Void) -> Bool
++    private let lock = NSRecursiveLock()
++    private var retired = false
++    private var authorizationBlocked = false
++    private(set) var service: ClawAssistantService!
++    lazy var history = ClawAssistantHistory(session: self)
++
++    /// gate is the real Cache.ifCurrent in production. Tests provide only the slot
++    /// boundary while this method still checks actual Tinode identity/token/lifetime.
++    init(owner: Tinode, generation: UInt64, origin: URL, account: ClawAssistantAccountMemory? = nil,
++         configuration: URLSessionConfiguration = .ephemeral,
++         gate: @escaping (_ work: () -> Void) -> Bool) throws {
++        guard owner.isSessionActive, owner.isConnectionAuthenticated,
++              let uid = owner.myUid, !uid.isEmpty, let token = owner.authToken,
++              owner.authTokenExpires.map({ $0 > Date() }) ?? true else {
++            throw ClawAssistantError.signInRequired
++        }
++        let origin = try ClawAssistantService.origin(origin)
++        guard owner.hostURL(useWebsocketProtocol: false) == origin else { throw ClawAssistantError.retired }
++        self.owner = owner; self.uid = uid; self.token = token
++        self.generation = generation; self.origin = origin; self.gate = gate
++        if let account = account, account.uid == uid, account.origin == origin, account.generation == generation {
++            self.account = account
++        } else { self.account = ClawAssistantAccountMemory(uid: uid, origin: origin, generation: generation) }
++        self.service = try ClawAssistantService(origin: origin, apiKey: owner.apiKey, token: token,
++                                               configuration: configuration, isCurrent: { [weak self] in
++            self?.isCurrent ?? false
++        })
++    }
++
++    /// SDK -> Cache -> scope. Callers put only state changes inside, never UIKit/network.
++    func withCurrent<T>(_ body: () -> T) -> T? {
++        var result: T?
++        _ = gate {
++            guard self.owner.myUid == self.uid, self.owner.authToken == self.token,
++                  self.owner.isSessionActive,
++                  self.owner.store.map({ $0.myUid == self.uid }) ?? true,
++                  self.owner.authTokenExpires.map({ $0 > Date() }) ?? true,
++                  self.owner.hostURL(useWebsocketProtocol: false) == self.origin else { return }
++            self.lock.lock(); defer { self.lock.unlock() }
++            guard !self.retired, !self.authorizationBlocked else { return }
++            result = body()
++        }
++        return result
++    }
++    var isCurrent: Bool { withCurrent { true } ?? false }
++    var isBlocked: Bool { lock.lock(); defer { lock.unlock() }; return authorizationBlocked }
++    func matches(owner: Tinode, generation: UInt64, origin: URL) -> Bool {
++        // Called only inside Cache's SDK -> Cache gate.
++        lock.lock(); defer { lock.unlock() }
++        return !retired && self.owner === owner && self.generation == generation &&
++            self.origin == origin && owner.myUid == uid && owner.authToken == token
++    }
++    func updateDraft(_ value: String) {
++        _ = withCurrent { account.updateDraft(value) }
++    }
++    var draft: String { withCurrent { account.draft } ?? "" }
++
++    /// Cache calls this synchronously while detaching. No network/UI callbacks here.
++    func markRetired(clearAccount: Bool) {
++        lock.lock(); retired = true; lock.unlock()
++        if clearAccount { account.retire() }
++    }
++    /// All cancellation/observers are outside SDK/Cache locks.
++    func finishRetirement() {
++        service.cancelAll()
++        notify()
++    }
++    func blockAuthorization() {
++        let changed = withCurrent { () -> Bool in
++            self.authorizationBlocked = true
++            return true
++        } ?? false
++        guard changed else { return } // Late old-token 401 cannot block a new scope.
++        service.cancelAll()
++        notify()
++    }
++    private func notify() {
++        let work = {
++            NotificationCenter.default.post(name: Self.changed, object: self)
++        }
++        if Thread.isMainThread { work() } else { DispatchQueue.main.async(execute: work) }
++    }
++}
+diff --git a/Tinodios/ClawAssistantViewController.swift b/Tinodios/ClawAssistantViewController.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..38996c22673ed297bca0ffc2c094e01f6a932646
+--- /dev/null
++++ b/Tinodios/ClawAssistantViewController.swift
+@@ -0,0 +1,178 @@
++// Copyright (c) 2026 CLAW OS contributors.
++import UIKit
++
++enum ClawAssistantUI {
++    static func label(_ text: String = "", size: CGFloat = 16, weight: UIFont.Weight = .regular) -> UILabel {
++        let label = UILabel()
++        label.text = text; label.numberOfLines = 0
++        label.font = ClawTheme.font(size, weight: weight)
++        label.adjustsFontForContentSizeCategory = true; label.textColor = ClawTheme.ink
++        return label
++    }
++    static func button(_ title: String, primary: Bool = false) -> UIButton {
++        let button = UIButton(type: .system)
++        button.setTitle(title, for: .normal)
++        if primary { ClawTheme.stylePrimaryButton(button) } else { ClawTheme.styleSecondaryButton(button) }
++        button.titleLabel?.numberOfLines = 0; button.titleLabel?.textAlignment = .center
++        button.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
++        button.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
++        return button
++    }
++}
++
++/// Shared only by A pages. Scope ownership is independent of visible controllers.
++class ClawAssistantPage: UIViewController {
++    private(set) var session: ClawAssistantSession?
++    private var observation: UUID?
++    private var lifecycle: [NSObjectProtocol] = []
++    var model: ClawAssistantHistory? { session?.history }
++    var current: Bool { session?.isCurrent ?? false }
++    let accountButton = ClawAssistantUI.button("前往账号设置")
++
++    init(session: ClawAssistantSession? = nil) {
++        self.session = session
++        super.init(nibName: nil, bundle: nil)
++    }
++    required init?(coder: NSCoder) { super.init(coder: coder) }
++    override func viewDidLoad() {
++        super.viewDidLoad()
++        view.backgroundColor = ClawTheme.background
++        accountButton.accessibilityIdentifier = "claw.ai.account"
++        accountButton.addTarget(self, action: #selector(openAccount), for: .touchUpInside)
++        bind(session)
++        lifecycle = [
++            NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification,
++                object: nil, queue: .main) { [weak self] _ in self?.view.isHidden = true },
++            NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification,
++                object: nil, queue: .main) { [weak self] _ in
++                    self?.view.isHidden = false
++                    self?.refreshVisibleScope()
++                }
++        ]
++    }
++    deinit {
++        if let observation = observation { model?.removeObserver(observation) }
++        lifecycle.forEach { NotificationCenter.default.removeObserver($0) }
++    }
++    func bind(_ session: ClawAssistantSession?) {
++        if let observation = observation { model?.removeObserver(observation) }
++        self.session = session
++        observation = session?.history.observe { [weak self] in self?.render() }
++    }
++    override func viewWillAppear(_ animated: Bool) {
++        super.viewWillAppear(animated)
++        view.isHidden = false; refreshVisibleScope()
++    }
++    func refreshVisibleScope() { render() }
++    func render() { accountButton.isHidden = current }
++    @objc private func openAccount() {
++        view.endEditing(true)
++        (tabBarController as? ClawMainTabBarController)?.selectAccount()
++    }
++    func mountStack(_ stack: UIStackView) -> UIScrollView {
++        let scroll = UIScrollView()
++        scroll.keyboardDismissMode = .interactive
++        scroll.translatesAutoresizingMaskIntoConstraints = false
++        stack.axis = .vertical; stack.spacing = 16; stack.translatesAutoresizingMaskIntoConstraints = false
++        view.addSubview(scroll); scroll.addSubview(stack)
++        NSLayoutConstraint.activate([
++            scroll.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
++            scroll.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
++            scroll.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
++            scroll.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
++            stack.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 24),
++            stack.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -24),
++            stack.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor, constant: 24),
++            stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -24),
++            stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -48)
++        ])
++        return scroll
++    }
++    func confirmDeletion(_ id: String) {
++        guard let original = session, original.isCurrent, model?.deletions[id] != .pending else { return }
++        let alert = UIAlertController(title: "删除这段对话？",
++            message: "将删除此账号内的整段助手对话，并在其他设备恢复同步后更新。此操作无法撤销。",
++            preferredStyle: .alert)
++        let cancel = UIAlertAction(title: "取消", style: .cancel)
++        alert.addAction(cancel); alert.preferredAction = cancel
++        alert.addAction(UIAlertAction(title: "删除对话", style: .destructive) { [weak self, weak original] _ in
++            guard let self = self, let original = original, self.session === original, original.isCurrent else { return }
++            original.history.deleteConversation(id)
++        })
++        present(alert, animated: true)
++    }
++}
++
++final class ClawAssistantViewController: ClawAssistantPage {
++    private let welcome = ClawAssistantUI.label("有什么想聊的？", size: 32, weight: .bold)
++    private let notice = ClawAssistantUI.label()
++    private let start = ClawAssistantUI.button("开始提问", primary: true)
++    private let historyButton = ClawAssistantUI.button("历史对话")
++    private let refresh = ClawAssistantUI.button("重新检查")
++    private var startupError: ClawAssistantError?
++    override func viewDidLoad() {
++        super.viewDidLoad()
++        title = "助手"
++        welcome.accessibilityIdentifier = "claw.ai.welcome"
++        notice.accessibilityIdentifier = "claw.ai.status"
++        start.accessibilityIdentifier = "claw.ai.start"
++        historyButton.accessibilityIdentifier = "claw.ai.history"
++        let stack = UIStackView(arrangedSubviews: [
++            ClawAssistantUI.label("AI · 通用文字助手", size: 12),
++            welcome, ClawAssistantUI.label("提问、梳理思路，或一起理解一个新概念。"),
++            notice, start, historyButton, refresh, accountButton
++        ])
++        _ = mountStack(stack)
++        start.addTarget(self, action: #selector(openDraft), for: .touchUpInside)
++        historyButton.addTarget(self, action: #selector(openHistory), for: .touchUpInside)
++        refresh.addTarget(self, action: #selector(reloadCapabilities), for: .touchUpInside)
++        render()
++    }
++    override func refreshVisibleScope() {
++        if !current {
++            do {
++                let candidate = try Cache.assistantSession()
++                if let prior = session {
++                    guard prior.owner === candidate.owner, prior.uid == candidate.uid,
++                          prior.generation == candidate.generation, prior.origin == candidate.origin else {
++                        startupError = .retired; render(); return
++                    }
++                }
++                bind(candidate); startupError = nil
++            }
++            catch let error as ClawAssistantError { startupError = error }
++            catch { startupError = .signInRequired }
++        }
++        render()
++        if current, model?.capabilities == nil, model?.capabilityLoading == false { model?.loadCapabilities() }
++    }
++    override func render() {
++        guard isViewLoaded else { return }
++        super.render()
++        start.isEnabled = current && model?.capabilities != nil && model?.capabilityError == nil
++        historyButton.isEnabled = current && model?.capabilities?.history.available == true && model?.capabilityError == nil
++        if !current {
++            notice.text = startupError?.message ?? "请重新登录后查看助手历史。"
++        } else if model?.capabilityLoading == true {
++            notice.text = "正在检查助手服务…"
++        } else if let error = model?.capabilityError {
++            notice.text = error.message
++        } else if model?.capabilities?.history.available == false {
++            notice.text = "助手历史暂不可用。服务暂未开通。"
++        } else {
++            notice.text = model?.providerNotice ?? "服务暂未开通。"
++        }
++    }
++    @objc private func reloadCapabilities() {
++        refreshVisibleScope()
++        if current, model?.capabilityLoading == false { model?.loadCapabilities() }
++    }
++    @objc private func openDraft() {
++        guard let session = session, current, start.isEnabled else { return }
++        navigationController?.pushViewController(ClawAssistantConversationViewController(session: session), animated: true)
++    }
++    @objc private func openHistory() {
++        guard let session = session, current, historyButton.isEnabled else { return }
++        navigationController?.pushViewController(ClawAssistantHistoryViewController(session: session), animated: true)
++    }
++}
+diff --git a/Tinodios/NewChatTabController.swift b/Tinodios/NewChatTabController.swift
+index c2d8a03c1151abc9dd4447a3cbb1f7d278b1302d..73526b937156d8048edba117cb4916e5aa075f8d 100644
+--- a/Tinodios/NewChatTabController.swift
++++ b/Tinodios/NewChatTabController.swift
+@@ -21,10 +21,12 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
+ 
+         let account = storyboard.instantiateViewController(withIdentifier: "Account Settings")
+         let accountNavigation = UINavigationController(rootViewController: account)
++        let assistantNavigation = UINavigationController(rootViewController: ClawAssistantViewController())
+ 
+         controller.viewControllers = [
+             controller.messagesNavigationController,
+             contactsNavigation,
++            assistantNavigation,
+             accountNavigation
+         ]
+         controller.configureAppearance()
+@@ -42,6 +44,7 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
+         let items: [(String, String, String)] = [
+             ("消息", "message", "message.fill"),
+             ("通讯录", "person.2", "person.2.fill"),
++            ("助手", "sparkles", "sparkles"),
+             ("我", "person.crop.circle", "person.crop.circle.fill")
+         ]
+         for (index, item) in items.enumerated() where index < (viewControllers?.count ?? 0) {
+@@ -79,6 +82,11 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
+         selectedIndex = 0
+     }
+ 
++    func selectAccount() {
++        guard let count = viewControllers?.count, count > 0 else { return }
++        selectedIndex = count - 1
++    }
++
+     func refreshMessageBadge() {
+         guard let messagesItem = viewControllers?.first?.tabBarItem else { return }
+         let unread = Cache.totalUnreadCount()
+diff --git a/TinodiosUITests/AssistantHistoryTests.swift b/TinodiosUITests/AssistantHistoryTests.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..79df7aab88e50a1aa20001272afb6bac44878caf
+--- /dev/null
++++ b/TinodiosUITests/AssistantHistoryTests.swift
+@@ -0,0 +1,478 @@
++// Copyright (c) 2026 CLAW OS contributors.
++// Actual app Service/Session/History and SDK + isolated SQLite; URLProtocol controls transport only.
++import XCTest
++import Foundation
++import TinodeSDK
++@testable import TinodiosDB
++@testable import Tinodios
++
++final class AssistantFixtureProtocol: URLProtocol {
++    static var handler: ((AssistantFixtureProtocol) -> Void)?
++    static var requests: [URLRequest] = []
++    private var stopped = false
++    override class func canInit(with request: URLRequest) -> Bool { true }
++    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
++    override func startLoading() {
++        DispatchQueue.main.async {
++            guard !self.stopped else { return }
++            Self.requests.append(self.request)
++            guard let handler = Self.handler else {
++                self.client?.urlProtocol(self, didFailWithError: URLError(.unsupportedURL)); return
++            }
++            handler(self)
++        }
++    }
++    override func stopLoading() { DispatchQueue.main.async { self.stopped = true } }
++    func reply(_ value: Any, status: Int = 200, length: Int? = nil) {
++        guard !stopped else { return }
++        var headers = ["Content-Type": "application/json", "Cache-Control": "no-store"]
++        if let length = length { headers["Content-Length"] = String(length) }
++        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers)!
++        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
++        client?.urlProtocol(self, didLoad: try! JSONSerialization.data(withJSONObject: value))
++        client?.urlProtocolDidFinishLoading(self)
++    }
++    func fail() { client?.urlProtocol(self, didFailWithError: URLError(.timedOut)) }
++    func redirect() {
++        let response = HTTPURLResponse(url: request.url!, statusCode: 302, httpVersion: "HTTP/1.1",
++                                       headerFields: ["Location": "https://other.invalid/"])!
++        client?.urlProtocol(self, wasRedirectedTo: URLRequest(url: URL(string: "https://other.invalid/")!),
++                            redirectResponse: response)
++    }
++}
++
++final class AssistantFixture {
++    static let first = "00000000-0000-4000-8000-000000000001"
++    static let second = "00000000-0000-4000-8000-000000000002"
++    static let third = "00000000-0000-4000-8000-000000000003"
++    static let date = "2026-09-19T01:00:00Z"
++    static let token = Data("synthetic-assistant-token".utf8).base64EncodedString()
++    let database: BaseDb
++    let owner: Tinode
++    var slotActive = true
++    var afterNextMainGate: (() -> Void)?
++    var scope: ClawAssistantSession!
++    init() throws {
++        let path = FileManager.default.temporaryDirectory
++            .appendingPathComponent("ai-fixture-" + UUID().uuidString + ".sqlite").path
++        // Do not unlink open SQLite connections (existing fixture policy).
++        database = BaseDb(databasePath: path)
++        guard database.isStoreAvailable, let store = database.sqlStore else { throw Failure.fixture }
++        store.setMyUid(uid: "usrSyntheticAssistantA", credMethods: nil)
++        owner = Tinode(for: "AssistantFixture", authenticateWith: "synthetic-ai-key", persistDataIn: store)
++        owner.hostName = "assistant.invalid"; owner.useTLS = true
++        owner.authToken = Self.token; owner.authTokenExpires = Date().addingTimeInterval(3600)
++        owner.isConnectionAuthenticated = true
++        scope = try newScope(generation: 1)
++    }
++    enum Failure: Error { case fixture, deadline }
++    func newScope(generation: UInt64, account: ClawAssistantAccountMemory? = nil) throws -> ClawAssistantSession {
++        let config = URLSessionConfiguration.ephemeral
++        config.protocolClasses = [AssistantFixtureProtocol.self]
++        return try ClawAssistantSession(owner: owner, generation: generation,
++            origin: URL(string: "https://assistant.invalid/")!, account: account, configuration: config,
++            gate: { [weak self] work in
++                guard let self = self else { return false }
++                return self.owner.withActiveSession {
++                    guard self.slotActive else { return false }
++                    work()
++                    if Thread.isMainThread, let observation = self.afterNextMainGate {
++                        self.afterNextMainGate = nil
++                        // Runs after receive's synchronous main-thread identity/operation check.
++                        // This observes the real injected slot boundary, not elapsed time.
++                        DispatchQueue.main.async(execute: observation)
++                    }
++                    return true
++                } ?? false
++            })
++    }
++    func retire() {
++        scope.markRetired(clearAccount: true); scope.finishRetirement()
++        owner.logout()
++    }
++    static var capabilities: [String: Any] {
++        ["version": "claw-ai-v1", "history": ["available": true],
++         "generation": ["available": false, "reason": "provider_not_configured"], "stream": ["available": false],
++         "limits": ["body_bytes": 65536, "text_bytes": 32000, "page_size_max": 100]]
++    }
++    static func conversation(_ id: String = first, revision: String = "1", title: String = "合成历史") -> [String: Any] {
++        ["conversation_id": id, "revision": revision, "deleted": false, "title": title,
++         "created_at": date, "updated_at": date]
++    }
++    static func tombstone(_ id: String = first, revision: String = "2") -> [String: Any] {
++        ["conversation_id": id, "revision": revision, "deleted": true]
++    }
++    static func list(_ items: [[String: Any]], revision: String = "1", next: String = "") -> [String: Any] {
++        ["items": items, "snapshot_revision": revision, "next_cursor": next]
++    }
++    static func message(state: String = "partial", text: String = "合成历史正文", seq: String = "1") -> [String: Any] {
++        ["message_id": second, "conversation_id": first, "run_id": "", "seq": seq, "role": "assistant",
++         "state": state, "text": text, "created_at": date, "updated_at": date]
++    }
++    static func messages(_ values: [[String: Any]], revision: String = "1", next: String = "") -> [String: Any] {
++        ["conversation_id": first, "items": values, "snapshot_revision": revision, "next_after_seq": next]
++    }
++    static func error(_ code: String) -> [String: Any] { ["error": ["code": code]] }
++    static func main<T>(_ work: () throws -> T) rethrows -> T {
++        if Thread.isMainThread { return try work() }
++        return try DispatchQueue.main.sync(execute: work)
++    }
++    static func until(_ condition: () -> Bool) throws {
++        let deadline = ProcessInfo.processInfo.systemUptime + 3
++        while !condition() && ProcessInfo.processInfo.systemUptime < deadline {
++            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.01))
++        }
++        guard condition() else { XCTFail("Bounded real consumer condition not reached"); throw Failure.deadline }
++    }
++    func prepare() throws {
++        AssistantFixtureProtocol.handler = { $0.reply(Self.capabilities) }
++        scope.history.loadCapabilities()
++        try Self.until { !self.scope.history.capabilityLoading }
++        XCTAssertNotNil(scope.history.capabilities)
++    }
++}
++
++final class AssistantHistoryTests: XCTestCase {
++    private var fixture: AssistantFixture!
++    override func setUpWithError() throws {
++        continueAfterFailure = false
++        try AssistantFixture.main {
++            AssistantFixtureProtocol.requests = []
++            fixture = try AssistantFixture()
++        }
++    }
++    override func tearDownWithError() throws {
++        AssistantFixture.main {
++            fixture?.retire(); fixture = nil
++            AssistantFixtureProtocol.handler = nil
++        }
++    }
++
++    func testRealHeadersAndOriginRejectUnsafeSourcesWithoutPost() throws {
++        try AssistantFixture.main {
++            for value in ["http://192.168.1.1/", "http://localhost/", "https://user@assistant.invalid/",
++                          "https://assistant.invalid/?token=x", "https://assistant.invalid/v0/"] {
++                XCTAssertThrowsError(try ClawAssistantService.origin(URL(string: value)!))
++            }
++            XCTAssertNoThrow(try ClawAssistantService.origin(URL(string: "http://127.0.0.1:9/")!))
++            XCTAssertNoThrow(try ClawAssistantService.origin(URL(string: "http://[::1]:9/")!))
++            try fixture.prepare()
++            let request = try XCTUnwrap(AssistantFixtureProtocol.requests.last)
++            XCTAssertEqual(request.url?.path, "/v0/ai/capabilities")
++            XCTAssertNil(request.url?.query)
++            XCTAssertEqual(request.httpMethod, "GET")
++            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "token " + AssistantFixture.token)
++            XCTAssertEqual(request.value(forHTTPHeaderField: "X-Tinode-APIKey"), "synthetic-ai-key")
++            XCTAssertNil(request.value(forHTTPHeaderField: "X-Tinode-Auth"))
++            XCTAssertNil(request.value(forHTTPHeaderField: "Cookie"))
++            XCTAssertNil(request.httpBody)
++        }
++    }
++
++    func testRedirectIsRejectedByActualSessionDelegate() throws {
++        try AssistantFixture.main {
++            AssistantFixtureProtocol.handler = { $0.redirect() }
++            fixture.scope.history.loadCapabilities()
++            try AssistantFixture.until { !self.fixture.scope.history.capabilityLoading }
++            XCTAssertNotNil(fixture.scope.history.capabilityError)
++            XCTAssertEqual(AssistantFixtureProtocol.requests.count, 1)
++            XCTAssertEqual(AssistantFixtureProtocol.requests[0].url?.host, "assistant.invalid")
++        }
++    }
++
++    func testResponseBudgetRejectsAdvertisedOverflowButAcceptsFullLargeText() throws {
++        try AssistantFixture.main {
++            try fixture.prepare()
++            AssistantFixtureProtocol.handler = {
++                $0.reply(AssistantFixture.messages([AssistantFixture.message(text: String(repeating: "合", count: 20000))]))
++            }
++            fixture.scope.history.loadMessages(AssistantFixture.first)
++            try AssistantFixture.until { !self.fixture.scope.history.detailLoading.contains(AssistantFixture.first) }
++            XCTAssertEqual(fixture.scope.history.details[AssistantFixture.first]?.first?.text.utf8.count, 60000)
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.capabilities,
++                length: ClawAssistantService.responseLimit + 1) }
++            fixture.scope.history.loadCapabilities()
++            try AssistantFixture.until { !self.fixture.scope.history.capabilityLoading }
++            XCTAssertEqual(fixture.scope.history.capabilityError, .responseTooLarge)
++        }
++    }
++
++    func testFreshScopeNeedsActualLoginAndExistingScopeSurvivesOnlyUnchangedTokenOffline() throws {
++        try AssistantFixture.main {
++            fixture.owner.isConnectionAuthenticated = false
++            XCTAssertThrowsError(try fixture.newScope(generation: 1))
++            XCTAssertTrue(fixture.scope.isCurrent)
++            fixture.owner.hostName = "changed.invalid"
++            XCTAssertFalse(fixture.scope.isCurrent)
++            fixture.owner.hostName = "assistant.invalid"
++            fixture.owner.authToken = Data("new-token".utf8).base64EncodedString()
++            XCTAssertFalse(fixture.scope.isCurrent)
++            fixture.owner.isConnectionAuthenticated = true
++            let renewed = try fixture.newScope(generation: 1)
++            XCTAssertTrue(renewed.isCurrent)
++            let separateLifetime = try fixture.newScope(generation: 2, account: renewed.account)
++            XCTAssertFalse(separateLifetime.account === renewed.account)
++            separateLifetime.markRetired(clearAccount: true); separateLifetime.finishRetirement()
++            fixture.database.sqlStore?.setMyUid(uid: "usrSyntheticAssistantB", credMethods: nil)
++            XCTAssertFalse(renewed.isCurrent)
++            renewed.markRetired(clearAccount: true); renewed.finishRetirement()
++        }
++    }
++
++    func testAccountDraftPersistsAcrossTokenRefreshButRetiresOnLogout() throws {
++        try AssistantFixture.main {
++            let old = try XCTUnwrap(fixture.scope)
++            old.updateDraft("只属于本账号的合成草稿")
++            fixture.owner.authToken = Data("rotated-token".utf8).base64EncodedString()
++            let renewed = try fixture.newScope(generation: 1, account: old.account)
++            old.markRetired(clearAccount: false); old.finishRetirement()
++            XCTAssertEqual(renewed.draft, "只属于本账号的合成草稿")
++            XCTAssertEqual(old.draft, "")
++            renewed.markRetired(clearAccount: true); renewed.finishRetirement()
++            XCTAssertEqual(renewed.account.draft, "")
++        }
++    }
++
++    func testSnapshotChangedDiscardsStagingAndReplacesOnlyCompleteAccountList() throws {
++        try AssistantFixture.main {
++            try fixture.prepare()
++            let model = fixture.scope.history
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.list([AssistantFixture.conversation(title: "旧完整快照")])) }
++            model.loadConversations()
++            try AssistantFixture.until { !model.listLoading }
++            var page = 0
++            var last: AssistantFixtureProtocol?
++            AssistantFixtureProtocol.handler = { response in
++                page += 1
++                switch page {
++                case 1:
++                    response.reply(AssistantFixture.list([AssistantFixture.conversation()], next: AssistantFixture.first))
++                case 2:
++                    let query = URLComponents(url: response.request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
++                    XCTAssertEqual(query.first { $0.name == "cursor" }?.value, AssistantFixture.first)
++                    XCTAssertEqual(query.first { $0.name == "snapshot_revision" }?.value, "1")
++                    response.reply(AssistantFixture.error("snapshot_changed"), status: 409)
++                case 3:
++                    XCTAssertFalse(response.request.url!.absoluteString.contains("cursor="))
++                    response.reply(AssistantFixture.list([AssistantFixture.tombstone()], revision: "2",
++                                                        next: AssistantFixture.first))
++                default: last = response
++                }
++            }
++            model.loadConversations()
++            try AssistantFixture.until { last != nil }
++            XCTAssertEqual(model.conversations.first?.title, "旧完整快照")
++            last?.reply(AssistantFixture.list([AssistantFixture.conversation(AssistantFixture.second, revision: "2", title: "")],
++                                             revision: "2"))
++            try AssistantFixture.until { !model.listLoading }
++            XCTAssertEqual(model.conversations.map { $0.conversation_id }, [AssistantFixture.second])
++            XCTAssertEqual(model.conversations.first?.displayTitle, "新对话")
++            XCTAssertEqual(model.deletions[AssistantFixture.first], .confirmed)
++        }
++    }
++
++    func testContinuousRevisionChangesEndBoundedlyWithoutDroppingPreviousSnapshot() throws {
++        try AssistantFixture.main {
++            try fixture.prepare()
++            let model = fixture.scope.history
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.list([AssistantFixture.conversation()])) }
++            model.loadConversations(); try AssistantFixture.until { !model.listLoading }
++            let before = AssistantFixtureProtocol.requests.count
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.error("snapshot_changed"), status: 409) }
++            model.loadConversations(); try AssistantFixture.until { !model.listLoading }
++            XCTAssertEqual(AssistantFixtureProtocol.requests.count - before, 3)
++            XCTAssertEqual(model.listError, .historyChanged)
++            XCTAssertEqual(model.conversations.count, 1)
++        }
++    }
++
++    func testUnknownStateInvalidatesWholeDetailAndPreservesOriginalCompleteMessages() throws {
++        try AssistantFixture.main {
++            try fixture.prepare()
++            let model = fixture.scope.history
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.messages([AssistantFixture.message()])) }
++            model.loadMessages(AssistantFixture.first)
++            try AssistantFixture.until { !model.detailLoading.contains(AssistantFixture.first) }
++            let old = model.details[AssistantFixture.first]
++            XCTAssertEqual(old?.first?.run_id, "")
++            XCTAssertEqual(old?.first?.stateText, "回答尚未完成")
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.messages([AssistantFixture.message(state: "completed")])) }
++            model.loadMessages(AssistantFixture.first)
++            try AssistantFixture.until { !model.detailLoading.contains(AssistantFixture.first) }
++            XCTAssertEqual(model.detailErrors[AssistantFixture.first], .incompatible)
++            XCTAssertEqual(model.details[AssistantFixture.first], old)
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.messages([AssistantFixture.message(state: "interrupted")])) }
++            model.loadMessages(AssistantFixture.first)
++            try AssistantFixture.until { !model.detailLoading.contains(AssistantFixture.first) }
++            XCTAssertEqual(model.details[AssistantFixture.first]?.first?.stateText, "回答已中断")
++        }
++    }
++
++    func testDecimalMessageCursorIsNotUUIDAndMalformedPageNeverReplacesSnapshot() throws {
++        try AssistantFixture.main {
++            try fixture.prepare()
++            let model = fixture.scope.history
++            var page = 0
++            AssistantFixtureProtocol.handler = { response in
++                page += 1
++                if page == 1 {
++                    response.reply(AssistantFixture.messages([AssistantFixture.message(seq: "9007199254740993")],
++                                                            next: "9007199254740993"))
++                } else {
++                    let query = URLComponents(url: response.request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
++                    XCTAssertEqual(query.first { $0.name == "after_seq" }?.value, "9007199254740993")
++                    response.reply(AssistantFixture.messages([]))
++                }
++            }
++            model.loadMessages(AssistantFixture.first)
++            try AssistantFixture.until { !model.detailLoading.contains(AssistantFixture.first) }
++            XCTAssertEqual(model.details[AssistantFixture.first]?.first?.seq, "9007199254740993")
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.list([], next: "12")) }
++            model.loadConversations(); try AssistantFixture.until { !model.listLoading }
++            XCTAssertEqual(model.listError, .invalidResponse)
++            XCTAssertFalse(model.hasListSnapshot)
++        }
++    }
++
++    func testAccountAndPageGenerationsRejectLateOldResponses() throws {
++        try AssistantFixture.main {
++            try fixture.prepare()
++            let model = fixture.scope.history
++            var held: [AssistantFixtureProtocol] = []
++            AssistantFixtureProtocol.handler = { held.append($0) }
++            model.loadConversations(); model.loadConversations()
++            try AssistantFixture.until { held.count == 2 }
++            held[1].reply(AssistantFixture.list([AssistantFixture.conversation(AssistantFixture.second)]))
++            try AssistantFixture.until { !model.listLoading }
++            var oldConsumed = false
++            fixture.afterNextMainGate = { oldConsumed = true }
++            held[0].reply(AssistantFixture.list([AssistantFixture.conversation()]))
++            try AssistantFixture.until { oldConsumed }
++            XCTAssertEqual(model.conversations.first?.conversation_id, AssistantFixture.second)
++            fixture.slotActive = false
++            XCTAssertFalse(fixture.scope.isCurrent)
++            fixture.scope.markRetired(clearAccount: true); fixture.scope.finishRetirement()
++            XCTAssertTrue(model.conversations.isEmpty)
++            XCTAssertEqual(fixture.owner.store?.myUid, "usrSyntheticAssistantA")
++        }
++    }
++
++    func testCurrent401BlocksOnlyAssistantAndOldToken401CannotBlockRenewedScope() throws {
++        try AssistantFixture.main {
++            let old = try XCTUnwrap(fixture.scope)
++            var held: AssistantFixtureProtocol?
++            AssistantFixtureProtocol.handler = { held = $0 }
++            old.history.loadCapabilities()
++            try AssistantFixture.until { held != nil }
++            fixture.owner.authToken = Data("replacement-token".utf8).base64EncodedString()
++            let renewed = try fixture.newScope(generation: 1, account: old.account)
++            held?.reply(AssistantFixture.error("authentication_required"), status: 401)
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.capabilities) }
++            renewed.history.loadCapabilities()
++            try AssistantFixture.until { !renewed.history.capabilityLoading }
++            XCTAssertTrue(renewed.isCurrent)
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.error("authentication_required"), status: 401) }
++            renewed.history.loadCapabilities()
++            try AssistantFixture.until { renewed.isBlocked }
++            XCTAssertNil(renewed.history.capabilities)
++            XCTAssertEqual(fixture.owner.myUid, "usrSyntheticAssistantA")
++            XCTAssertEqual(fixture.owner.store?.myUid, "usrSyntheticAssistantA")
++            XCTAssertTrue(fixture.owner.isSessionActive)
++            renewed.markRetired(clearAccount: true); renewed.finishRetirement()
++        }
++    }
++
++    func testDeleteUnknownRemainsAfterActiveReadAndRetryCannotResurrectFromLateGet() throws {
++        try AssistantFixture.main {
++            try fixture.prepare()
++            let model = fixture.scope.history
++            model.setDraft("未发送的草稿")
++            AssistantFixtureProtocol.handler = { $0.fail() }
++            model.deleteConversation(AssistantFixture.first)
++            try AssistantFixture.until { model.deletions[AssistantFixture.first] == .unknown }
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.list([AssistantFixture.conversation()])) }
++            model.reconcileDeletion(AssistantFixture.first)
++            try AssistantFixture.until { !model.listLoading }
++            XCTAssertEqual(model.deletions[AssistantFixture.first], .unknown)
++            var held: AssistantFixtureProtocol?
++            AssistantFixtureProtocol.handler = {
++                if $0.request.httpMethod == "DELETE" {
++                    XCTAssertNil($0.request.httpBody); XCTAssertNil($0.request.url?.query)
++                    $0.reply(["conversation_id": AssistantFixture.first, "deleted": true, "revision": "2"])
++                } else { held = $0 }
++            }
++            model.loadConversations()
++            try AssistantFixture.until { held != nil }
++            model.deleteConversation(AssistantFixture.first)
++            try AssistantFixture.until { model.deletions[AssistantFixture.first] == .confirmed }
++            var oldConsumed = false
++            fixture.afterNextMainGate = { oldConsumed = true }
++            held?.reply(AssistantFixture.list([AssistantFixture.conversation()]))
++            try AssistantFixture.until { oldConsumed }
++            XCTAssertTrue(model.conversations.isEmpty)
++            XCTAssertEqual(model.draft, "未发送的草稿")
++            XCTAssertEqual(AssistantFixtureProtocol.requests.filter { $0.httpMethod == "DELETE" }.count, 2)
++        }
++    }
++
++    func testDeleteBadReceiptAndUnexpectedSuccessAreUnknownButExplicitRejectionIsSeparate() throws {
++        try AssistantFixture.main {
++            try fixture.prepare()
++            let model = fixture.scope.history
++            AssistantFixtureProtocol.handler = {
++                $0.reply(["conversation_id": AssistantFixture.second, "deleted": true, "revision": "2"])
++            }
++            model.deleteConversation(AssistantFixture.first)
++            try AssistantFixture.until { model.deletions[AssistantFixture.first] == .unknown }
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.error("permission_denied"), status: 403) }
++            model.deleteConversation(AssistantFixture.first)
++            try AssistantFixture.until { model.deletions[AssistantFixture.first] != .pending }
++            XCTAssertEqual(model.deletions[AssistantFixture.first], .unknown) // prior write remains uncertain
++            model.deleteConversation(AssistantFixture.second)
++            try AssistantFixture.until { model.deletions[AssistantFixture.second] != .pending }
++            XCTAssertEqual(model.deletions[AssistantFixture.second], .rejected(.server(403, "permission_denied")))
++            AssistantFixtureProtocol.handler = { $0.reply([:], status: 205) }
++            model.deleteConversation(AssistantFixture.third)
++            try AssistantFixture.until { model.deletions[AssistantFixture.third] != .pending }
++            XCTAssertEqual(model.deletions[AssistantFixture.third], .unknown)
++        }
++    }
++
++    func testTombstoneReconcilesUnknownAnd503KeepsDraftWithoutAnyPost() throws {
++        try AssistantFixture.main {
++            try fixture.prepare()
++            let model = fixture.scope.history
++            model.setDraft("保留原字节 + 换行\n合成文本")
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.error("internal_error"), status: 500) }
++            model.deleteConversation(AssistantFixture.first)
++            try AssistantFixture.until { model.deletions[AssistantFixture.first] == .unknown }
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.list([AssistantFixture.tombstone()], revision: "2")) }
++            model.reconcileDeletion(AssistantFixture.first)
++            try AssistantFixture.until { !model.listLoading }
++            XCTAssertEqual(model.deletions[AssistantFixture.first], .confirmed)
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.error("provider_not_configured"), status: 503) }
++            model.loadCapabilities()
++            try AssistantFixture.until { !model.capabilityLoading }
++            XCTAssertEqual(model.draft, "保留原字节 + 换行\n合成文本")
++            XCTAssertEqual(model.providerNotice, "服务暂未开通，你的问题已保留。")
++            XCTAssertFalse(AssistantFixtureProtocol.requests.contains { $0.httpMethod == "POST" })
++
++            // A completed read can establish the tombstone before a pending DELETE
++            // gets its uncertain response; that later response cannot reverse it.
++            var held: AssistantFixtureProtocol?
++            AssistantFixtureProtocol.handler = {
++                if $0.request.httpMethod == "DELETE" { held = $0 }
++                else { $0.reply(AssistantFixture.list([AssistantFixture.tombstone(AssistantFixture.second, revision: "3")], revision: "3")) }
++            }
++            model.deleteConversation(AssistantFixture.second)
++            try AssistantFixture.until { held != nil }
++            model.loadConversations()
++            try AssistantFixture.until { model.deletions[AssistantFixture.second] == .confirmed }
++            var oldConsumed = false
++            fixture.afterNextMainGate = { oldConsumed = true }
++            held?.fail()
++            try AssistantFixture.until { oldConsumed }
++            XCTAssertEqual(model.deletions[AssistantFixture.second], .confirmed)
++        }
++    }
++}
+diff --git a/TinodiosUITests/AssistantLayoutTests.swift b/TinodiosUITests/AssistantLayoutTests.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..e7ab4b477a89df6a4ddd389563e4e7e9c684cf1c
+--- /dev/null
++++ b/TinodiosUITests/AssistantLayoutTests.swift
+@@ -0,0 +1,241 @@
++// Copyright (c) 2026 CLAW OS contributors.
++// Original UIKit Assistant controllers/App tab bar with synthetic Service responses.
++// No live provider, login, ordinary-message send, or customer-service submission.
++import XCTest
++import UIKit
++import Contacts
++import TinodeSDK
++@testable import Tinodios
++
++final class AssistantLayoutTests: XCTestCase {
++    private var fixture: AssistantFixture!
++    private var window: UIWindow!
++    private var previousWindow: UIWindow?
++    private var currentView: UIView?
++    private var priorContactStatus: CNAuthorizationStatus?
++    private var priorPermissionsCallback: ((CNAuthorizationStatus) -> Void)?
++    private var anonymousOwner: Tinode?
++    override func setUpWithError() throws {
++        continueAfterFailure = false
++        try AssistantFixture.main {
++            guard Bundle.main.bundleIdentifier == "app.veilping.clawoschat",
++                  Bundle.main.object(forInfoDictionaryKey: "HOST_NAME") as? String == "127.0.0.1:9",
++                  SharedUtils.getAuthToken() == nil, Cache.tinode.myUid == nil,
++                  Cache.tinode.store?.myUid == nil, !Cache.tinode.isConnectionAuthenticated,
++                  ContactsSynchronizer.default.authStatus != .authorized else {
++                throw AssistantFixture.Failure.fixture
++            }
++            fixture = try AssistantFixture()
++            anonymousOwner = Cache.tinode
++            priorContactStatus = ContactsSynchronizer.default.authStatus
++            priorPermissionsCallback = ContactsSynchronizer.default.permissionsChangedCallback
++            ContactsSynchronizer.default.authStatus = .denied
++            AssistantFixtureProtocol.requests = []
++            try fixture.prepare()
++            previousWindow = UIApplication.shared.windows.first { $0.isKeyWindow }
++            window = UIWindow(frame: UIScreen.main.bounds)
++            window.windowScene = previousWindow?.windowScene
++        }
++    }
++    override func tearDownWithError() throws {
++        try AssistantFixture.main {
++            defer {
++                fixture?.retire(); fixture = nil
++                AssistantFixtureProtocol.handler = nil
++                window?.endEditing(true); window?.isHidden = true; window?.rootViewController = nil
++                currentView = nil; window = nil; previousWindow?.makeKey(); previousWindow = nil
++                if let owner = anonymousOwner, owner.myUid == nil { _ = Cache.invalidate(ifCurrent: owner) }
++                anonymousOwner = nil
++                if let status = priorContactStatus { ContactsSynchronizer.default.authStatus = status }
++                ContactsSynchronizer.default.permissionsChangedCallback = priorPermissionsCallback
++            }
++            if let view = currentView, view.window != nil { try evidence("final", view) }
++        }
++    }
++    private func host(_ controller: UIViewController, accessibility: Bool = false) throws {
++        let container = UIViewController()
++        container.addChild(controller)
++        container.setOverrideTraitCollection(UITraitCollection(preferredContentSizeCategory:
++            accessibility ? .accessibilityExtraExtraExtraLarge : .large), forChild: controller)
++        container.view.addSubview(controller.view)
++        controller.view.frame = CGRect(x: 16, y: 60, width: 320, height: max(600, window.bounds.height - 140))
++        controller.didMove(toParent: container)
++        window.overrideUserInterfaceStyle = accessibility ? .dark : .light
++        window.rootViewController = container; window.makeKeyAndVisible()
++        container.view.layoutIfNeeded(); controller.view.layoutIfNeeded()
++        currentView = controller.view
++        try AssistantFixture.until { controller.view.window === self.window && controller.transitionCoordinator == nil }
++    }
++    private func all(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(all) }
++    private func button(_ title: String, in view: UIView) throws -> UIButton {
++        try XCTUnwrap(all(view).compactMap { $0 as? UIButton }.first { $0.currentTitle == title })
++    }
++    private func evidence(_ name: String, _ view: UIView) throws {
++        view.layoutIfNeeded()
++        let image = UIGraphicsImageRenderer(bounds: view.bounds).image { _ in
++            view.drawHierarchy(in: view.bounds, afterScreenUpdates: true)
++        }
++        let png = XCTAttachment(image: image)
++        png.name = "assistant-a-" + name; png.lifetime = .keepAlways; add(png)
++        let geometry: [[String: Any]] = all(view).filter { $0 is UILabel || $0 is UIButton || $0 is UITextView }.map {
++            let bounds = $0.convert($0.bounds, to: view)
++            return ["type": String(describing: type(of: $0)), "id": $0.accessibilityIdentifier ?? "",
++                    "x": bounds.minX, "y": bounds.minY, "width": bounds.width, "height": bounds.height,
++                    "hidden": $0.isHidden, "alpha": $0.alpha]
++        }
++        let json = XCTAttachment(data: try JSONSerialization.data(withJSONObject:
++            ["scope": "real UIKit assistant A; synthetic HTTP/history only", "geometry": geometry], options: [.sortedKeys]),
++            uniformTypeIdentifier: "public.json")
++        json.name = "assistant-a-" + name + "-geometry"; json.lifetime = .keepAlways; add(json)
++    }
++
++    func testActualFourTabsKeepMessageContactRoutesAndAssistantSelection() throws {
++        try AssistantFixture.main {
++            let tabs = ClawMainTabBarController.make(storyboard: UIStoryboard(name: "Main", bundle: nil))
++            XCTAssertEqual(tabs.viewControllers?.map { $0.tabBarItem.title ?? "" }, ["消息", "通讯录", "助手", "我"])
++            let assistantNavigation = try XCTUnwrap(tabs.viewControllers?[2] as? UINavigationController)
++            let assistant = try XCTUnwrap(assistantNavigation.viewControllers.first as? ClawAssistantViewController)
++            assistant.bind(fixture.scope)
++            tabs.selectedIndex = 2
++            try host(tabs)
++            XCTAssertTrue(tabs.selectedViewController === assistantNavigation)
++            XCTAssertTrue(tabs.viewControllers?.first === tabs.messagesNavigationController)
++            XCTAssertTrue((tabs.viewControllers?[1] as? UINavigationController)?.viewControllers.first is FindViewController)
++            XCTAssertTrue((tabs.viewControllers?.last as? UINavigationController)?.viewControllers.first is AccountSettingsViewController)
++            tabs.selectAccount(); XCTAssertEqual(tabs.selectedIndex, 3)
++            tabs.selectMessages(); XCTAssertEqual(tabs.selectedIndex, 0)
++            tabs.selectedIndex = 2
++            try evidence("four-tabs", tabs.view)
++            XCTAssertFalse(AssistantFixtureProtocol.requests.contains { $0.httpMethod == "POST" })
++        }
++    }
++
++    func testFutureCapabilityFieldsNeverEnableGenerationAndDraftReturnsWithinAccount() throws {
++        try AssistantFixture.main {
++            var capability = AssistantFixture.capabilities
++            capability["generation"] = ["available": true]
++            capability["stream"] = ["available": true]
++            capability["run_protocol"] = "future"
++            capability["message_states"] = ["completed"]
++            AssistantFixtureProtocol.handler = { $0.reply(capability) }
++            fixture.scope.history.loadCapabilities()
++            try AssistantFixture.until { !self.fixture.scope.history.capabilityLoading }
++            let home = ClawAssistantViewController(session: fixture.scope)
++            let navigation = UINavigationController(rootViewController: home)
++            try host(navigation)
++            try button("开始提问", in: home.view).sendActions(for: .touchUpInside)
++            try AssistantFixture.until { navigation.topViewController is ClawAssistantConversationViewController &&
++                navigation.transitionCoordinator == nil }
++            let detail = try XCTUnwrap(navigation.topViewController as? ClawAssistantConversationViewController)
++            let input = try XCTUnwrap(all(detail.view).compactMap { $0 as? UITextView }.first)
++            XCTAssertTrue(input.becomeFirstResponder())
++            input.text = "未发送的本账号问题"
++            detail.textViewDidChange(input)
++            XCTAssertEqual(fixture.scope.draft, "未发送的本账号问题")
++            XCTAssertFalse(try button("发送", in: detail.view).isEnabled)
++            XCTAssertTrue(all(detail.view).contains { ($0 as? UILabel)?.text == "你的问题已保留。请更新应用后再发送。" })
++            detail.view.endEditing(true)
++            try evidence("draft-unavailable", detail.view)
++            navigation.popViewController(animated: false)
++            try AssistantFixture.until { navigation.topViewController === home && detail.parent == nil }
++            try button("开始提问", in: home.view).sendActions(for: .touchUpInside)
++            try AssistantFixture.until { navigation.topViewController is ClawAssistantConversationViewController &&
++                navigation.transitionCoordinator == nil }
++            let resumed = try XCTUnwrap(navigation.topViewController)
++            XCTAssertEqual(all(resumed.view).compactMap { $0 as? UITextView }.first?.text, "未发送的本账号问题")
++            XCTAssertFalse(AssistantFixtureProtocol.requests.contains { $0.httpMethod == "POST" })
++        }
++    }
++
++    func testRealTitleTimeRowsAndPartialHistoryGrowAt320AccessibilityWithoutFakePreview() throws {
++        try AssistantFixture.main {
++            AssistantFixtureProtocol.handler = {
++                if $0.request.url?.path.hasSuffix("/messages") == true {
++                    $0.reply(AssistantFixture.messages([AssistantFixture.message(state: "interrupted",
++                        text: "这是一段受控的合成历史正文，并非模型实时回答。")]))
++                } else {
++                    $0.reply(AssistantFixture.list([AssistantFixture.conversation(
++                        title: "这是一段用于检验大字号自然换行的合成标题")]))
++                }
++            }
++            let history = ClawAssistantHistoryViewController(session: fixture.scope)
++            let navigation = UINavigationController(rootViewController: history)
++            try host(navigation, accessibility: true)
++            try AssistantFixture.until { self.fixture.scope.history.hasListSnapshot && !self.fixture.scope.history.listLoading }
++            let table = try XCTUnwrap(all(history.view).compactMap { $0 as? UITableView }.first)
++            table.layoutIfNeeded()
++            let index = IndexPath(row: 0, section: 0)
++            table.scrollToRow(at: index, at: .middle, animated: false); table.layoutIfNeeded()
++            let cell = try XCTUnwrap(table.cellForRow(at: index))
++            XCTAssertGreaterThan(cell.bounds.height, 76)
++            for label in all(cell).compactMap({ $0 as? UILabel }) where label.accessibilityIdentifier?.hasPrefix("claw.ai.history.") == true {
++                XCTAssertGreaterThan(label.bounds.width, 0)
++                let required = label.sizeThatFits(CGSize(width: label.bounds.width, height: .greatestFiniteMagnitude))
++                XCTAssertLessThanOrEqual(required.height, label.bounds.height + 1)
++            }
++            XCTAssertEqual(all(cell).compactMap { $0 as? UILabel }.filter { !($0.text ?? "").isEmpty }.count, 3)
++            try evidence("history-ax", history.view)
++            history.tableView(table, didSelectRowAt: index)
++            try AssistantFixture.until { navigation.topViewController is ClawAssistantConversationViewController &&
++                navigation.transitionCoordinator == nil && self.fixture.scope.history.details[AssistantFixture.first] != nil }
++            let detail = try XCTUnwrap(navigation.topViewController)
++            XCTAssertTrue(all(detail.view).contains { ($0 as? UILabel)?.text == "回答已中断" })
++            XCTAssertFalse(all(detail.view).contains { ($0 as? UILabel)?.text == "正在回答" })
++            try evidence("history-detail-ax", detail.view)
++        }
++    }
++
++    func testConfirmationCancellationAndUnknownDeleteUseActualConsumersWithoutAutoRetry() throws {
++        try AssistantFixture.main {
++            let data = try JSONSerialization.data(withJSONObject: AssistantFixture.conversation())
++            let conversation = try JSONDecoder().decode(ClawAssistantConversation.self, from: data)
++            AssistantFixtureProtocol.handler = {
++                if $0.request.httpMethod == "DELETE" { $0.fail() }
++                else if $0.request.url?.path.hasSuffix("/messages") == true { $0.reply(AssistantFixture.messages([])) }
++                else { $0.reply(AssistantFixture.list([AssistantFixture.conversation()])) }
++            }
++            let detail = ClawAssistantConversationViewController(session: fixture.scope, conversation: conversation)
++            let navigation = UINavigationController(rootViewController: detail)
++            try host(navigation)
++            try button("删除对话", in: detail.view).sendActions(for: .touchUpInside)
++            try AssistantFixture.until { detail.presentedViewController is UIAlertController }
++            let alert = try XCTUnwrap(detail.presentedViewController as? UIAlertController)
++            XCTAssertEqual(alert.title, "删除这段对话？")
++            XCTAssertEqual(alert.preferredAction?.style, .cancel)
++            XCTAssertEqual(alert.actions.map { $0.style }, [.cancel, .destructive])
++            XCTAssertFalse(AssistantFixtureProtocol.requests.contains { $0.httpMethod == "DELETE" })
++            alert.dismiss(animated: false)
++            try AssistantFixture.until { detail.presentedViewController == nil }
++            // State-machine submit is tested directly; invoking private UIAlertAction
++            // handlers through KVC would not be an actual user confirmation test.
++            fixture.scope.history.deleteConversation(AssistantFixture.first)
++            try AssistantFixture.until { self.fixture.scope.history.deletions[AssistantFixture.first] == .unknown }
++            XCTAssertTrue(all(detail.view).contains { ($0 as? UILabel)?.text?.hasPrefix("删除结果暂未确认") == true })
++            try button("重新核对", in: detail.view).sendActions(for: .touchUpInside)
++            try AssistantFixture.until { !self.fixture.scope.history.listLoading }
++            XCTAssertEqual(fixture.scope.history.deletions[AssistantFixture.first], .unknown)
++            XCTAssertEqual(AssistantFixtureProtocol.requests.filter { $0.httpMethod == "DELETE" }.count, 1)
++            try evidence("delete-unknown", detail.view)
++        }
++    }
++
++    func testRetiringVisibleScopeImmediatelyHidesDraftAndDoesNotLogoutSDKFor401() throws {
++        try AssistantFixture.main {
++            fixture.scope.history.setDraft("仅原账号可见的合成草稿")
++            let detail = ClawAssistantConversationViewController(session: fixture.scope)
++            let navigation = UINavigationController(rootViewController: detail)
++            try host(navigation)
++            XCTAssertEqual(all(detail.view).compactMap { $0 as? UITextView }.first?.text, "仅原账号可见的合成草稿")
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.error("authentication_required"), status: 401) }
++            fixture.scope.history.loadCapabilities()
++            try AssistantFixture.until { self.fixture.scope.isBlocked }
++            XCTAssertEqual(all(detail.view).compactMap { $0 as? UITextView }.first?.text, "")
++            XCTAssertFalse(try button("前往账号设置", in: detail.view).isHidden)
++            XCTAssertEqual(fixture.owner.store?.myUid, "usrSyntheticAssistantA")
++            XCTAssertTrue(fixture.owner.isSessionActive)
++            try evidence("authorization-hidden", detail.view)
++            fixture.scope.markRetired(clearAccount: true); fixture.scope.finishRetirement()
++            XCTAssertEqual(fixture.scope.account.draft, "")
++        }
++    }
++}
