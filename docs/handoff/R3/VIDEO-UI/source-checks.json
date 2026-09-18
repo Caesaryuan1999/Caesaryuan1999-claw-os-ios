@@ -1,0 +1,23 @@
+{
+  "evidence_level": "source_and_xml_only_not_swift_or_runtime",
+  "baseline": "74075fec5334a1e2325b2b194974828afdd6f2f3",
+  "checks": {
+    "only_video_storyboard_scene_changed": true,
+    "whole_storyboard_ids_unique": true,
+    "all_scene_constraint_references_exist": true,
+    "thumbnail_fetcher_unchanged": true,
+    "input_accessory_unchanged": true,
+    "local_send_extension_unchanged": true,
+    "owner_source_gate_unchanged": true,
+    "download_and_inline_export_body_unchanged": true,
+    "no_vlc_library_or_upload_or_db_changes": true,
+    "all_native_test_files_unchanged": true
+  },
+  "outlets": 23,
+  "actions": 5,
+  "files": {
+    "Tinodios/VideoPreviewController.swift": "a5dfada10ac556e5ebaf024c5760056e289884ebc5923e89f67df75b6a7b94a1",
+    "Tinodios/Base.lproj/Main.storyboard": "d638fe4118a87709ec6c4aa434b9f6efc92248aeccc9591b202a729952c2b18b",
+    "Scripts/ci/test_media_attachment_policy.py": "ca2d8f53c0c9a072b44e30f86437ca621a2cfab9bd9f45adf31117eb48367af2"
+  }
+}

@@ -2,6 +2,8 @@
 """Static regression checks for iOS attachments and immersive media previews."""
 
 from pathlib import Path
+import re
+import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -59,9 +61,46 @@ require(VIDEO_PREVIEW, "saveVideoButtonClicked", "received videos must retain th
 
 image_scene = scene_containing(STORYBOARD, 'storyboardIdentifier="ImagePreviewController"')
 video_scene = scene_containing(STORYBOARD, 'customClass="VideoPreviewController"')
-for scene, label in ((image_scene, "image"), (video_scene, "video")):
-    for marker in ("Details", "contentTypeLabel", "fileNameLabel", "sizeLabel"):
-        if marker in scene:
-            raise AssertionError(f"{label} preview must not expose file metadata: {marker}")
+# The image immersive layout remains unchanged. R3's approved video design now
+# displays captured-owner filename/actual size, so check its real wiring instead.
+for marker in ("Details", "contentTypeLabel", "fileNameLabel", "sizeLabel"):
+    if marker in image_scene:
+        raise AssertionError(f"image preview must not expose file metadata: {marker}")
+
+video = ET.fromstring(video_scene)
+ids = [node.attrib["id"] for node in video.iter() if "id" in node.attrib]
+assert len(ids) == len(set(ids)), "video scene IDs must be unique"
+outlets = {node.attrib["property"]: node.attrib["destination"] for node in video.iter("outlet")}
+declared = set(re.findall(r"@IBOutlet(?: private)? weak var (\w+):", VIDEO_PREVIEW))
+assert set(outlets) == declared, "actual controller outlets and scene must agree exactly"
+assert all(target in ids for target in outlets.values())
+for node in video.iter("constraint"):
+    for field in ("firstItem", "secondItem"):
+        assert field not in node.attrib or node.attrib[field] in ids
+for action in video.iter("action"):
+    assert action.attrib["destination"] == "gfT-SI-43h"
+    assert "func " + action.attrib["selector"].rstrip(":") + "(" in VIDEO_PREVIEW
+for prop, selector in (("playPauseButton", "playPauseClicked:"), ("muteButton", "muteButtonClicked:"),
+                       ("shareButton", "saveVideoButtonClicked:"), ("returnButton", "returnToChat:")):
+    button = video.find(".//button[@id='" + outlets[prop] + "']")
+    assert button is not None
+    height = button.find("./constraints/constraint[@firstAttribute='height']")
+    assert height is not None and height.attrib["relation"] == "greaterThanOrEqual"
+    assert float(height.attrib["constant"]) >= 52
+    assert button.find("./connections/action").attrib["selector"] == selector
+assert video.find(".//viewLayoutGuide[@key='contentLayoutGuide']") is not None
+assert video.find(".//viewLayoutGuide[@key='frameLayoutGuide']") is not None
+for prop in ("fileNameLabel", "sizeLabel"):
+    assert video.find(".//label[@id='" + outlets[prop] + "']").attrib["numberOfLines"] == "0"
+for marker in ("traitCollection.preferredContentSizeCategory.isAccessibilityCategory",
+               "label.sizeThatFits", "ClawTheme.font", "ClawTheme.background",
+               "let content = frozenContent", "ownedContext?.isCurrent == true",
+               "metadataStack.isHidden = failed", "sourceAvailable", "case .remote = content.videoSrc",
+               "button === shareButton", "!isPreparingShare", "presentation.complete(result",
+               "self?.acceptsSource(source) == true", "self?.shareSlot.accepts(attempt) == true",
+               "player.isSeekable", "audio.isMuted", "updateLocalAccessoryInsets"):
+    require(VIDEO_PREVIEW, marker, "video UI must retain production boundary: " + marker)
+assert "as? UIBarButtonItem" not in VIDEO_PREVIEW
+assert "周末海边" not in VIDEO_PREVIEW and "8.6 MB" not in VIDEO_PREVIEW
 
 print("iOS media attachment and preview policy checks passed")
