@@ -1,0 +1,15 @@
+{
+  "base": "e1ed950147233f8e9df05ad025e5e356d0097dae",
+  "source_path": "Tinodios/NewGroupViewController.swift",
+  "base_blob": "864cad1965aaca2f75b63200ac041ca278fc0076",
+  "final_sha256": "4ae0ff90bc3b19fb5abba2d61dba49bf97bd8297cc4b2fc59b37b5f03e61f26e",
+  "checks": {
+    "exact_reverse_delta_equals_base_after_Git_CRLF_normalization": true,
+    "single_placeholder_key": true,
+    "accessibility_label_matches_placeholder": true,
+    "only_authorized_production_file_changed": true,
+    "git_diff_check": true
+  },
+  "line_endings": "Git baseline LF, working copy preserved CRLF; first raw byte comparison rejected line-ending difference, normalized comparison matches.",
+  "native": "NOT_RUN: Windows source checks only; CI29 still targets e1ed"
+}

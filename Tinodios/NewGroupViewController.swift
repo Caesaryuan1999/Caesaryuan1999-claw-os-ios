@@ -255,7 +255,7 @@ class NewGroupViewController: UITableViewController {
         detailsTitleLabel.text = NSLocalizedString("设置群资料", comment: "Group profile title")
         detailsTitleLabel.font = .systemFont(ofSize: 24, weight: .bold)
         detailsTitleLabel.textColor = ClawTheme.ink
-        detailsSubtitleLabel.text = NSLocalizedString("添加群名称和说明，创建后仍可修改", comment: "Group profile subtitle")
+        detailsSubtitleLabel.text = NSLocalizedString("设置群名称，可添加仅自己可见的备注。", comment: "Group profile subtitle")
         detailsSubtitleLabel.font = .systemFont(ofSize: 12, weight: .regular)
         detailsSubtitleLabel.textColor = ClawTheme.muted
 
@@ -283,7 +283,8 @@ class NewGroupViewController: UITableViewController {
         groupNameTextField.removeFromSuperview()
         groupNameTextField.placeholder = NSLocalizedString("群聊名称", comment: "Group name placeholder")
         privateTextField.removeFromSuperview()
-        privateTextField.placeholder = NSLocalizedString("群聊说明（可选）", comment: "Group description placeholder")
+        privateTextField.placeholder = NSLocalizedString("备注（仅自己可见，可选）", comment: "Private group remark placeholder")
+        privateTextField.accessibilityLabel = privateTextField.placeholder
         [groupNameTextField, privateTextField].forEach { field in
             field.translatesAutoresizingMaskIntoConstraints = false
             ClawTheme.styleTextField(field)
