@@ -906,7 +906,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                     default:
                         DispatchQueue.main.async {
                             guard audioScope?.isCurrent ?? true else { return }
-                            UiUtils.showToast(message: audioScope == nil ? error!.localizedDescription : "录音上传失败，请在消息中重试。")
+                            UiUtils.showToast(message: audioScope == nil ? error!.localizedDescription : "录音上传未完成，请重新录制后发送。")
                         }
                     }
                     return

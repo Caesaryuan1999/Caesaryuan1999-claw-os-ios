@@ -1,0 +1,8 @@
+{
+  "source": "Tinodios\\MessageInteractor.swift",
+  "old_raw_sha256": "650235f46e462aa48e243a2a4b369fc3141bd7ec8e47a68a220ab7a8a141a7e7",
+  "new_raw_sha256": "62893d835254b430258653b83712a269590f4a105342aced5241ca68bc1b39f0",
+  "exact_one_replacement": true,
+  "production_changed_files": 1,
+  "native_added": 0
+}
