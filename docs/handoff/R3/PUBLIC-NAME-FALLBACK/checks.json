@@ -1,0 +1,23 @@
+{
+  "base": "1a9f978636f29d9a42132e14463c5a576b53af65",
+  "source_files": {
+    "Tinodios/EditMembersViewController.swift": {
+      "base_blob": "abcc9d90d66f0a273b3246c21d0bd3e0c85a48db",
+      "working_sha256": "e7f735722aa3cf7c011df169f8839eca6385a3575c390e3e3c6f1151467e30e6"
+    },
+    "Tinodios/MessageViewController.swift": {
+      "base_blob": "1378961103cfbb9ca8676d5759e245b869e836e0",
+      "working_sha256": "6f492f506a61ca4c3bdcfa0de418e3b226b4fdd0420f5e2efd05bfcc62f1fd04"
+    }
+  },
+  "checks": {
+    "exact_two_file_scope_three_default_context_diff_hunks": true,
+    "three_actual_consumer_helper_calls_and_localized_fallbacks": true,
+    "sender_uses_original_subscription_no_new_account_lookup": true,
+    "no_force_unwrap_sender_or_UID_fallback": true,
+    "selection_lookup_remove_methods_unchanged": true,
+    "existing_name_helper_account_source_SDK_DB_tests_CI_unchanged": true,
+    "git_diff_check": true
+  },
+  "verification": "Windows source binding only; no new native method or mirror behavior test; native 232 plus navigation 3 unchanged."
+}

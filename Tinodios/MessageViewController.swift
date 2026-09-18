@@ -1152,13 +1152,12 @@ extension MessageViewController: UICollectionViewDataSource {
     func senderFullName(for message: Message, at indexPath: IndexPath) -> NSAttributedString? {
         guard shouldShowAvatar(for: message, at: indexPath) else { return nil }
 
-        var senderName: String?
-        if let sub = topic?.getSubscription(for: message.from), let pub = sub.pub {
-            senderName = pub.fn
-        }
-        senderName = senderName ?? String(format: NSLocalizedString("未知 %@", comment: "Sender with missing name"), message.from ?? "none")
+        let senderName = AccountNames.contactDisplayName(
+            displayName: topic?.getSubscription(for: message.from)?.pub?.fn,
+            accountName: nil, userId: message.from,
+            genericDefaultName: NSLocalizedString("资料未获取", comment: "Public contact information unavailable"))
 
-        return NSAttributedString(string: senderName!, attributes: [
+        return NSAttributedString(string: senderName, attributes: [
             NSAttributedString.Key.font: Constants.kSenderNameFont,
             NSAttributedString.Key.foregroundColor: ClawTheme.muted
             ])

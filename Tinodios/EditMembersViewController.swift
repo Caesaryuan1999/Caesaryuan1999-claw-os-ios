@@ -257,7 +257,9 @@ class EditMembersViewController: UIViewController, UITableViewDataSource {
         let selected = contact.uniqueId.map { selectedIds.contains($0) } ?? false
 
         cell.avatar.set(pub: contact.pub, id: contact.uniqueId, deleted: false)
-        cell.title.text = contact.pub?.fn ?? contact.accountName ?? contact.uniqueId
+        cell.title.text = AccountNames.contactDisplayName(
+            displayName: contact.pub?.fn, accountName: contact.accountName, userId: contact.uniqueId,
+            genericDefaultName: NSLocalizedString("资料未获取", comment: "Public contact information unavailable"))
         cell.title.font = .systemFont(ofSize: 15, weight: .semibold)
         cell.title.textColor = ClawTheme.ink
         cell.subtitle.text = contact.subtitle ?? contact.accountName ?? ""
@@ -423,7 +425,9 @@ extension EditMembersViewController: UICollectionViewDataSource, UICollectionVie
         let uid = selectedContactIds[indexPath.item]
         let selectedContact = contact(for: uid)
         cell.avatarImageView.set(pub: selectedContact?.pub, id: uid, deleted: false)
-        cell.configure(name: selectedContact?.pub?.fn ?? selectedContact?.accountName ?? uid)
+        cell.configure(name: AccountNames.contactDisplayName(
+            displayName: selectedContact?.pub?.fn, accountName: selectedContact?.accountName, userId: uid,
+            genericDefaultName: NSLocalizedString("资料未获取", comment: "Public contact information unavailable")))
         cell.onRemove = { [weak self] in
             guard let self = self else { return }
             let allowed = self.delegate?.editMembersWillChangeState(
