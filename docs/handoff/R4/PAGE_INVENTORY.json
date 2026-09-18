@@ -1,0 +1,2255 @@
+{
+  "schema": "claw-ios-page-inventory/1",
+  "task": "R4-DISCOVERY-01",
+  "date": "2026-09-19",
+  "scope": "只读现有有效路由/状态，不是新设计规范或产品完成率",
+  "repository": {
+    "root": "C:/Users/12287/Documents/Codex/2026-07-08/tinode-app/work/r3-20260918-ios",
+    "branch": "codex/r3-20260918-ios",
+    "head_before_docs": "dc2e17dd8f8d1b0a88c2112701566397e77e433f",
+    "production_source": "b0984075ca79ffef93658f702005dd19a773616b",
+    "origin": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios.git",
+    "tracked_dirty_before": 0,
+    "untracked_before": 19782,
+    "non_docs_delta_from_source": []
+  },
+  "decisions": {
+    "existing_design": "R3.D1",
+    "existing_contracts": [
+      "C3-20260918",
+      "AUTH-A1-20260918"
+    ],
+    "r4_confirmed_by_parent": "延续A青绿浅深；独立助手主导航；客服位于我→帮助与客服；AI客服+人工留言；助手为类似豆包的通用文字问答",
+    "still_unconfirmed": [
+      "模型/费用/计费",
+      "数据读取范围/工具与执行权限",
+      "历史保存/同步/删除",
+      "人工留言接待/响应/工作台",
+      "客服知识资料/人工AI转接与状态",
+      "媒体持久恢复取舍"
+    ],
+    "implementation_of_r4": "NOT_IMPLEMENTED"
+  },
+  "method": {
+    "routing_sources": [
+      "Tinodios/Base.lproj/Main.storyboard",
+      "Tinodios/Supporting Files/Base.lproj/LaunchScreen.storyboard",
+      "Tinodios/*Controller*.swift",
+      "Tinodios/UiUtils.swift",
+      "Tinodios/Utils.swift",
+      "Tinodios/NewChatTabController.swift"
+    ],
+    "notes": [
+      "Main有28个customClass控制器scene，逐个归入有效页/导航容器/隐藏兼容/通话后续。",
+      "同controller的登录方式/注册reset验证码/媒体本地远端/群角色作为模式，不重复计页。",
+      "动态独立密码页和开源许可页补入；弹层/系统面板/组件不充数。",
+      "Localizations/*.xcloc为翻译导出副本，未作为运行时页面。",
+      "设计节点仅取现有共享映射/已交接已知节点；未本轮调用Figma/Present，未知为null。"
+    ]
+  },
+  "counts": {
+    "effective_business_pages": 27,
+    "storyboard_custom_scenes": 28,
+    "components": 22,
+    "percentage_complete": null
+  },
+  "pages": [
+    {
+      "id": "IOS-AUTH-LOGIN",
+      "module": "身份",
+      "display_name_zh": "登录 CLAW OS",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "LoginViewController",
+      "source": {
+        "path": "Tinodios/LoginViewController.swift",
+        "line": 4
+      },
+      "actual_entries": [
+        "冷启动 Main.storyboard 的 StartNavigator 根页",
+        "退出/会话失效由 UiUtils.routeToLoginVC 更换根导航"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/UiUtils.swift",
+          "line": 345,
+          "note": "StartNavigator"
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 2125,
+          "note": "Login scene"
+        },
+        {
+          "path": "Tinodios/LoginViewController.swift",
+          "line": 26,
+          "note": "实际动态表单"
+        }
+      ],
+      "reusable_components": [
+        "C-THEME",
+        "C-IDENTITY-FORM",
+        "C-LOGO"
+      ],
+      "key_states": [
+        "手机号/邮箱切换及国家码",
+        "密码登录；HTTP token 后 WS/UID 成功才入消息",
+        "使用原账号登录为同页兼容模式；保留旧密码字节",
+        "身份服务 GET 连接失败/重查；旧号不依赖 HTTP AUTH 存在",
+        "输入/提交禁用/错误/离页清密码",
+        "注册、找回、连接设置导航"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "PASS_LIMITED_OFFLINE_NAV_AND_COLD",
+        "evidence": [
+          "E-CI33",
+          "E-AUTH-NAV"
+        ],
+        "limits": "不提交真实密码/OTP；安全密码截图掩码边界保留，不是身份联机。"
+      },
+      "known_design_nodes": [
+        "29:2"
+      ]
+    },
+    {
+      "id": "IOS-AUTH-REGISTER",
+      "module": "身份",
+      "display_name_zh": "创建账号（入口：注册账号）",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "SignupViewController : ClawIdentityEntryController",
+      "source": {
+        "path": "Tinodios/SignupViewController.swift",
+        "line": 5
+      },
+      "actual_entries": [
+        "登录页“注册账号”→Login2Signup"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/LoginViewController.swift",
+          "line": 146
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 2221
+        },
+        {
+          "path": "Tinodios/Utils.swift",
+          "line": 1506,
+          "note": "父类替换旧静态表格"
+        }
+      ],
+      "reusable_components": [
+        "C-IDENTITY-FORM",
+        "C-THEME"
+      ],
+      "key_states": [
+        "手机/邮箱输入",
+        "条款未配置阻断；未默认同意",
+        "methods 不支持/服务不可达阻断验证码",
+        "提交中/倒计时/未确认结果按相同请求重试",
+        "成功 challenge→验证码页；离页使 flow 失效"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "PASS_LIMITED_OFFLINE_NAV",
+        "evidence": [
+          "E-AUTH-NAV",
+          "E-IDENTITY"
+        ],
+        "limits": "合法资源/真实 SMS、SMTP 缺；未实际注册真人账号。"
+      },
+      "known_design_nodes": [
+        "31:42"
+      ]
+    },
+    {
+      "id": "IOS-AUTH-RESET",
+      "module": "身份",
+      "display_name_zh": "找回密码",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "ResetPasswordViewController : ClawIdentityEntryController",
+      "source": {
+        "path": "Tinodios/ResetPasswordViewController.swift",
+        "line": 4
+      },
+      "actual_entries": [
+        "登录页“找回密码”→Login2ResetPassword"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/LoginViewController.swift",
+          "line": 147
+        },
+        {
+          "path": "Tinodios/Utils.swift",
+          "line": 1508,
+          "note": "reset 模式"
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 2727
+        }
+      ],
+      "reusable_components": [
+        "C-IDENTITY-FORM",
+        "C-THEME"
+      ],
+      "key_states": [
+        "已绑定手机/邮箱输入",
+        "能力检查、发送限流/倒计时/请求未确认",
+        "challenge→验证码→重置密码；不是旧 stock OTP",
+        "返回登录/返回上一步"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "PASS_LIMITED_OFFLINE_NAV",
+        "evidence": [
+          "E-AUTH-NAV",
+          "E-IDENTITY"
+        ],
+        "limits": "页面导航和状态机；未真实收码改密。"
+      },
+      "known_design_nodes": null
+    },
+    {
+      "id": "IOS-AUTH-CODE",
+      "module": "身份",
+      "display_name_zh": "输入验证码",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "CredentialsViewController（identityCoordinator 分支）",
+      "source": {
+        "path": "Tinodios/CredentialsViewController.swift",
+        "line": 11
+      },
+      "actual_entries": [
+        "注册/找回的 requestCode 成功后以代码实例化并 push"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/Utils.swift",
+          "line": 1650,
+          "note": "challenge 回调→CredentialsViewController"
+        },
+        {
+          "path": "Tinodios/CredentialsViewController.swift",
+          "line": 112,
+          "note": "动态六位码表单"
+        }
+      ],
+      "reusable_components": [
+        "C-IDENTITY-FORM"
+      ],
+      "key_states": [
+        "6 位码/验证中/错误/过期",
+        "重新获取/同请求确认/倒计时",
+        "重新选择手机号或邮箱",
+        "验证成功→设置密码"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-IDENTITY"
+        ],
+        "limits": "Flow/URLProtocol/桥接原生证据不等于 OTP 页面联机；旧 nil-coordinator 分支另列。"
+      },
+      "known_design_nodes": [
+        "33:33"
+      ]
+    },
+    {
+      "id": "IOS-AUTH-PASSWORD",
+      "module": "身份",
+      "display_name_zh": "设置密码 / 重置密码",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "ClawSetIdentityPasswordViewController",
+      "source": {
+        "path": "Tinodios/Utils.swift",
+        "line": 1669
+      },
+      "actual_entries": [
+        "验证码 verify 成功→代码 push"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/CredentialsViewController.swift",
+          "line": 147
+        },
+        {
+          "path": "Tinodios/Utils.swift",
+          "line": 1684
+        }
+      ],
+      "reusable_components": [
+        "C-IDENTITY-FORM"
+      ],
+      "key_states": [
+        "12–64 ASCII 无空格密码/两次一致",
+        "proof 过期→重新验证",
+        "POST 未确认冻结内容并重试原请求",
+        "注册已完成但登录失败→继续登录/返回登录，不重复创建",
+        "重置成功清密码并返回登录"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-IDENTITY"
+        ],
+        "limits": "真实服务/短信邮件/用户账号未验；成功恢复是同一页状态而非新增成功页面。"
+      },
+      "known_design_nodes": [
+        "34:40"
+      ]
+    },
+    {
+      "id": "IOS-AUTH-CONNECTION",
+      "module": "身份",
+      "display_name_zh": "连接设置",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "BrandingViewController",
+      "source": {
+        "path": "Tinodios/BrandingViewController.swift",
+        "line": 13
+      },
+      "actual_entries": [
+        "登录页“连接设置”→Login2Branding"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/LoginViewController.swift",
+          "line": 149
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 2251
+        }
+      ],
+      "reusable_components": [
+        "C-QR"
+      ],
+      "key_states": [
+        "输入配置码",
+        "扫描 tinode:host/ 二维码；无效重启扫描",
+        "提交配置并 pop；本页不等待配置结果"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": null,
+      "limitations": [
+        "现 toast 仍为英文 Configuring. Config ID；本轮未读取 SharedUtils 私有内容。",
+        "相机/扫码/合法配置服务未验。"
+      ]
+    },
+    {
+      "id": "IOS-CHATS",
+      "module": "消息",
+      "display_name_zh": "消息",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "ChatListViewController",
+      "source": {
+        "path": "Tinodios/ChatListViewController.swift",
+        "line": 51
+      },
+      "actual_entries": [
+        "登录成功/已有会话→ClawMainTabBarController 第一个导航根"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/NewChatTabController.swift",
+          "line": 14
+        },
+        {
+          "path": "Tinodios/UiUtils.swift",
+          "line": 372
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 1038
+        }
+      ],
+      "reusable_components": [
+        "C-CHAT-ROW",
+        "C-AVATAR",
+        "C-THEME",
+        "C-EMPTY"
+      ],
+      "key_states": [
+        "会话列表/未读/活跃联系人条",
+        "搜索会话只过滤名称/alias，不搜索正文",
+        "空列表/搜索无结果",
+        "点击会话→聊天；发起聊天→旧通讯录容器",
+        "左滑归档；P2P 删除有账号范围确认；群不通用 hard delete",
+        "底部归档入口条件显示"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33",
+          "E-REMOVAL"
+        ],
+        "limits": "Removal helper 不替代会话列表真实网络/手势流程。"
+      },
+      "known_design_nodes": [
+        "23:2"
+      ]
+    },
+    {
+      "id": "IOS-ARCHIVE",
+      "module": "消息",
+      "display_name_zh": "已归档会话",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "ArchivedChatsTableViewController",
+      "source": {
+        "path": "Tinodios/ArchivedChatsTableViewController.swift",
+        "line": 15
+      },
+      "actual_entries": [
+        "消息列表存在归档时底部入口→Chats2Archive"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/ChatListViewController.swift",
+          "line": 480
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 532
+        }
+      ],
+      "reusable_components": [
+        "C-CHAT-ROW",
+        "C-THEME"
+      ],
+      "key_states": [
+        "归档列表/零行",
+        "点击→ArchivedChats2Messages",
+        "左滑取消归档/服务错误 toast"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": [
+        "129:1705"
+      ],
+      "limitations": [
+        "未发现本页独立空态恢复按钮；空列表来自零行。"
+      ]
+    },
+    {
+      "id": "IOS-CONTACTS",
+      "module": "通讯录",
+      "display_name_zh": "通讯录",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "FindViewController",
+      "source": {
+        "path": "Tinodios/FindViewController.swift",
+        "line": 65
+      },
+      "actual_entries": [
+        "主通讯录标签根",
+        "消息→发起聊天→NewChatTab 的查找子页"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/NewChatTabController.swift",
+          "line": 19
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 2332,
+          "note": "容器关系 segue"
+        },
+        {
+          "path": "Tinodios/FindViewController.swift",
+          "line": 82
+        }
+      ],
+      "reusable_components": [
+        "C-CONTACT-ROW",
+        "C-CONTACTS-HEADER",
+        "C-THEME",
+        "C-EMPTY"
+      ],
+      "key_states": [
+        "本账号离线本地联系人",
+        "CLAW文件助手（slf 保存消息）",
+        "添加联系人激活同页搜索；发起群聊",
+        "本地/远端结果、无结果/空联系人/系统通讯录权限",
+        "查询代次/精确公开 alias/basic 条件；选远端结果保存再开聊天",
+        "邀请朋友 handler 显示链接未配置；不是已发送邀请"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-PUBLIC"
+        ],
+        "limits": "公共查询 helper/真实 SQLite 离线门禁已测，不代表目录 UI/通讯录系统授权实测。"
+      },
+      "known_design_nodes": [
+        "43:91",
+        "86:1267",
+        "86:1330"
+      ]
+    },
+    {
+      "id": "IOS-CONTACT-QR",
+      "module": "通讯录",
+      "display_name_zh": "查找联系人（扫码 / 我的二维码）",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "AddByIDViewController",
+      "source": {
+        "path": "Tinodios/AddByIDViewController.swift",
+        "line": 28
+      },
+      "actual_entries": [
+        "消息→发起聊天→NewChatTab 第三个查找子页（QR 图标）"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 2332,
+          "note": "NewChatTab 三关系"
+        },
+        {
+          "path": "Tinodios/ChatListViewController.swift",
+          "line": 124
+        },
+        {
+          "path": "Tinodios/AddByIDViewController.swift",
+          "line": 149
+        }
+      ],
+      "reusable_components": [
+        "C-QR",
+        "C-THEME"
+      ],
+      "key_states": [
+        "输入公开号查询",
+        "展示自己的公开二维码/扫描",
+        "无效码/裸私密 UID 拒绝/目录无结果/查询失败",
+        "成功目录返回 UID 后才进入会话"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": null,
+      "limitations": [
+        "不能把 storyboard 标题 By ID 当现允许手输 UID；相机扫码未运行。"
+      ]
+    },
+    {
+      "id": "IOS-GROUP-CREATE",
+      "module": "群",
+      "display_name_zh": "设置群资料",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "NewGroupViewController",
+      "source": {
+        "path": "Tinodios/NewGroupViewController.swift",
+        "line": 67
+      },
+      "actual_entries": [
+        "通讯录“发起群聊”→NewGroup",
+        "NewChatTab 新群子页；先自动打开成员选择，下一步回资料"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/FindViewController.swift",
+          "line": 175
+        },
+        {
+          "path": "Tinodios/NewGroupViewController.swift",
+          "line": 223
+        },
+        {
+          "path": "Tinodios/NewGroupViewController.swift",
+          "line": 233
+        }
+      ],
+      "reusable_components": [
+        "C-THEME",
+        "C-AVATAR",
+        "C-CONTACT-ROW",
+        "C-MEMBER-CHIP"
+      ],
+      "key_states": [
+        "未选成员→选择成员",
+        "名称/头像/私有备注（仅自己）",
+        "创建中/名称或成员无效/头像上传失败",
+        "创建成功→聊天；部分邀请失败明确提示"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": [
+        "222:2098"
+      ],
+      "limitations": [
+        "premiumDetailsBuilt 后静态表 sections=0，旧 tags/channel 控件仍保留字段但不列为当前可编辑页面。",
+        "私有备注写 priv.comment，不是群公开描述。",
+        "完整创建/部分失败设备未验。"
+      ]
+    },
+    {
+      "id": "IOS-GROUP-MEMBERS",
+      "module": "群",
+      "display_name_zh": "创建群聊：选择成员 / 管理成员",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "EditMembersViewController",
+      "source": {
+        "path": "Tinodios/EditMembersViewController.swift",
+        "line": 13
+      },
+      "actual_entries": [
+        "NewGroupToEditMembers 模态 UINavigationController",
+        "聊天信息有权限时→TopicInfo2EditMembers"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/NewGroupViewController.swift",
+          "line": 209
+        },
+        {
+          "path": "Tinodios/TopicInfoViewController.swift",
+          "line": 235
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 1379
+        }
+      ],
+      "reusable_components": [
+        "C-CONTACT-ROW",
+        "C-MEMBER-CHIP",
+        "C-THEME"
+      ],
+      "key_states": [
+        "搜索候选/选中区/无候选",
+        "新群下一步与已有群保存两模式",
+        "自己/非法 ID/不能移除角色过滤",
+        "资料缺失显示公开名或资料未获取，不展示 UID",
+        "保存中/添加移除失败保留恢复"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": [
+        "50:371",
+        "78:1608"
+      ],
+      "limitations": [
+        "本页并非独立全体用户发现服务；数据来自现联系人/订阅快照，晚到资料重绘无新增运行证据。"
+      ]
+    },
+    {
+      "id": "IOS-CHAT",
+      "module": "聊天",
+      "display_name_zh": "聊天（单聊 / 群聊 / CLAW文件助手）",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "MessageViewController",
+      "source": {
+        "path": "Tinodios/MessageViewController.swift",
+        "line": 598
+      },
+      "actual_entries": [
+        "消息/归档行",
+        "联系人/新建群",
+        "转发选目标",
+        "已鉴权 UiUtils 路由/通知 topic 权限路径"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/UiUtils.swift",
+          "line": 424
+        },
+        {
+          "path": "Tinodios/ChatListViewController.swift",
+          "line": 544
+        },
+        {
+          "path": "Tinodios/FindViewController.swift",
+          "line": 419
+        },
+        {
+          "path": "Tinodios/NewGroupViewController.swift",
+          "line": 502
+        }
+      ],
+      "reusable_components": [
+        "C-MESSAGE",
+        "C-COMPOSER",
+        "C-PINNED",
+        "C-FORWARD",
+        "C-PROGRESS",
+        "C-MESSAGE-ACTIONS"
+      ],
+      "key_states": [
+        "历史分页/空历史/首次定位",
+        "阅读锚点、被动消息/ACK/编辑不抢位；回到最新消息",
+        "新发/回复/转发意图与迟到附件的定位票据",
+        "queued20/sendingC3 31/legacyunknown35/unknownC3 36/failed40/confirmed50，送达/已读分开",
+        "文字/引用/编辑/多选/删除/置顶/附件/录音",
+        "无权限/禁发/消息待确认/上传失败/取消"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "PASS_LIMITED_REAL_VC_NEUTRAL_COLLECTION_VIEW",
+        "evidence": [
+          "E-CHAT",
+          "E-VOICE",
+          "E-CI33"
+        ],
+        "limits": "ChatScroll10 使用真实 VC/UICollectionView + 中性 cells/FlowLayout；非生产气泡全布局、真实发送/双端/返回手势。Voice6 是实际 XIB 组件，不是聊天录音旅程。"
+      },
+      "known_design_nodes": [
+        "23:77",
+        "239:2157",
+        "239:2203"
+      ]
+    },
+    {
+      "id": "IOS-TOPIC-INFO",
+      "module": "聊天资料",
+      "display_name_zh": "聊天信息",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "TopicInfoViewController",
+      "source": {
+        "path": "Tinodios/TopicInfoViewController.swift",
+        "line": 58
+      },
+      "actual_entries": [
+        "聊天导航头像→Messages2TopicInfo"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/MessageViewController.swift",
+          "line": 1043
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 2314
+        }
+      ],
+      "reusable_components": [
+        "C-AVATAR",
+        "C-CONTACT-ROW",
+        "C-THEME"
+      ],
+      "key_states": [
+        "单聊/群/slf 条件资料",
+        "昵称/公开alias/群地址与二维码/备注/简介",
+        "静音、归档开关失败回滚",
+        "群成员仅 manager/sharer 展示",
+        "成员权限/转让/移除操作弹层；编辑和群管理/聊天权限入口"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": [
+        "48:241",
+        "47:168",
+        "48:191"
+      ],
+      "limitations": [
+        "群/成员访问权限依真实订阅，不将 UI 标签当服务授权证明。"
+      ]
+    },
+    {
+      "id": "IOS-TOPIC-EDIT",
+      "module": "聊天资料",
+      "display_name_zh": "聊天资料",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "TopicGeneralViewController",
+      "source": {
+        "path": "Tinodios/TopicGeneralViewController.swift",
+        "line": 75
+      },
+      "actual_entries": [
+        "聊天信息编辑→TopicInfo2TopicGeneral（slf 编辑隐藏）"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 4131
+        },
+        {
+          "path": "Tinodios/TopicInfoViewController.swift",
+          "line": 109
+        },
+        {
+          "path": "Tinodios/zh-Hans.lproj/Main.strings",
+          "line": 623
+        }
+      ],
+      "reusable_components": [
+        "C-AVATAR",
+        "C-TAGS",
+        "C-THEME"
+      ],
+      "key_states": [
+        "允许角色修改公开名/头像/说明/alias",
+        "本人私有备注增量；清空用既有 null",
+        "保存无改动直接返回/请求失败",
+        "公开编辑与成员私人备注分开，不覆写其他 private"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "SDK comment delta 原生覆盖；实际角色页和保存服务未验。"
+      },
+      "known_design_nodes": [
+        "53:354"
+      ]
+    },
+    {
+      "id": "IOS-TOPIC-SECURITY",
+      "module": "聊天资料",
+      "display_name_zh": "群管理 / 聊天权限",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "TopicSecurityViewController",
+      "source": {
+        "path": "Tinodios/TopicSecurityViewController.swift",
+        "line": 176
+      },
+      "actual_entries": [
+        "聊天信息→TopicInfo2TopicSecurity"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 4081
+        },
+        {
+          "path": "Tinodios/TopicInfoViewController.swift",
+          "line": 235
+        }
+      ],
+      "reusable_components": [
+        "C-PERMISSIONS",
+        "C-THEME"
+      ],
+      "key_states": [
+        "群主解散/非群主退出/P2P删除分别确认",
+        "权限/默认权限按角色显示",
+        "删除消息、屏蔽/举报条件",
+        "原owner/topic/角色重验；失败可回聊天恢复",
+        "举报/权限为真实协议动作，不表示客服受理"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-REMOVAL"
+        ],
+        "limits": "Removal 实际 helper 原生，非多人角色竞争设备试验。"
+      },
+      "known_design_nodes": [
+        "62:389",
+        "62:441",
+        "62:493"
+      ]
+    },
+    {
+      "id": "IOS-FORWARD",
+      "module": "聊天",
+      "display_name_zh": "转发目标选择（复用通讯录界面）",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "ForwardToViewController",
+      "source": {
+        "path": "Tinodios/ForwardToViewController.swift",
+        "line": 28
+      },
+      "actual_entries": [
+        "聊天消息菜单/多选转发→ForwardToNavController 模态导航"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+          "line": 581
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 1781
+        }
+      ],
+      "reusable_components": [
+        "C-CONTACT-ROW",
+        "C-THEME",
+        "C-FORWARD"
+      ],
+      "key_states": [
+        "排除来源会话的目标列表/搜索",
+        "选目标仅打开目标聊天并附转发预览",
+        "取消；目标不可写按聊天权限处理；明确发送另行确认"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": [
+        "129:1831",
+        "133:1836"
+      ],
+      "limitations": [
+        "继承 FindViewController.setup 会设导航标题“通讯录”；storyboard Forward To 不足以证明实际中文标题。"
+      ]
+    },
+    {
+      "id": "IOS-MEDIA-FILE",
+      "module": "媒体",
+      "display_name_zh": "发送文件",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "FilePreviewController",
+      "source": {
+        "path": "Tinodios/FilePreviewController.swift",
+        "line": 32
+      },
+      "actual_entries": [
+        "聊天附件→系统文件选择→ShowFilePreview"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+          "line": 177
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 1520
+        }
+      ],
+      "reusable_components": [
+        "C-FORWARD",
+        "C-THEME"
+      ],
+      "key_states": [
+        "真实文件名称/MIME/大小",
+        "读取失败提示并禁发送",
+        "52pt 发送文件/取消",
+        "按钮前捕获原聊天定位意图；退出preview后迟到回调不造新意图"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "PASS_LIMITED_STORYBOARD_HANDLER_FIXTURE",
+        "evidence": [
+          "E-CHAT",
+          "E-SECONDARY"
+        ],
+        "limits": "真实 storyboard/原确认 handler 的定位测试，不等于系统 Provider/实际上传成功。"
+      },
+      "known_design_nodes": [
+        "84:1250"
+      ]
+    },
+    {
+      "id": "IOS-MEDIA-IMAGE",
+      "module": "媒体",
+      "display_name_zh": "图片 / 发送图片",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "ImagePreviewController",
+      "source": {
+        "path": "Tinodios/ImagePreviewController.swift",
+        "line": 50
+      },
+      "actual_entries": [
+        "消息图片实体→ShowImagePreview",
+        "相册/拍照→ShowImagePreview"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+          "line": 735
+        },
+        {
+          "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+          "line": 206
+        }
+      ],
+      "reusable_components": [
+        "C-MEDIA",
+        "C-SEND-IMAGE",
+        "C-THEME"
+      ],
+      "key_states": [
+        "本地选图：缩放/说明/发送/取消",
+        "远端：加载/成功解码/失败/403/重试加载/返回聊天",
+        "未加载禁分享；仅真实解码数据导出 UUID 路径",
+        "原owner/账号cache key/重定向拒绝/世代检查；黑底保留"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-OWNED",
+          "E-SECONDARY"
+        ],
+        "limits": "真实 helper/Kingfisher fixture 不等于完整图片页或系统分享操作。"
+      },
+      "known_design_nodes": [
+        "119:1649"
+      ]
+    },
+    {
+      "id": "IOS-MEDIA-VIDEO",
+      "module": "媒体",
+      "display_name_zh": "视频 / 发送视频",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "VideoPreviewController",
+      "source": {
+        "path": "Tinodios/VideoPreviewController.swift",
+        "line": 151
+      },
+      "actual_entries": [
+        "消息视频实体→ShowVideoPreview",
+        "相册/录制选择→ShowVideoPreview"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+          "line": 760
+        },
+        {
+          "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+          "line": 220
+        }
+      ],
+      "reusable_components": [
+        "C-MEDIA",
+        "C-SEND-IMAGE",
+        "C-THEME"
+      ],
+      "key_states": [
+        "远端先 owned 完整下载到本地再 VLC 播放",
+        "准备/取消并返回/网络、403、超限、空间、会话失效分别说明",
+        "播放/暂停/静音/进度/结束重播",
+        "有效源播放失败仍可独立分享原文件；无效源不放行",
+        "原owner 250ms可见期检查；异步stop确认后清本attempt文件",
+        "本地选视频保持字幕/发送入口；不删用户选择源"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-VLC",
+          "E-OWNED"
+        ],
+        "limits": "7实际 VLC host/helper probe 是依赖行为观察；无完整 VideoPreview 页运行，不把 MP4/fileURL/M3U 单夹具视为全格式无网络。"
+      },
+      "known_design_nodes": [
+        "160:1886",
+        "160:1920",
+        "166:1918",
+        "188:2002",
+        "189:2003"
+      ]
+    },
+    {
+      "id": "IOS-ME",
+      "module": "个人",
+      "display_name_zh": "我",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "AccountSettingsViewController",
+      "source": {
+        "path": "Tinodios/AccountSettingsViewController.swift",
+        "line": 100
+      },
+      "actual_entries": [
+        "主第三标签"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/NewChatTabController.swift",
+          "line": 22
+        },
+        {
+          "path": "Tinodios/AccountSettingsViewController.swift",
+          "line": 124
+        }
+      ],
+      "reusable_components": [
+        "C-PROFILE",
+        "C-AVATAR",
+        "C-THEME"
+      ],
+      "key_states": [
+        "资料未加载/显示名/CLAW号复制",
+        "个人资料/消息通知/账号安全/关于 CLAW OS",
+        "外观仅“跟随系统”只读，无独立主题页",
+        "退出确认保留本机待发送/待确认消息，owner/代次门禁"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": [
+        "111:1620",
+        "23:120"
+      ]
+    },
+    {
+      "id": "IOS-PROFILE",
+      "module": "个人",
+      "display_name_zh": "个人资料",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "AccountGeneralSettingsViewController",
+      "source": {
+        "path": "Tinodios/AccountGeneralSettingsViewController.swift",
+        "line": 55
+      },
+      "actual_entries": [
+        "我→个人资料→AccountSettings2General，me 未加载先阻断"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/AccountSettingsViewController.swift",
+          "line": 252
+        },
+        {
+          "path": "Tinodios/AccountGeneralSettingsViewController.swift",
+          "line": 84
+        }
+      ],
+      "reusable_components": [
+        "C-PROFILE",
+        "C-AVATAR",
+        "C-THEME"
+      ],
+      "key_states": [
+        "昵称/头像/个人简介编辑",
+        "CLAW号只复制：alias优先历史basic回退，不用UID/auth uname",
+        "手机/邮箱只读：暂未获取、未绑定、已验证区分",
+        "更换身份暂未开放；保存中/错误/成功；tags:nil 保留公开号"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-PUBLIC"
+        ],
+        "limits": "公开名 helper/DB 测试不等于个人资料真实保存/头像更新。"
+      },
+      "known_design_nodes": [
+        "52:304"
+      ]
+    },
+    {
+      "id": "IOS-NOTIFICATIONS",
+      "module": "个人",
+      "display_name_zh": "消息通知",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "SettingsNotificationsViewController",
+      "source": {
+        "path": "Tinodios/SettingsNotificationsViewController.swift",
+        "line": 77
+      },
+      "actual_entries": [
+        "我→openNotifications 代码创建 insetGrouped 并 push（静态旧 scene 保留）"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/AccountSettingsViewController.swift",
+          "line": 258
+        }
+      ],
+      "reusable_components": [
+        "C-THEME",
+        "C-NOTIFICATION"
+      ],
+      "key_states": [
+        "检查真实授权/notDetermined请求/denied去设置/authorized或provisional提醒说明",
+        "私聊/群/通话提醒/预览/应用内振动本地偏好",
+        "已读/正在输入/隐身偏好；失败回滚",
+        "声音跳系统设置；授权不等于推送到达"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_SYSTEM_PERMISSION_FLOW",
+        "evidence": [
+          "E-SECONDARY"
+        ],
+        "limits": "授权映射原生 helper 已验；OS授权/APNs/终止通知点击/大陆通道无设备验收。"
+      },
+      "known_design_nodes": [
+        "52:372",
+        "85:1309"
+      ]
+    },
+    {
+      "id": "IOS-ACCOUNT-SECURITY",
+      "module": "个人",
+      "display_name_zh": "安全（入口：账号安全）",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "SettingsSecurityViewController",
+      "source": {
+        "path": "Tinodios/SettingsSecurityViewController.swift",
+        "line": 43
+      },
+      "actual_entries": [
+        "我→AccountSettings2Security"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/AccountSettingsViewController.swift",
+          "line": 267
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 2952
+        }
+      ],
+      "reusable_components": [
+        "C-PERMISSIONS",
+        "C-THEME"
+      ],
+      "key_states": [
+        "已登录用户/访客默认权限",
+        "修改密码弹窗；成功后重新登录",
+        "屏蔽名单计数/无项禁用",
+        "注销账号明确范围与不可撤销确认",
+        "远端精确200后本机事务清理；失败仅重试本机清理/暂不处理",
+        "设备信息弹窗；旧安全页logout行隐藏"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "SDK删除ACK/真实DB事务故障已验；不重复真实删号，本机任意跨重启清理不承诺。"
+      },
+      "known_design_nodes": [
+        "52:439"
+      ]
+    },
+    {
+      "id": "IOS-BLOCKED",
+      "module": "个人",
+      "display_name_zh": "已屏蔽联系人",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "BlockedContactsTableViewController",
+      "source": {
+        "path": "Tinodios/BlockedContactsTableViewController.swift",
+        "line": 16
+      },
+      "actual_entries": [
+        "账号安全“已屏蔽联系人”静态 cell segue（零项时不可选）"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 562
+        },
+        {
+          "path": "Tinodios/SettingsSecurityViewController.swift",
+          "line": 193
+        }
+      ],
+      "reusable_components": [
+        "C-CHAT-ROW",
+        "C-THEME"
+      ],
+      "key_states": [
+        "屏蔽列表/零行",
+        "左滑解除屏蔽、删除",
+        "服务失败 toast/成功重载"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": [
+        "129:1772"
+      ]
+    },
+    {
+      "id": "IOS-HELP",
+      "module": "个人",
+      "display_name_zh": "帮助（入口：关于 CLAW OS）",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "SettingsHelpViewController",
+      "source": {
+        "path": "Tinodios/SettingsHelpViewController.swift",
+        "line": 33
+      },
+      "actual_entries": [
+        "我→AccountSettings2Help"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/AccountSettingsViewController.swift",
+          "line": 271
+        },
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 1837
+        }
+      ],
+      "reusable_components": [
+        "C-THEME",
+        "C-LOGO"
+      ],
+      "key_states": [
+        "版本/当前连接诊断",
+        "支持方式未配置→联系提供应用的管理员提示",
+        "条款/隐私未配置→不可查看说明",
+        "开源许可"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": [
+        "53:480"
+      ],
+      "limitations": [
+        "当前没有人工客服、留言提交、AI客服、工单状态或知识库接线。",
+        "R4已确认将这里承接“帮助与客服”，本批未改文案/入口/权限。"
+      ]
+    },
+    {
+      "id": "IOS-LICENSES",
+      "module": "个人",
+      "display_name_zh": "开源许可",
+      "kind": "business_page",
+      "route_status": "effective",
+      "controller": "UIViewController + UITextView（动态）",
+      "source": {
+        "path": "Tinodios/SettingsHelpViewController.swift",
+        "line": 139
+      },
+      "actual_entries": [
+        "帮助右上“开源许可”→读取 Settings.bundle/Acknowledgements.plist 后 push"
+      ],
+      "route_evidence": [
+        {
+          "path": "Tinodios/SettingsHelpViewController.swift",
+          "line": 158
+        },
+        {
+          "path": "Tinodios/SettingsHelpViewController.swift",
+          "line": 177
+        }
+      ],
+      "reusable_components": [
+        "C-THEME"
+      ],
+      "key_states": [
+        "本机许可全文只读滚动",
+        "文件缺失/解析失败/无正文 toast，不 push 空页"
+      ],
+      "implementation": "IMPLEMENTED",
+      "verification": {
+        "code": "CI33_COMPILED",
+        "page_runtime": "NOT_RUN_FULL_PAGE",
+        "evidence": [
+          "E-CI33"
+        ],
+        "limits": "本轮仅源码路由盘点；编译/方法测试不等于本页全流程运行。"
+      },
+      "known_design_nodes": null,
+      "limitations": [
+        "CI检查了许可生成/解析，未把本页实际滚动计为已验。"
+      ]
+    }
+  ],
+  "navigation_containers": [
+    {
+      "id": "IOS-NAV-MAIN",
+      "controller": "ClawMainTabBarController",
+      "source": {
+        "path": "Tinodios/NewChatTabController.swift",
+        "line": 11
+      },
+      "entry": "UiUtils.routeToChatListVC:372/routeToMessageVC:424",
+      "children": [
+        "IOS-CHATS",
+        "IOS-CONTACTS",
+        "IOS-ME"
+      ],
+      "status": "effective",
+      "count_as_page": false
+    },
+    {
+      "id": "IOS-NAV-START",
+      "controller": "UINavigationController StartNavigator",
+      "source": {
+        "path": "Tinodios/Base.lproj/Main.storyboard",
+        "line": 2
+      },
+      "entry": "storyboard initial/root replacement",
+      "children": [
+        "IOS-AUTH-LOGIN"
+      ],
+      "status": "effective",
+      "count_as_page": false
+    },
+    {
+      "id": "IOS-NAV-COMPOSE",
+      "controller": "NewChatTabController",
+      "source": {
+        "path": "Tinodios/NewChatTabController.swift",
+        "line": 431
+      },
+      "entry": "ChatListViewController.startChat:124 / Chats2NewChat",
+      "children": [
+        "IOS-CONTACTS",
+        "IOS-GROUP-CREATE",
+        "IOS-CONTACT-QR"
+      ],
+      "status": "effective_secondary_container",
+      "count_as_page": false,
+      "note": "不是已移除路由；两个子tab中文均查找，第二个新群组，当前仍为旧容器。"
+    },
+    {
+      "id": "IOS-NAV-WRAPPERS",
+      "controller": "ChatsNavigator / Edit Members Navigation / ForwardToNavController",
+      "source": {
+        "path": "Tinodios/Base.lproj/Main.storyboard",
+        "line": 1075
+      },
+      "entry": "主消息/群选择模态/转发模态",
+      "children": [
+        "IOS-CHATS",
+        "IOS-GROUP-MEMBERS",
+        "IOS-FORWARD"
+      ],
+      "status": "effective",
+      "count_as_page": false
+    }
+  ],
+  "hidden_or_deferred": [
+    {
+      "id": "IOS-HIDDEN-CREDENTIAL-CHANGE",
+      "display_name_zh": "登录方式（只读兼容页）",
+      "controller": "CredentialsChangeViewController",
+      "source": {
+        "path": "Tinodios/CredentialsChangeViewController.swift",
+        "line": 5
+      },
+      "entry": "旧 Settings2CredChange segue仍在；个人资料现numberOfRows=0、新表header无导航箭头/无触发action",
+      "route_evidence": [
+        {
+          "path": "Tinodios/Base.lproj/Main.storyboard",
+          "line": 161
+        },
+        {
+          "path": "Tinodios/AccountGeneralSettingsViewController.swift",
+          "line": 140
+        },
+        {
+          "path": "Tinodios/AccountGeneralSettingsViewController.swift",
+          "line": 283
+        }
+      ],
+      "status": "HIDDEN_LEGACY_ROUTE",
+      "states": [
+        "只读当前值/更换暂未开放",
+        "旧请求/确认action只toast，不发stock OTP"
+      ],
+      "known_design_nodes": null,
+      "count_as_effective_page": false
+    },
+    {
+      "id": "IOS-HIDDEN-STOCK-VERIFY",
+      "display_name_zh": "旧凭据验证分支",
+      "controller": "CredentialsViewController (identityCoordinator=nil)",
+      "source": {
+        "path": "Tinodios/CredentialsViewController.swift",
+        "line": 25
+      },
+      "entry": "UiUtils.routeToCredentialsVC存在，但当前Tinodios Swift搜索无调用者，新AUTH页面使用有coordinator分支",
+      "route_evidence": [
+        {
+          "path": "Tinodios/UiUtils.swift",
+          "line": 359
+        },
+        {
+          "path": "Tinodios/CredentialsViewController.swift",
+          "line": 56
+        }
+      ],
+      "status": "DORMANT_COMPAT_BRANCH",
+      "states": [
+        "旧token+Credential验证代码保留",
+        "当前原账号登录3xx不自动转该页"
+      ],
+      "known_design_nodes": null,
+      "count_as_effective_page": false
+    },
+    {
+      "id": "IOS-CALL",
+      "display_name_zh": "语音/视频通话",
+      "controller": "CallViewController",
+      "source": {
+        "path": "Tinodios/CallViewController.swift",
+        "line": 1
+      },
+      "entry": "聊天callsAllowed按钮/CallManager或CallKit→Messages2Call",
+      "route_evidence": [
+        {
+          "path": "Tinodios/MessageViewController+MessageDisplayLogic.swift",
+          "line": 65
+        },
+        {
+          "path": "Tinodios/MessageViewController.swift",
+          "line": 1057
+        },
+        {
+          "path": "Tinodios/AppDelegate.swift",
+          "line": 236
+        }
+      ],
+      "status": "CONDITIONAL_ROUTE_DEFERRED_ACCEPTANCE",
+      "states": [
+        "音/视频/静音/扬声器/挂断等既有代码"
+      ],
+      "known_design_nodes": null,
+      "count_as_effective_page": false,
+      "note": "有实际入口，不能写成隐藏；本轮不交付通话可用。"
+    },
+    {
+      "id": "IOS-CALL-HISTORY",
+      "display_name_zh": "通话记录",
+      "controller": "ClawCallsHistoryViewController",
+      "source": {
+        "path": "Tinodios/NewChatTabController.swift",
+        "line": 196
+      },
+      "entry": "类含本机历史/筛选/回拨；现main make只装消息/通讯录/我，未发现实例化调用",
+      "route_evidence": [
+        {
+          "path": "Tinodios/NewChatTabController.swift",
+          "line": 25
+        }
+      ],
+      "status": "NO_CURRENT_ENTRY_DEFERRED",
+      "states": [
+        "本机全部/未接/删除/清空/回拨代码"
+      ],
+      "known_design_nodes": null,
+      "count_as_effective_page": false
+    },
+    {
+      "id": "IOS-HIDDEN-GROUP-OPTIONS",
+      "display_name_zh": "旧建群标签/频道行",
+      "controller": "NewGroupViewController",
+      "source": {
+        "path": "Tinodios/NewGroupViewController.swift",
+        "line": 151
+      },
+      "entry": "premiumDetailsBuilt令旧静态table sections=0；现资料header只名称/头像/私人备注；payload仍读取保留outlets",
+      "route_evidence": [
+        {
+          "path": "Tinodios/NewGroupViewController.swift",
+          "line": 375
+        }
+      ],
+      "status": "HIDDEN_LEGACY_CONTROLS",
+      "known_design_nodes": null,
+      "count_as_effective_page": false
+    },
+    {
+      "id": "IOS-NOT-IMPLEMENTED-APPEARANCE",
+      "display_name_zh": "独立外观 / 隐私页",
+      "controller": null,
+      "source": {
+        "path": "Tinodios/AccountSettingsViewController.swift",
+        "line": 109
+      },
+      "entry": "我仅外观只读跟随系统；不存在独立隐私菜单",
+      "status": "NO_CURRENT_ENTRY_NOT_IMPLEMENTED",
+      "known_design_nodes": [
+        "111:1620"
+      ],
+      "count_as_effective_page": false
+    }
+  ],
+  "components": [
+    {
+      "id": "C-THEME",
+      "name": "A 语义色 / Dynamic Type / 导航与列表样式",
+      "paths": [
+        "Tinodios/Utils.swift"
+      ],
+      "line": 21,
+      "boundary": "ClawTheme 动态浅/深色、UIFontMetrics、按钮/输入/分组行；不是所有旧页面已完整改版。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-LOGO",
+      "name": "原 CLAW OS Logo",
+      "paths": [
+        "Tinodios/Supporting Files/Assets.xcassets/logo-ios.imageset/Contents.json",
+        "Tinodios/Supporting Files/Assets.xcassets/logo-ios.imageset/logo-ios.png",
+        "Tinodios/Supporting Files/Assets.xcassets/logo-ios.imageset/logo-ios@2x.png",
+        "Tinodios/Supporting Files/Assets.xcassets/logo-ios.imageset/logo-ios@3x.png"
+      ],
+      "line": 1,
+      "boundary": "原资源继续复用；不重画、不把新智能体图标当品牌替换。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-IDENTITY-FORM",
+      "name": "身份表单",
+      "paths": [
+        "Tinodios/Utils.swift"
+      ],
+      "line": 1369,
+      "boundary": "ClawIdentityForm 的字段、52pt动作、状态、滚动/安全区；ClawIdentityEntryController/Flow 处理实际状态。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-CHAT-ROW",
+      "name": "会话行",
+      "paths": [
+        "Tinodios/widgets/ChatListViewCell.swift",
+        "Tinodios/widgets/ChatListViewCell.xib"
+      ],
+      "line": 1,
+      "boundary": "真实主题头像/标题/预览/未读；归档和屏蔽复用。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-CONTACT-ROW",
+      "name": "联系人行",
+      "paths": [
+        "Tinodios/widgets/ContactViewCell.swift",
+        "Tinodios/widgets/ContactViewCell.xib"
+      ],
+      "line": 1,
+      "boundary": "头像、真实公开名、说明及成员权限标签。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-CONTACTS-HEADER",
+      "name": "通讯录页头",
+      "paths": [
+        "Tinodios/FindViewController.swift"
+      ],
+      "line": 535,
+      "boundary": "同页查找和创建群两个实际回调；搜索条不是全量消息搜索。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-MEMBER-CHIP",
+      "name": "已选成员",
+      "paths": [
+        "Tinodios/widgets/SelectedMemberViewCell.swift",
+        "Tinodios/widgets/SelectedMemberViewCell.xib"
+      ],
+      "line": 1,
+      "boundary": "真实选择标识在内部保留 UID，缺资料不输出 UID。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-AVATAR",
+      "name": "头像 / 在线与输入状态",
+      "paths": [
+        "Tinodios/widgets/AvatarWithOnlineIndicator.swift",
+        "Tinodios/widgets/AvatarWithOnlineIndicator.xib",
+        "Tinodios/widgets/RoundImageView.swift"
+      ],
+      "line": 1,
+      "boundary": "原owner图片loader、头像fallback、文件助手品牌图；在线来自实际Topic，不代表AI在线。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-EMPTY",
+      "name": "空态与连接提示",
+      "paths": [
+        "Tinodios/widgets/NoContentView.swift",
+        "Tinodios/FindViewController.swift",
+        "Tinodios/ChatListViewController.swift"
+      ],
+      "line": 1,
+      "boundary": "不同列表自行组成提示；不推断所有页已有统一加载/错误组件。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-MESSAGE",
+      "name": "消息气泡与内容布局",
+      "paths": [
+        "Tinodios/MessageCell.swift",
+        "Tinodios/MessageViewLayout.swift",
+        "Tinodios/format/FullFormatter.swift"
+      ],
+      "line": 1,
+      "boundary": "文字/引用/附件/状态由真实 Drafty/Message 提供；新AI流式文字不能自动复用消息回执语义。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-COMPOSER",
+      "name": "聊天输入与录音状态",
+      "paths": [
+        "Tinodios/widgets/SendMessageBar.swift",
+        "Tinodios/widgets/SendMessageBar.xib"
+      ],
+      "line": 42,
+      "boundary": "真实 inputAccessoryView；空/文字、按住、左滑取消/上滑锁定、停止/试听/暂停/发送语音/放弃；6组件测试非真实录音通信。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-PINNED",
+      "name": "置顶条",
+      "paths": [
+        "Tinodios/widgets/PinnedMessagesView.swift",
+        "Tinodios/widgets/PinnedMessagesView.xib"
+      ],
+      "line": 1,
+      "boundary": "真实 pins/seq 导航；锚点意图失效已接现入口。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-FORWARD",
+      "name": "回复 / 编辑 / 转发预览",
+      "paths": [
+        "Tinodios/widgets/ForwardMessageBar.swift",
+        "Tinodios/widgets/ForwardMessageBar.xib"
+      ],
+      "line": 1,
+      "boundary": "同一预览条各动作语义不同；转发须用户再发送。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-PROGRESS",
+      "name": "上传进度",
+      "paths": [
+        "Tinodios/widgets/ProgressView.swift",
+        "Tinodios/widgets/ProgressView.xib"
+      ],
+      "line": 1,
+      "boundary": "活动请求进度/取消；不是持久恢复任务列表。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-MESSAGE-ACTIONS",
+      "name": "消息操作弹层",
+      "paths": [
+        "Tinodios/MessageViewController+MessageCellDelegate.swift"
+      ],
+      "line": 75,
+      "boundary": "真实选择动作/角色/消息状态决定；弹层不计页面。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-MEDIA",
+      "name": "媒体加载 / 账号作用域 / 安全导出",
+      "paths": [
+        "Tinodios/ClawSecondaryUIState.swift"
+      ],
+      "line": 51,
+      "boundary": "图像状态、owner context、独立下载、UUID导出、视频预算/播放lease；临时能力非持久媒体恢复。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-SEND-IMAGE",
+      "name": "图片/视频说明与发送条",
+      "paths": [
+        "Tinodios/widgets/SendImageBar.swift",
+        "Tinodios/widgets/SendImageBar.xib"
+      ],
+      "line": 1,
+      "boundary": "本地预览发送/取消；保持原业务和聊天确认意图。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-PROFILE",
+      "name": "个人资料行与卡片",
+      "paths": [
+        "Tinodios/Utils.swift"
+      ],
+      "line": 965,
+      "boundary": "ClawProfileLayout，公开CLAW号和私有登录身份分开。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-NOTIFICATION",
+      "name": "授权状态映射",
+      "paths": [
+        "Tinodios/ClawSecondaryUIState.swift"
+      ],
+      "line": 9,
+      "boundary": "真实 UNAuthorizationStatus → 请求或系统设置，不把允许等同APNs到达。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-PERMISSIONS",
+      "name": "权限编辑弹层",
+      "paths": [
+        "Tinodios/widgets/PermissionsEditViewController.swift",
+        "Tinodios/widgets/PermissionsEditView.xib"
+      ],
+      "line": 10,
+      "boundary": "UiUtils.showPermissionsEditDialog:618；账号/群/成员实际Acs编辑，非R4智能体授权组件。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-TAGS",
+      "name": "标签与多行编辑弹层",
+      "paths": [
+        "Tinodios/widgets/TagsEditView.swift",
+        "Tinodios/widgets/TagsEditDialogView.swift",
+        "Tinodios/widgets/Base.lproj/TagsEditDialogView.xib",
+        "Tinodios/widgets/MultilineAlertView.swift"
+      ],
+      "line": 1,
+      "boundary": "实际Topic资料触发；不新增用户账号名注册。",
+      "count_as_page": false
+    },
+    {
+      "id": "C-QR",
+      "name": "二维码显示/扫描",
+      "paths": [
+        "Tinodios/QRScanner.swift",
+        "Tinodios/UiUtils.swift"
+      ],
+      "line": 1,
+      "boundary": "相机扫描公开号/群码或配置码；权限/真实相机待设备。",
+      "count_as_page": false
+    }
+  ],
+  "system_and_overlay_boundaries": [
+    {
+      "type": "附件选择",
+      "entry": {
+        "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+        "line": 19
+      },
+      "controllers": [
+        "UIDocumentPickerViewController",
+        "UIImagePickerController"
+      ],
+      "source_paths": [
+        "Tinodios/widgets/ImagePicker.swift"
+      ],
+      "boundary": "系统文件/相册/拍照/视频选择，非自建页面；真机权限/Provider未验。"
+    },
+    {
+      "type": "附件动作面板",
+      "entry": {
+        "path": "Tinodios/widgets/SendMessageBar.swift",
+        "line": 149
+      },
+      "controllers": [
+        "ClawAttachmentSheetController"
+      ],
+      "boundary": "录音仍输入组件；相册/拍照/文件动作，不算新业务页。"
+    },
+    {
+      "type": "系统分享",
+      "entry": {
+        "path": "Tinodios/UiUtils.swift",
+        "line": 742,
+        "note": "presentFileSharingVC；带owned presentation的入口在754行"
+      },
+      "controllers": [
+        "UIActivityViewController"
+      ],
+      "boundary": "文件/图片/视频分享；不是已保存相册，不计App独立页。"
+    },
+    {
+      "type": "危险确认与恢复",
+      "entry": {
+        "path": "Tinodios/SettingsSecurityViewController.swift",
+        "line": 393
+      },
+      "controllers": [
+        "UIAlertController"
+      ],
+      "boundary": "注销/本机清理重试、退出、删除/解散、改密、举报、设备信息及QR展示各为弹层状态。"
+    },
+    {
+      "type": "通知与旧库阻断",
+      "entry": {
+        "path": "Tinodios/AppDelegate.swift",
+        "line": 148
+      },
+      "controllers": [
+        "系统通知UI",
+        "本机阻断提示"
+      ],
+      "boundary": "APNs/收件归属通用通知、schema阻断是依赖状态；不凭源码冒充通知实到。"
+    },
+    {
+      "type": "启动画面",
+      "path": "Tinodios/Supporting Files/Base.lproj/LaunchScreen.storyboard",
+      "boundary": "系统启动资源，非互动业务页。"
+    }
+  ],
+  "evidence_registry": {
+    "E-CI33": {
+      "path": "docs/handoff/R3/CHAT-SCROLL-01/CI33-ACCEPTANCE.md",
+      "json": "docs/handoff/R3/CHAT-SCROLL-01/CI33-ACCEPTANCE.json",
+      "source": "b0984075ca79ffef93658f702005dd19a773616b",
+      "run": "35375538413",
+      "job": "105699232079",
+      "sdk_passed": 44,
+      "storage_passed": 198,
+      "navigation_passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "boundary": "历史CI实证，本轮未重跑；全App编译与限定原生/导航/冷启，不是27页全流程。"
+    },
+    "E-AUTH-NAV": {
+      "source": "TinodiosUITests/IdentityNavigationUITests.swift",
+      "methods": 3,
+      "evidence": "E-CI33",
+      "boundary": "真实App离线登录→注册/找回→返回、键盘/旧号入口；无OTP或登录提交，secure截图掩码缺口保留。"
+    },
+    "E-IDENTITY": {
+      "source": "TinodiosUITests/IdentityFlowTests.swift",
+      "evidence": "E-CI33",
+      "boundary": "真实Foundation service/URLProtocol与Flow/桥接，非真实身份供应商。"
+    },
+    "E-CHAT": {
+      "source": "TinodiosUITests/ChatScrollTests.swift",
+      "methods": 10,
+      "evidence": "E-CI33",
+      "boundary": "真实VC/UICollectionView，中性cells/FlowLayout；原FilePreview storyboard/handler，非完整生产消息布局/通信/触摸返回手势。"
+    },
+    "E-VOICE": {
+      "source": "TinodiosUITests/VoiceLayoutTests.swift",
+      "methods": 6,
+      "evidence": "E-CI33",
+      "additional": "TinodiosUITests/MediaRecorderLifecycleTests.swift",
+      "boundary": "原XIB/真实UIKit/合成按钮与handler；Recorder实际类受控AV引擎，非真实麦克风/发送/设备权限。"
+    },
+    "E-PUBLIC": {
+      "source": "TinodiosUITests/PublicDirectoryTests.swift",
+      "additional": "TinodiosUITests/TinodiosUITests.swift",
+      "evidence": "E-CI33",
+      "boundary": "公开查询helper/真实本地DB/owner门禁；实际服务UI未验。"
+    },
+    "E-REMOVAL": {
+      "source": "TinodiosUITests/ConversationRemovalTests.swift",
+      "evidence": "E-CI33",
+      "boundary": "原生产permit/调用者源接线；非多人服务端角色改变设备旅程。"
+    },
+    "E-SECONDARY": {
+      "source": "TinodiosUITests/SecondaryUIStateTests.swift",
+      "evidence": "E-CI33",
+      "boundary": "实际状态helper/临时文件；非通知OS跳转/provider/UIActivity系统操作。"
+    },
+    "E-OWNED": {
+      "source": "TinodiosUITests/OwnedImageTests.swift",
+      "evidence": "E-CI33",
+      "boundary": "原生产helper、URLSession/Kingfisher/真实文件/受控HTTP；非全部头像与完整预览页操作。"
+    },
+    "E-VLC": {
+      "source": "TinodiosUITests/VLCPlaybackProbeTests.swift",
+      "methods": 7,
+      "evidence": "E-CI33",
+      "boundary": "真实VLC空host/合成MP4与HTTP/生产lease；测试PASS包含安全行为观察，不称所有格式无外连；原VideoPreview未实例化。"
+    }
+  },
+  "support_assistant_facts": [
+    {
+      "fact": "没有内置客服会话/工单/人工留言提交入口",
+      "evidence": [
+        {
+          "path": "Tinodios/SettingsHelpViewController.swift",
+          "line": 49
+        },
+        {
+          "path": "Tinodios/SettingsHelpViewController.swift",
+          "line": 135
+        }
+      ],
+      "scope": "当前Tinodios路由与Swift源码；不代表后端未有bot示例。"
+    },
+    {
+      "fact": "CLAW文件助手是slf保存消息，不是模型",
+      "evidence": [
+        {
+          "path": "Tinodios/FindViewController.swift",
+          "line": 274
+        },
+        {
+          "path": "Tinodios/MessageViewController+MessageDisplayLogic.swift",
+          "line": 47
+        },
+        {
+          "path": "Tinodios/TopicInfoViewController.swift",
+          "line": 127
+        }
+      ]
+    },
+    {
+      "fact": "未发现当前客户端模型service/stream/token budget/tool consent或独立助手Controller",
+      "evidence": [
+        {
+          "path": "Tinodios/NewChatTabController.swift",
+          "line": 25
+        }
+      ],
+      "scope": "Tinodios/TinodeSDK Swift的有界词搜索 + 页面路由核对；未读私有SharedUtils/后端内容。"
+    },
+    {
+      "fact": "R4可复用入口依赖而非已实现功能",
+      "evidence": [
+        {
+          "path": "Tinodios/NewChatTabController.swift",
+          "line": 14
+        },
+        {
+          "path": "Tinodios/NewChatTabController.swift",
+          "line": 40
+        },
+        {
+          "path": "Tinodios/AccountSettingsViewController.swift",
+          "line": 111
+        },
+        {
+          "path": "Tinodios/SettingsHelpViewController.swift",
+          "line": 33
+        }
+      ],
+      "dependency": "新增助手controller/服务与PBX接线、tabs索引假设、帮助与客服内容路由需独立冻结；现消息导航index0/通讯录index1不可误改。"
+    }
+  ],
+  "media_recovery": [
+    {
+      "area": "上传",
+      "source": [
+        {
+          "path": "Tinodios/LargeFileHelper.swift",
+          "line": 9
+        },
+        {
+          "path": "Tinodios/LargeFileHelper.swift",
+          "line": 141
+        },
+        {
+          "path": "Tinodios/LargeFileHelper.swift",
+          "line": 207
+        },
+        {
+          "path": "Tinodios/LargeFileHelper.swift",
+          "line": 406
+        },
+        {
+          "path": "Tinodios/MessageInteractor.swift",
+          "line": 940
+        }
+      ],
+      "implemented": "活动请求内最多3次瞬态重试；内存activeUploads关联回调/原owner；临时multipart副本",
+      "missing": "耗尽后terminal清临时副本、草稿failed40；没有可见持久journal/任务重建/消息级重新上传动作",
+      "boundary": "background URLSession配置不等于能跨进程恢复业务映射；未改上传schema/协议。"
+    },
+    {
+      "area": "图片加载",
+      "source": [
+        {
+          "path": "Tinodios/ImagePreviewController.swift",
+          "line": 193
+        },
+        {
+          "path": "Tinodios/ImagePreviewController.swift",
+          "line": 227
+        }
+      ],
+      "implemented": "合法ref失败可重试加载；403不提供假重试；原owner/cached identity",
+      "missing": "不能由图片重试按钮推断上传重试"
+    },
+    {
+      "area": "视频加载/分享",
+      "source": [
+        {
+          "path": "Tinodios/VideoPreviewController.swift",
+          "line": 151
+        },
+        {
+          "path": "Tinodios/VideoPreviewController.swift",
+          "line": 477
+        },
+        {
+          "path": "Tinodios/ClawSecondaryUIState.swift",
+          "line": 503
+        }
+      ],
+      "implemented": "完整下载预算/原owner + 独立播放share lease；返回取消加载；stop确认再清owned文件",
+      "missing": "下载断点跨进程恢复/全格式网络隔离未交付；实际完整VideoPreview页和系统分享未验"
+    },
+    {
+      "area": "录音",
+      "source": [
+        {
+          "path": "Tinodios/MediaRecorder.swift",
+          "line": 150
+        },
+        {
+          "path": "Tinodios/MediaRecorder.swift",
+          "line": 298
+        },
+        {
+          "path": "Tinodios/widgets/SendMessageBar.swift",
+          "line": 658
+        },
+        {
+          "path": "Tinodios/MessageInteractor.swift",
+          "line": 965
+        }
+      ],
+      "implemented": "权限回调不自动开录；同页同owner中断保留preview，离页退休仅本次源；Data接收后清原录音文件",
+      "missing": "上传失败须重新录制；不保跨进程preview，不具备消息级重上传"
+    },
+    {
+      "area": "C3消息重试",
+      "source": [
+        {
+          "path": "Tinodios/MessageInteractor.swift",
+          "line": 993
+        }
+      ],
+      "implemented": "附件upload200 URL写Drafty/msgReady成功才交原C3发送",
+      "missing": "35/36状态与安全重派发不是重新上传文件；不能拿新UUID复活旧unknown"
+    }
+  ],
+  "artifact_presence": [
+    {
+      "path": "artifacts/integration/20260918/R3-ios-ci33-evidence.zip",
+      "base": "project_root",
+      "bytes": 50270844,
+      "sha256": "0e7227eeec0d351efe518632f23e1f90af1c4f9f6bb3acb6be6ab72af3158f1d",
+      "checked": "READ_HASH_MATCH"
+    },
+    {
+      "path": "artifacts/integration/20260918/R3-ios-ci33-evidence/ios-01-a-20260918-173905/CLAW-OS-unsigned-simulator.zip",
+      "base": "project_root",
+      "bytes": 37665378,
+      "sha256": "22c2ad33ec01022c6eef3d9291f733779d6573e3cda4eee26cdcbc167c763e96",
+      "checked": "READ_HASH_MATCH"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-1B20EC2/CLAW-IOS-R3-source-test-ci.patch",
+      "base": "ios_repo",
+      "bytes": 1165207,
+      "sha256": "448633865dec72f1c178dce9ff0f4690b14bdc7eed039c38b1fe91259d85580f",
+      "checked": "READ_HASH_MATCH"
+    },
+    {
+      "path": "docs/handoff/R3/CHAT-SCROLL-01/FINAL-FDEDF825/unit.patch",
+      "base": "ios_repo",
+      "bytes": 97716,
+      "sha256": "29cc92f25a9b21100c9fb38b29796460810d946f146a7d365a3b60cb2e48e9f3",
+      "checked": "READ_HASH_MATCH"
+    },
+    {
+      "path": "docs/handoff/R3/CHAT-SCROLL-01/FOLLOWUP-B098407/unit.patch",
+      "base": "ios_repo",
+      "bytes": 16477,
+      "sha256": "718837601a66f7e344b0f37c7c6e4f8ae0f9f63dfac3a25e314f1e37874c8da8",
+      "checked": "READ_HASH_MATCH"
+    }
+  ],
+  "not_executed": [
+    "build/Swift/Xcode/CI/push/dispatch",
+    "模拟器/真机/真实账号/服务/推送请求",
+    "源码/测试/CI/协议/DB/包/私有配置/共享文档变更",
+    "客服/AI实现或未确认的数据权限决定"
+  ]
+}
