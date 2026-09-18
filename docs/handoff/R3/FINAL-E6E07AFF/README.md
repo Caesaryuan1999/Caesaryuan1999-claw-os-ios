@@ -1,6 +1,6 @@
 # R3 iOS 安全源码交付包（截至 E6E07AFF）
 
-此包只封源码、必要测试和 CI 差异，不是 IPA，不包含签名、真实推送配置或用户数据库。封包不提高运行验收等级；CI17 的最终结果、产物和截图以总控单独复核为准。
+此包只封源码、必要测试和 CI 差异，不是 IPA，不包含签名、真实推送配置或用户数据库。封包不提高运行验收等级；CI17 总控已完成独立验收，准确结果见末尾补录。
 
 ## 精确版本与实体
 
@@ -73,8 +73,21 @@ native-methods.json 从精确目标的真实 XCTest 类及扩展提取，并和 
 - LocalMigration 的并发初始化是一个方法内 12 轮、24 次开库，不能计成 12 个方法。
 - OwnedImageTests 的 21 方法包含 helper 后的 extension；不能漏算追加的下载测试。
 
-已取得的准确历史事实：CI16 精确 74075fec5334a1e2325b2b194974828afdd6f2f3 的 SDK41、storage155、导航3 均通过并成功打包；随后同 UUID 模拟器 bootstatus 超过原 45 秒而失败，当时没有安装或启动 App，不能称 App 崩溃或完整 CI 成功。其后 VIDEO-UI 和 E6 有界诊断需要 CI17 精确目标结果，封包时仍待总控。
+已取得的准确历史事实：CI16 精确 74075fec5334a1e2325b2b194974828afdd6f2f3 的 SDK41、storage155、导航3 均通过并成功打包；随后同 UUID 模拟器 bootstatus 超过原 45 秒而失败，当时没有安装或启动 App，不能称 App 崩溃或完整 CI 成功。其后 VIDEO-UI 和 E6 有界诊断需要 CI17 精确目标结果，最初封包时仍待总控；后续结果见末尾补录。
 
 E6 在 Windows 的实际 Python runner 受控回归为 43/43；44 源策略通过，总控亦独立复核。它保留 45 秒失败门槛，只增加有界 boot/bootstatus 输出及失败后一次 5 秒的同 UUID 只读状态诊断；不会失败后继续安装、换机、强杀、重 boot 或隐藏失败。此处不等于 CoreSimulator/真机执行。
 
 CI15 的真实密码输入长度、非 placeholder、键盘 geometry/hittable 断言通过，但 App 和 XCUIScreen PNG 仍为空密码且无可见软件键盘，视觉掩码/截图差异保留，不因断言通过而抹去。视频 VLC 内部缓存/重定向、真实媒体播放/分享、完整 VoiceOver/动态字号、真实设备/推送/正式服务均不得由这份补丁或测试数量推定完成。
+
+## CI17 精确结果补录（不改变补丁）
+
+总控对精确目标 e6e07aff8215ea003312a518d6f83e0c1da0ee84 的 [CI17 run 35324705676](https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios/actions/runs/35324705676) 已完成 artifact 和原图复核：
+
+- SDK 41 + storage 155 = 原生 196 全通过；真实 App 离线导航另计 3 全通过；无失败或跳过。
+- 打包成功，未签名模拟器 App ZIP SHA256：d7baf96bebd11c178cb7b75ef2b275dce49f599ec8b143b84dc7cd7799f385cd。
+- artifact 10539162991，38,292,742 bytes，SHA256：0ac30bbeb4b3e951e7d49b7adb89e1bfcdeab6eb7e7d3ac4fc3f560ed80de142。
+- 同 UUID DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9 从 Shutdown 启动；bootstatus 22.110291 秒完成；安装、精确进程路径/PID 29644 核对与截图均通过。
+- 总控已查看原冷启动图（1206×2622；SHA256 3bd02f6ebb342dc49dcfa4f24264709699bf8dba7c9c005904d8d8f890fe7885），身份首屏实际显示。此轮导航截图未重新全量目视，不能取代此前记录的密码视觉缺口。
+- 以上仅模拟器原生回归、离线导航与冷启动；视频实际运行、真实服务、真实 iPhone、APNs 和跨端互通仍未验。CI16 原 bootstatus 超时的内部根因仍未知，不因 CI17 成功改写旧失败。
+
+来源是总控已核实的根目录 artifacts/integration/20260918/R3-ios-ci17-diagnosis.json。原 file-manifest/packaging-checks/native-methods 中的 pending 表述保留为首次封包时点记录；本补录只补验收事实，补丁实体与全部 88 文件哈希不变。
