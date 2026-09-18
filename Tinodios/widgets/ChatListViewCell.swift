@@ -39,6 +39,7 @@ class ChatListViewCell: UITableViewCell {
     private var titleRow: UIStackView!
     private var previewRow: UIStackView!
     private var timeRow: UIStackView!
+    private var compactTimeWidth: NSLayoutConstraint?
     private var unreadCountHeight: NSLayoutConstraint?
 
     // Explicit opt-in: archive/blocked consumers retain their original card layout.
@@ -116,6 +117,9 @@ class ChatListViewCell: UITableViewCell {
         messageTimeLabel.font = ClawTheme.font(12, style: .caption1)
         messageTimeLabel.textColor = ClawTheme.muted
         messageTimeLabel.textAlignment = .right
+        messageTimeLabel.numberOfLines = 1
+        messageTimeLabel.lineBreakMode = .byTruncatingTail
+        messageTimeLabel.accessibilityIdentifier = "claw.conversation.time"
         messageTimeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         messageTimeLabel.setContentHuggingPriority(.required, for: .horizontal)
 
@@ -153,6 +157,10 @@ class ChatListViewCell: UITableViewCell {
         textRows.axis = .vertical
         textRows.spacing = 4
         contentView.addSubview(textRows)
+        // At ordinary sizes the title owns at least half of this row. A full
+        // cross-year timestamp may truncate visually; accessibility keeps its text.
+        compactTimeWidth = timeRow.widthAnchor.constraint(lessThanOrEqualTo: titleRow.widthAnchor, multiplier: 0.5)
+        compactTimeWidth?.identifier = "claw.conversation.compact-time-width"
 
         iconBlockedWidth.constant = ChatListViewCell.kIconWidth
         unreadCountWidth.constant = 20
@@ -195,7 +203,6 @@ class ChatListViewCell: UITableViewCell {
         rowMetrics.forEach { $0.0.constant = usesContinuousLayout ? $0.2 : $0.1 }
         cardView.layer.cornerRadius = usesContinuousLayout ? 0 : ClawTheme.cardRadius
         rowDivider.isHidden = !usesContinuousLayout
-        title.numberOfLines = usesContinuousLayout ? 0 : 2
         let destination = usesContinuousLayout ? timeRow : previewRow
         if unreadCount.superview !== destination {
             (unreadCount.superview as? UIStackView)?.removeArrangedSubview(unreadCount)
@@ -208,9 +215,16 @@ class ChatListViewCell: UITableViewCell {
 
     private func updateRowAxes() {
         guard let titleRow = titleRow else { return }
-        titleRow.axis = usesContinuousLayout && traitCollection.preferredContentSizeCategory.isAccessibilityCategory
-            ? .vertical : .horizontal
+        let expanded = usesContinuousLayout && traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+        let compact = usesContinuousLayout && !expanded
+        titleRow.axis = expanded ? .vertical : .horizontal
         titleRow.alignment = titleRow.axis == .vertical ? .fill : .center
+        title.numberOfLines = expanded ? 0 : 2
+        if compactTimeWidth?.isActive != compact { compactTimeWidth?.isActive = compact }
+        let timePriority: UILayoutPriority = compact ? UILayoutPriority(249) : .required
+        if messageTimeLabel.contentCompressionResistancePriority(for: .horizontal) != timePriority {
+            messageTimeLabel.setContentCompressionResistancePriority(timePriority, for: .horizontal)
+        }
     }
 
     override func prepareForReuse() {

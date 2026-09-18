@@ -186,6 +186,37 @@ final class CoreListLayoutTests: XCTestCase {
         [root] + root.subviews.flatMap { allViews($0) }
     }
 
+    private func compactConversationTitleFits(_ cell: ChatListViewCell,
+                                             file: StaticString = #filePath, line: UInt = #line) throws {
+        let title = try XCTUnwrap(cell.title, file: file, line: line)
+        let time = try XCTUnwrap(allViews(cell).first {
+            $0.accessibilityIdentifier == "claw.conversation.time"
+        } as? UILabel, file: file, line: line)
+        let timeRow = try XCTUnwrap(time.superview as? UIStackView, file: file, line: line)
+        let titleRow = try XCTUnwrap(timeRow.superview as? UIStackView, file: file, line: line)
+        XCTAssertFalse(cell.traitCollection.preferredContentSizeCategory.isAccessibilityCategory, file: file, line: line)
+        XCTAssertEqual(titleRow.axis, .horizontal, file: file, line: line)
+        XCTAssertEqual(title.numberOfLines, 2, file: file, line: line)
+        func glyphWidth(_ text: String) -> CGFloat {
+            CGFloat(CTLineGetTypographicBounds(CTLineCreateWithAttributedString(NSAttributedString(
+                string: text, attributes: [.font: title.font!]) as CFAttributedString), nil, nil, nil))
+        }
+        let meaningfulWidth = min(glyphWidth(title.text ?? ""), glyphWidth("汉字标题"))
+        XCTAssertGreaterThan(meaningfulWidth, 0, file: file, line: line)
+        XCTAssertGreaterThanOrEqual(title.bounds.width + 1, ceil(meaningfulWidth), file: file, line: line)
+        XCTAssertLessThanOrEqual(title.bounds.height, ceil(title.font.lineHeight) * 2 + 1, file: file, line: line)
+        XCTAssertLessThanOrEqual(timeRow.bounds.width, titleRow.bounds.width * 0.5 + 1, file: file, line: line)
+        XCTAssertEqual(time.numberOfLines, 1, file: file, line: line)
+        XCTAssertEqual(time.lineBreakMode, .byTruncatingTail, file: file, line: line)
+        XCTAssertTrue((cell.accessibilityLabel ?? "").contains(try XCTUnwrap(time.text)), file: file, line: line)
+        let titleFrame = title.convert(title.bounds, to: cell)
+        let timeFrame = timeRow.convert(timeRow.bounds, to: cell)
+        XCTAssertLessThanOrEqual(titleFrame.maxX, timeFrame.minX + 1, file: file, line: line)
+        contained(title, in: cell, file: file, line: line)
+        contained(time, in: cell, file: file, line: line)
+        readable(title, file: file, line: line)
+    }
+
     private func topic() throws -> DefaultComTopic {
         let topic = try XCTUnwrap(Tinode.newTopic(withTinode: nil, forTopic: "grp-core-fixture") as? DefaultComTopic)
         topic.pub = TheCard(fn: "合成会话名称")
@@ -214,6 +245,7 @@ final class CoreListLayoutTests: XCTestCase {
             XCTAssertEqual(cell.unreadCount.text, "9+")
             XCTAssertFalse(cell.unreadCount.isHidden)
             unreadBadgeFits(cell, text: "9+")
+            try compactConversationTitleFits(cell)
             XCTAssertFalse(try XCTUnwrap(allViews(cell).first { $0.accessibilityIdentifier == "claw.conversation.divider" }).isHidden)
             contained(cell.title, in: cell); contained(cell.unreadCount, in: cell)
             try evidence("conversation-continuous", view: controller.view)
@@ -331,6 +363,7 @@ final class CoreListLayoutTests: XCTestCase {
                         chat.unreadCount.font.pointSize < enlargedFontSize
                 }
                 unreadBadgeFits(chat, text: "9+")
+                try compactConversationTitleFits(chat)
                 try evidence(style == .dark ? "badge-shrunk-dark" : "badge-shrunk-light", view: standard.view)
                 let enlarged = UIViewController()
                 try host(enlarged, category: .accessibilityExtraExtraExtraLarge, style: style)
@@ -340,6 +373,7 @@ final class CoreListLayoutTests: XCTestCase {
                     return chat.unreadCount.font.pointSize > 12
                 }
                 unreadBadgeFits(chat, text: "9+")
+                readable(chat.title); contained(chat.title, in: chat)
                 try evidence(style == .dark ? "badge-regrown-ax-dark" : "badge-regrown-ax-light", view: enlarged.view)
             }
         }
@@ -502,6 +536,9 @@ final class CoreListLayoutTests: XCTestCase {
                     "x": r.minX, "y": r.minY, "width": r.width, "height": r.height,
                     "hidden": $0.isHidden, "alpha": $0.alpha,
                     "font": ($0 as? UILabel)?.font.pointSize ?? 0,
+                    "labelLines": ($0 as? UILabel)?.numberOfLines ?? 0,
+                    "labelLineHeight": ($0 as? UILabel)?.font.lineHeight ?? 0,
+                    "compressionHorizontal": $0.contentCompressionResistancePriority(for: .horizontal).rawValue,
                     "unreadGlyphWidth": badgeGlyphWidth,
                     "unreadFontLineHeight": badge?.font.lineHeight ?? 0,
                     "unreadDesiredHeight": badge.map { max(24, ceil($0.font.lineHeight) + 8) } ?? 0,
