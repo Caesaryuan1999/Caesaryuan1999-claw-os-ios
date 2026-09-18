@@ -247,30 +247,56 @@ final class MediaRecorderLifecycleTests: XCTestCase {
         }
     }
 
-    func testRetirementDeletesOnlyUnsubmittedOwnedFile() throws {
+    func testAcceptedDataCleansOnlyOriginalFileAndRetirementRetriesFailure() throws {
         let dir = try directory()
         defer { try? FileManager.default.removeItem(at: dir) }
         try onMain {
             var engine: RecordingEngineFixture!
-            func make() -> MediaRecorder {
-                MediaRecorder(session: RecordingSessionFixture(), factory: { url, _ in
-                    engine = RecordingEngineFixture(url: url); return engine
-                }, directory: dir, schedulesTimer: false)
-            }
-            let transferred = make()
-            transferred.start()
+            var removalAttempts = 0
+            var events: [String] = []
+            let copiedUploadFile = dir.appendingPathComponent("independent-upload-copy.m4a")
+            let recorder = MediaRecorder(session: RecordingSessionFixture(), factory: { url, _ in
+                engine = RecordingEngineFixture(url: url); return engine
+            }, directory: dir, schedulesTimer: false, removeFile: { url in
+                removalAttempts += 1
+                if removalAttempts == 1 { throw CocoaError(.fileWriteNoPermission) }
+                try FileManager.default.removeItem(at: url)
+            }, log: { events.append($0) })
+            recorder.start()
             engine.currentTime = 4
-            let (take, bits) = try transferred.prepareSubmission(minimumDuration: 3000)
-            XCTAssertEqual(bits, Data([1, 2, 3, 4]))
-            transferred.didSubmit(take)
-            transferred.retire()
+            let (take, bits) = try recorder.prepareSubmission(minimumDuration: 3000)
+            try bits.write(to: copiedUploadFile)
+            recorder.didSubmit(take)
+            XCTAssertEqual(recorder.state, .transferred)
+            XCTAssertEqual(recorder.recordFileURL, take.url)
             XCTAssertTrue(FileManager.default.fileExists(atPath: take.url.path))
-            let abandoned = make()
+            XCTAssertEqual(events, ["recording_cleanup_failed"])
+            recorder.retire()
+            XCTAssertEqual(removalAttempts, 2)
+            XCTAssertNil(recorder.recordFileURL)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: take.url.path))
+            XCTAssertEqual(bits, Data([1, 2, 3, 4]))
+            XCTAssertEqual(try Data(contentsOf: copiedUploadFile), bits)
+            let immediate = MediaRecorder(session: RecordingSessionFixture(), factory: { url, _ in
+                engine = RecordingEngineFixture(url: url); return engine
+            }, directory: dir, schedulesTimer: false)
+            immediate.start()
+            engine.currentTime = 4
+            let (otherTake, otherBits) = try immediate.prepareSubmission(minimumDuration: 3000)
+            immediate.didSubmit(otherTake)
+            XCTAssertNil(immediate.recordFileURL)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: otherTake.url.path))
+            XCTAssertEqual(otherBits, bits)
+            immediate.retire()
+            XCTAssertEqual(try Data(contentsOf: copiedUploadFile), bits)
+            let abandoned = MediaRecorder(session: RecordingSessionFixture(), factory: { url, _ in
+                RecordingEngineFixture(url: url)
+            }, directory: dir, schedulesTimer: false)
             abandoned.start()
             let abandonedURL = try XCTUnwrap(abandoned.recordFileURL)
             abandoned.retire()
             XCTAssertFalse(FileManager.default.fileExists(atPath: abandonedURL.path))
-            XCTAssertTrue(FileManager.default.fileExists(atPath: take.url.path))
+            XCTAssertEqual(try Data(contentsOf: copiedUploadFile), bits)
         }
     }
 

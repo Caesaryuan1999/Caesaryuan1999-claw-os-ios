@@ -1,4 +1,10 @@
 //
+//  MediaRecorder.swift
+//  Tinodios
+//
+//  Copyright © 2022 Tinode LLC. All rights reserved.
+//
+
 // Recorder lifecycle is owned by one page/account lease. AV work stays on main;
 // retirement admission is synchronous and never invokes AV or UI under Cache locks.
 //
@@ -70,6 +76,7 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
     private let log: (String) -> Void
     private let schedulesTimer: Bool
     private let readData: (URL) throws -> Data
+    private let removeFile: (URL) throws -> Void
     private var engine: MediaRecordingEngine?
     private var updateTimer: Timer?
     private var ownedURL: URL?
@@ -94,6 +101,7 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
          },
          directory: URL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0],
          schedulesTimer: Bool = true, readData: @escaping (URL) throws -> Data = { try Data(contentsOf: $0) },
+         removeFile: @escaping (URL) throws -> Void = { try FileManager.default.removeItem(at: $0) },
          log: @escaping (String) -> Void = { _ in }) {
         self.ownerIsCurrent = ownerIsCurrent
         self.session = session ?? SystemMediaRecordingSession()
@@ -101,6 +109,7 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
         self.directory = directory
         self.schedulesTimer = schedulesTimer
         self.readData = readData
+        self.removeFile = removeFile
         self.log = log
         super.init()
     }
@@ -283,14 +292,31 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
         return (recording, data)
     }
 
-    // Caller invokes only after handing this recording to the existing message
-    // entry. Retirement must not delete a file whose ownership was transferred.
+    // The existing message/upload entry accepts Data, not this source URL.
+    // Its independent payload/copy survives cleanup of this lease's source file.
+    // A failed removal keeps ownedURL so retirement can retry that same file.
     func didSubmit(_ recording: Recording) {
         precondition(Thread.isMainThread)
         guard state == .preview, completed?.url == recording.url else { return }
-        ownedURL = nil
         completed = nil
         state = .transferred
+        removeOwnedFile()
+    }
+
+    private func removeOwnedFile() {
+        guard let url = ownedURL else { return }
+        do {
+            try removeFile(url)
+            ownedURL = nil
+        } catch {
+            let failure = error as NSError
+            if failure.domain == NSCocoaErrorDomain && failure.code == NSFileNoSuchFileError {
+                ownedURL = nil
+            } else {
+                // Keep the exact cleanup responsibility, never another take's URL.
+                log("recording_cleanup_failed")
+            }
+        }
     }
 
     private func discardOwnedRecording() {
@@ -301,11 +327,7 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
         engine?.stop()
         engine = nil
         deactivate()
-        if let url = ownedURL {
-            do { try FileManager.default.removeItem(at: url) }
-            catch { log("recording_cleanup_failed") }
-        }
-        ownedURL = nil
+        removeOwnedFile()
         completed = nil
         lastTime = 0
         audioSampler = AudioSampler()
