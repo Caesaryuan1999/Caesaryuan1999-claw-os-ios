@@ -179,8 +179,15 @@ final class ClawAssistantHTTPTask: NSObject, URLSessionDataDelegate, ClawAssista
     }
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
                     completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
-        guard let http = response as? HTTPURLResponse, http.url == request.url,
-              http.mimeType?.lowercased() == "application/json" else {
+        guard let http = response as? HTTPURLResponse, http.url == request.url else {
+            completionHandler(.cancel); finish(.failure(.invalidResponse)); return
+        }
+        // Authentication failure is authoritative even when a gateway supplies no
+        // JSON envelope. Hide this scope before reading an untrusted error body.
+        if http.statusCode == 401 {
+            completionHandler(.cancel); finish(.failure(.server(401, "authentication_required"))); return
+        }
+        guard http.mimeType?.lowercased() == "application/json" else {
             completionHandler(.cancel); finish(.failure(.invalidResponse)); return
         }
         guard http.expectedContentLength <= Int64(ClawAssistantService.responseLimit) else {

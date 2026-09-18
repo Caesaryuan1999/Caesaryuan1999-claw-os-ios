@@ -33,7 +33,9 @@ enum ClawAssistantWire {
                     options: .regularExpression) != nil
     }
     static func decimal(_ value: String) -> Bool {
-        value.range(of: "^(0|[1-9][0-9]*)$", options: .regularExpression) != nil && value.count <= 20
+        let maximum = "9223372036854775807"
+        return value.range(of: "^(0|[1-9][0-9]*)$", options: .regularExpression) != nil &&
+            (value.count < maximum.count || (value.count == maximum.count && value <= maximum))
     }
     static func less(_ a: String, _ b: String) -> Bool {
         a.count == b.count ? a < b : a.count < b.count

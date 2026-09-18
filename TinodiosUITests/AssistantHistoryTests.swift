@@ -33,6 +33,16 @@ final class AssistantFixtureProtocol: URLProtocol {
         client?.urlProtocolDidFinishLoading(self)
     }
     func fail() { client?.urlProtocol(self, didFailWithError: URLError(.timedOut)) }
+    func replyUnauthorized(contentType: String?) {
+        guard !stopped else { return }
+        var headers = ["Cache-Control": "no-store"]
+        if let contentType = contentType { headers["Content-Type"] = contentType }
+        let response = HTTPURLResponse(url: request.url!, statusCode: 401, httpVersion: "HTTP/1.1",
+                                       headerFields: headers)!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Data("<html>synthetic unauthorized gateway</html>".utf8))
+        client?.urlProtocolDidFinishLoading(self)
+    }
     func redirect() {
         let response = HTTPURLResponse(url: request.url!, statusCode: 302, httpVersion: "HTTP/1.1",
                                        headerFields: ["Location": "https://other.invalid/"])!
@@ -331,6 +341,19 @@ final class AssistantHistoryTests: XCTestCase {
             model.loadConversations(); try AssistantFixture.until { !model.listLoading }
             XCTAssertEqual(model.listError, .invalidResponse)
             XCTAssertFalse(model.hasListSnapshot)
+            let maximum = "9223372036854775807"
+            let overflow = "9223372036854775808"
+            XCTAssertTrue(ClawAssistantWire.decimal(maximum))
+            XCTAssertFalse(ClawAssistantWire.decimal(overflow))
+            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.messages([AssistantFixture.message(seq: maximum)])) }
+            model.loadMessages(AssistantFixture.first)
+            try AssistantFixture.until { !model.detailLoading.contains(AssistantFixture.first) }
+            XCTAssertEqual(model.details[AssistantFixture.first]?.first?.seq, maximum)
+            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.messages([AssistantFixture.message(seq: overflow)])) }
+            model.loadMessages(AssistantFixture.first)
+            try AssistantFixture.until { !model.detailLoading.contains(AssistantFixture.first) }
+            XCTAssertEqual(model.detailErrors[AssistantFixture.first], .invalidResponse)
+            XCTAssertEqual(model.details[AssistantFixture.first]?.first?.seq, maximum)
         }
     }
 
@@ -379,6 +402,27 @@ final class AssistantHistoryTests: XCTestCase {
             XCTAssertEqual(fixture.owner.store?.myUid, "usrSyntheticAssistantA")
             XCTAssertTrue(fixture.owner.isSessionActive)
             renewed.markRetired(clearAccount: true); renewed.finishRetirement()
+        }
+    }
+
+    func testNonJSONAndMissingMIME401BlockTheActualScopeWithoutOrdinaryLogout() throws {
+        try AssistantFixture.main {
+            for contentType: String? in ["text/html", nil] {
+                let sample = try AssistantFixture()
+                defer { sample.retire() }
+                try sample.prepare()
+                let model = sample.scope.history
+                model.setDraft("仅原账号可见的合成草稿")
+                AssistantFixtureProtocol.handler = { $0.replyUnauthorized(contentType: contentType) }
+                model.loadCapabilities()
+                try AssistantFixture.until { sample.scope.isBlocked }
+                XCTAssertNil(model.capabilities)
+                XCTAssertEqual(model.draft, "")
+                XCTAssertEqual(model.capabilityError, .signInRequired)
+                XCTAssertTrue(sample.owner.isSessionActive)
+                XCTAssertEqual(sample.owner.myUid, "usrSyntheticAssistantA")
+                XCTAssertEqual(sample.owner.store?.myUid, "usrSyntheticAssistantA")
+            }
         }
     }
 
