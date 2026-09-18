@@ -32,6 +32,8 @@ CI10 PNG1206x2622，SHAe8576d09cf32120f60bdca0c4f15f8ebd470bfa1b87f4c49229cdacf7
 CI10不包含后续805dbf3 ACK、4da8391 COPY、6bf302b LOCAL及d381e07 LOGIN。下一精确Mac结果由总控追加；本封存不提前记绿。
 
 ## 保留的失败与边界
-旧CI1许可XML、CI2签名参数编译、CI3断言/并发、CI4 UISearchBar编译、CI5 IOERR、CI6诊断测试错误、CI7并发IOERR_LOCK3850/errno9、CI8 ImageResource名称冲突、CI9启动前置失败均在旧报告/根证据保留。初始化gate是应用层同路径生命周期串行化规避；通过CI9/10不等于已证明Apple VFS closed-versus-readonly fd内部根因，不宣称跨进程、硬链接或动态symlink覆盖。
+旧CI1许可XML、CI2缺少creds参数编译、CI3断言/并发、CI4 UISearchBar编译、CI5 IOERR、CI6诊断测试错误、CI7并发IOERR_LOCK3850/errno9、CI8 ImageResource名称冲突、CI9启动前置失败均在旧报告/根证据保留。初始化gate是应用层同路径生命周期串行化规避；通过CI9/10不等于已证明Apple VFS closed-versus-readonly fd内部根因，不宣称跨进程、硬链接或动态symlink覆盖。
 UIKit真实使用、完整Drafty缩略图渲染、通知系统权限跳转、真iPhone、正式签名/APNs/FCM设备、真实OTP服务及真实用户旧库升级未由这些测试完成。无IPA/正式上线证明。
 LOCAL-DELETE只在远端本请求200后退休原会话；本地失败明确单列，仅本地重试不再次远端删除，账号B/新生命周期拒旧回调。没有跨重启自动清理队列；SQLite记录删除不代表Kingfisher缓存、导出文件、备份或磁盘全擦除。最终这19项新增原生仍待Mac。
+
+补丁作为普通文本被 git diff --check 检查时，其保留的空白上下文行被识别为尾随空格；这只发生在 .patch 交接产物，没有修改补丁字节来消除合法上下文。正式83文件源码范围的 git diff --check 基线→候选实际返回0；实际forward apply/hash验证均通过。见packaging-checks.json。

@@ -3,8 +3,9 @@
   "commits.tsv": "8fc8a84dd70cec9fc14a2b252145d1b50df333c1429700c24bf185777fd68475",
   "file-manifest.json": "2ace1f6bc0c91a6317d853dcce7ca9f4562cde9dd377ea90175cc9a0a5d1e554",
   "native-methods.json": "aa333689b283b5691fef24202aa045eb20b4b0dfb7d5571cbcc95b7fe8753f79",
+  "packaging-checks.json": "ec1296b51d12bb368e5ae64be8eb4852144c25f31666e165222d64e378c00b93",
   "prior-native-methods-4da8391.json": "4a6fbf7d26658c0092b6ce23671c9209e8b92a42f1e580ee417484d229b73aa4",
-  "README.md": "df00feb1ba155b4b0c743bb38de710cff9282b62c575598130a4fd1d6d0eba6b",
+  "README.md": "e3d3c76e1820a260b831e8e2d9539e00467c3367b47448223e2c974978ad26df",
   "static-policies.json": "9f4f399a5fa7b4ea67480140c584d77c92a495e2e83c897bb5ea0a462b19f677",
   "verify_forward_apply.py": "980c45c9a8896833474ed29f3d1b2123fad780f07f9b9b9bba249dc0b134c15d"
 }

@@ -1,0 +1,5 @@
+{
+  "source_range_diff_check_exit": 0,
+  "artifact_patch_text_check": "Git treats preserved unified-diff context marker spaces as trailing whitespace; only .patch affected; patch bytes unchanged",
+  "actual_forward_apply": "PASS 83/83 hashes, modes, blob OIDs"
+}
