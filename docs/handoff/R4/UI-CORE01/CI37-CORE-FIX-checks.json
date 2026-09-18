@@ -1,0 +1,72 @@
+{
+  "baseline": "1a9fc236b589d4b8d641101539a76f0022349797",
+  "evidence_level": "Windows source checks; no Swift/UIKit execution",
+  "old_methods_preserved": [
+    "testConversationNibOptInKeepsDataAndRestoresLegacyReuse",
+    "testContactNibOptInSelectionAndDefaultConsumerRemainDistinct",
+    "testOriginalNibsAt320GrowForAccessibilityInBothAppearances",
+    "testRealFindConsumesContactsAndEmptyStateWithoutDirectoryCalls",
+    "testRealAccountMissingThenPublicAliasUsesOriginalDataConsumer",
+    "testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries"
+  ],
+  "old_assertion_lines_preserved": 89,
+  "original_timeout_seconds": 3,
+  "xib_height": [
+    {
+      "firstAttribute": "height",
+      "constant": "24",
+      "id": "iMo-f5-dnu"
+    }
+  ],
+  "ci37_red": {
+    "path": "artifacts\\integration\\20260919\\R4-ios-ci37-native-review\\7A1F737E-4422-4F25-AF1B-0C115C2ECB0F.json",
+    "sha256": "913a33cada3d3b9353685ffd581fc194b7df8fa24a9626c31e998017b3010caa",
+    "badge": {
+      "alpha": 1,
+      "font": 12,
+      "height": 53.99999999999999,
+      "hidden": false,
+      "identifier": "unreadCount",
+      "kind": "UILabel",
+      "unreadGlyphWidth": 15.870863914489746,
+      "width": 28,
+      "x": 276,
+      "y": 42.666666666666664
+    }
+  },
+  "b1_wip_unchanged": [
+    {
+      "path": "Tinodios/ClawAssistantModels.swift",
+      "bytes": 14368,
+      "sha256": "eee868d066e1f93225d8610244bf83c1874c9b062f700a2193a60d5ec52fcf4e"
+    },
+    {
+      "path": "Tinodios/ClawAssistantService.swift",
+      "bytes": 17141,
+      "sha256": "9956d3f0f45bb1de4aaeaf14287d66feb99759224d212e24ce6e431f5fdea3f9"
+    },
+    {
+      "path": "Tinodios/ClawAssistantRun.swift",
+      "bytes": 19320,
+      "sha256": "2d3a4040142f5693b75b6d1e869273592ec13e350d2677efbb51acdf65d2347d"
+    },
+    {
+      "path": "Tinodios/ClawAssistantStream.swift",
+      "bytes": 10597,
+      "sha256": "59009ecadd8eefe38d426e73d1f3e6c2ab50f6f3a8c2929c105abb647e3bab10"
+    },
+    {
+      "path": "TinodiosUITests/AssistantRunTests.swift",
+      "bytes": 19421,
+      "sha256": "a27ed8988b0e34f1351fc7fdb5181331db10a0e6e769887631c66f44ec796876"
+    },
+    {
+      "path": "TinodiosUITests/AssistantStreamTests.swift",
+      "bytes": 14921,
+      "sha256": "5afc94d5ce94451360df2172b1d34027a74e499d9645659611760bbc66cb1b5c"
+    }
+  ],
+  "target_native_methods": 269,
+  "target_navigation_methods": 3,
+  "native_execution": "NOT_RUN"
+}
