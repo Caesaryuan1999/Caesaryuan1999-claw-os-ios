@@ -159,6 +159,44 @@
 		C1A041022026091800000004 /* EntityTextAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B03066422805F2AA00497EF4 /* EntityTextAttachment.swift */; };
 		C1A042022026091800000001 /* IdentityNavigationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A042012026091800000001 /* IdentityNavigationUITests.swift */; };
 		C1A043022026091800000001 /* VLCPlaybackProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A043012026091800000001 /* VLCPlaybackProbeTests.swift */; };
+		C1A044000000000000000002 = {
+			isa = "PBXBuildFile";
+			fileRef = C1A044000000000000000001;
+		};
+		C1A04400000000000000001D = {
+			isa = "PBXBuildFile";
+			fileRef = C1A040012026091800000001;
+		};
+		C1A044000000000000000017 = {
+			isa = "PBXBuildFile";
+			fileRef = 0A431C022244A26200A837F7;
+		};
+		C1A044000000000000000018 = {
+			isa = "PBXBuildFile";
+			fileRef = 0ACE9E7E23814157006BE575;
+		};
+		C1A04400000000000000001B = {
+			isa = "PBXBuildFile";
+			fileRef = 0A431C022244A26200A837F7;
+		};
+		C1A04400000000000000001C = {
+			isa = "PBXBuildFile";
+			fileRef = 0ACE9E7E23814157006BE575;
+		};
+		C1A044000000000000000019 = {
+			isa = "PBXBuildFile";
+			fileRef = 0A431C022244A26200A837F7;
+			settings = {
+				ATTRIBUTES = ("CodeSignOnCopy", "RemoveHeadersOnCopy", );
+			};
+		};
+		C1A04400000000000000001A = {
+			isa = "PBXBuildFile";
+			fileRef = 0ACE9E7E23814157006BE575;
+			settings = {
+				ATTRIBUTES = ("CodeSignOnCopy", "RemoveHeadersOnCopy", );
+			};
+		};
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -175,6 +213,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 0A0380D321B3CC8100A3FA0E;
 			remoteInfo = Tinodios;
+		};
+		C1A044000000000000000015 = {
+			isa = "PBXContainerItemProxy";
+			containerPortal = 0A0380CC21B3CC8100A3FA0E;
+			proxyType = 1;
+			remoteGlobalIDString = C1A044000000000000000006;
+			remoteInfo = "TinodiosVLCProbeHost";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -200,6 +245,15 @@
 				0ACE9E7923813A1D006BE575 /* TinodiosNSExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1A04400000000000000000E = {
+			isa = "PBXCopyFilesBuildPhase";
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (C1A044000000000000000019, C1A04400000000000000001A, );
+			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -397,6 +451,26 @@
 		C1A041012026091800000001 /* OwnedImageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnedImageTests.swift; sourceTree = "<group>"; };
 		C1A042012026091800000001 /* IdentityNavigationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityNavigationUITests.swift; sourceTree = "<group>"; };
 		C1A043012026091800000001 /* VLCPlaybackProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VLCPlaybackProbeTests.swift; sourceTree = "<group>"; };
+		C1A044000000000000000001 = {
+			isa = "PBXFileReference";
+			lastKnownFileType = "sourcecode.swift";
+			path = "AppDelegate.swift";
+			sourceTree = "<group>";
+		};
+		C1A044000000000000000003 = {
+			isa = "PBXFileReference";
+			explicitFileType = "wrapper.application";
+			includeInIndex = 0;
+			path = "TinodiosVLCProbeHost.app";
+			sourceTree = "BUILT_PRODUCTS_DIR";
+		};
+		C1A044000000000000000004 = {
+			isa = "PBXFileReference";
+			explicitFileType = "wrapper.cfbundle";
+			includeInIndex = 0;
+			path = "TinodiosVLCProbeTests.xctest";
+			sourceTree = "BUILT_PRODUCTS_DIR";
+		};
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -427,12 +501,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C1A04400000000000000000A = {
+			isa = "PBXFrameworksBuildPhase";
+			buildActionMask = 2147483647;
+			files = (C1A044000000000000000017, C1A044000000000000000018, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1A04400000000000000000B = {
+			isa = "PBXFrameworksBuildPhase";
+			buildActionMask = 2147483647;
+			files = (C1A04400000000000000001B, C1A04400000000000000001C, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		0A0380CB21B3CC8100A3FA0E = {
 			isa = PBXGroup;
 			children = (
+				C1A044000000000000000005,
 				B052ABD22863F83500A7D550 /* audio */,
 				B0CF83E2244E074A00E79D22 /* Localizable.strings */,
 				B079062423EEA0C90019ED75 /* GoogleService-Info.plist */,
@@ -451,6 +538,8 @@
 		0A0380D521B3CC8100A3FA0E /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				C1A044000000000000000003,
+				C1A044000000000000000004,
 				0A0380D421B3CC8100A3FA0E /* Tinodios.app */,
 				0ACE9E7223813A1D006BE575 /* TinodiosNSExtension.appex */,
 				0AE21E4B28D21849008F486C /* TinodiosUITests.xctest */,
@@ -678,6 +767,12 @@
 			path = widgets;
 			sourceTree = "<group>";
 		};
+		C1A044000000000000000005 = {
+			isa = "PBXGroup";
+			children = (C1A044000000000000000001, );
+			path = "TinodiosVLCProbeHost";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -745,6 +840,28 @@
 			productReference = 0AE21E4B28D21849008F486C /* TinodiosUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		C1A044000000000000000006 = {
+			isa = "PBXNativeTarget";
+			buildConfigurationList = C1A04400000000000000000F;
+			buildPhases = (C1A044000000000000000008, C1A04400000000000000000A, C1A04400000000000000000C, C1A04400000000000000000E, );
+			buildRules = ();
+			dependencies = ();
+			name = "TinodiosVLCProbeHost";
+			productName = "TinodiosVLCProbeHost";
+			productReference = C1A044000000000000000003;
+			productType = "com.apple.product-type.application";
+		};
+		C1A044000000000000000007 = {
+			isa = "PBXNativeTarget";
+			buildConfigurationList = C1A044000000000000000010;
+			buildPhases = (C1A044000000000000000009, C1A04400000000000000000B, C1A04400000000000000000D, );
+			buildRules = ();
+			dependencies = (C1A044000000000000000016, );
+			name = "TinodiosVLCProbeTests";
+			productName = "TinodiosVLCProbeTests";
+			productReference = C1A044000000000000000004;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -756,6 +873,8 @@
 				LastUpgradeCheck = 1500;
 				ORGANIZATIONNAME = "Tinode LLC";
 				TargetAttributes = {
+					C1A044000000000000000006 = {CreatedOnToolsVersion = 16.4; };
+					C1A044000000000000000007 = {CreatedOnToolsVersion = 16.4; TestTargetID = C1A044000000000000000006; };
 					0A0380D321B3CC8100A3FA0E = {
 						CreatedOnToolsVersion = 10.1;
 					};
@@ -786,6 +905,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				C1A044000000000000000006,
+				C1A044000000000000000007,
 				0A0380D321B3CC8100A3FA0E /* Tinodios */,
 				0ACE9E7123813A1D006BE575 /* TinodiosNSExtension */,
 				0AE21E4A28D21849008F486C /* TinodiosUITests */,
@@ -837,6 +958,18 @@
 			buildActionMask = 2147483647;
 			files = (
 			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1A04400000000000000000C = {
+			isa = "PBXResourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1A04400000000000000000D = {
+			isa = "PBXResourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = ();
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
@@ -1156,11 +1289,22 @@
 				C1A040022026091800000002 /* ClawSecondaryUIState.swift in Sources */,
 				C1A040022026091800000003 /* SecondaryUIStateTests.swift in Sources */,
 				C1A041022026091800000001 /* OwnedImageTests.swift in Sources */,
-				C1A043022026091800000001 /* VLCPlaybackProbeTests.swift in Sources */,
 				C1A041022026091800000002 /* RoundImageView.swift in Sources */,
 				C1A041022026091800000003 /* AsyncImageTextAttachment.swift in Sources */,
 				C1A041022026091800000004 /* EntityTextAttachment.swift in Sources */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1A044000000000000000008 = {
+			isa = "PBXSourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = (C1A044000000000000000002, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1A044000000000000000009 = {
+			isa = "PBXSourcesBuildPhase";
+			buildActionMask = 2147483647;
+			files = (C1A043022026091800000001, C1A04400000000000000001D, );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
@@ -1175,6 +1319,11 @@
 			isa = PBXTargetDependency;
 			target = 0A0380D321B3CC8100A3FA0E /* Tinodios */;
 			targetProxy = 0AE21E5128D21849008F486C /* PBXContainerItemProxy */;
+		};
+		C1A044000000000000000016 = {
+			isa = "PBXTargetDependency";
+			target = C1A044000000000000000006;
+			targetProxy = C1A044000000000000000015;
 		};
 /* End PBXTargetDependency section */
 
@@ -1568,6 +1717,100 @@
 			};
 			name = Release;
 		};
+		C1A044000000000000000011 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				CODE_SIGN_STYLE = "Automatic";
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = "YES";
+				IPHONEOS_DEPLOYMENT_TARGET = "14.0";
+				MARKETING_VERSION = "1.0";
+				CURRENT_PROJECT_VERSION = 1;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = "5.0";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SKIP_INSTALL = "YES";
+				ENABLE_USER_SCRIPT_SANDBOXING = "NO";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = "app.clawos.tests.VLCProbeHost";
+				ENABLE_TESTABILITY = "YES";
+				INFOPLIST_KEY_UILaunchScreen_Generation = "YES";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				DEBUG_INFORMATION_FORMAT = "dwarf";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+			};
+			name = "Debug";
+		};
+		C1A044000000000000000012 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				CODE_SIGN_STYLE = "Automatic";
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = "YES";
+				IPHONEOS_DEPLOYMENT_TARGET = "14.0";
+				MARKETING_VERSION = "1.0";
+				CURRENT_PROJECT_VERSION = 1;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = "5.0";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SKIP_INSTALL = "YES";
+				ENABLE_USER_SCRIPT_SANDBOXING = "NO";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = "app.clawos.tests.VLCProbeHost";
+				ENABLE_TESTABILITY = "YES";
+				INFOPLIST_KEY_UILaunchScreen_Generation = "YES";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
+			};
+			name = "Release";
+		};
+		C1A044000000000000000013 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				CODE_SIGN_STYLE = "Automatic";
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = "YES";
+				IPHONEOS_DEPLOYMENT_TARGET = "14.0";
+				MARKETING_VERSION = "1.0";
+				CURRENT_PROJECT_VERSION = 1;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = "5.0";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SKIP_INSTALL = "YES";
+				ENABLE_USER_SCRIPT_SANDBOXING = "NO";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = "app.clawos.tests.VLCProbeTests";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TinodiosVLCProbeHost.app/TinodiosVLCProbeHost";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks", );
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				DEBUG_INFORMATION_FORMAT = "dwarf";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+			};
+			name = "Debug";
+		};
+		C1A044000000000000000014 = {
+			isa = "XCBuildConfiguration";
+			buildSettings = {
+				CODE_SIGN_STYLE = "Automatic";
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = "YES";
+				IPHONEOS_DEPLOYMENT_TARGET = "14.0";
+				MARKETING_VERSION = "1.0";
+				CURRENT_PROJECT_VERSION = 1;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = "5.0";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SKIP_INSTALL = "YES";
+				ENABLE_USER_SCRIPT_SANDBOXING = "NO";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = "app.clawos.tests.VLCProbeTests";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TinodiosVLCProbeHost.app/TinodiosVLCProbeHost";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks", );
+			};
+			name = "Release";
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1606,6 +1849,18 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
+		};
+		C1A04400000000000000000F = {
+			isa = "XCConfigurationList";
+			buildConfigurations = (C1A044000000000000000011, C1A044000000000000000012, );
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "Release";
+		};
+		C1A044000000000000000010 = {
+			isa = "XCConfigurationList";
+			buildConfigurations = (C1A044000000000000000013, C1A044000000000000000014, );
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = "Release";
 		};
 /* End XCConfigurationList section */
 	};

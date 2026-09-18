@@ -9,7 +9,7 @@ import TinodeSDK
 
 // Dependency measurements, not a replacement VideoPreviewController or a safe-player implementation.
 // No URLProtocol, external destination, real credential, or downloaded media is used.
-private enum VLCProbeFailure: Error { case fixture, listener, response, generation, evidence, playback, snapshot }
+private enum VLCProbeFailure: Error { case fixture, listener, response, generation, evidence, host, playback, snapshot }
 
 private func vlcMain<T>(_ body: () -> T) -> T {
     Thread.isMainThread ? body() : DispatchQueue.main.sync(execute: body)
@@ -240,29 +240,58 @@ private final class VLCProbeAccount {
 private final class VLCProbePlayer {
     let player: VLCMediaPlayer
     private let window: UIWindow
+    private let surface: UIView
+    private let hostAtStart: [String: Any]
     // Avoid releasing a still-stopping VLC player after a failed bounded cleanup assertion.
     static var retainedAfterFailedStop = [VLCProbePlayer]()
 
-    init(url: URL) {
-        let pair = vlcMain { () -> (VLCMediaPlayer, UIWindow) in
-            let window: UIWindow
-            if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
-                window = UIWindow(windowScene: scene)
-                window.frame = CGRect(x: 0, y: 0, width: 160, height: 160)
-            } else { window = UIWindow(frame: CGRect(x: 0, y: 0, width: 160, height: 160)) }
-            let controller = UIViewController()
-            controller.view.frame = window.bounds
-            controller.view.backgroundColor = .black
-            window.rootViewController = controller
-            window.isHidden = false
+    init(url: URL) throws {
+        let attached = vlcMain { () -> (VLCMediaPlayer, UIWindow, UIView, [String: Any])? in
+            // A real application host is required. A background UI-test runner
+            // with an unattached UIWindow cannot establish a rendering baseline.
+            let app = UIApplication.shared
+            guard Bundle.main.bundleIdentifier == "app.clawos.tests.VLCProbeHost",
+                  app.applicationState == .active,
+                  let window = app.windows.first(where: { $0.isKeyWindow && !$0.isHidden }),
+                  window.windowScene == nil || window.windowScene?.activationState == .foregroundActive,
+                  let container = window.rootViewController?.view,
+                  container.window === window, !window.bounds.isEmpty else { return nil }
+            let surface = UIView(frame: CGRect(x: 0, y: 0, width: 160, height: 160))
+            surface.backgroundColor = .black
+            container.addSubview(surface)
+            container.layoutIfNeeded()
+            guard surface.window === window, !surface.isHidden, !surface.bounds.isEmpty else {
+                surface.removeFromSuperview(); return nil
+            }
+            let hostAtStart = Self.hostEvidence()
             let player = VLCMediaPlayer()
-            player.drawable = controller.view
+            player.drawable = surface
             player.media = VLCMedia(url: url)
             player.play()
-            return (player, window)
+            return (player, window, surface, hostAtStart)
         }
-        player = pair.0
-        window = pair.1
+        guard let attached = attached else { throw VLCProbeFailure.host }
+        player = attached.0
+        window = attached.1
+        surface = attached.2
+        hostAtStart = attached.3
+    }
+
+    static func hostEvidence() -> [String: Any] {
+        vlcMain {
+            let app = UIApplication.shared
+            let window = app.windows.first(where: { $0.isKeyWindow })
+            let scene = window?.windowScene
+            return ["applicationState": app.applicationState.rawValue,
+                    "expectedHost": Bundle.main.bundleIdentifier == "app.clawos.tests.VLCProbeHost",
+                    "scenePresent": scene != nil,
+                    "sceneState": scene?.activationState.rawValue ?? -1,
+                    "legacyLifecycle": app.connectedScenes.isEmpty,
+                    "keyWindowPresent": window?.isKeyWindow == true,
+                    "windowHidden": window?.isHidden ?? true,
+                    "windowWidth": window?.bounds.width ?? 0,
+                    "windowHeight": window?.bounds.height ?? 0]
+        }
     }
 
     func metrics() -> [String: Any] {
@@ -271,14 +300,18 @@ private final class VLCProbePlayer {
             return ["state": Int(player.state.rawValue), "timeMs": player.time.value?.intValue ?? 0,
                     "decoded": Int(stats?.decodedVideo ?? 0), "displayed": Int(stats?.displayedPictures ?? 0),
                     "readBytes": Int(stats?.readBytes ?? 0), "hasVideoOut": player.hasVideoOut,
-                    "width": Int(player.videoSize.width), "height": Int(player.videoSize.height)]
+                    "width": Int(player.videoSize.width), "height": Int(player.videoSize.height),
+                    "host": Self.hostEvidence(), "hostAtStart": hostAtStart,
+                    "drawableInHostWindow": surface.window === window,
+                    "drawableWidth": surface.bounds.width, "drawableHeight": surface.bounds.height,
+                    "drawableHidden": surface.isHidden]
         }
     }
 
     func stop() { vlcMain { player.stop() } }
     func stopped() -> Bool { vlcMain { player.state == .stopped } }
     func terminal() -> Bool { vlcMain { player.state == .ended || player.state == .error } }
-    func hide() { vlcMain { player.drawable = nil; window.isHidden = true } }
+    func hide() { vlcMain { player.drawable = nil; surface.removeFromSuperview() } }
 }
 
 final class VLCPlaybackProbeTests: XCTestCase {
@@ -287,6 +320,7 @@ final class VLCPlaybackProbeTests: XCTestCase {
     private var reported = false
     private var progress: [String: Any] = [:]
     private var dependencyEvidence: [String: Any] = [:]
+    private var sourceFixtures = [[String: Any]]()
 
     override func setUpWithError() throws {
         executionTimeAllowance = 120
@@ -294,6 +328,7 @@ final class VLCPlaybackProbeTests: XCTestCase {
         reported = false
         progress = ["stage": "starting", "safety": "NOT_MEASURED"]
         dependencyEvidence = [:]
+        sourceFixtures = []
         root = FileManager.default.temporaryDirectory.appendingPathComponent("claw-vlc-probe-" + UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: false)
     }
@@ -329,6 +364,8 @@ final class VLCPlaybackProbeTests: XCTestCase {
     private func attach(_ name: String, _ report: [String: Any]) throws {
         var final = report
         final["dependencyEvidence"] = dependencyEvidence
+        final["sourceFixtures"] = sourceFixtures
+        final["host"] = VLCProbePlayer.hostEvidence()
         let bytes = try JSONSerialization.data(withJSONObject: final, options: [.sortedKeys, .prettyPrinted])
         let attachment = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.json")
         attachment.name = name
@@ -401,7 +438,71 @@ final class VLCPlaybackProbeTests: XCTestCase {
         }
         let bytes = try Data(contentsOf: url)
         guard !bytes.isEmpty, bytes.count <= 2 * 1024 * 1024 else { throw VLCProbeFailure.generation }
+        // Preserve the exact encoded input before any readback or VLC assertion.
+        let label = blue ? "source-fixture-blue" : "source-fixture-red"
+        let attachment = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.mpeg-4")
+        attachment.name = label
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        let evidenceIndex = sourceFixtures.count
+        sourceFixtures.append(["name": label, "bytes": bytes.count,
+            "sha256": SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined(),
+            "appleReadback": "NOT_COMPLETED", "scope": "Original AVAssetWriter input; not XCTest screen recording"])
+        do {
+            sourceFixtures[evidenceIndex]["appleReadback"] = try readFixture(url, blue: blue)
+        } catch {
+            sourceFixtures[evidenceIndex]["appleReadback"] = "FAILED"
+            throw error
+        }
         return bytes
+    }
+
+    private func readFixture(_ url: URL, blue: Bool) throws -> [String: Any] {
+        let asset = AVURLAsset(url: url)
+        guard let track = asset.tracks(withMediaType: .video).first else { throw VLCProbeFailure.fixture }
+        let reader = try AVAssetReader(asset: asset)
+        // A pixel format requests decoded image buffers, not compressed passthrough samples.
+        let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA])
+        guard reader.canAdd(output) else { throw VLCProbeFailure.fixture }
+        reader.add(output)
+        guard reader.startReading() else { throw VLCProbeFailure.fixture }
+        let readDeadline = min(deadline, Date().addingTimeInterval(5))
+        var frames = 0
+        var lastTime = -1.0
+        var colorMatches = true
+        while Date() < readDeadline, let sample = output.copyNextSampleBuffer() {
+            guard let pixels = CMSampleBufferGetImageBuffer(sample),
+                  CVPixelBufferGetWidth(pixels) == 64, CVPixelBufferGetHeight(pixels) == 64 else {
+                reader.cancelReading(); throw VLCProbeFailure.fixture
+            }
+            let timestamp = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sample))
+            guard timestamp.isFinite, timestamp > lastTime else {
+                reader.cancelReading(); throw VLCProbeFailure.fixture
+            }
+            lastTime = timestamp
+            CVPixelBufferLockBaseAddress(pixels, .readOnly)
+            if let base = CVPixelBufferGetBaseAddress(pixels) {
+                let center = base.advanced(by: 32 * CVPixelBufferGetBytesPerRow(pixels) + 32 * 4)
+                    .assumingMemoryBound(to: UInt8.self)
+                let blueValue = Int(center[0]), green = Int(center[1]), red = Int(center[2])
+                colorMatches = colorMatches && (blue
+                    ? blueValue > red + 80 && blueValue > green + 80
+                    : red > blueValue + 80 && red > green + 80)
+            } else { colorMatches = false }
+            CVPixelBufferUnlockBaseAddress(pixels, .readOnly)
+            frames += 1
+        }
+        progress = ["stage": "apple-source-readback", "readerStatus": reader.status.rawValue,
+                    "frames": frames, "lastPTSMs": Int(max(-1, lastTime) * 1000),
+                    "allFrameColorsMatch": colorMatches, "host": VLCProbePlayer.hostEvidence()]
+        guard reader.status == .completed, frames == 90, colorMatches, lastTime > 2.9 else {
+            reader.cancelReading(); throw VLCProbeFailure.fixture
+        }
+        return ["status": "PASS", "decoder": "AVAssetReaderTrackOutput BGRA",
+                "frames": frames, "width": 64, "height": 64, "lastPTSMs": Int(lastTime * 1000),
+                "expectedColor": blue ? "B_blue" : "A_red", "allFrameColorsMatch": colorMatches,
+                "scope": "Apple decoded source control; not VLC display evidence"]
     }
 
     private func decoded(_ playback: VLCProbePlayer) -> Bool {
@@ -414,7 +515,7 @@ final class VLCPlaybackProbeTests: XCTestCase {
     private func validateBaseline(_ bytes: Data, label: String) throws {
         let server = try VLCProbeServer(); defer { server.stop() }
         let url = server.add("fixture-control", reply: .video(bytes, cacheable: false, cookie: false))
-        let playback = VLCProbePlayer(url: url); defer { cleanup(playback) }
+        let playback = try VLCProbePlayer(url: url); defer { cleanup(playback) }
         _ = try libraryEvidence(playback)
         let ready = until(8, { self.decoded(playback) })
         progress = ["stage": "fixture-control", "metrics": playback.metrics(), "requests": server.observations()]
@@ -423,7 +524,7 @@ final class VLCPlaybackProbeTests: XCTestCase {
     }
 
     private func sampledFrame(_ url: URL, label: String) throws -> String {
-        let playback = VLCProbePlayer(url: url); defer { cleanup(playback) }
+        let playback = try VLCProbePlayer(url: url); defer { cleanup(playback) }
         _ = try libraryEvidence(playback)
         let ready = until(8, { self.decoded(playback) })
         progress = ["stage": label, "metrics": playback.metrics()]
@@ -457,11 +558,15 @@ final class VLCPlaybackProbeTests: XCTestCase {
     func testRealVLCFramesTimeDecodeAndCapturedCredentialURL() throws {
         let server = try VLCProbeServer(); defer { server.stop() }
         let bytes = try clip(blue: false)
+        let local = root.appendingPathComponent("source-local-control.mp4")
+        try bytes.write(to: local, options: .withoutOverwriting)
+        let localColor = try sampledFrame(local, label: "vlc-same-source-local-control")
+        XCTAssertEqual(localColor, "A_red")
         let raw = server.add("baseline", reply: .video(bytes, cacheable: false, cookie: false))
         let account = try VLCProbeAccount(origin: server.origin)
         let context = try account.context()
         let url = try XCTUnwrap(context.withCurrent { account.owner.addAuthQueryParams(raw) })
-        let playback = VLCProbePlayer(url: url); defer { cleanup(playback) }
+        let playback = try VLCProbePlayer(url: url); defer { cleanup(playback) }
         let evidence = try libraryEvidence(playback)
         let ready = until(8, { self.decoded(playback) })
         progress = ["stage": "baseline", "metrics": playback.metrics(), "requests": server.observations()]
@@ -470,7 +575,8 @@ final class VLCPlaybackProbeTests: XCTestCase {
         XCTAssertEqual(color, "A_red")
         XCTAssertTrue(server.observations().contains { $0["queryMatchesA"] as? Bool == true })
         try attach("vlc-baseline", ["fixture": "MEASUREMENT_VALID", "library": evidence,
-            "frame": color, "metrics": playback.metrics(), "requests": server.observations(),
+            "frame": color, "sameSourceLocalFrame": localColor,
+            "metrics": playback.metrics(), "requests": server.observations(),
             "fixtureSHA256": SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined(),
             "safety": "NOT_ASSESSED_BY_BASELINE"])
     }
@@ -487,7 +593,7 @@ final class VLCPlaybackProbeTests: XCTestCase {
             let account = try VLCProbeAccount(origin: source.origin)
             if explicitQuery { destination = account.owner.addAuthQueryParams(source.origin).replacingProbeOrigin(destination) }
             let raw = source.add("redirect", reply: .redirect(destination, code))
-            let playback = VLCProbePlayer(url: account.owner.addAuthQueryParams(raw))
+            let playback = try VLCProbePlayer(url: account.owner.addAuthQueryParams(raw))
             defer { cleanup(playback) }
             guard until(5, { !source.observations().isEmpty }) else { throw VLCProbeFailure.response }
             let observed = until(5, {
@@ -517,7 +623,7 @@ final class VLCPlaybackProbeTests: XCTestCase {
         let raw = server.add("retire-gated", reply: .video(bytes, cacheable: false, cookie: false), gated: true)
         let account = try VLCProbeAccount(origin: server.origin)
         let context = try account.context()
-        let playback = VLCProbePlayer(url: account.owner.addAuthQueryParams(raw)); defer { cleanup(playback) }
+        let playback = try VLCProbePlayer(url: account.owner.addAuthQueryParams(raw)); defer { cleanup(playback) }
         guard until(5, { !server.observations().isEmpty }) else { throw VLCProbeFailure.response }
         let before = playback.metrics()
         account.retire()
@@ -554,7 +660,7 @@ final class VLCPlaybackProbeTests: XCTestCase {
             guard ["A_red", "B_blue"].contains(secondColor) else { throw VLCProbeFailure.snapshot }
             let secondCount = server.observations().count
             server.replace(raw, reply: .forbidden)
-            let third = VLCProbePlayer(url: url)
+            let third = try VLCProbePlayer(url: url)
             let observed = until(5, { self.decoded(third) || third.terminal() })
             let thirdMetrics = third.metrics()
             let decodedDespite403 = (thirdMetrics["decoded"] as? Int ?? 0) > 0 || (thirdMetrics["displayed"] as? Int ?? 0) > 0

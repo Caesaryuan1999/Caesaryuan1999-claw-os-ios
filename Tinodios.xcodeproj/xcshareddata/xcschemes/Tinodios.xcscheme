@@ -39,6 +39,15 @@
                ReferencedContainer = "container:Tinodios.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference skipped = "NO" parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "C1A044000000000000000007"
+               BuildableName = "TinodiosVLCProbeTests.xctest"
+               BlueprintName = "TinodiosVLCProbeTests"
+               ReferencedContainer = "container:Tinodios.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

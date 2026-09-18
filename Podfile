@@ -52,6 +52,17 @@ target 'TinodiosUITests' do
     app_pods
 end
 
+# Isolated foreground host for four real VLC dependency measurements only.
+target 'TinodiosVLCProbeHost' do
+    project 'Tinodios'
+    db_pods
+    pod 'Kingfisher', '~> 5'
+    pod 'MobileVLCKit', '~> 3'
+    target 'TinodiosVLCProbeTests' do
+        inherit! :search_paths
+    end
+end
+
 target 'Tinodios' do
     project 'Tinodios'
     db_pods

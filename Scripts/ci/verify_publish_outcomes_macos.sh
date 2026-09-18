@@ -212,7 +212,7 @@ print(json.dumps({"podVersion": locks[0]["podVersion"], "specChecksum": locks[0]
     "binarySHA256": hashlib.sha256(binary.read_bytes()).hexdigest()}, separators=(",", ":")))
 VLC_POD_EVIDENCE
 )"
-# xcodebuild forwards TEST_RUNNER_ variables to the test runner without that prefix.
+# xcodebuild forwards TEST_RUNNER_ variables without the prefix; the actual hosted test rejects missing evidence.
 export TEST_RUNNER_CLAW_VLC_POD_EVIDENCE="$vlc_pod_evidence"
 xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \
@@ -225,7 +225,7 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -only-testing:TinodiosUITests/PublicDirectoryTests \
   -only-testing:TinodiosUITests/SecondaryUIStateTests \
   -only-testing:TinodiosUITests/OwnedImageTests \
-  -only-testing:TinodiosUITests/VLCPlaybackProbeTests \
+  -only-testing:TinodiosVLCProbeTests/VLCPlaybackProbeTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
 unset TEST_RUNNER_CLAW_VLC_POD_EVIDENCE

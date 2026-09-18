@@ -1,0 +1,41 @@
+{
+  "scope": "7 test and wiring files; production WIP excluded",
+  "files": [
+    {
+      "path": "Podfile",
+      "bytes": 2973,
+      "sha256": "c4eb9d60eb813b54c7e65391b5657fb572a68df0d05d8b2a88c0a15ce3f579a4"
+    },
+    {
+      "path": "Podfile.lock",
+      "bytes": 7626,
+      "sha256": "d8dedf5d4b6532fc8a4276366df26f7c7716592579da9c394ba5ca6edbf6762f"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "bytes": 13401,
+      "sha256": "92b145b12294b0e4884f685ebbffc767e6250f8c9209ba2f36b182e923010590"
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "bytes": 122204,
+      "sha256": "ce8fdc9cbf334a6d2cf5ec9210063ac65d1959a3b74e16b7d068d07a123bc4cd"
+    },
+    {
+      "path": "Tinodios.xcodeproj/xcshareddata/xcschemes/Tinodios.xcscheme",
+      "bytes": 4014,
+      "sha256": "52876517dfa38f0c21cf4263512abdbf6fe514b952a2362d6bf399a7fed901d5"
+    },
+    {
+      "path": "TinodiosUITests/VLCPlaybackProbeTests.swift",
+      "bytes": 38011,
+      "sha256": "10718d565fb524cf5801ec04b8d9ced6848a7ad4b268bbcf74645afe7c205880"
+    },
+    {
+      "path": "TinodiosVLCProbeHost/AppDelegate.swift",
+      "bytes": 722,
+      "sha256": "6501ad1d996c60b5d53f49d88efaaba07556013feea972f8c30cd74dc51365a5"
+    }
+  ],
+  "swift_execution": "NOT_RUN"
+}
