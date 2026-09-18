@@ -1,0 +1,22 @@
+{
+  "baseline": "34a8b3e5ad4df210117e2e03b308576796ba55b2",
+  "target": "e6e07aff8215ea003312a518d6f83e0c1da0ee84",
+  "source_range_diff_check": "PASS",
+  "actual_forward_apply": "PASS",
+  "temporary_index_full_real_baseline_entries": 512,
+  "mode_blob_sha_matches": "88/88",
+  "unselected_entries_unchanged": true,
+  "real_current_index_unchanged": true,
+  "private_blob_read_or_checkout": false,
+  "production_ci_tests_modified_by_packaging": false,
+  "native_inventory": 196,
+  "navigation_inventory_separate": 3,
+  "native_execution": "CI17 pending parent evidence",
+  "raw_patch_artifact_note": "Native Git patch bytes are immutable; blank context lines in a .patch file can trigger text-artifact whitespace warnings. Source range diff --check passed.",
+  "lineending_worktree_sha_differences": 79,
+  "packaging_files_diffcheck_except_patch": "PASS (11 files)",
+  "raw_patch_text_artifact_diffcheck_rc": 2,
+  "raw_patch_context_whitespace_lines": 348,
+  "raw_patch_other_whitespace_lines": 0,
+  "staged_patch_matches_entity_bytes": true
+}

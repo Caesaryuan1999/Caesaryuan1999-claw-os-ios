@@ -1,0 +1,33 @@
+{
+  "baseline": "34a8b3e5ad4df210117e2e03b308576796ba55b2",
+  "target": "e6e07aff8215ea003312a518d6f83e0c1da0ee84",
+  "dependencies": [
+    {
+      "path": "Scripts/ci/fixtures/ios113.sql",
+      "sha256": "9ab879befa1a451e827c31bb9bea148621635f6ab9a44447f6c5f76f718256f2",
+      "bytes": 3983,
+      "unchanged_from_baseline": true,
+      "included_as_patch_delta": false,
+      "reason": "Synthetic schema113 A/B/attachment migration and local-delete fixture; not user data."
+    },
+    {
+      "path": "Podfile.lock",
+      "sha256": "9d9e6bc8457d647cf571d1087bb317ecde5115e514d58c7b07263db8adf8caa6",
+      "bytes": 7626,
+      "unchanged_from_baseline": true,
+      "included_as_patch_delta": false,
+      "reason": "Preserved locked dependencies required by Mac CI; Pods are not bundled."
+    },
+    {
+      "path": "Scripts/ci/run_static_policies.py",
+      "sha256": "335ebbf96e991fbf728a97b1ac6f7c0ad6ca7bb87db0105f27f229ce4fad3de7",
+      "bytes": 3273,
+      "unchanged_from_baseline": true,
+      "included_as_patch_delta": false,
+      "reason": "Preserved static-policy runner; no delta in this cumulative patch."
+    }
+  ],
+  "not_an_empty_upstream_patch": true,
+  "private_content": "Not read or copied; excluded private entries stay in the preserved baseline.",
+  "push_configuration": "Workflow creates a disabled placeholder only when the CI GoogleService-Info.plist is absent. No real push plist is supplied."
+}

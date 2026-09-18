@@ -1,0 +1,62 @@
+{
+  "baseline": "34a8b3e5ad4df210117e2e03b308576796ba55b2",
+  "target": "e6e07aff8215ea003312a518d6f83e0c1da0ee84",
+  "scope": "Current package entity bytes, excluding this self-referential hash manifest.",
+  "files": [
+    {
+      "path": "allowlist.json",
+      "bytes": 18672,
+      "sha256": "d8867fcca8fbedc2fcfac85627dcaaf2fc183972133fc5eab17262cffe813d5e"
+    },
+    {
+      "path": "baseline-prerequisites.json",
+      "bytes": 1465,
+      "sha256": "de37977c68247631dfdfd437626b93939599162920ab084e41aba0cfe981dbb8"
+    },
+    {
+      "path": "CLAW-IOS-R3-source-test-ci.patch",
+      "bytes": 855315,
+      "sha256": "04cd1b9a2b1967bb405f2ea97ce745a3d474d0916da0430abaf39916a6f42f1e"
+    },
+    {
+      "path": "commits.tsv",
+      "bytes": 6004,
+      "sha256": "61e3bc831a3e9050b254d3743d70a48b7bbde19ad9a50c9575a8a69492a33897"
+    },
+    {
+      "path": "file-manifest.json",
+      "bytes": 70843,
+      "sha256": "bd7691f78c3c36f3006e3fc260ced7c50bd80e53c3dd03cd506747ac30a6d16a"
+    },
+    {
+      "path": "native-methods.json",
+      "bytes": 39996,
+      "sha256": "ea5b0d176a3b0e72696722824fc5410f637ae48281171a0d5fbd9bde0651de03"
+    },
+    {
+      "path": "packaging-checks.json",
+      "bytes": 1066,
+      "sha256": "eedf7572948705c7f27329f2fdb547d14af435b6f74e84047cb27b7cdfaf46b6"
+    },
+    {
+      "path": "paths.tsv",
+      "bytes": 14575,
+      "sha256": "0a0bcb6352fcbdfe88a64fa2301c244b87443a8f1249d2a0d10cc0ee38c95d31"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8053,
+      "sha256": "cfc48261309f15a55a27957a2250d09559eaf03ef8a75d7f615a2221dcdbcc6a"
+    },
+    {
+      "path": "scope-review.json",
+      "bytes": 25856,
+      "sha256": "fcff8d3642334b8ba7e764f41bd013081c97a42a2e21a8f5622291613794c70a"
+    },
+    {
+      "path": "verify_forward_apply.py",
+      "bytes": 8168,
+      "sha256": "09489ceab3be9ae605e39d86d10d7be1c3cee3082903a67979cadaba3c979114"
+    }
+  ]
+}
