@@ -66,7 +66,7 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
         self.chatListTableView.separatorStyle = .none
         self.chatListTableView.separatorInset = UIEdgeInsets(top: 0, left: 92, bottom: 0, right: 18)
         self.chatListTableView.rowHeight = UITableView.automaticDimension
-        self.chatListTableView.estimatedRowHeight = 94
+        self.chatListTableView.estimatedRowHeight = 84
         self.navigationItem.largeTitleDisplayMode = .never
         setupBrandTitle()
 
@@ -84,40 +84,24 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
     }
 
     private func setupBrandTitle() {
-        let logo = UIImageView(image: UIImage(named: "logo-ios"))
-        logo.translatesAutoresizingMaskIntoConstraints = false
-        logo.contentMode = .scaleAspectFit
-        logo.layer.cornerRadius = 7
-
-        let title = UILabel()
-        title.text = "CLAW OS"
-        title.textColor = ClawTheme.primary
-        title.font = ClawTheme.font(13, weight: .semibold, style: .caption1)
-        title.adjustsFontForContentSizeCategory = true
-
-        let brand = UIStackView(arrangedSubviews: [logo, title])
-        brand.axis = .horizontal
-        brand.alignment = .center
-        brand.spacing = 8
-        brand.accessibilityLabel = "CLAW OS"
-        brand.frame = CGRect(x: 0, y: 0, width: 142, height: 36)
-        NSLayoutConstraint.activate([
-            logo.widthAnchor.constraint(equalToConstant: 24),
-            logo.heightAnchor.constraint(equalToConstant: 24)
-        ])
-        // The storyboard provides a legacy navigation-item title. Clear it so the
-        // custom logo-and-name view is the only brand shown in this header.
-        navigationItem.title = nil
+        // One native header; the original logo remains in the brand/file-assistant assets.
+        navigationItem.title = NSLocalizedString("消息", comment: "Messages page heading")
         navigationItem.titleView = nil
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: brand)
+        navigationItem.leftBarButtonItem = nil
         let compose = UIButton(type: .system)
         compose.setTitle(NSLocalizedString("发起聊天", comment: "Start a chat"), for: .normal)
-        compose.titleLabel?.font = ClawTheme.font(16, weight: .semibold)
+        // Native navigation bars retain a 44pt touch area and a single readable line.
+        compose.titleLabel?.font = UIFontMetrics(forTextStyle: .body).scaledFont(
+            for: .systemFont(ofSize: 15, weight: .semibold), maximumPointSize: 20)
         compose.titleLabel?.adjustsFontForContentSizeCategory = true
+        compose.titleLabel?.numberOfLines = 1
         compose.tintColor = ClawTheme.primary
+        compose.backgroundColor = ClawTheme.brandSoft
+        compose.layer.cornerRadius = 12
+        compose.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
         compose.accessibilityIdentifier = "claw.chats.compose"
         compose.addTarget(self, action: #selector(startChat), for: .touchUpInside)
-        compose.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        compose.heightAnchor.constraint(equalToConstant: 44).isActive = true
         navigationItem.rightBarButtonItems = [UIBarButtonItem(customView: compose)]
     }
 
@@ -138,19 +122,16 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
         let width = measuredWidth > 0 ? measuredWidth : UIScreen.main.bounds.width
         let query = searchField?.text ?? ""
         activeContactItems = buildActiveContactItems()
-        let hasActiveContacts = !activeContactItems.isEmpty
-        let activeStripHeight = ActiveContactsLayoutMetrics.stripHeight
-        let titleFont = ClawTheme.font(32, weight: .bold, style: .largeTitle)
-        let headingOffset = ceil(titleFont.lineHeight) + 16
+        // R4 only hides this presentation. Keep the original contact data/renderer
+        // and the separate contacts destination; no presence or ranking change.
+        let hasActiveContacts = false
         let searchFont = ClawTheme.font(16)
-        let searchHeight = max(48, ceil(searchFont.lineHeight) + 24)
-        let searchExtra = searchHeight - 48
-        let headerHeight: CGFloat = (hasActiveContacts ? 104 + activeStripHeight + 38 : 104)
-            + headingOffset + searchExtra
+        let searchHeight = max(44, ceil(searchFont.lineHeight) + 20)
+        let headerHeight: CGFloat = searchHeight + 24
         let header = UIView(frame: CGRect(x: 0, y: 0, width: width, height: headerHeight))
         header.backgroundColor = ClawTheme.background
 
-        let search = UITextField(frame: CGRect(x: 24, y: 12, width: width - 48, height: searchHeight))
+        let search = UITextField(frame: CGRect(x: 16, y: 8, width: width - 32, height: searchHeight))
         search.text = query
         search.placeholder = NSLocalizedString("搜索会话", comment: "Search names and aliases in conversations")
         search.font = searchFont
@@ -174,7 +155,6 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
         header.addSubview(search)
         searchField = search
 
-        var recentTitleY: CGFloat = 76
         if hasActiveContacts {
             let activeTitle = UILabel(frame: CGRect(x: 20, y: 76, width: width - 120, height: 22))
             activeTitle.text = NSLocalizedString("活跃联系人", comment: "Online contacts section title")
@@ -280,27 +260,8 @@ class ChatListViewController: UITableViewController, ChatListDisplayLogic {
                     spacing: spacing),
                 height: ActiveContactsLayoutMetrics.stripHeight)
             header.addSubview(activeScroll)
-            recentTitleY = 104 + activeStripHeight + 8
         }
 
-        let recentTitle = UILabel(frame: CGRect(x: 18, y: recentTitleY, width: width - 36, height: 22))
-        recentTitle.text = NSLocalizedString("最近会话", comment: "Recent chats section title")
-        recentTitle.textColor = ClawTheme.muted
-        recentTitle.font = .systemFont(ofSize: 14, weight: .medium)
-        header.addSubview(recentTitle)
-
-        for child in header.subviews {
-            if child.frame.minY >= 76 { child.frame.origin.y += searchExtra }
-            child.frame.origin.y += headingOffset
-        }
-        let pageTitle = UILabel(frame: CGRect(x: 24, y: 8, width: width - 48,
-                                             height: ceil(titleFont.lineHeight)))
-        pageTitle.text = NSLocalizedString("消息", comment: "Messages page heading")
-        pageTitle.font = titleFont
-        pageTitle.textColor = ClawTheme.ink
-        pageTitle.adjustsFontForContentSizeCategory = true
-        pageTitle.accessibilityTraits = .header
-        header.addSubview(pageTitle)
         tableView.tableHeaderView = header
         headerWidth = width
     }
@@ -502,6 +463,7 @@ extension ChatListViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ChatListViewCell") as! ChatListViewCell
         let topic = self.topics[indexPath.row]
+        cell.usesContinuousLayout = true
         cell.fillFromTopic(topic: topic)
         return cell
     }

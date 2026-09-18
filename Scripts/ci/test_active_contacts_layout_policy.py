@@ -35,8 +35,10 @@ def main() -> None:
     assert "static let baseStripHeight: CGFloat = 164" in UI_UTILS
     assert "static var stripHeight: CGFloat" in UI_UTILS
     assert "static var scaledMinimumItemWidth" in UI_UTILS
-    assert "hasActiveContacts ? 104 + activeStripHeight + 38 : 104" in CHAT_LIST
-    # R3.D1 contacts replaced the strip with separate actions; the chat strip remains covered above.
+    assert "let hasActiveContacts = false" in CHAT_LIST
+    assert "activeContactItems = buildActiveContactItems()" in CHAT_LIST
+    assert "let headerHeight: CGFloat = searchHeight + 24" in CHAT_LIST
+    # R4 hides the chat strip at presentation only; original metrics/data remain covered.
     assert "ClawActiveContactCell" not in CONTACTS
     assert "premiumHeader.onAddContact" in CONTACTS
     assert "premiumHeader.onCreateGroup" in CONTACTS

@@ -34,6 +34,16 @@ class ChatListViewCell: UITableViewCell {
     private let messageTimeLabel = UILabel()
     private let cardView = UIView()
     private var premiumLayoutInstalled = false
+    private let rowDivider = UIView()
+    private var rowMetrics: [(NSLayoutConstraint, CGFloat, CGFloat)] = []
+    private var titleRow: UIStackView!
+    private var previewRow: UIStackView!
+    private var timeRow: UIStackView!
+
+    // Explicit opt-in: archive/blocked consumers retain their original card layout.
+    var usesContinuousLayout = false {
+        didSet { if premiumLayoutInstalled { applyRowLayout() } }
+    }
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -103,15 +113,21 @@ class ChatListViewCell: UITableViewCell {
         messageTimeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         messageTimeLabel.setContentHuggingPriority(.required, for: .horizontal)
 
-        let titleRow = UIStackView(arrangedSubviews: [
-            title, channelIndicator, badgeVerified, badgeStaff, badgeDanger, messageTimeLabel
+        let titleContent = UIStackView(arrangedSubviews: [
+            title, channelIndicator, badgeVerified, badgeStaff, badgeDanger
         ])
+        titleContent.alignment = .center
+        titleContent.spacing = 4
+        timeRow = UIStackView(arrangedSubviews: [messageTimeLabel])
+        timeRow.alignment = .center
+        timeRow.spacing = 8
+        titleRow = UIStackView(arrangedSubviews: [titleContent, timeRow])
         titleRow.translatesAutoresizingMaskIntoConstraints = false
         titleRow.axis = .horizontal
         titleRow.alignment = .center
         titleRow.spacing = 4
 
-        let previewRow = UIStackView(arrangedSubviews: [
+        previewRow = UIStackView(arrangedSubviews: [
             iconMessageStatus, subtitle, iconMuted, iconBlocked, unreadCount
         ])
         previewRow.translatesAutoresizingMaskIntoConstraints = false
@@ -136,25 +152,64 @@ class ChatListViewCell: UITableViewCell {
         unreadCountWidth.constant = 20
         iconMuted.constraints.first(where: { $0.firstAttribute == .width })?.constant = ChatListViewCell.kIconWidth
 
+        // Keep both presentations on the same nib and original data outlets.
+        func metric(_ constraint: NSLayoutConstraint, continuous: CGFloat) -> NSLayoutConstraint {
+            rowMetrics.append((constraint, constraint.constant, continuous))
+            return constraint
+        }
+        rowDivider.translatesAutoresizingMaskIntoConstraints = false
+        rowDivider.backgroundColor = ClawTheme.border
+        rowDivider.isUserInteractionEnabled = false
+        rowDivider.accessibilityIdentifier = "claw.conversation.divider"
+        contentView.addSubview(rowDivider)
         NSLayoutConstraint.activate([
-            cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            cardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
-            cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5),
+            metric(cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20), continuous: 0),
+            metric(cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20), continuous: 0),
+            metric(cardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5), continuous: 0),
+            metric(cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5), continuous: 0),
             cardView.heightAnchor.constraint(greaterThanOrEqualToConstant: 84),
-            icon.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
+            metric(icon.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12), continuous: 16),
             icon.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
             icon.bottomAnchor.constraint(lessThanOrEqualTo: cardView.bottomAnchor, constant: -12),
             textRows.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 12),
-            textRows.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12),
+            metric(textRows.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12), continuous: -16),
             textRows.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
             textRows.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -12),
-            messageTimeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 48)
+            messageTimeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 48),
+            rowDivider.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            rowDivider.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            rowDivider.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            rowDivider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
         ])
+        applyRowLayout()
+    }
+
+    private func applyRowLayout() {
+        guard let timeRow = timeRow, let previewRow = previewRow else { return }
+        rowMetrics.forEach { $0.0.constant = usesContinuousLayout ? $0.2 : $0.1 }
+        cardView.layer.cornerRadius = usesContinuousLayout ? 0 : ClawTheme.cardRadius
+        rowDivider.isHidden = !usesContinuousLayout
+        title.numberOfLines = usesContinuousLayout ? 0 : 2
+        let destination = usesContinuousLayout ? timeRow : previewRow
+        if unreadCount.superview !== destination {
+            (unreadCount.superview as? UIStackView)?.removeArrangedSubview(unreadCount)
+            unreadCount.removeFromSuperview()
+            destination.addArrangedSubview(unreadCount)
+        }
+        updateRowAxes()
+        setNeedsLayout()
+    }
+
+    private func updateRowAxes() {
+        guard let titleRow = titleRow else { return }
+        titleRow.axis = usesContinuousLayout && traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+            ? .vertical : .horizontal
+        titleRow.alignment = titleRow.axis == .vertical ? .fill : .center
     }
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        usesContinuousLayout = false
         title.text = nil
         subtitle.text = nil
         subtitle.attributedText = nil
@@ -174,6 +229,7 @@ class ChatListViewCell: UITableViewCell {
     }
 
     override func layoutSubviews() {
+        updateRowAxes()
         super.layoutSubviews()
         unreadCount.constraints.first(where: { $0.firstAttribute == .height })?.constant =
             max(24, ceil(unreadCount.font.lineHeight) + 8)

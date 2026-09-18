@@ -102,6 +102,12 @@
             </tableViewCellContentView>
             <viewLayoutGuide key="safeArea" id="njF-e1-oar"/>
             <connections>
+                <outlet property="avatarLeading" destination="vet-ib-mUY" id="r4-avatarLeading"/>
+                <outlet property="titleTop" destination="CTj-7w-I3F" id="r4-titleTop"/>
+                <outlet property="minimumHeight" destination="claw-contact-min-height" id="r4-minimumHeight"/>
+                <outlet property="subtitleBottom" destination="claw-contact-bottom" id="r4-subtitleBottom"/>
+                <outlet property="subtitleTrailing" destination="claw-contact-subtitle-end" id="r4-subtitleTrailing"/>
+                <outlet property="statusesTrailing" destination="pCl-31-1I6" id="r4-statusesTrailing"/>
                 <outlet property="avatar" destination="rmr-5k-Uo5" id="O1t-1g-rdn"/>
                 <outlet property="subtitle" destination="b8m-mK-FB9" id="X8M-DA-3fA"/>
                 <outlet property="title" destination="72g-K8-4PE" id="AJg-88-MfF"/>

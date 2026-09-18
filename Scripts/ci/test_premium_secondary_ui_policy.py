@@ -91,7 +91,7 @@ for marker in [
 assert "ClawTheme.styleList(tableView, rowHeight: 72)" in account
 for marker in [
     'ClawProfileLayout.label("偏好设置", size: 12)',
-    "premiumAvatar.heightAnchor.constraint(equalToConstant: 64)",
+    "premiumAvatar.heightAnchor.constraint(equalToConstant: 56)",
     "logoutButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 52)",
     "AccountSettings2General",
     "SettingsNotificationsViewController(style: .insetGrouped)",

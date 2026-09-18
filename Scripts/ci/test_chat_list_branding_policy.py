@@ -14,9 +14,9 @@ def main() -> None:
     avatar = (TINODIOS / "widgets" / "AvatarWithOnlineIndicator.swift").read_text(encoding="utf-8")
     round_image = (TINODIOS / "widgets" / "RoundImageView.swift").read_text(encoding="utf-8")
 
-    assert "navigationItem.title = nil" in chat_list
-    assert 'title.text = "CLAW OS"' in chat_list
-    assert "navigationItem.leftBarButtonItem" in chat_list
+    assert 'navigationItem.title = NSLocalizedString("消息"' in chat_list
+    assert 'title.text = "CLAW OS"' not in chat_list
+    assert "navigationItem.leftBarButtonItem = nil" in chat_list
 
     assert 'NSLocalizedString("CLAW文件助手"' in chat_cell
     assert "icon.setBrandingIcon()" in chat_cell

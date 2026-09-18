@@ -54,7 +54,7 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         searchController.searchBar.searchTextField.attributedPlaceholder =
             NSAttributedString(
                 string: placeholderText,
-                attributes: [NSAttributedString.Key.font: UIFont.systemFont(ofSize: placeholderFontSize),
+                attributes: [NSAttributedString.Key.font: ClawTheme.font(placeholderFontSize),
                              NSAttributedString.Key.foregroundColor: UIColor.systemGray])
     }
 
@@ -101,8 +101,8 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         self.updateSearchBarPlaceholder(authStatus: ContactsSynchronizer.default.authStatus)
 
         navigationItem.title = NSLocalizedString("通讯录", comment: "Contacts screen title")
-        navigationController?.navigationBar.prefersLargeTitles = true
-        navigationItem.largeTitleDisplayMode = .always
+        navigationController?.navigationBar.prefersLargeTitles = false
+        navigationItem.largeTitleDisplayMode = .never
         inviteActionButtonItem.image = ClawTheme.symbol("person.badge.plus", pointSize: ClawTheme.iconCompact, weight: .medium)
         inviteActionButtonItem.tintColor = ClawTheme.primary
         inviteActionButtonItem.accessibilityLabel = NSLocalizedString("添加联系人", comment: "Add contact action")
@@ -110,12 +110,13 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         tableView.accessibilityIdentifier = "claw.contacts.list"
         searchController.searchBar.accessibilityIdentifier = "claw.contacts.search"
         inviteActionButtonItem.accessibilityIdentifier = "claw.contacts.add"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: premiumHeader.addContactButton)
         ClawTheme.styleSearchBar(searchController.searchBar)
         ClawTheme.styleList(tableView, rowHeight: 84)
         tableView.backgroundColor = ClawTheme.background
         tableView.separatorStyle = .none
         tableView.rowHeight = UITableView.automaticDimension
-        tableView.estimatedRowHeight = 94
+        tableView.estimatedRowHeight = 84
         if #available(iOS 15.0, *) {
             tableView.sectionHeaderTopPadding = 0
         }
@@ -180,7 +181,7 @@ class FindViewController: UITableViewController, FindDisplayLogic {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationController?.navigationBar.prefersLargeTitles = false
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -194,7 +195,7 @@ class FindViewController: UITableViewController, FindDisplayLogic {
         self.interactor?.setup()
         self.interactor?.attachToFndTopic()
         self.interactor?.loadAndPresentContacts(searchQuery: nil)
-        self.navigationItem.rightBarButtonItem = nil
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: premiumHeader.addContactButton)
     }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
@@ -268,6 +269,7 @@ class FindViewController: UITableViewController, FindDisplayLogic {
             return makeEmptyContactsCell(for: indexPath.section)
         } else {
             let cell = tableView.dequeueReusableCell(withIdentifier: "ContactViewCell", for: indexPath) as! ContactViewCell
+            cell.usesContinuousLayout = true
             cell.delegate = self
 
             // Configure the cell...
@@ -536,6 +538,7 @@ private final class ClawContactsHeaderView: UIView {
     var onAddContact: (() -> Void)?
     var onCreateGroup: (() -> Void)?
     private let searchContainer = UIView()
+    let addContactButton = UIButton(type: .system)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -552,8 +555,8 @@ private final class ClawContactsHeaderView: UIView {
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         searchContainer.addSubview(searchBar)
         NSLayoutConstraint.activate([
-            searchBar.leadingAnchor.constraint(equalTo: searchContainer.leadingAnchor),
-            searchBar.trailingAnchor.constraint(equalTo: searchContainer.trailingAnchor),
+            searchBar.leadingAnchor.constraint(equalTo: searchContainer.leadingAnchor, constant: 8),
+            searchBar.trailingAnchor.constraint(equalTo: searchContainer.trailingAnchor, constant: -8),
             searchBar.topAnchor.constraint(equalTo: searchContainer.topAnchor),
             searchBar.bottomAnchor.constraint(equalTo: searchContainer.bottomAnchor)
         ])
@@ -561,20 +564,18 @@ private final class ClawContactsHeaderView: UIView {
 
     private func setupViews() {
         backgroundColor = ClawTheme.background
-        let brand = ClawProfileLayout.label("CLAW OS", size: 12, color: ClawTheme.primary)
-        let add = UIButton(type: .system)
+        let add = addContactButton
         ClawTheme.styleSecondaryButton(add)
         add.setTitle("添加联系人", for: .normal)
-        add.titleLabel?.numberOfLines = 0
+        add.titleLabel?.numberOfLines = 1
+        add.titleLabel?.font = UIFontMetrics(forTextStyle: .body).scaledFont(
+            for: .systemFont(ofSize: 15, weight: .semibold), maximumPointSize: 20)
         add.accessibilityIdentifier = "claw.contacts.add"
         add.backgroundColor = ClawTheme.brandSoft
         add.layer.cornerRadius = 12
-        add.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
-        add.heightAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
+        add.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+        add.heightAnchor.constraint(equalToConstant: 44).isActive = true
         add.addTarget(self, action: #selector(addTapped), for: .touchUpInside)
-        let top = UIStackView(arrangedSubviews: [brand, UIView(), add])
-        top.alignment = .center
-        top.spacing = 12
 
         let group = UIButton(type: .system)
         ClawTheme.styleSecondaryButton(group)
@@ -599,16 +600,16 @@ private final class ClawContactsHeaderView: UIView {
         group.addTarget(self, action: #selector(groupTapped), for: .touchUpInside)
 
         searchContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 52).isActive = true
-        let stack = UIStackView(arrangedSubviews: [top, searchContainer, group])
+        let stack = UIStackView(arrangedSubviews: [searchContainer, group])
         stack.axis = .vertical
         stack.spacing = 10
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: topAnchor, constant: 8),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
     }
 

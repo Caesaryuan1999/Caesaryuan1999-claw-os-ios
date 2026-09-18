@@ -32,6 +32,8 @@ class AccountSettingsViewController: UITableViewController {
     private let premiumDisplayName = UILabel()
     private let premiumIdentityCaption = UILabel()
     private let premiumAccountName = UILabel()
+    private var publicIdentityStack: UIStackView?
+    private var appearanceRow: UIStackView?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -56,7 +58,7 @@ class AccountSettingsViewController: UITableViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationController?.navigationBar.prefersLargeTitles = false
         reloadData()
     }
 
@@ -73,36 +75,43 @@ class AccountSettingsViewController: UITableViewController {
     private func installPremiumHeader() {
         let header = UIView(frame: CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 650))
         header.backgroundColor = ClawTheme.background
-        navigationController?.navigationBar.prefersLargeTitles = true
-        navigationItem.largeTitleDisplayMode = .always
+        navigationController?.navigationBar.prefersLargeTitles = false
+        navigationItem.largeTitleDisplayMode = .never
 
         premiumAvatar.translatesAutoresizingMaskIntoConstraints = false
         premiumAvatar.contentMode = .scaleAspectFill
         premiumAvatar.clipsToBounds = true
-        premiumAvatar.widthAnchor.constraint(equalToConstant: 64).isActive = true
-        premiumAvatar.heightAnchor.constraint(equalToConstant: 64).isActive = true
+        premiumAvatar.widthAnchor.constraint(equalToConstant: 56).isActive = true
+        premiumAvatar.heightAnchor.constraint(equalToConstant: 56).isActive = true
         premiumDisplayName.font = ClawTheme.font(20, weight: .semibold, style: .title2)
         premiumDisplayName.textColor = ClawTheme.ink
-        premiumDisplayName.textAlignment = .center
+        premiumDisplayName.textAlignment = .natural
         premiumDisplayName.numberOfLines = 0
         premiumDisplayName.adjustsFontForContentSizeCategory = true
 
         let edit = UIButton(type: .system)
-        ClawTheme.styleSecondaryButton(edit)
+        edit.setTitleColor(ClawTheme.primary, for: .normal)
+        edit.contentHorizontalAlignment = .leading
+        edit.titleLabel?.numberOfLines = 0
+        edit.titleLabel?.adjustsFontForContentSizeCategory = true
         edit.setTitle("编辑个人资料", for: .normal)
         edit.titleLabel?.font = ClawTheme.font(13)
-        edit.heightAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
+        edit.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
         edit.addTarget(self, action: #selector(openGeneralSettings), for: .touchUpInside)
         edit.accessibilityIdentifier = "claw.settings.account.profile"
-        let avatarRow = UIStackView(arrangedSubviews: [premiumAvatar])
-        avatarRow.axis = .vertical
-        avatarRow.alignment = .center
+        let identityText = UIStackView(arrangedSubviews: [premiumDisplayName, edit])
+        identityText.axis = .vertical
+        identityText.spacing = 0
+        let identity = UIStackView(arrangedSubviews: [premiumAvatar, identityText])
+        identity.alignment = .center
+        identity.spacing = 16
         let publicRow = makeIdentityRow(title: "CLAW号", valueLabel: premiumAccountName, copyTag: 1)
-        let profile = UIStackView(arrangedSubviews: [avatarRow, premiumDisplayName, edit, publicRow])
+        let profile = UIStackView(arrangedSubviews: [identity, publicRow])
+        profile.accessibilityIdentifier = "claw.settings.account.profile-card"
         profile.axis = .vertical
-        profile.spacing = 8
+        profile.spacing = 12
         profile.isLayoutMarginsRelativeArrangement = true
-        profile.layoutMargins = UIEdgeInsets(top: 20, left: 16, bottom: 12, right: 16)
+        profile.layoutMargins = UIEdgeInsets(top: 16, left: 16, bottom: 12, right: 16)
         profile.backgroundColor = ClawTheme.surface
         profile.layer.cornerRadius = 20
 
@@ -112,6 +121,8 @@ class AccountSettingsViewController: UITableViewController {
         let appearance = UILabel()
         appearance.text = "跟随系统"
         let appearanceRow = ClawProfileLayout.valueRow(title: "外观", value: appearance)
+        self.appearanceRow = appearanceRow
+        appearanceRow.accessibilityIdentifier = "claw.settings.account.appearance-readonly"
         appearanceRow.accessibilityHint = "当前跟随系统外观，可在系统设置中更改"
         let logoutButton = UIButton(type: .system)
         logoutButton.setTitle("退出登录", for: .normal)
@@ -126,14 +137,14 @@ class AccountSettingsViewController: UITableViewController {
             ClawProfileLayout.label("账号与帮助", size: 12), securityRow, helpRow, logoutButton
         ])
         stack.axis = .vertical
-        stack.spacing = 10
-        stack.setCustomSpacing(24, after: profile)
+        stack.spacing = 8
+        stack.setCustomSpacing(16, after: profile)
         stack.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(stack)
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: header.topAnchor, constant: 12),
-            stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 20),
-            stack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -20),
+            stack.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
             stack.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -24)
         ])
         tableView.tableHeaderView = header
@@ -142,7 +153,12 @@ class AccountSettingsViewController: UITableViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        premiumAvatar.layer.cornerRadius = 22
+        premiumAvatar.layer.cornerRadius = 20
+        let accessible = traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+        publicIdentityStack?.axis = accessible ? .vertical : .horizontal
+        publicIdentityStack?.alignment = accessible ? .leading : .center
+        appearanceRow?.axis = accessible ? .vertical : .horizontal
+        appearanceRow?.alignment = accessible ? .leading : .center
         guard let header = tableView.tableHeaderView else { return }
         tableView.contentInset.bottom = max(24, view.safeAreaInsets.bottom + 24)
         header.frame.size.width = tableView.bounds.width
@@ -160,56 +176,32 @@ class AccountSettingsViewController: UITableViewController {
     }
 
     private func makeIdentityRow(title: String, valueLabel: UILabel, copyTag: Int) -> UIView {
-        let row = UIView()
-        row.translatesAutoresizingMaskIntoConstraints = false
-
-        let titleLabel = UILabel()
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = title
-        titleLabel.font = ClawTheme.font(13, style: .footnote)
-        titleLabel.adjustsFontForContentSizeCategory = true
-        titleLabel.textColor = ClawTheme.primaryPressed
-
-        valueLabel.translatesAutoresizingMaskIntoConstraints = false
-        valueLabel.font = ClawTheme.font(16, weight: .medium)
+        let caption = ClawProfileLayout.label(title, size: 16, color: ClawTheme.ink)
+        caption.setContentHuggingPriority(.required, for: .horizontal)
+        valueLabel.font = ClawTheme.font(13)
         valueLabel.adjustsFontForContentSizeCategory = true
-        valueLabel.textColor = ClawTheme.ink
+        valueLabel.textColor = ClawTheme.muted
         valueLabel.numberOfLines = 0
-
-        let copyButton = UIButton(type: .system)
-        copyButton.translatesAutoresizingMaskIntoConstraints = false
-        copyButton.tag = copyTag
-        copyButton.setImage(ClawTheme.symbol("doc.on.doc", pointSize: ClawTheme.iconCompact, weight: .regular), for: .normal)
-        copyButton.tintColor = ClawTheme.muted
-        copyButton.accessibilityLabel = NSLocalizedString("复制 CLAW 号", comment: "Copy public identifier")
-        copyButton.addTarget(self, action: #selector(copyPremiumValue(_:)), for: .touchUpInside)
-
-        let divider = UIView()
-        divider.translatesAutoresizingMaskIntoConstraints = false
-        divider.backgroundColor = ClawTheme.border
-
-        row.addSubview(titleLabel)
-        row.addSubview(valueLabel)
-        row.addSubview(copyButton)
-        row.addSubview(divider)
-        NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 18),
-            titleLabel.topAnchor.constraint(equalTo: row.topAnchor, constant: 12),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: copyButton.leadingAnchor, constant: -12),
-            valueLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            valueLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
-            valueLabel.bottomAnchor.constraint(equalTo: row.bottomAnchor, constant: -12),
-            valueLabel.trailingAnchor.constraint(equalTo: copyButton.leadingAnchor, constant: -12),
-            copyButton.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -8),
-            copyButton.centerYAnchor.constraint(equalTo: row.centerYAnchor),
-            copyButton.widthAnchor.constraint(equalToConstant: 48),
-            copyButton.heightAnchor.constraint(equalToConstant: 48),
-            copyButton.topAnchor.constraint(greaterThanOrEqualTo: row.topAnchor, constant: 8),
-            divider.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 18),
-            divider.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -18),
-            divider.bottomAnchor.constraint(equalTo: row.bottomAnchor),
-            divider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
-        ])
+        valueLabel.accessibilityIdentifier = "claw.settings.account.public-id"
+        valueLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let copy = UIButton(type: .system)
+        copy.tag = copyTag
+        copy.setTitle("复制", for: .normal)
+        copy.setTitleColor(ClawTheme.primary, for: .normal)
+        copy.titleLabel?.font = ClawTheme.font(13)
+        copy.titleLabel?.adjustsFontForContentSizeCategory = true
+        copy.titleLabel?.numberOfLines = 0
+        copy.accessibilityLabel = NSLocalizedString("复制 CLAW 号", comment: "Copy public identifier")
+        copy.accessibilityIdentifier = "claw.settings.account.copy-public-id"
+        copy.addTarget(self, action: #selector(copyPremiumValue(_:)), for: .touchUpInside)
+        copy.heightAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
+        copy.widthAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
+        let row = UIStackView(arrangedSubviews: [caption, valueLabel, copy])
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 8
+        row.heightAnchor.constraint(greaterThanOrEqualToConstant: 56).isActive = true
+        publicIdentityStack = row
         return row
     }
 

@@ -21,6 +21,18 @@ class ContactViewCell: UITableViewCell {
     @IBOutlet weak var title: UILabel!
     @IBOutlet weak var subtitle: UILabel!
     @IBOutlet var statusLabels: [ContactViewCellStatusLabel]!
+    @IBOutlet private var avatarLeading: NSLayoutConstraint!
+    @IBOutlet private var titleTop: NSLayoutConstraint!
+    @IBOutlet private var minimumHeight: NSLayoutConstraint!
+    @IBOutlet private var subtitleBottom: NSLayoutConstraint!
+    @IBOutlet private var subtitleTrailing: NSLayoutConstraint!
+    @IBOutlet private var statusesTrailing: NSLayoutConstraint!
+    private let rowDivider = UIView()
+
+    // Only the contacts home opts in. Member/group pickers retain their default nib.
+    var usesContinuousLayout = false {
+        didSet { if avatarLeading != nil { applyRowLayout() } }
+    }
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -50,12 +62,43 @@ class ContactViewCell: UITableViewCell {
             if label.isHidden { label.text = nil }
         }
         accessibilityTraits = .button
+        rowDivider.translatesAutoresizingMaskIntoConstraints = false
+        rowDivider.backgroundColor = ClawTheme.border
+        rowDivider.isUserInteractionEnabled = false
+        rowDivider.accessibilityIdentifier = "claw.contact.divider"
+        contentView.addSubview(rowDivider)
+        NSLayoutConstraint.activate([
+            rowDivider.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            rowDivider.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            rowDivider.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            rowDivider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+        ])
+        applyRowLayout()
+    }
+
+    private func applyRowLayout() {
+        avatarLeading.constant = usesContinuousLayout ? 16 : 32
+        titleTop.constant = usesContinuousLayout ? 12 : 17
+        minimumHeight.constant = usesContinuousLayout ? 84 : 94
+        subtitleBottom.constant = usesContinuousLayout ? 12 : 17
+        subtitleTrailing.constant = usesContinuousLayout ? 16 : 32
+        statusesTrailing.constant = usesContinuousLayout ? 16 : 32
+        backgroundView?.layer.cornerRadius = usesContinuousLayout ? 0 : 16
+        selectedBackgroundView?.layer.cornerRadius = usesContinuousLayout ? 0 : 16
+        rowDivider.isHidden = !usesContinuousLayout
+        setNeedsLayout()
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        usesContinuousLayout = false
+        delegate = nil
     }
 
     override func layoutSubviews() {
         for label in statusLabels where label.isHidden { label.text = nil }
         super.layoutSubviews()
-        let cardFrame = bounds.inset(by: UIEdgeInsets(top: 5, left: 20, bottom: 5, right: 20))
+        let cardFrame = usesContinuousLayout ? bounds : bounds.inset(by: UIEdgeInsets(top: 5, left: 20, bottom: 5, right: 20))
         backgroundView?.frame = cardFrame
         selectedBackgroundView?.frame = cardFrame
         avatar.layer.cornerRadius = 16
