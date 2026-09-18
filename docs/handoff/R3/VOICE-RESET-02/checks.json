@@ -1,0 +1,71 @@
+{
+  "level": "Windows execution of actual CI extractor, not Swift or gesture execution",
+  "checks": [
+    {
+      "name": "fixed full consumer source",
+      "expected_exit": 0,
+      "actual_exit": 0,
+      "pass": true,
+      "category": null
+    },
+    {
+      "name": "dirty source remains rejected",
+      "expected_exit": "nonzero",
+      "actual_exit": 1,
+      "pass": true,
+      "category": "differs from fixed HEAD"
+    },
+    {
+      "name": "490 actual optional-consumer omission rejected",
+      "expected_exit": "nonzero",
+      "actual_exit": 1,
+      "pass": true,
+      "category": "Changed gesture must bind snapshot"
+    },
+    {
+      "name": "direct optional movement rejected",
+      "expected_exit": "nonzero",
+      "actual_exit": 1,
+      "pass": true,
+      "category": "Movement must use"
+    },
+    {
+      "name": "other direct or forced optional consumer rejected",
+      "expected_exit": "nonzero",
+      "actual_exit": 1,
+      "pass": true,
+      "category": "No optional snapshot"
+    }
+  ],
+  "all_optional_consumers": [
+    {
+      "line": 92,
+      "source": "private var sendButtonConstrains: CGPoint?"
+    },
+    {
+      "line": 205,
+      "source": "guard recordingStarted, let origin = sendButtonConstrains else { return }"
+    },
+    {
+      "line": 470,
+      "source": "sendButtonConstrains = CGPoint(x: sendButtonHorizontal.constant, y: sendButtonVertical.constant)"
+    },
+    {
+      "line": 476,
+      "source": "if let origin = sendButtonConstrains {"
+    },
+    {
+      "line": 479,
+      "source": "sendButtonConstrains = nil"
+    }
+  ],
+  "extractor_sha256": "0fa98f44b498f9dc3dcb079d27b03849b0135fc50a553f0715bdb40e372e0687",
+  "new_native_methods": 0,
+  "native_expected": {
+    "SDK": 44,
+    "UIrunner": 167,
+    "VLC": 4,
+    "total": 215,
+    "navigation_separate": 3
+  }
+}

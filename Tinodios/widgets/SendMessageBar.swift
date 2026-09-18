@@ -202,7 +202,7 @@ class SendMessageBar: UIView {
         case .cancelled:
             self.delegate?.sendMessageBar(recordAudio: .pauseRecording)
         case .changed:
-            guard recordingStarted else { return }
+            guard recordingStarted, let origin = sendButtonConstrains else { return }
             // Constrain movements to either strictly horizontal or strictly vertical.
             let loc = sender.location(in: self)
             // dX and dY are negative: the movement is up and to the left.
@@ -233,8 +233,8 @@ class SendMessageBar: UIView {
                 sender.isEnabled = true
                 self.layoutIfNeeded()
             } else {
-                self.sendButtonHorizontal.constant = sendButtonConstrains.x + dX
-                self.sendButtonVertical.constant = sendButtonConstrains.y + dY
+                self.sendButtonHorizontal.constant = origin.x + dX
+                self.sendButtonVertical.constant = origin.y + dY
             }
         default:
             break

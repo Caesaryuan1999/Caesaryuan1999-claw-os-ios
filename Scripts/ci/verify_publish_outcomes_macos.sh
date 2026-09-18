@@ -267,6 +267,13 @@ assert source.count("private var sendButtonConstrains: CGPoint?") == 1, "Optiona
 assert source.count("self.captureRecordingGestureOrigin()") == 1, "Gesture must use the captured production snapshot"
 began = re.findall(r"(?ms)^        case \.began:\n(.*?)^        case \.ended:", source)
 assert len(began) == 1 and "self.captureRecordingGestureOrigin()" in began[0], "Capture must run in actual gesture begin"
+gesture = re.findall(r"(?ms)^    @IBAction func longPressed\(sender: UILongPressGestureRecognizer\) \{\n.*?^    \}\n", source)
+assert len(gesture) == 1, "Complete gesture consumer must be unique"
+changed = re.findall(r"(?ms)^        case \.changed:\n(.*?)^        default:", gesture[0])
+assert len(changed) == 1 and changed[0].lstrip().startswith(
+    "guard recordingStarted, let origin = sendButtonConstrains else { return }"), "Changed gesture must bind snapshot before movement"
+assert "origin.x + dX" in changed[0] and "origin.y + dY" in changed[0], "Movement must use the bound snapshot"
+assert not re.search(r"sendButtonConstrains\s*[!.]", source), "No optional snapshot force unwrap or direct member access"
 action = re.findall(r"(?ms)^    func audioBarState\(_ state: AudioBarAction\) \{\n.*?^    \}\n", source)
 assert len(action) == 1 and action[0].count("self.resetRecordingGesture()") == 1, "Lock/cancel must use actual reset"
 normal = re.findall(r"(?m)^        static let kButtonSizeNormal: CGFloat = [0-9]+$", source)
@@ -301,6 +308,8 @@ target.parent.mkdir(parents=True, exist_ok=True)
 target.write_text(generated, encoding="utf-8", newline="\n")
 metadata = {"scope": "Complete production capture/reset methods + real UIKit; showAudioBar spy, no XIB/page",
             "sourceBlob": source_blob, "methodSHA256": expected,
+            "gestureConsumerSHA256": hashlib.sha256(gesture[0].encode()).hexdigest(),
+            "gestureConsumerCheck": "source only: full consumer guard and no direct optional member access",
             "adapterSHA256": hashlib.sha256(generated.encode()).hexdigest()}
 report_path = pathlib.Path(sys.argv[1])
 report = json.loads(report_path.read_text(encoding="utf-8"))
