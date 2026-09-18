@@ -12,6 +12,8 @@ Windows 证据：44/44 既有源策略、原 20 项源接线检查、后继 7 �
 
 总控于 2026-09-19 01:09:29 按既有授权推送精确 fdedf825 并派发 CI32（HTTP 204）。封包时 run 尚未登记、原生与打包/冷启动结果 PENDING；后继文档提交不是 CI 来源。`unit.patch` 的原始 Git diff 上下文可能含既有缩进空白，不能把补丁文件自身作为新增源码逐行 whitespace 检查并重写上下文；验证的是目标源 diff 与实际正向应用。
 
+包装字节校验曾发现新包 Python/JSON 由 Windows 文本写入产生 CRLF，raw 清单与 Git clean 字节不一致；初次 docs 提交 a98094d 保留。后继只把本目录新生成辅助文本固定为 UTF-8/LF 并重新核清单与 Git 实体，`unit.patch` 本身字节不变。此修正不改任何源文件行尾、不改旧包。
+
 在另一个精确起点的独立 checkout 中，保留私有配置和现有数据后执行：
 
 ```powershell

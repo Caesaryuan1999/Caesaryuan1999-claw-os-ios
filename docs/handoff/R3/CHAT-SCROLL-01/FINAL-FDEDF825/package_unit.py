@@ -60,5 +60,5 @@ result = {
     "restore": "In an isolated checkout of the exact base with private configuration preserved: git apply --check unit.patch; git apply unit.patch. Verify listed Git blobs/modes before CI. No reset/clean or database deletion.",
     "rollback": "Use preserved base code/checkpoint in a separate checkout; retain the current account database and private configuration. This patch makes no schema changes."
 }
-(OUT / "unit-package.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+(OUT / "unit-package.json").write_bytes((json.dumps(result, indent=2) + "\n").encode("utf-8"))
 print(json.dumps({"sha256": result["patch"]["sha256"], "bytes": len(patch), "paths": len(paths), "apply": "PASS"}))

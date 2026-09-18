@@ -1,20 +1,21 @@
 {
   "sourceTarget": "fdedf825490ea9fa420b54033e8c48d65f8fc8aa",
+  "encoding": "UTF-8/LF; actual entities checked against staged Git bytes",
   "files": [
     {
       "path": "README.md",
-      "bytes": 3289,
-      "sha256": "425b678114286217744b86218c1037568bbd07e83b70acd1f95f128db9ad3d11"
+      "bytes": 3637,
+      "sha256": "e13fbbc80dfd88411338a7d799ff36bf6c3fef14f35da41ac425910a2885210a"
     },
     {
       "path": "package_unit.py",
-      "bytes": 3867,
-      "sha256": "5b8fb13c25f18ecca7b55b6c0a3c067c44d5684dcc7e27d0b58314234555966e"
+      "bytes": 3807,
+      "sha256": "cabffe62798a4f40ffc7ecee02843342ae1ee63e8bcf96574d43a75dd3f0c7ff"
     },
     {
       "path": "line-endings.json",
-      "bytes": 5634,
-      "sha256": "afc5b144109cdc1333c2bfd04d545c326316063c49c48d15c96e29c7b3937f56"
+      "bytes": 5502,
+      "sha256": "6e805331e15d7243688923ef5e9decb77fbe61d011b0f3f45f7886ebefa3094a"
     },
     {
       "path": "unit.patch",
@@ -23,8 +24,8 @@
     },
     {
       "path": "unit-package.json",
-      "bytes": 4679,
-      "sha256": "f51715458342873a01c089e2ceba82b9ad1dd4653234f87728a4ba23d7cf5927"
+      "bytes": 4569,
+      "sha256": "6ccee651e3f5dc44ce8422a08e26fcc7f1d4e2711b92c0a98d353ebb9bb6c2dd"
     }
   ]
 }
