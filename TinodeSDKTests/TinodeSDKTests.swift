@@ -191,7 +191,7 @@ class TinodeSDKTests: XCTestCase {
     }
 
     private func deletionPacket(code: Int, id: String = "delete-fixture") throws -> ServerMessage {
-        let payload: [String: Any] = ["ctrl": ["id": id, "code": code, "text": "fixture"]]
+        let payload: [String: Any] = ["ctrl": ["id": id, "code": code, "text": "fixture", "ts": "2026-09-18T01:00:00.000Z"]]
         return try Tinode.jsonDecoder.decode(ServerMessage.self,
             from: JSONSerialization.data(withJSONObject: payload))
     }
