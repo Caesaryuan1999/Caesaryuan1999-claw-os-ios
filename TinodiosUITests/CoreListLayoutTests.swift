@@ -167,6 +167,17 @@ final class CoreListLayoutTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(label.bounds.width + 1, ceil(glyphWidth) + 12, file: file, line: line)
         XCTAssertGreaterThanOrEqual(label.bounds.width + 1, label.bounds.height, file: file, line: line)
         XCTAssertEqual(cell.unreadCountWidth.constant, label.bounds.width, accuracy: 1, file: file, line: line)
+        let ownedHeights = label.constraints.filter { $0.identifier == "claw.unread.height" }
+        XCTAssertEqual(ownedHeights.count, 1, file: file, line: line)
+        if let height = ownedHeights.first {
+            XCTAssertTrue(height.isActive, file: file, line: line)
+            XCTAssertTrue((height.firstItem as? UIView) === label, file: file, line: line)
+            XCTAssertNil(height.secondItem, file: file, line: line)
+            XCTAssertEqual(height.relation, .equal, file: file, line: line)
+            let expectedHeight = max(24, ceil(label.font.lineHeight) + 8)
+            XCTAssertEqual(height.constant, expectedHeight, accuracy: 1, file: file, line: line)
+            XCTAssertEqual(label.bounds.height, height.constant, accuracy: 1, file: file, line: line)
+        }
         readable(label, file: file, line: line)
         contained(label, in: cell, file: file, line: line)
     }
@@ -320,6 +331,7 @@ final class CoreListLayoutTests: XCTestCase {
                         chat.unreadCount.font.pointSize < enlargedFontSize
                 }
                 unreadBadgeFits(chat, text: "9+")
+                try evidence(style == .dark ? "badge-shrunk-dark" : "badge-shrunk-light", view: standard.view)
                 let enlarged = UIViewController()
                 try host(enlarged, category: .accessibilityExtraExtraExtraLarge, style: style)
                 fit(chat, in: enlarged.view)
@@ -481,11 +493,19 @@ final class CoreListLayoutTests: XCTestCase {
                 CTLineGetTypographicBounds(CTLineCreateWithAttributedString(NSAttributedString(
                     string: label.text ?? "", attributes: [.font: label.font!]) as CFAttributedString), nil, nil, nil)
             } ?? 0
+            let badgeHeights: [[String: Any]] = badge?.constraints.filter { $0.firstAttribute == .height }.map {
+                ["identifier": $0.identifier ?? "", "constant": $0.constant, "active": $0.isActive,
+                 "relation": $0.relation.rawValue, "priority": $0.priority.rawValue,
+                 "firstItemIsBadge": ($0.firstItem as? UILabel) === badge, "hasSecondItem": $0.secondItem != nil]
+            } ?? []
             return ["kind": String(describing: type(of: $0)), "identifier": $0.accessibilityIdentifier ?? "",
                     "x": r.minX, "y": r.minY, "width": r.width, "height": r.height,
                     "hidden": $0.isHidden, "alpha": $0.alpha,
                     "font": ($0 as? UILabel)?.font.pointSize ?? 0,
-                    "unreadGlyphWidth": badgeGlyphWidth]
+                    "unreadGlyphWidth": badgeGlyphWidth,
+                    "unreadFontLineHeight": badge?.font.lineHeight ?? 0,
+                    "unreadDesiredHeight": badge.map { max(24, ceil($0.font.lineHeight) + 8) } ?? 0,
+                    "unreadHeightConstraints": badgeHeights]
         }
         let data: [String: Any] = ["scope": "original UIKit/nibs with synthetic in-memory data; no authenticated journey",
             "width": view.bounds.width, "height": view.bounds.height,

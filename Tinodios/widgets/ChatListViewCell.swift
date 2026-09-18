@@ -39,6 +39,7 @@ class ChatListViewCell: UITableViewCell {
     private var titleRow: UIStackView!
     private var previewRow: UIStackView!
     private var timeRow: UIStackView!
+    private var unreadCountHeight: NSLayoutConstraint?
 
     // Explicit opt-in: archive/blocked consumers retain their original card layout.
     var usesContinuousLayout = false {
@@ -47,6 +48,12 @@ class ChatListViewCell: UITableViewCell {
 
     override func awakeFromNib() {
         super.awakeFromNib()
+        // Capture the nib's own height before UIStackView can add layout constraints.
+        unreadCountHeight = unreadCount.constraints.first {
+            ($0.firstItem as? UIView) === unreadCount && $0.firstAttribute == .height &&
+                $0.secondItem == nil && $0.relation == .equal
+        }
+        unreadCountHeight?.identifier = "claw.unread.height"
         installPremiumLayout()
         backgroundColor = .clear
         contentView.backgroundColor = .clear
@@ -58,7 +65,7 @@ class ChatListViewCell: UITableViewCell {
         icon.avatar.setFixedCornerRadius(16)
         unreadCount.backgroundColor = ClawTheme.primary
         unreadCount.textColor = ClawTheme.onBrand
-        unreadCount.font = ClawTheme.font(12, weight: .semibold, style: .caption1)
+        updateUnreadBadgeFont()
         let labels: [UILabel] = [title, subtitle, messageTimeLabel, unreadCount]
         labels.forEach { $0.adjustsFontForContentSizeCategory = true }
         updateUnreadBadgeMetrics()
@@ -229,12 +236,31 @@ class ChatListViewCell: UITableViewCell {
 
     override func layoutSubviews() {
         updateRowAxes()
+        updateUnreadBadgeFont()
         updateUnreadBadgeMetrics()
         super.layoutSubviews()
         // UIKit can resolve the inherited Dynamic Type font while laying out the
         // nib label. Reconcile both dimensions with that font before rounding.
         if updateUnreadBadgeMetrics() { contentView.layoutIfNeeded() }
         unreadCount.layer.cornerRadius = unreadCount.bounds.height / 2
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory {
+            updateUnreadBadgeFont()
+            updateUnreadBadgeMetrics()
+            contentView.setNeedsLayout()
+            setNeedsLayout()
+        }
+    }
+
+    private func updateUnreadBadgeFont() {
+        guard let label = unreadCount else { return }
+        // Derive font and dimensions from the same trait, including AX -> standard reuse.
+        let font = UIFontMetrics(forTextStyle: .caption1).scaledFont(
+            for: .systemFont(ofSize: 12, weight: .semibold), compatibleWith: traitCollection)
+        if label.font != font { label.font = font }
     }
 
     @discardableResult
@@ -245,7 +271,7 @@ class ChatListViewCell: UITableViewCell {
         let desiredWidth = label.isHidden ? CGFloat.leastNonzeroMagnitude : max(height, ceil(textWidth) + 12)
         var changed = false
         if width.constant != desiredWidth { width.constant = desiredWidth; changed = true }
-        if let constraint = label.constraints.first(where: { $0.firstAttribute == .height }),
+        if let constraint = unreadCountHeight,
            constraint.constant != height {
             constraint.constant = height; changed = true
         }
