@@ -49,16 +49,16 @@ private final class AssistantSocketServer {
             default: break
             }
         }
-        listener.start(queue: queue)
-        guard ready.wait(timeout: .now() + 3) == .success, queue.sync(execute: { port != nil }) else {
-            listener.cancel(); throw AssistantFixture.Failure.fixture
-        }
-        boundPort = port!
         listener.newConnectionHandler = { [weak self] connection in
             guard let self = self, self.peers.count < 32 else { connection.cancel(); return }
             self.peers.append(connection); connection.start(queue: self.queue)
             self.read(connection, bytes: Data())
         }
+        listener.start(queue: queue)
+        guard ready.wait(timeout: .now() + 3) == .success, queue.sync(execute: { port != nil }) else {
+            listener.cancel(); throw AssistantFixture.Failure.fixture
+        }
+        boundPort = port!
     }
     private var boundPort: UInt16 = 0
     var url: URL { URL(string: "http://127.0.0.1:\(boundPort)/")! }

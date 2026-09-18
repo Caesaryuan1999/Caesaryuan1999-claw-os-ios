@@ -1,0 +1,65 @@
+{
+  "scope": "Windows source preservation checks; native successor NOT_RUN",
+  "parent": "db903725054d8fc7c7247d671d6452e57a0f645d",
+  "ci39_source": "b004af0d5c5d8ce2f7560fad04ed8711694c8e23",
+  "source": "TinodiosUITests/AssistantStreamTests.swift",
+  "old_git_blob": "f4cda80ea203957c8a9d8f9ce5ffc2ed4e1008c7",
+  "old_sha256": "51b1a7b8e4c28a8f8808b9d36f8df4cf4459edca4b1f71eb9f0117a822c53b47",
+  "new_sha256": "944c08471fdd5889584b0f064a38c4a2bc05c3c4211ea9c2bb3a6c38af76e221",
+  "new_git_blob": "279f5699f5c7b9d1fc095841469921add7ac2ff3",
+  "checks": {
+    "exact_original_block_moved": true,
+    "old_start_precedes_handler": true,
+    "both_handlers_before_start": true,
+    "entire_test_class_byte_equal": true,
+    "seven_methods_unchanged": true,
+    "exact_expected_new_file": true
+  },
+  "method_names": [
+    "testProductionParserHandlesEveryUTF8BoundaryCRLFMultilineAndHeartbeat",
+    "testMalformedIDsUnknownStatesLargeFramesAndTruncatedUTF8FailClosed",
+    "testAccessControlHasNoPersistentIDAndDeadlineNeverSlides",
+    "testRealSocketChunksProduceEventsBeforeEOFAndStopUsesAnotherConnection",
+    "testRealSocketRedirectAndNonJSON401NeverDeliverBody",
+    "testRealSocketOldStopIsRetiredBeforeNewConversationSubmission",
+    "testRealSocketHeartbeatCannotExtendAbsoluteSixtySecondDeadline"
+  ],
+  "raw_zip": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260919\\R4-ios-ci39-evidence.zip",
+  "raw_zip_sha256": "71cbce339b394cf06b8d7085a95faeb5cba7e2f6552fcbc7b84585ee43d6569e",
+  "log_entry": "ios-01-a-20260918-223342/storage.log",
+  "failure_evidence": [
+    {
+      "line": 21843,
+      "category": "NWListener started without connection handler"
+    },
+    {
+      "line": 21849,
+      "category": "NWListener started without connection handler"
+    },
+    {
+      "line": 21853,
+      "category": "NWListener started without connection handler"
+    },
+    {
+      "line": 21857,
+      "category": "NWListener started without connection handler"
+    }
+  ],
+  "ci39": {
+    "sdk": {
+      "passedTests": 44,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "totalTestCount": 44
+    },
+    "storage": {
+      "passedTests": 245,
+      "failedTests": 4,
+      "skippedTests": 0,
+      "totalTestCount": 249
+    },
+    "navigation_package_cold": "NOT_RUN"
+  },
+  "successor_expected_native": 293,
+  "successor_expected_navigation": 3
+}
