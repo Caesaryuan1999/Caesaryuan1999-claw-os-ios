@@ -42,8 +42,17 @@ class LoginViewController: UIViewController {
         passwordTextEdit.textContentType = .password
         loginButton = form.button("登录", target: self, action: #selector(loginClicked(_:)))
         loginButton.accessibilityIdentifier = "claw.login.primary"
-        _ = form.button("创建账号", target: self, action: #selector(openSignup), primary: false)
-        _ = form.button("找回密码", target: self, action: #selector(openResetPassword), primary: false)
+        let signup = form.button("注册账号", target: self, action: #selector(openSignup), primary: false)
+        let reset = form.button("找回密码", target: self, action: #selector(openResetPassword), primary: false)
+        for button in [signup, reset] {
+            form.stack.removeArrangedSubview(button)
+            button.removeFromSuperview()
+        }
+        let secondaryActions = UIStackView(arrangedSubviews: [signup, reset])
+        secondaryActions.axis = .horizontal
+        secondaryActions.distribution = .fillEqually
+        secondaryActions.spacing = 16
+        form.stack.addArrangedSubview(secondaryActions)
         legacyButton = form.button("使用原账号登录", target: self, action: #selector(toggleLegacy), primary: false)
         configureConnectionButton = form.button("连接设置", target: self, action: #selector(openConnectionSettings), primary: false)
         configureConnectionButton.accessibilityIdentifier = "claw.login.connection"
