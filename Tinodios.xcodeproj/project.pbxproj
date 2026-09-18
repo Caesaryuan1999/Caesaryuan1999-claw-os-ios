@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C1A070000000000000000002 /* ClawAssistantModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000001; };
+		C1A070000000000000000004 /* ClawAssistantService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000003; };
+		C1A070000000000000000006 /* ClawAssistantSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000005; };
+		C1A070000000000000000008 /* ClawAssistantHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000007; };
+		C1A07000000000000000000A /* ClawAssistantViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000009; };
+		C1A07000000000000000000C /* ClawAssistantHistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A07000000000000000000B; };
+		C1A07000000000000000000E /* ClawAssistantConversationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A07000000000000000000D; };
+		C1A070000000000000000010 /* AssistantHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A07000000000000000000F; };
+		C1A070000000000000000012 /* AssistantLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000011; };
+
 		C1A060000000000000000002 /* CoreListLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A060000000000000000001; };
 		C1A050000000000000000002 /* ChatScrollTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A050000000000000000001; };
 		0A0016E721E7236900088188 /* MessageInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0016E621E7236900088188 /* MessageInteractor.swift */; };
@@ -268,6 +278,16 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C1A070000000000000000001 /* ClawAssistantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantModels.swift; sourceTree = "<group>"; };
+		C1A070000000000000000003 /* ClawAssistantService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantService.swift; sourceTree = "<group>"; };
+		C1A070000000000000000005 /* ClawAssistantSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantSession.swift; sourceTree = "<group>"; };
+		C1A070000000000000000007 /* ClawAssistantHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantHistory.swift; sourceTree = "<group>"; };
+		C1A070000000000000000009 /* ClawAssistantViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantViewController.swift; sourceTree = "<group>"; };
+		C1A07000000000000000000B /* ClawAssistantHistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantHistoryViewController.swift; sourceTree = "<group>"; };
+		C1A07000000000000000000D /* ClawAssistantConversationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantConversationViewController.swift; sourceTree = "<group>"; };
+		C1A07000000000000000000F /* AssistantHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantHistoryTests.swift; sourceTree = "<group>"; };
+		C1A070000000000000000011 /* AssistantLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantLayoutTests.swift; sourceTree = "<group>"; };
+
 		C1A060000000000000000001 /* CoreListLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreListLayoutTests.swift; sourceTree = "<group>"; };
 		C1A050000000000000000001 /* ChatScrollTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatScrollTests.swift; sourceTree = "<group>"; };
 		0A0016E621E7236900088188 /* MessageInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInteractor.swift; sourceTree = "<group>"; };
@@ -625,6 +645,13 @@
 				B0BE302A27B8A3B600B04631 /* TopicSecurityViewController.swift */,
 				0AEE8BED226456080022EC3F /* UiUtils.swift */,
 				0A35BA9F2283A37500AA5E2F /* Utils.swift */,
+				C1A070000000000000000001 /* ClawAssistantModels.swift */,
+				C1A070000000000000000003 /* ClawAssistantService.swift */,
+				C1A070000000000000000005 /* ClawAssistantSession.swift */,
+				C1A070000000000000000007 /* ClawAssistantHistory.swift */,
+				C1A070000000000000000009 /* ClawAssistantViewController.swift */,
+				C1A07000000000000000000B /* ClawAssistantHistoryViewController.swift */,
+				C1A07000000000000000000D /* ClawAssistantConversationViewController.swift */,
 				C1A0A0012026091800000001 /* ClawIdentityService.swift */,
 				C1A0A0012026091800000002 /* ClawIdentityFlow.swift */,
 				C1A040012026091800000001 /* ClawSecondaryUIState.swift */,
@@ -682,6 +709,8 @@
 				C1A047012026091800000001 /* SendMessageBarResetTests.swift */,
 				C1A048000000000000000001 /* VoiceLayoutTests.swift */,
 				C1A050000000000000000001 /* ChatScrollTests.swift */,
+				C1A07000000000000000000F /* AssistantHistoryTests.swift */,
+				C1A070000000000000000011 /* AssistantLayoutTests.swift */,
 				C1A060000000000000000001 /* CoreListLayoutTests.swift */,
 				C1A047012026091800000002 /* SendMessageBarResetSource.swift */,
 				C1A041012026091800000001 /* OwnedImageTests.swift */,
@@ -1274,6 +1303,13 @@
 				B0A612B72294289000569DFE /* MessageViewController+SendMessageBarDelegate.swift in Sources */,
 				B0BA208523D5D8CF00C59BD4 /* FilePreviewController.swift in Sources */,
 				0A35BAA02283A37500AA5E2F /* Utils.swift in Sources */,
+				C1A070000000000000000002 /* ClawAssistantModels.swift in Sources */,
+				C1A070000000000000000004 /* ClawAssistantService.swift in Sources */,
+				C1A070000000000000000006 /* ClawAssistantSession.swift in Sources */,
+				C1A070000000000000000008 /* ClawAssistantHistory.swift in Sources */,
+				C1A07000000000000000000A /* ClawAssistantViewController.swift in Sources */,
+				C1A07000000000000000000C /* ClawAssistantHistoryViewController.swift in Sources */,
+				C1A07000000000000000000E /* ClawAssistantConversationViewController.swift in Sources */,
 				C1A0A0022026091800000001 /* ClawIdentityService.swift in Sources */,
 				C1A0A0022026091800000002 /* ClawIdentityFlow.swift in Sources */,
 				C1A040022026091800000001 /* ClawSecondaryUIState.swift in Sources */,
@@ -1349,7 +1385,7 @@
 			files = (C1A043022026091800000001, C1A04400000000000000001D, );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, ); runOnlyForDeploymentPostprocessing = 0; };
+		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A070000000000000000010, C1A070000000000000000012, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */

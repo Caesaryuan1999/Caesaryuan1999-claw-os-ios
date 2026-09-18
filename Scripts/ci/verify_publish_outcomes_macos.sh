@@ -399,6 +399,8 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -only-testing:TinodiosVoiceLayoutTests/VoiceLayoutTests \
   -only-testing:TinodiosVoiceLayoutTests/ChatScrollTests \
   -only-testing:TinodiosVoiceLayoutTests/CoreListLayoutTests \
+  -only-testing:TinodiosVoiceLayoutTests/AssistantHistoryTests \
+  -only-testing:TinodiosVoiceLayoutTests/AssistantLayoutTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
 unset TEST_RUNNER_CLAW_VLC_POD_EVIDENCE

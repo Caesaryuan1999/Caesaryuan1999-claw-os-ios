@@ -17,6 +17,7 @@ class Cache {
     private var tinodeInstance: Tinode?
     private var timer = RepeatingTimer(timeInterval: 60 * 60 * 4) // Once every 4 hours.
     private var largeFileHelper: LargeFileHelper?
+    private var assistantScope: ClawAssistantSession?
     private let lock = NSRecursiveLock()
     private var generation: UInt64 = 0
 
@@ -60,12 +61,17 @@ class Cache {
     @discardableResult
     public static func invalidate(ifCurrent expected: Tinode? = nil) -> Bool {
         var retiredRecorder: MediaRecorder?
+        var retiredAssistant: ClawAssistantSession?
         // Physical AV stop and page callbacks must run after both locks are released.
-        defer { retiredRecorder?.finishRetirement() }
+        defer {
+            retiredRecorder?.finishRetirement()
+            retiredAssistant?.finishRetirement()
+        }
         guard let current = shared.locked({ shared.tinodeInstance }) else {
             return shared.locked {
                 guard expected == nil, shared.tinodeInstance == nil else { return false }
                 retiredRecorder = shared.detachRecorderLocked()
+                retiredAssistant = shared.detachAssistantLocked()
                 SharedUtils.removeAuthToken()
                 BaseDb.sharedInstance.sqlStore?.logout()
                 shared.generation &+= 1
@@ -77,6 +83,7 @@ class Cache {
             shared.locked {
                 guard shared.tinodeInstance === current else { return false }
             retiredRecorder = shared.detachRecorderLocked()
+            retiredAssistant = shared.detachAssistantLocked()
             SharedUtils.removeAuthToken()
             shared.timer.suspend()
             shared.largeFileHelper?.invalidateSession()
@@ -92,6 +99,50 @@ class Cache {
             }
         }
     }
+    private func detachAssistantLocked() -> ClawAssistantSession? {
+        let scope = assistantScope
+        assistantScope = nil
+        scope?.markRetired(clearAccount: true)
+        return scope
+    }
+
+    static func assistantSession() throws -> ClawAssistantSession {
+        let owner = tinode
+        var previous: ClawAssistantSession?
+        defer { previous?.finishRetirement() }
+        guard let result = ifCurrent(owner, { () -> Result<ClawAssistantSession, ClawAssistantError> in
+            let connection = Tinode.getConnectionParams()
+            guard let url = URL(string: (connection.1 ? "https://" : "http://") + connection.0 + "/"),
+                  let origin = try? ClawAssistantService.origin(url) else { return .failure(.insecureOrigin) }
+            let generation = shared.generation
+            if let scope = shared.assistantScope, scope.matches(owner: owner, generation: generation, origin: origin) {
+                return .success(scope)
+            }
+            guard owner.isConnectionAuthenticated, let uid = owner.myUid, owner.store?.myUid == uid,
+                  let token = owner.authToken, SharedUtils.getAuthToken() == token else {
+                return .failure(.signInRequired)
+            }
+            do {
+                let account = shared.assistantScope?.account
+                let scope = try ClawAssistantSession(owner: owner, generation: generation, origin: origin,
+                    account: account, gate: { work in
+                        Cache.ifCurrent(owner) {
+                            let current = Tinode.getConnectionParams()
+                            guard shared.generation == generation, current.0 == connection.0,
+                                  current.1 == connection.1 else { return false }
+                            work(); return true
+                        } ?? false
+                    })
+                previous = shared.assistantScope
+                previous?.markRetired(clearAccount: previous?.account !== scope.account)
+                shared.assistantScope = scope
+                return .success(scope)
+            } catch let error as ClawAssistantError { return .failure(error) }
+              catch { return .failure(.signInRequired) }
+        }) else { throw ClawAssistantError.retired }
+        return try result.get()
+    }
+
     public static func isContactSynchronizerActive() -> Bool {
         return Cache.shared.timer.state == .resumed
     }

@@ -21,10 +21,12 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
 
         let account = storyboard.instantiateViewController(withIdentifier: "Account Settings")
         let accountNavigation = UINavigationController(rootViewController: account)
+        let assistantNavigation = UINavigationController(rootViewController: ClawAssistantViewController())
 
         controller.viewControllers = [
             controller.messagesNavigationController,
             contactsNavigation,
+            assistantNavigation,
             accountNavigation
         ]
         controller.configureAppearance()
@@ -42,6 +44,7 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
         let items: [(String, String, String)] = [
             ("消息", "message", "message.fill"),
             ("通讯录", "person.2", "person.2.fill"),
+            ("助手", "sparkles", "sparkles"),
             ("我", "person.crop.circle", "person.crop.circle.fill")
         ]
         for (index, item) in items.enumerated() where index < (viewControllers?.count ?? 0) {
@@ -77,6 +80,11 @@ final class ClawMainTabBarController: UITabBarController, UITabBarControllerDele
 
     func selectMessages() {
         selectedIndex = 0
+    }
+
+    func selectAccount() {
+        guard let count = viewControllers?.count, count > 0 else { return }
+        selectedIndex = count - 1
     }
 
     func refreshMessageBadge() {
