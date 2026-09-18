@@ -306,8 +306,11 @@ final class CoreListLayoutTests: XCTestCase {
                 chat.fillFromTopic(topic: unreadTopic)
                 fit(chat, in: controller.view)
                 XCTAssertTrue(chat.unreadCount.isHidden)
-                unreadTopic.read = 2
-                chat.fillFromTopic(topic: unreadTopic)
+                // Topic.read is monotonic; reuse the cell with a fresh unread topic.
+                let restoredTopic = try topic()
+                XCTAssertEqual(restoredTopic.read, 2)
+                XCTAssertEqual(unreadTopic.read, unreadTopic.seq)
+                chat.fillFromTopic(topic: restoredTopic)
                 let enlargedFontSize = chat.unreadCount.font.pointSize
                 let standard = UIViewController(); try host(standard, style: style)
                 fit(chat, in: standard.view)
