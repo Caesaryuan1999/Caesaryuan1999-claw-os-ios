@@ -68,8 +68,6 @@ class SendMessageBar: UIView {
 
         static let kSendButtonImageWave = ClawTheme.symbol("mic.fill", pointSize: Constants.kSendButtonPointsNormal, weight: .medium)!
         static let kSendButtonImageWavePressed = ClawTheme.symbol("mic.circle.fill", pointSize: Constants.kSendButtonPointsPressed, weight: .medium)!
-        static let kWaveInsetsShort = UIEdgeInsets(top: 2, left: 6, bottom: 2, right: 88)
-        static let kWaveInsetsLong = UIEdgeInsets(top: 2, left: 6, bottom: 2, right: 52)
     }
 
     // MARK: Action delegate
@@ -90,7 +88,8 @@ class SendMessageBar: UIView {
 
     // Constraints.
     private var sendButtonConstrains: CGPoint?
-    // Position in SendMessageBar coordinates.
+    // Keep gesture coordinates in the same window while the accessory grows.
+    private weak var recordingGestureWindow: UIWindow?
     private var sendButtonLocation: CGPoint!
 
     @IBOutlet weak var inputField: PlaceholderTextView!
@@ -106,19 +105,34 @@ class SendMessageBar: UIView {
 
     @IBOutlet weak var audioView: UIView!
     @IBOutlet weak var deleteAudioButton: UIButton!
-    @IBOutlet weak var deleteAudioButtonWidth: NSLayoutConstraint!
     @IBOutlet weak var stopAudioRecordingButton: UIButton!
     @IBOutlet weak var playAudioButton: UIButton!
     @IBOutlet weak var pauseAudioButton: UIButton!
 
     @IBOutlet weak var audioDurationLabel: UILabel!
-    @IBOutlet weak var audioDurationLabelHeight: NSLayoutConstraint!
     @IBOutlet weak var audioViewHeight: NSLayoutConstraint!
     @IBOutlet weak var wavePreviewImageView: WaveImageView!
-    @IBOutlet weak var wavePreviewLeading: NSLayoutConstraint! // 40 <-> 8
+    @IBOutlet weak var voiceScrollView: UIScrollView!
+    @IBOutlet weak var voiceStackView: UIStackView!
+    @IBOutlet weak var voiceDescriptionLabel: UILabel!
+    @IBOutlet weak var voiceSendButton: UIButton!
+    @IBOutlet weak var voiceGestureSpacer: UIView!
 
     // MARK: Properties
     private var audioLocked: Bool = false
+    private var displayedAudioState: AudioBarState = .hidden
+    private var recordedDuration: TimeInterval = 0
+    private var playbackTime: TimeInterval = 0
+    private var previewWasInterrupted = false
+    private var playbackIsPaused = false
+    private var lastVoiceAnnouncement: String?
+    var onVoicePresentationChanged: ((Bool) -> Void)?
+    var onVoiceHeightChanged: (() -> Void)?
+    var voicePanelMaximumHeight: CGFloat = 420 {
+        didSet {
+            if abs(oldValue - voicePanelMaximumHeight) > 0.5 { setNeedsLayout() }
+        }
+    }
 
     private var pendingPreviewAction: PendingPreviewAction = .none
     public var pendingPreviewText: NSAttributedString? {
@@ -171,6 +185,10 @@ class SendMessageBar: UIView {
         self.delegate?.sendMessageBar(recordAudio: .stopAndDelete)
     }
 
+    @IBAction func sendRecording(_ sender: Any) {
+        self.delegate?.sendMessageBar(recordAudio: .stopAndSend)
+    }
+
     @IBAction func stopRecording(_ sender: Any) {
         self.delegate?.sendMessageBar(recordAudio: .stopRecording)
     }
@@ -189,7 +207,9 @@ class SendMessageBar: UIView {
 
         switch sender.state {
         case .began:
-            let loc = sender.location(in: self)
+            guard let gestureWindow = window else { return }
+            recordingGestureWindow = gestureWindow
+            let loc = sender.location(in: gestureWindow)
             self.captureRecordingGestureOrigin()
             self.sendButtonLocation = CGPoint(x: loc.x, y: loc.y)
             self.delegate?.sendMessageBar(recordAudio: .start)
@@ -203,8 +223,9 @@ class SendMessageBar: UIView {
             self.delegate?.sendMessageBar(recordAudio: .pauseRecording)
         case .changed:
             guard recordingStarted, let origin = sendButtonConstrains else { return }
+            guard let gestureWindow = recordingGestureWindow, window === gestureWindow else { return }
             // Constrain movements to either strictly horizontal or strictly vertical.
-            let loc = sender.location(in: self)
+            let loc = sender.location(in: gestureWindow)
             // dX and dY are negative: the movement is up and to the left.
             var dX = min(0, loc.x - sendButtonLocation.x)
             var dY = min(0, loc.y - sendButtonLocation.y)
@@ -324,10 +345,7 @@ class SendMessageBar: UIView {
         sendButton.layer.cornerCurve = .continuous
         sendButton.accessibilityIdentifier = "claw.chat.send"
         inputField.accessibilityIdentifier = "claw.chat.input"
-        deleteAudioButton.accessibilityLabel = NSLocalizedString("删除录音", comment: "Discard recording")
-        stopAudioRecordingButton.accessibilityLabel = NSLocalizedString("停止录音", comment: "Stop recording")
-        playAudioButton.accessibilityLabel = NSLocalizedString("播放录音", comment: "Play recording")
-        pauseAudioButton.accessibilityLabel = NSLocalizedString("暂停录音", comment: "Pause recording")
+        configureVoicePresentation()
 
         if let font = inputField.font {
             inputFieldMaxHeight = font.lineHeight * Constants.maxLines
@@ -366,7 +384,7 @@ class SendMessageBar: UIView {
             sendButton.backgroundColor = .clear
             sendButton.tintColor = ClawTheme.primary
             sendButton.accessibilityLabel = NSLocalizedString("录音", comment: "Record audio")
-            sendButton.accessibilityHint = NSLocalizedString("按住录音，松开发送；向左滑动取消", comment: "Record gesture")
+            sendButton.accessibilityHint = NSLocalizedString("按住录音，松开发送；左滑取消，上滑锁定录音", comment: "Record gesture")
             width = recording ? Constants.kSendButtonSizePressed : 48
             height = width
         }
@@ -380,12 +398,10 @@ class SendMessageBar: UIView {
         if !inputField.isHidden {
             inputFieldHeight.constant = max(inputFieldHeight.constant, height + 8)
         }
-        if !audioView.isHidden {
-            audioViewHeight.constant = max(40, height + 8)
-        }
     }
 
     private func resizeInputField() {
+        guard audioView.isHidden else { return }
         let font = inputField.font ?? ClawTheme.font(16)
         let buttonHeight = sendButton.constraints.first(where: { $0.firstAttribute == .height })?.constant ?? 48
         let minimumHeight = max(Constants.kInitialInputFieldHeight, buttonHeight + 8)
@@ -400,13 +416,16 @@ class SendMessageBar: UIView {
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
-        guard inputField != nil else { return }
+        guard inputField != nil, voiceStackView != nil else { return }
         inputField.layer.borderColor = ClawTheme.border.cgColor
-        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory,
-           audioView.isHidden {
+        configureVoicePresentation()
+        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory {
             inputField.font = ClawTheme.font(16)
-            updateSendButtonAppearance(sending: !inputField.actualText.isEmpty)
-            resizeInputField()
+            if audioView.isHidden {
+                updateSendButtonAppearance(sending: !inputField.actualText.isEmpty)
+                resizeInputField()
+            }
+            setNeedsLayout()
         }
     }
 
@@ -443,11 +462,17 @@ class SendMessageBar: UIView {
 
     // State changes are confirmed by the actual recorder/player, not the button.
     func recordingDidStart() {
+        recordedDuration = 0
+        playbackTime = 0
+        previewWasInterrupted = false
+        playbackIsPaused = false
         recordingStarted = true
         showAudioBar(.short)
         updateSendButtonAppearance(sending: false, recording: true)
-        verticalSliderView.isHidden = false
-        horizontalSliderView.isHidden = false
+        // The panel describes both gestures. Keep the original gesture view alive.
+        verticalSliderView.isHidden = true
+        horizontalSliderView.isHidden = true
+        updateVoiceCopy(announce: true)
         layoutIfNeeded()
     }
 
@@ -457,6 +482,7 @@ class SendMessageBar: UIView {
         resetRecordingGesture()
         updateSendButtonAppearance(sending: true)
         showAudioBar(.longPaused)
+        updateVoiceCopy(announce: true)
     }
 
     func resetRecordingState() {
@@ -483,69 +509,48 @@ class SendMessageBar: UIView {
         sendButtonSize.constant = Constants.kButtonSizeNormal
     }
 
-    // Un-locked audio recording, show duration label & wave.
+    // Presentation only. Recorder/player callbacks determine every state.
     func showAudioBar(_ state: AudioBarState) {
-        if state == .hidden || state == .short {
-            deleteAudioButton.show(false)
-            playAudioButton.show(false)
-            pauseAudioButton.show(false)
-            stopAudioRecordingButton.show(false)
-        } else {
-            // Long bar
-            deleteAudioButton.show(true, dimension: Constants.kButtonSizeNormal)
-            switch state {
-            case .longInitial:
-                playAudioButton.show(false)
-                pauseAudioButton.show(false)
-                stopAudioRecordingButton.show(true, dimension: Constants.kButtonSizeNormal)
-            case .longPlayback:
-                playAudioButton.show(false)
-                pauseAudioButton.show(true, dimension: Constants.kButtonSizeNormal)
-                stopAudioRecordingButton.show(false)
-            case .longPaused:
-                playAudioButton.show(true, dimension: Constants.kButtonSizeNormal)
-                pauseAudioButton.show(false)
-                stopAudioRecordingButton.show(false)
-            default:
-                break
-            }
-        }
-
+        let wasVisible = displayedAudioState != .hidden
+        displayedAudioState = state
+        stopAudioRecordingButton.isHidden = state != .longInitial
+        voiceSendButton.isHidden = state == .hidden || state == .short
+        playAudioButton.isHidden = state != .longPaused
+        pauseAudioButton.isHidden = state != .longPlayback
+        deleteAudioButton.isHidden = state == .hidden
+        voiceGestureSpacer.isHidden = state != .short
+        sendButton.isHidden = state != .hidden && state != .short
         if state == .hidden {
-            // Bar hidden.
             inputField.show(true, height: Constants.kInitialInputFieldHeight)
             attachButton.isHidden = false
-            // audioDurationLabel.show(false)
-            audioDurationLabel.isHidden = true
-            wavePreviewImageView.isHidden = true
+            wavePreviewImageView.pause(rewind: false)
             wavePreviewImageView.reset()
             audioViewHeight.constant = CGFloat.leastNonzeroMagnitude
             audioView.isHidden = true
+            recordingGestureWindow = nil
+            recordedDuration = 0
+            playbackTime = 0
+            previewWasInterrupted = false
+            playbackIsPaused = false
+            lastVoiceAnnouncement = nil
             updateSendButtonAppearance(sending: !inputField.actualText.isEmpty)
+            resizeInputField()
         } else {
-            // Long or short bar visible.
-            inputField.resignFirstResponder() // Otherwise it does not hide
+            inputField.resignFirstResponder()
             inputField.show(false)
             attachButton.isHidden = true
-            audioDurationLabel.isHidden = false
-            audioDurationLabel.show(true, height: 40)
-            audioDurationLabel.sizeToFit()
             audioView.isHidden = false
-            let buttonHeight = sendButton.constraints.first(where: { $0.firstAttribute == .height })?.constant ?? 48
-            audioViewHeight.constant = max(40, buttonHeight + 8)
-            wavePreviewImageView.isHidden = false
-            if state == .short {
-                wavePreviewLeading.constant = 8
-                wavePreviewImageView.waveInsets = Constants.kWaveInsetsShort
+            if !wasVisible { voiceScrollView.setContentOffset(.zero, animated: false) }
+            if state == .longInitial {
+                ClawTheme.styleSecondaryButton(voiceSendButton)
             } else {
-                wavePreviewLeading.constant = 40
-                var insets = Constants.kWaveInsetsLong
-                insets.right = max(insets.right, sendButtonSize.constant + 8)
-                wavePreviewImageView.waveInsets = insets
+                ClawTheme.stylePrimaryButton(voiceSendButton)
             }
+            updateVoiceCopy()
         }
-
-        audioView.setNeedsLayout()
+        if wasVisible != (state != .hidden) { onVoicePresentationChanged?(state != .hidden) }
+        setNeedsLayout()
+        invalidateIntrinsicContentSize()
     }
 
     func audioBarState(_ state: AudioBarAction) {
@@ -554,6 +559,7 @@ class SendMessageBar: UIView {
             if state == .lock {
                 self.updateSendButtonAppearance(sending: true)
                 self.showAudioBar(.longInitial)
+                self.updateVoiceCopy(announce: true)
             } else {
                 self.showAudioBar(.hidden)
             }
@@ -562,29 +568,141 @@ class SendMessageBar: UIView {
     }
 
     func audioPlaybackPreview(_ data: Data, duration: TimeInterval) {
+        recordedDuration = max(0, duration)
+        playbackTime = 0
         wavePreviewImageView?.playbackPreview(data, duration: duration)
+        // Refresh the actual samples immediately, before playback begins.
+        wavePreviewImageView?.waveInsets = UIEdgeInsets(top: 2, left: 4, bottom: 2, right: 4)
+        updateVoiceCopy()
     }
 
     func audioUpdateAmplitude(amplitude: Float, atTime: TimeInterval) {
         wavePreviewImageView?.put(amplitude: amplitude, atTime: atTime)
+        recordedDuration = max(0, atTime)
+        updateVoiceCopy()
+    }
+
+    func audioPlaybackTime(_ time: TimeInterval) {
+        playbackTime = min(recordedDuration, max(0, time))
+        updateVoiceCopy()
+    }
+
+    func showInterruptedRecordingPreview() {
+        guard displayedAudioState == .longPaused else { return }
+        previewWasInterrupted = true
+        updateVoiceCopy(announce: true)
     }
 
     func audioPlaybackAction(_ state: AudioBarAction) {
         switch state {
         case .playbackStart:
-            playAudioButton.show(false)
-            pauseAudioButton.show(true, dimension: Constants.kButtonSizeNormal)
+            playbackIsPaused = false
+            previewWasInterrupted = false
             wavePreviewImageView.play()
         case .playbackReset:
-            wavePreviewImageView.reset()
-            playAudioButton.show(true, dimension: Constants.kButtonSizeNormal)
-            pauseAudioButton.show(false)
+            playbackIsPaused = false
+            playbackTime = 0
+            wavePreviewImageView.pause(rewind: true)
         case .playbackPause:
+            playbackIsPaused = true
             wavePreviewImageView.pause(rewind: false)
-            playAudioButton.show(true, dimension: Constants.kButtonSizeNormal)
-            pauseAudioButton.show(false)
         default:
             break
+        }
+        updateVoiceCopy(announce: true)
+    }
+
+    private func configureVoicePresentation() {
+        audioView.backgroundColor = ClawTheme.surface
+        audioView.layer.cornerRadius = 20
+        audioView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        audioView.layer.cornerCurve = .continuous
+        audioView.clipsToBounds = true
+        audioDurationLabel.font = ClawTheme.font(20, weight: .semibold, style: .headline)
+        audioDurationLabel.textColor = ClawTheme.ink
+        audioDurationLabel.adjustsFontForContentSizeCategory = true
+        audioDurationLabel.accessibilityTraits.insert(.header)
+        audioDurationLabel.accessibilityIdentifier = "claw.voice.status"
+        voiceDescriptionLabel.font = ClawTheme.font(14, style: .subheadline)
+        voiceDescriptionLabel.textColor = ClawTheme.muted
+        voiceDescriptionLabel.adjustsFontForContentSizeCategory = true
+        voiceScrollView.keyboardDismissMode = .none
+        wavePreviewImageView.waveInsets = UIEdgeInsets(top: 2, left: 4, bottom: 2, right: 4)
+        wavePreviewImageView.isAccessibilityElement = false
+        let buttons = [stopAudioRecordingButton!, voiceSendButton!, playAudioButton!,
+                       pauseAudioButton!, deleteAudioButton!]
+        for button in buttons {
+            ClawTheme.styleSecondaryButton(button)
+            button.titleLabel?.numberOfLines = 0
+            button.titleLabel?.textAlignment = .center
+            button.contentEdgeInsets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
+            button.setContentCompressionResistancePriority(.required, for: .vertical)
+        }
+        ClawTheme.stylePrimaryButton(stopAudioRecordingButton)
+        if displayedAudioState != .longInitial { ClawTheme.stylePrimaryButton(voiceSendButton) }
+        deleteAudioButton.setTitleColor(ClawTheme.danger, for: .normal)
+        stopAudioRecordingButton.accessibilityIdentifier = "claw.voice.stop"
+        voiceSendButton.accessibilityIdentifier = "claw.voice.send"
+        playAudioButton.accessibilityIdentifier = "claw.voice.listen"
+        pauseAudioButton.accessibilityIdentifier = "claw.voice.pause"
+        deleteAudioButton.accessibilityIdentifier = "claw.voice.discard"
+        voiceSendButton.accessibilityHint = "发送本次录音，发送结果以消息中的状态为准"
+        deleteAudioButton.accessibilityHint = "仅放弃本次尚未发送的录音"
+        stopAudioRecordingButton.accessibilityHint = "结束采集并保留录音，可先试听再发送"
+    }
+
+    private func updateVoiceCopy(announce: Bool = false) {
+        guard displayedAudioState != .hidden else { return }
+        let heading: String
+        let detail: String
+        switch displayedAudioState {
+        case .short:
+            heading = "正在录音"
+            detail = "持续按住录音按钮，松开发送。左滑取消，上滑锁定录音。"
+        case .longInitial:
+            heading = "正在录音"
+            detail = "已锁定录音，可以松开手指。停止后可先试听，也可以直接发送。"
+        case .longPlayback:
+            heading = "正在试听"
+            detail = "正在试听本次录音，语音尚未发送。可以暂停，也可以确认后发送。"
+        case .longPaused:
+            heading = previewWasInterrupted ? "录音已暂停" : (playbackIsPaused ? "试听已暂停" : "录音已完成")
+            detail = previewWasInterrupted ? "录音已暂停，请试听后再发送。语音尚未发送，不会自动继续录音。"
+                : "语音尚未发送。你可以先试听，确认后再发送。"
+        case .hidden: return
+        }
+        let showPlaybackTime = !previewWasInterrupted && (displayedAudioState == .longPlayback || playbackIsPaused)
+        let time = showPlaybackTime
+            ? "\(playbackTime.asDurationString) / \(recordedDuration.asDurationString)"
+            : recordedDuration.asDurationString
+        let title = "\(heading) · \(time)"
+        if audioDurationLabel.text != title { audioDurationLabel.text = title }
+        if voiceDescriptionLabel.text != detail { voiceDescriptionLabel.text = detail; setNeedsLayout() }
+        deleteAudioButton.setTitle(recordingStarted ? "取消录音" : "放弃录音", for: .normal)
+        playAudioButton.setTitle(playbackIsPaused ? "继续试听" : "试听", for: .normal)
+        // Announce transitions, never the high frequency meter/time updates.
+        let announcement = heading + detail
+        if announce && lastVoiceAnnouncement != announcement {
+            lastVoiceAnnouncement = announcement
+            if UIAccessibility.isVoiceOverRunning {
+                UIAccessibility.post(notification: .announcement, argument: heading + "。" + detail)
+            }
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard audioView != nil, !audioView.isHidden, bounds.width > 0 else { return }
+        let width = max(1, audioView.bounds.width - 40)
+        let fitting = voiceStackView.systemLayoutSizeFitting(
+            CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
+        let height = min(max(52, voicePanelMaximumHeight), ceil(fitting.height) + 40)
+        voiceScrollView.isScrollEnabled = fitting.height + 40 > height + 0.5
+        if abs(audioViewHeight.constant - height) > 0.5 {
+            audioViewHeight.constant = height
+            invalidateIntrinsicContentSize()
+            onVoiceHeightChanged?()
         }
     }
 }
@@ -592,7 +710,7 @@ class SendMessageBar: UIView {
 extension SendMessageBar: UITextViewDelegate {
     func textViewDidChange(_ textView: UITextView) {
         delegate?.sendMessageBar(textChangedTo: textView.text)
-        updateSendButtonAppearance(sending: !inputField.actualText.isEmpty)
+        if audioView.isHidden { updateSendButtonAppearance(sending: !inputField.actualText.isEmpty) }
         resizeInputField()
     }
 }

@@ -230,14 +230,13 @@ extension MessageViewController: MediaRecorderDelegate {
         voiceUI(recorder) {
             sendMessageBar.recordingDidStop()
             sendMessageBar.audioPlaybackPreview(recorder.preview, duration: duration)
-            sendMessageBar.audioDurationLabel.text = duration.asDurationString
+            if voicePausedNotice { sendMessageBar.showInterruptedRecordingPreview() }
         }
     }
 
     func didUpdateRecording(recorder: MediaRecorder, amplitude: Float, atTime: TimeInterval) {
         voiceUI(recorder) {
-            sendMessageBar.wavePreviewImageView?.put(amplitude: amplitude, atTime: atTime)
-            sendMessageBar.audioDurationLabel.text = atTime.asDurationString
+            sendMessageBar.audioUpdateAmplitude(amplitude: amplitude, atTime: atTime)
         }
     }
 
@@ -268,6 +267,9 @@ extension MessageViewController: VLCMediaPlayerDelegate {
             guard let self = self, let player = notification.object as? VLCMediaPlayer,
                   self.recordingPlaybackPlayer === player, let recorder = self.voiceRecorder else { return }
             self.voiceUI(recorder) {
+                if let time = player.time?.value {
+                    self.sendMessageBar.audioPlaybackTime(TimeInterval(truncating: time) / 1000)
+                }
                 switch player.state {
                 case .playing:
                     if player.isPlaying {

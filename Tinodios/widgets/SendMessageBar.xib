@@ -15,11 +15,14 @@
                 <outlet property="allDisabledView" destination="yZd-O5-BVm" id="NDo-mO-Zal"/>
                 <outlet property="attachButton" destination="Sxl-U7-4Vy" id="rfU-nC-MBm"/>
                 <outlet property="audioDurationLabel" destination="qth-4i-e5b" id="a09-TT-xNA"/>
-                <outlet property="audioDurationLabelHeight" destination="GWc-yT-2lP" id="WyT-cq-Byw"/>
                 <outlet property="audioView" destination="4PB-Gh-5Iz" id="xG6-Fw-Xgy"/>
                 <outlet property="audioViewHeight" destination="sCc-uV-pp7" id="qck-5v-T7B"/>
+                <outlet property="voiceScrollView" destination="VOI-sc-001" id="VOI-os-001"/>
+                <outlet property="voiceStackView" destination="VOI-st-001" id="VOI-ot-001"/>
+                <outlet property="voiceDescriptionLabel" destination="VOI-de-001" id="VOI-od-001"/>
+                <outlet property="voiceSendButton" destination="VOI-sd-001" id="VOI-ob-001"/>
+                <outlet property="voiceGestureSpacer" destination="VOI-ft-001" id="VOI-of-001"/>
                 <outlet property="deleteAudioButton" destination="M8X-GX-iNC" id="oGZ-Dl-aOj"/>
-                <outlet property="deleteAudioButtonWidth" destination="AYD-4O-jZ0" id="7VS-PG-nqk"/>
                 <outlet property="horizontalSliderView" destination="9oE-ml-o30" id="chu-AU-gyC"/>
                 <outlet property="inputField" destination="bxx-m5-ifU" id="wwU-HN-RWu"/>
                 <outlet property="inputFieldHeight" destination="gP4-QC-iyW" id="XbB-0g-jEE"/>
@@ -36,7 +39,6 @@
                 <outlet property="stopAudioRecordingButton" destination="DPv-97-b0f" id="Oer-3g-mIo"/>
                 <outlet property="verticalSliderView" destination="9bL-Nu-2Fw" id="u1b-vM-hzs"/>
                 <outlet property="wavePreviewImageView" destination="4Zj-GA-JGZ" id="THs-gc-nXT"/>
-                <outlet property="wavePreviewLeading" destination="Try-7X-dEa" id="yw6-14-mxF"/>
             </connections>
         </placeholder>
         <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
@@ -50,7 +52,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="414" height="245"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                     </view>
-                    <blurEffect style="light"/>
+                    <blurEffect style="systemMaterial"/>
                 </visualEffectView>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Sxl-U7-4Vy" userLabel="attachButton">
                     <rect key="frame" x="8" y="175" width="32" height="32"/>
@@ -91,108 +93,83 @@
                         <userDefinedRuntimeAttribute type="boolean" keyPath="autoAdjustHeight" value="NO"/>
                     </userDefinedRuntimeAttributes>
                 </textView>
-                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4PB-Gh-5Iz" userLabel="Audio Recording View">
-                    <rect key="frame" x="4" y="44" width="406" height="40"/>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4PB-Gh-5Iz" userLabel="Voice State Panel">
+                    <rect key="frame" x="4" y="44" width="406" height="360"/>
                     <subviews>
-                        <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="M8X-GX-iNC" userLabel="deleteButton">
-                            <rect key="frame" x="4" y="4" width="32" height="32"/>
+                        <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" bounces="NO" showsHorizontalScrollIndicator="NO" translatesAutoresizingMaskIntoConstraints="NO" id="VOI-sc-001">
+                            <rect key="frame" x="0.0" y="0.0" width="406" height="360"/>
+                            <subviews>
+                                <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="VOI-st-001">
+                                    <rect key="frame" x="20" y="20" width="366" height="320"/>
+                                    <subviews>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qth-4i-e5b">
+                                            <rect key="frame" x="0.0" y="0.0" width="366" height="26"/>
+                                            <fontDescription key="fontDescription" style="UICTFontTextStyleHeadline"/>
+                                            <color key="textColor" systemColor="labelColor"/>
+                                        </label>
+                                        <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4Zj-GA-JGZ" userLabel="Actual Recording Wave" customClass="WaveImageView" customModule="Tinodios" customModuleProvider="target">
+                                            <rect key="frame" x="0.0" y="38" width="366" height="48"/>
+                                            <constraints><constraint firstAttribute="height" constant="48" id="VOI-wh-001"/></constraints>
+                                        </imageView>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="" textAlignment="natural" lineBreakMode="wordWrap" numberOfLines="0" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VOI-de-001">
+                                            <rect key="frame" x="0.0" y="98" width="366" height="42"/>
+                                            <fontDescription key="fontDescription" style="UICTFontTextStyleSubheadline"/>
+                                            <color key="textColor" systemColor="secondaryLabelColor"/>
+                                        </label>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" translatesAutoresizingMaskIntoConstraints="NO" id="DPv-97-b0f">
+                                    <rect key="frame" x="0.0" y="0.0" width="350" height="52"/>
+                                    <constraints><constraint firstAttribute="height" relation="greaterThanOrEqual" constant="52" priority="999" id="VOI-h1-001"/></constraints>
+                                    <state key="normal" title="停止录音"/>
+                                    <connections><action selector="stopRecording:" destination="-1" eventType="touchUpInside" id="VOI-a1-001"/></connections>
+                                </button>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" translatesAutoresizingMaskIntoConstraints="NO" id="VOI-sd-001">
+                                    <rect key="frame" x="0.0" y="0.0" width="350" height="52"/>
+                                    <constraints><constraint firstAttribute="height" relation="greaterThanOrEqual" constant="52" priority="999" id="VOI-h2-001"/></constraints>
+                                    <state key="normal" title="发送语音"/>
+                                    <connections><action selector="sendRecording:" destination="-1" eventType="touchUpInside" id="VOI-a2-001"/></connections>
+                                </button>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" translatesAutoresizingMaskIntoConstraints="NO" id="0hx-T0-SRy">
+                                    <rect key="frame" x="0.0" y="0.0" width="350" height="52"/>
+                                    <constraints><constraint firstAttribute="height" relation="greaterThanOrEqual" constant="52" priority="999" id="VOI-h3-001"/></constraints>
+                                    <state key="normal" title="试听"/>
+                                    <connections><action selector="playRecording:" destination="-1" eventType="touchUpInside" id="VOI-a3-001"/></connections>
+                                </button>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" translatesAutoresizingMaskIntoConstraints="NO" id="wa9-W2-LEJ">
+                                    <rect key="frame" x="0.0" y="0.0" width="350" height="52"/>
+                                    <constraints><constraint firstAttribute="height" relation="greaterThanOrEqual" constant="52" priority="999" id="VOI-h4-001"/></constraints>
+                                    <state key="normal" title="暂停试听"/>
+                                    <connections><action selector="pausePlayback:" destination="-1" eventType="touchUpInside" id="VOI-a4-001"/></connections>
+                                </button>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" translatesAutoresizingMaskIntoConstraints="NO" id="M8X-GX-iNC">
+                                    <rect key="frame" x="0.0" y="0.0" width="350" height="52"/>
+                                    <constraints><constraint firstAttribute="height" relation="greaterThanOrEqual" constant="52" priority="999" id="VOI-h5-001"/></constraints>
+                                    <state key="normal" title="放弃录音"/>
+                                    <connections><action selector="deleteRecording:" destination="-1" eventType="touchUpInside" id="VOI-a5-001"/></connections>
+                                </button>
+                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VOI-ft-001" userLabel="Active Gesture Clearance">
+                                            <rect key="frame" x="0.0" y="280" width="366" height="64"/>
+                                            <constraints><constraint firstAttribute="height" constant="64" priority="999" id="VOI-fh-001"/></constraints>
+                                        </view>
+                                    </subviews>
+                                </stackView>
+                            </subviews>
+                            <viewLayoutGuide key="contentLayoutGuide" id="VOI-cg-001"/>
+                            <viewLayoutGuide key="frameLayoutGuide" id="VOI-fg-001"/>
                             <constraints>
-                                <constraint firstAttribute="width" constant="32" id="AYD-4O-jZ0"/>
-                                <constraint firstAttribute="height" constant="32" id="y1r-3g-NVA"/>
+                                <constraint firstItem="VOI-st-001" firstAttribute="top" secondItem="VOI-cg-001" secondAttribute="top" constant="20" id="VOI-ct-001"/>
+                                <constraint firstItem="VOI-st-001" firstAttribute="leading" secondItem="VOI-cg-001" secondAttribute="leading" constant="20" id="VOI-cl-001"/>
+                                <constraint firstItem="VOI-cg-001" firstAttribute="trailing" secondItem="VOI-st-001" secondAttribute="trailing" constant="20" id="VOI-cr-001"/>
+                                <constraint firstItem="VOI-cg-001" firstAttribute="bottom" secondItem="VOI-st-001" secondAttribute="bottom" constant="20" id="VOI-cb-001"/>
+                                <constraint firstItem="VOI-st-001" firstAttribute="width" secondItem="VOI-fg-001" secondAttribute="width" constant="-40" id="VOI-cw-001"/>
                             </constraints>
-                            <buttonConfiguration key="configuration" style="plain">
-                                <imageReference key="image" image="trash" catalog="system" symbolScale="medium"/>
-                                <preferredSymbolConfiguration key="preferredSymbolConfigurationForImage" scale="large" weight="regular"/>
-                            </buttonConfiguration>
-                            <connections>
-                                <action selector="deleteRecording:" destination="-1" eventType="touchUpInside" id="Rls-IO-ckH"/>
-                            </connections>
-                        </button>
-                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="00:00" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qth-4i-e5b" userLabel="durationLabel">
-                            <rect key="frame" x="40" y="10" width="46" height="20"/>
-                            <constraints>
-                                <constraint firstAttribute="height" constant="20" id="GWc-yT-2lP"/>
-                                <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="46" id="lih-IK-N0t"/>
-                            </constraints>
-                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                            <color key="textColor" systemColor="secondaryLabelColor"/>
-                            <nil key="highlightedColor"/>
-                        </label>
-                        <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="DPv-97-b0f" userLabel="stopRecordingButton">
-                            <rect key="frame" x="90" y="4" width="32" height="32"/>
-                            <constraints>
-                                <constraint firstAttribute="width" constant="32" id="6te-xM-LbO"/>
-                                <constraint firstAttribute="height" constant="32" id="GlC-E4-iGz"/>
-                            </constraints>
-                            <color key="tintColor" systemColor="systemRedColor"/>
-                            <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                            <state key="normal">
-                                <imageReference key="image" image="stop.circle" catalog="system" symbolScale="large"/>
-                                <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="14" weight="regular"/>
-                            </state>
-                            <connections>
-                                <action selector="stopRecording:" destination="-1" eventType="touchUpInside" id="7TI-nc-ZVC"/>
-                            </connections>
-                        </button>
-                        <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="0hx-T0-SRy" userLabel="playButton">
-                            <rect key="frame" x="90" y="4" width="32" height="32"/>
-                            <constraints>
-                                <constraint firstAttribute="height" constant="32" id="A6s-fm-YMm"/>
-                                <constraint firstAttribute="width" constant="32" id="Ibv-Vh-j9m"/>
-                            </constraints>
-                            <color key="tintColor" systemColor="tintColor"/>
-                            <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                            <state key="normal">
-                                <imageReference key="image" image="play.fill" catalog="system" symbolScale="small"/>
-                                <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="16" scale="small" weight="regular"/>
-                            </state>
-                            <connections>
-                                <action selector="playRecording:" destination="-1" eventType="touchUpInside" id="ZKC-5y-kjU"/>
-                            </connections>
-                        </button>
-                        <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wa9-W2-LEJ" userLabel="pauseButton">
-                            <rect key="frame" x="90" y="4" width="32" height="32"/>
-                            <constraints>
-                                <constraint firstAttribute="height" constant="32" id="ZGC-92-naZ"/>
-                                <constraint firstAttribute="width" constant="32" id="hAs-qw-aWx"/>
-                            </constraints>
-                            <color key="tintColor" systemColor="tintColor"/>
-                            <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                            <state key="normal">
-                                <imageReference key="image" image="pause.fill" catalog="system" symbolScale="small"/>
-                                <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="pointSize" pointSize="16" scale="small" weight="regular"/>
-                            </state>
-                            <connections>
-                                <action selector="pausePlayback:" destination="-1" eventType="touchUpInside" id="mKu-ag-G4u"/>
-                            </connections>
-                        </button>
-                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4Zj-GA-JGZ" userLabel="Wave Preview" customClass="WaveImageView" customModule="Tinodios" customModuleProvider="target">
-                            <rect key="frame" x="126" y="0.0" width="280" height="40"/>
-                            <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                            <userDefinedRuntimeAttributes>
-                                <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
-                                    <integer key="value" value="20"/>
-                                </userDefinedRuntimeAttribute>
-                            </userDefinedRuntimeAttributes>
-                        </view>
+                        </scrollView>
                     </subviews>
                     <constraints>
-                        <constraint firstItem="qth-4i-e5b" firstAttribute="leading" secondItem="M8X-GX-iNC" secondAttribute="trailing" constant="4" id="1wG-vH-5w4"/>
-                        <constraint firstItem="qth-4i-e5b" firstAttribute="centerY" secondItem="4PB-Gh-5Iz" secondAttribute="centerY" id="6bb-Z9-QvP"/>
-                        <constraint firstItem="4Zj-GA-JGZ" firstAttribute="top" secondItem="4PB-Gh-5Iz" secondAttribute="top" id="Ezi-iA-IJH"/>
-                        <constraint firstItem="wa9-W2-LEJ" firstAttribute="leading" secondItem="qth-4i-e5b" secondAttribute="trailing" constant="4" id="F7t-2e-tWe"/>
-                        <constraint firstItem="0hx-T0-SRy" firstAttribute="centerY" secondItem="4PB-Gh-5Iz" secondAttribute="centerY" id="HHx-zR-Y3a"/>
-                        <constraint firstItem="0hx-T0-SRy" firstAttribute="leading" secondItem="qth-4i-e5b" secondAttribute="trailing" constant="4" id="Nj8-pC-0t2"/>
-                        <constraint firstAttribute="bottom" secondItem="4Zj-GA-JGZ" secondAttribute="bottom" id="QyC-dh-xKa"/>
-                        <constraint firstItem="4Zj-GA-JGZ" firstAttribute="leading" secondItem="qth-4i-e5b" secondAttribute="trailing" constant="40" id="Try-7X-dEa"/>
-                        <constraint firstItem="DPv-97-b0f" firstAttribute="leading" secondItem="qth-4i-e5b" secondAttribute="trailing" constant="4" id="ZoB-FY-qZ0"/>
-                        <constraint firstItem="M8X-GX-iNC" firstAttribute="centerY" secondItem="4PB-Gh-5Iz" secondAttribute="centerY" id="aaT-lP-dG3"/>
-                        <constraint firstItem="M8X-GX-iNC" firstAttribute="leading" secondItem="4PB-Gh-5Iz" secondAttribute="leading" constant="4" id="aal-YJ-q6F"/>
-                        <constraint firstAttribute="trailing" secondItem="4Zj-GA-JGZ" secondAttribute="trailing" id="mkr-fE-pkX"/>
-                        <constraint firstItem="DPv-97-b0f" firstAttribute="centerY" secondItem="4PB-Gh-5Iz" secondAttribute="centerY" id="n1L-MN-t3i"/>
-                        <constraint firstAttribute="height" constant="40" id="sCc-uV-pp7"/>
-                        <constraint firstItem="wa9-W2-LEJ" firstAttribute="centerY" secondItem="4PB-Gh-5Iz" secondAttribute="centerY" id="uz1-ta-fAM"/>
-                        <constraint firstItem="4Zj-GA-JGZ" firstAttribute="centerY" secondItem="4PB-Gh-5Iz" secondAttribute="centerY" id="wgd-Qn-OUf"/>
+                        <constraint firstItem="VOI-sc-001" firstAttribute="top" secondItem="4PB-Gh-5Iz" secondAttribute="top" id="VOI-vt-001"/>
+                        <constraint firstItem="VOI-sc-001" firstAttribute="leading" secondItem="4PB-Gh-5Iz" secondAttribute="leading" id="VOI-vl-001"/>
+                        <constraint firstAttribute="trailing" secondItem="VOI-sc-001" secondAttribute="trailing" id="VOI-vr-001"/>
+                        <constraint firstAttribute="bottom" secondItem="VOI-sc-001" secondAttribute="bottom" id="VOI-vb-001"/>
+                        <constraint firstAttribute="height" constant="360" id="sCc-uV-pp7"/>
                     </constraints>
                 </view>
                 <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="bxx-m5-ifU" customClass="PlaceholderTextView" customModule="Tinodios" customModuleProvider="target">

@@ -279,6 +279,10 @@ class MessageViewController: UIViewController {
     var recordingPlaybackPlayer: VLCMediaPlayer?
     var voicePageActive = false
     var voicePausedNotice = false
+    private let voiceBackdrop = UIView()
+    private var voiceBackdropWasVisible = false
+    private var collectionAccessibilityBeforeVoice = false
+    private var latestAccessibilityBeforeVoice = false
 
     // Max inband attachment/entity size.
     private var maxInbandSize: Int64 {
@@ -354,6 +358,7 @@ class MessageViewController: UIViewController {
     @objc
     func appBecameActive() {
         if voicePausedNotice, voiceScopeIsCurrent(), voiceRecorder?.state == .preview {
+            sendMessageBar.showInterruptedRecordingPreview()
             voicePausedNotice = false
             UiUtils.showToast(message: "录音已暂停，请试听后再发送")
         }
@@ -602,6 +607,7 @@ class MessageViewController: UIViewController {
 
         self.collectionView.dataSource = self
         sendMessageBar.delegate = self
+        configureVoiceBackdrop()
         forwardMessageBar.delegate = self
 
         self.setInterfaceColors()
@@ -613,6 +619,11 @@ class MessageViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+
+        // The accessory owns its height. Do not add another keyboard or home inset.
+        sendMessageBar.voicePanelMaximumHeight = max(52,
+            view.bounds.height - view.safeAreaInsets.top - view.safeAreaInsets.bottom
+                - sendMessageBar.previewViewHeight.constant - sendMessageBar.peerMessagingDisabledHeight.constant - 24)
 
         // Make sure we leave enough space for the input field & keyboard.
         if collectionView.contentInset.bottom < 8 {
@@ -820,7 +831,42 @@ class MessageViewController: UIViewController {
         }
         stopRecordingPlayback(discard: false)
         recorder.cancelPendingIntent()
-        if recorder.stopForPreview() != nil { voicePausedNotice = true }
+        if recorder.stopForPreview() != nil {
+            voicePausedNotice = true
+            sendMessageBar.showInterruptedRecordingPreview()
+        }
+    }
+
+    private func configureVoiceBackdrop() {
+        // A view inside this controller: presenting another controller would
+        // correctly retire the page's recording lease in viewWillDisappear.
+        voiceBackdrop.translatesAutoresizingMaskIntoConstraints = false
+        voiceBackdrop.backgroundColor = UIColor.black.withAlphaComponent(0.3)
+        voiceBackdrop.isHidden = true
+        voiceBackdrop.isAccessibilityElement = false
+        view.addSubview(voiceBackdrop)
+        NSLayoutConstraint.activate([
+            voiceBackdrop.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            voiceBackdrop.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            voiceBackdrop.topAnchor.constraint(equalTo: view.topAnchor),
+            voiceBackdrop.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        sendMessageBar.onVoicePresentationChanged = { [weak self] visible in
+            guard let self = self else { return }
+            if visible && !self.voiceBackdropWasVisible {
+                self.collectionAccessibilityBeforeVoice = self.collectionView.accessibilityElementsHidden
+                self.latestAccessibilityBeforeVoice = self.goToLatestButton.isAccessibilityElement
+            }
+            self.voiceBackdrop.isHidden = !visible
+            self.collectionView.accessibilityElementsHidden = visible
+                ? true : self.collectionAccessibilityBeforeVoice
+            self.goToLatestButton.isAccessibilityElement = visible
+                ? false : self.latestAccessibilityBeforeVoice
+            self.voiceBackdropWasVisible = visible
+            if visible { self.view.bringSubviewToFront(self.voiceBackdrop) }
+            self.view.setNeedsLayout()
+        }
+        sendMessageBar.onVoiceHeightChanged = { [weak self] in self?.view.setNeedsLayout() }
     }
 
     func discardVoiceRecording() {
