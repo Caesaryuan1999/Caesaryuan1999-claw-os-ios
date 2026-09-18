@@ -159,11 +159,32 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme TinodeSDK \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/sdk.log"
 # Real VLC dependency probe: use installed simulator headers, never an online/latest SDK guess.
 vlc_pod_evidence="$(python3 - <<'VLC_POD_EVIDENCE'
-import hashlib, json, pathlib, plistlib
+import hashlib, json, pathlib, plistlib, re
 root = pathlib.Path("Pods/MobileVLCKit")
-spec = json.loads(pathlib.Path("Pods/Local Podspecs/MobileVLCKit.podspec.json").read_text())
-assert spec["version"] == "3.6.0", "VLC probe requires the frozen pod version"
-assert spec["source"]["sha256"] == "1a5077beeb7bf943a3fbbb91523752e50a10d490a3046cb9808d906784ddbc36", "Unexpected VLC pod archive contract"
+# Ordinary spec-repository pods need not appear in Pods/Local Podspecs.
+# Read only the two exact CocoaPods lock sections needed here; reject unknown formatting.
+def section(text, name):
+    lines = text.splitlines()
+    starts = [i for i, line in enumerate(lines) if line == name + ":"]
+    assert len(starts) == 1, "Missing or duplicate required CocoaPods lock section"
+    body = []
+    for line in lines[starts[0] + 1:]:
+        if line and not line.startswith(" "):
+            break
+        body.append(line)
+    return "\n".join(body)
+
+locks = []
+for name in ("Podfile.lock", "Pods/Manifest.lock"):
+    data = pathlib.Path(name).read_bytes()
+    text = data.decode("utf-8")
+    versions = re.findall(r"^  - MobileVLCKit \(([^()\r\n]+)\):?$", section(text, "PODS"), re.M)
+    checksums = re.findall(r"^  MobileVLCKit: ([0-9a-f]{40})$", section(text, "SPEC CHECKSUMS"), re.M)
+    assert len(versions) == len(checksums) == 1, "Missing or ambiguous MobileVLCKit lock evidence"
+    locks.append({"file": name, "sha256": hashlib.sha256(data).hexdigest(),
+                  "podVersion": versions[0], "specChecksum": checksums[0]})
+assert locks[0]["podVersion"] == locks[1]["podVersion"] == "3.6.0", "VLC lock version mismatch"
+assert locks[0]["specChecksum"] == locks[1]["specChecksum"] == "8fe98ae53b7464f32e4bdf527cc7d53053e4d3a5", "VLC spec checksum mismatch"
 frameworks = list(root.glob("*.xcframework"))
 assert len(frameworks) == 1, "Expected one installed MobileVLCKit xcframework"
 xcframework = frameworks[0]
@@ -184,7 +205,8 @@ for name, expected in [("VLCMedia.h", "statistics"), ("VLCMediaPlayer.h", "saveV
 bundle = plistlib.loads((framework / "Info.plist").read_bytes())
 binary = framework / bundle["CFBundleExecutable"]
 assert binary.resolve().is_relative_to(root.resolve()), "VLC binary escaped pod directory"
-print(json.dumps({"podVersion": spec["version"], "archiveSHA256": spec["source"]["sha256"],
+print(json.dumps({"podVersion": locks[0]["podVersion"], "specChecksum": locks[0]["specChecksum"],
+    "locks": locks, "archiveVerification": "NOT_PERFORMED; spec checksum is not an archive hash",
     "simulatorArchitectures": entry["SupportedArchitectures"], "headers": headers,
     "frameworkVersion": bundle.get("CFBundleShortVersionString", ""),
     "binarySHA256": hashlib.sha256(binary.read_bytes()).hexdigest()}, separators=(",", ":")))

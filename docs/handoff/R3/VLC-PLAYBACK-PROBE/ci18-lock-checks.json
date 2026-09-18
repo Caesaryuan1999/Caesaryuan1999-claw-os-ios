@@ -1,0 +1,105 @@
+{
+  "scope": "Actual prior/current embedded Python with synthetic installed trees and repository Podfile.lock; no native or real Pods installation executed on Windows",
+  "cases": [
+    {
+      "case": "prior_9d3_block_without_Local_Podspecs",
+      "expected": "FileNotFoundError",
+      "actual": "FileNotFoundError",
+      "status": "EXPECTED_RED"
+    },
+    {
+      "case": "valid",
+      "status": "PASS",
+      "outcome": "ACCEPT",
+      "error_class": null
+    },
+    {
+      "case": "crlf",
+      "status": "PASS",
+      "outcome": "ACCEPT",
+      "error_class": null
+    },
+    {
+      "case": "missing-manifest",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "FileNotFoundError"
+    },
+    {
+      "case": "manifest-version",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    },
+    {
+      "case": "manifest-checksum",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    },
+    {
+      "case": "both-version",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    },
+    {
+      "case": "both-checksum",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    },
+    {
+      "case": "duplicate-version",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    },
+    {
+      "case": "duplicate-checksum",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    },
+    {
+      "case": "duplicate-section",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    },
+    {
+      "case": "missing-header",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "FileNotFoundError"
+    },
+    {
+      "case": "missing-api",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    },
+    {
+      "case": "missing-binary",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "FileNotFoundError"
+    },
+    {
+      "case": "escaped-framework",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    },
+    {
+      "case": "wrong-section",
+      "status": "PASS",
+      "outcome": "REJECT",
+      "error_class": "AssertionError"
+    }
+  ],
+  "count": 16,
+  "bash_syntax": "PASS",
+  "production_and_probes_unchanged": true,
+  "new_native": "NOT_RUN; 200 + navigation3 expected"
+}

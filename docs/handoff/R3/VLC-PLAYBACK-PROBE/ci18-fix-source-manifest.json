@@ -1,0 +1,19 @@
+{
+  "base": "9d3a4b4b0d1c369e11b0205b27ef5255e8737a6e",
+  "code_paths": [
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "git_blob": "4d530d51e436dbb3b95527cebbe75818fd78bc4d",
+      "sha256": "7ecb48a66605d4d16f107c5c8f9bbbe5618c0f65f18799fab7a7e67bbf523734",
+      "bytes": 13366
+    }
+  ],
+  "native_source_and_production_unchanged": true,
+  "ci18": {
+    "sdk_pass": 41,
+    "storage": "NOT_RUN",
+    "vlc": "NOT_RUN",
+    "navigation": "NOT_RUN"
+  },
+  "new_native_execution": "NOT_RUN"
+}
