@@ -66,9 +66,11 @@ UIrunner 使用真实生产 helper、SDK/SQLite、URLSession 和磁盘文件；U
 
 ## 当前检查与 CI 分层
 
-- Windows：32/32 定向源码检查；44/44 既有源码策略；git diff --check。原4 VLC及原21 OwnedImage方法全文比对一致。检查不是 Swift 编译或原生运行。
+- Windows：34/34 定向源码检查；44/44 既有源码策略；git diff --check。原4 VLC及原21 OwnedImage方法全文比对一致。检查不是 Swift 编译或原生运行。
 - CI24 精确758：SDK44通过，App因 VOICE Delegate.time 可选链编译失败，其他 NOT_RUN；独立 abc2307 修正后由 root 跑 CI25。本单元不属于该候选。
 - CI25/abc2307 结果待 root，不能记到本单元。新候选 Mac 原生226/导航3/页面均待运行。
+
+包装时真实 selector/class 盘点发现首个提交76d0fe1的新3 VLC方法误放在文件尾 `private extension URL`，不能执行且会编译失败；原 file-wide 32项检查没有校验类归属，不能作为已接线证明。已立即通知总控/独立审查暂不推76，后继窄修只把完整新 helper/3方法原字节移进实际 XCTestCase。原4、新3函数体均未改，生产两文件不变。源检查现按实际 class/extension 盘点并拒绝类外测试，34项通过；`source-checks-pre-membership-fix.json` 保留先前检查局限，原实际盘点失败为44/175/4/3。累计包仅封后继正确类归属目标，不把失败候选包装成226可执行。
 
 ## 应用与回退
 

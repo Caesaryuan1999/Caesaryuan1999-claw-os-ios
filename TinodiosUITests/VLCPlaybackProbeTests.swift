@@ -772,16 +772,6 @@ final class VLCPlaybackProbeTests: XCTestCase {
         }
         try attach("vlc-reopen-cache-cookie", ["fixture": "MEASUREMENT_COMPLETED", "cases": results])
     }
-}
-
-private extension URL {
-    // Retain only the synthetic query constructed by the real SDK; destination itself stays local.
-    func replacingProbeOrigin(_ destination: URL) -> URL {
-        var result = URLComponents(url: destination, resolvingAgainstBaseURL: false)!
-        result.queryItems = URLComponents(url: self, resolvingAgainstBaseURL: false)!.queryItems
-        return result.url!
-    }
-
 
     // New tests execute production owned download and lease with real loopback HTTP, SQLite and VLC.
     // They do not instantiate VideoPreviewController or assert arbitrary-container network isolation.
@@ -929,5 +919,15 @@ private extension URL {
             "externalReferenceRequested": externalRead, "requests": requests,
             "metrics": playback.metrics(),
             "safety": externalRead ? "CONFIRMED_SECONDARY_NETWORK_ACCESS" : "NOT_OBSERVED_NOT_NETWORK_ISOLATION_PROOF"])
+    }
+
+}
+
+private extension URL {
+    // Retain only the synthetic query constructed by the real SDK; destination itself stays local.
+    func replacingProbeOrigin(_ destination: URL) -> URL {
+        var result = URLComponents(url: destination, resolvingAgainstBaseURL: false)!
+        result.queryItems = URLComponents(url: self, resolvingAgainstBaseURL: false)!.queryItems
+        return result.url!
     }
 }

@@ -103,19 +103,11 @@
       "pass": true
     },
     {
-      "name": "TinodiosUITests/OwnedImageTests.swift every method belongs to selected XCTest class",
-      "pass": true
-    },
-    {
       "name": "TinodiosUITests/OwnedImageTests.swift all old test bodies identical",
       "pass": true
     },
     {
       "name": "TinodiosUITests/OwnedImageTests.swift exact method count",
-      "pass": true
-    },
-    {
-      "name": "TinodiosUITests/VLCPlaybackProbeTests.swift every method belongs to selected XCTest class",
       "pass": true
     },
     {
@@ -163,7 +155,7 @@
         "testOwnedDownloadedFileProducesRealVLCFrameTimeAndSeek",
         "testOwnedLeaseRetirementStopsRealPlayingAndPausedVLCBeforeFileRemoval"
       ],
-      "sha256": "8537ed3179d7c17157a705c05465c5d74f69fb190d1d2f8314143090a71515b5"
+      "sha256": "31724495f43fa8dc9cda70e78d9854e6301c5eed4d81b0e48edf316349c2c41d"
     }
   ],
   "expected": {

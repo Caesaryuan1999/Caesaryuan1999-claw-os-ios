@@ -35,6 +35,15 @@ def methods(text):
     return result
 
 
+def selected_methods(text, name):
+    blocks = re.findall(r"(?ms)^(?:(?:final )?class|extension) " + re.escape(name)
+                        + r"\b[^\n]*\{\n.*?^\}", text)
+    result = {}
+    for block in blocks:
+        result.update(methods(block))
+    return result
+
+
 helper = read("Tinodios/ClawSecondaryUIState.swift")
 video = read("Tinodios/VideoPreviewController.swift")
 check("source red: remote query handed to VLC", "addAuthQueryParams(mediaURL)" in old("Tinodios/VideoPreviewController.swift"))
@@ -67,7 +76,9 @@ check("valid source decode failure keeps share", "你可以返回聊天后重新
 native = []
 for path, expected, added in [("TinodiosUITests/OwnedImageTests.swift", 29, 8),
                               ("TinodiosUITests/VLCPlaybackProbeTests.swift", 7, 3)]:
-    previous, current = methods(old(path)), methods(read(path))
+    name = Path(path).stem
+    previous, current = selected_methods(old(path), name), selected_methods(read(path), name)
+    check(path + " every method belongs to selected XCTest class", len(current) == len(methods(read(path))))
     check(path + " all old test bodies identical", all(current.get(name) == body for name, body in previous.items()))
     check(path + " exact method count", len(current) == expected and len(current) - len(previous) == added)
     native.append({"file": path, "totalMethods": len(current), "newMethods": sorted(set(current) - set(previous)),
