@@ -77,6 +77,15 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -only-testing:TinodiosUITests/OwnedImageTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
+# Real App navigation is reported separately from the 181 SDK/storage/business methods.
+# Same selected device and closed loopback endpoint; no login or OTP submission.
+xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
+  -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \
+  -parallel-testing-enabled NO \
+  -derivedDataPath "$result_dir/DerivedData" -resultBundlePath "$result_dir/navigation.xcresult" \
+  -only-testing:TinodiosUITests/IdentityNavigationUITests \
+  HOST_NAME=127.0.0.1:9 USE_TLS=NO \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/navigation.log"
 python3 - "$result_dir" <<'PY'
 import pathlib, plistlib, sys
 path = pathlib.Path(sys.argv[1]) / "DerivedData/Build/Products/Debug-iphonesimulator/Tinodios.app/Settings.bundle/Acknowledgements.plist"

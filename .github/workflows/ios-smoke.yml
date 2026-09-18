@@ -68,8 +68,10 @@ jobs:
             build/ios-01-a-*/*-summary.err
             build/ios-01-a-*/sdk.log
             build/ios-01-a-*/storage.log
+            build/ios-01-a-*/navigation.log
             build/ios-01-a-*/sdk.xcresult
             build/ios-01-a-*/storage.xcresult
+            build/ios-01-a-*/navigation.xcresult
             build/ios-01-a-*/CLAW-OS-unsigned-simulator.zip
             build/ios-01-a-*/simulator-manifest.json
             build/ios-01-a-*/simulator-id.txt
