@@ -233,6 +233,11 @@ struct ClawAssistantRunEvents: ClawAssistantValidated {
             }
             previous = item.id
         }
+        if let last = items.last {
+            guard (next_after_event.isEmpty ? last.id == last_event : ClawAssistantWire.less(last.id, last_event)) else {
+                throw ClawAssistantError.invalidResponse
+            }
+        }
     }
 }
 

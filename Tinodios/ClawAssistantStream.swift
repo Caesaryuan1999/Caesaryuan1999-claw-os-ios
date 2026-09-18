@@ -23,7 +23,10 @@ struct ClawAssistantSSEParser {
         for byte in bytes {
             if skipLF { skipLF = false; if byte == 10 { continue } }
             if byte == 10 || byte == 13 {
-                if let frame = try finishLine() { frames.append(frame) }
+                if let frame = try finishLine() {
+                    guard frames.count < 1024 else { throw ClawAssistantError.responseTooLarge }
+                    frames.append(frame)
+                }
                 skipLF = byte == 13
             } else {
                 guard line.count < Self.frameLimit, frameBytes < Self.frameLimit else {
@@ -116,10 +119,15 @@ final class ClawAssistantStream: NSObject, URLSessionDataDelegate, ClawAssistant
     private var parser = ClawAssistantSSEParser()
     private var opened = false
     private var finished = false
+    private var lastDelivered: String
+    private var deliveredBytes = 0
+    private var errorResponse: Int?
+    private var errorBody = Data()
 
-    init(request: URLRequest, configuration: URLSessionConfiguration, isCurrent: @escaping () -> Bool,
+    init(request: URLRequest, configuration: URLSessionConfiguration, after: String, isCurrent: @escaping () -> Bool,
          event: @escaping (ClawAssistantRunEvent) -> Void, completion: @escaping (ClawAssistantStreamEnd) -> Void) {
         self.request = request; self.isCurrent = isCurrent; self.event = event; self.completion = completion
+        self.lastDelivered = after
         self.configuration = configuration.copy() as! URLSessionConfiguration
         self.configuration.timeoutIntervalForRequest = 60
         self.configuration.timeoutIntervalForResource = 60
@@ -150,6 +158,7 @@ final class ClawAssistantStream: NSObject, URLSessionDataDelegate, ClawAssistant
         let completion = self.completion; self.completion = nil
         let session = self.session; self.session = nil; task = nil
         let timer = self.timer; self.timer = nil; parser = ClawAssistantSSEParser()
+        errorBody.removeAll(keepingCapacity: false)
         lock.unlock()
         timer?.cancel(); session?.invalidateAndCancel(); completion?(result)
     }
@@ -178,12 +187,17 @@ final class ClawAssistantStream: NSObject, URLSessionDataDelegate, ClawAssistant
             completionHandler(.cancel); finish(.failure(.server(401, "authentication_required"))); return
         }
         if http.statusCode == 204 { completionHandler(.cancel); finish(.eof); return }
-        guard http.statusCode == 200, http.mimeType?.lowercased() == "text/event-stream" else {
-            completionHandler(.cancel)
-            let codes = [403: "permission_denied", 404: "not_found", 410: "conversation_deleted"]
-            if let code = codes[http.statusCode] { finish(.failure(.server(http.statusCode, code))) }
-            else { finish(.failure(.invalidResponse)) }
+        if http.statusCode != 200 {
+            guard http.mimeType?.lowercased() == "application/json",
+                  http.expectedContentLength <= Int64(ClawAssistantSSEParser.frameLimit) else {
+                completionHandler(.cancel); finish(.failure(.invalidResponse)); return
+            }
+            lock.lock(); errorResponse = http.statusCode; let ended = finished; lock.unlock()
+            completionHandler(ended ? .cancel : .allow)
             return
+        }
+        guard http.mimeType?.lowercased() == "text/event-stream" else {
+            completionHandler(.cancel); finish(.failure(.invalidResponse)); return
         }
         lock.lock(); opened = true; let ended = finished; lock.unlock()
         completionHandler(ended ? .cancel : .allow)
@@ -192,6 +206,12 @@ final class ClawAssistantStream: NSObject, URLSessionDataDelegate, ClawAssistant
         guard allowed() else { return }
         let frames: [ClawAssistantSSEParser.Frame]
         lock.lock()
+        if !finished, errorResponse != nil {
+            guard data.count <= ClawAssistantSSEParser.frameLimit - errorBody.count else {
+                lock.unlock(); finish(.failure(.responseTooLarge)); return
+            }
+            errorBody.append(data); lock.unlock(); return
+        }
         guard !finished, opened else { lock.unlock(); return }
         do { frames = try parser.append(data) }
         catch { lock.unlock(); finish(.failure((error as? ClawAssistantError) ?? .invalidResponse)); return }
@@ -199,15 +219,39 @@ final class ClawAssistantStream: NSObject, URLSessionDataDelegate, ClawAssistant
         for frame in frames {
             guard allowed() else { return }
             switch frame {
-            case .event(let value): event(value)
+            case .event(let value):
+                lock.lock()
+                if !ClawAssistantWire.less(lastDelivered, value.id) { lock.unlock(); continue }
+                let bytes = value.delta?.utf8.count ?? 0
+                guard !finished, ClawAssistantRunWire.next(lastDelivered) == value.id,
+                      Int64(value.id).map({ $0 <= 1024 }) ?? false,
+                      bytes <= ClawAssistantRunWire.outputLimit - deliveredBytes else {
+                    lock.unlock(); finish(.failure(.invalidResponse)); return
+                }
+                lastDelivered = value.id; deliveredBytes += bytes; lock.unlock()
+                if allowed() { event(value) } // At most 1024 ordered callbacks, before the main queue.
             case .access(let error): finish(.failure(error)); return
             }
         }
     }
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         guard allowed() else { return }
-        lock.lock(); let parser = self.parser; let opened = self.opened; lock.unlock()
+        lock.lock()
+        let parser = self.parser; let opened = self.opened
+        let errorStatus = errorResponse; let body = errorBody
+        lock.unlock()
         guard error == nil else { finish(.failure(.transport)); return }
+        if let status = errorStatus {
+            struct Envelope: Decodable { struct Detail: Decodable { let code: String }; let error: Detail }
+            let expected = [400: "invalid_request", 403: "permission_denied", 404: "not_found",
+                            409: "cursor_ahead", 410: "conversation_deleted", 500: "internal_error", 503: "history_unavailable"]
+            guard !body.contains(0), String(data: body, encoding: .utf8) != nil,
+                  let value = try? JSONDecoder().decode(Envelope.self, from: body),
+                  expected[status] == value.error.code else {
+                finish(.failure(.invalidResponse)); return
+            }
+            finish(.failure(.server(status, value.error.code))); return
+        }
         do { try parser.validateEOF() }
         catch { finish(.failure(.invalidResponse)); return }
         finish(opened ? .eof : .failure(.invalidResponse))

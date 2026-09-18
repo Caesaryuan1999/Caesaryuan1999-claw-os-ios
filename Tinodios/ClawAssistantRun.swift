@@ -106,6 +106,11 @@ final class ClawAssistantRun {
     }
     private func prepare(cid: String, input: ClawAssistantRunInput, exists: Bool) -> Bool {
         guard ClawAssistantWire.uuid(cid), let body = try? input.body() else { return false }
+        // Terminal observation can precede the old stop HTTP response. Retire that
+        // response before clearing its receipt or installing a new conversation ticket.
+        stopOperation = UUID()
+        let previousStop = stopTask; stopTask = nil
+        previousStop?.cancel() // Local transport only, outside SDK/Cache gates; never sends stop.
         cancelReads(); receipt = nil; projection = nil; readAddress = nil; seen.removeAll()
         ticket = Ticket(conversationID: cid, input: input, body: body)
         conversationReady = exists; stopping = .idle; failures = 0; lastError = nil
@@ -123,6 +128,7 @@ final class ClawAssistantRun {
         guard current, let ticket = ticket else { return }
         let op = UUID(); writeOperation = op
         submission = .pending; lastError = nil; notify()
+        guard current, writeOperation == op else { return }
         if !conversationReady {
             writeTask = session.service.createConversation(ticket.conversationID, capabilities: capabilities,
                 retrySubmission: retry) { [weak self] result in
@@ -229,7 +235,7 @@ final class ClawAssistantRun {
     }
     private func install(_ value: ClawAssistantRunSnapshot, cid: String, rid: String) -> Bool {
         guard value.receipt.conversation_id == cid, value.receipt.run_id == rid,
-              receipt.map({ $0.request_id == value.receipt.request_id && $0.run_id == rid }) ?? true else { return false }
+              receipt.map({ sameRunIdentity($0, value.receipt) }) ?? true else { return false }
         if let old = projection {
             guard !ClawAssistantWire.less(value.receipt.last_event, old.lastEvent),
                   !ClawAssistantWire.less(value.receipt.revision, old.revision),
@@ -240,6 +246,11 @@ final class ClawAssistantRun {
         projection = Projection(receipt: value.receipt, text: value.text, state: value.receipt.state,
                                 reason: value.reason, lastEvent: value.receipt.last_event, revision: value.receipt.revision)
         seen.removeAll(); return true
+    }
+    private func sameRunIdentity(_ a: ClawAssistantRunReceipt, _ b: ClawAssistantRunReceipt) -> Bool {
+        a.conversation_id == b.conversation_id && a.run_id == b.run_id && a.request_id == b.request_id &&
+            a.question_message_id == b.question_message_id && a.answer_message_id == b.answer_message_id &&
+            a.isLegacy == b.isLegacy
     }
     private func openStream() {
         guard current, visible, let value = projection, !value.terminal, !value.receipt.isLegacy else { return }
@@ -317,10 +328,15 @@ final class ClawAssistantRun {
         guard current, let value = projection, !value.terminal, !value.receipt.isLegacy, stopping != .pending else { return false }
         let wasUnknown = stopping == .unknown
         let op = UUID(); stopOperation = op; stopping = .pending; notify()
+        guard current, stopOperation == op else { return false }
         stopTask = session.service.run(value.receipt.conversation_id, runID: value.receipt.run_id,
             capabilities: capabilities, stop: true) { [weak self] result in
-                self?.receive(result, valid: { $0.stopOperation == op }) { model, result in
+                self?.receive(result, valid: { model in
+                    model.stopOperation == op &&
+                        (model.receipt.map { model.sameRunIdentity($0, value.receipt) } ?? false)
+                }) { model, result in
                     if case .success(let snapshot) = result, snapshot.receipt.isTerminal,
+                       model.sameRunIdentity(snapshot.receipt, value.receipt),
                        model.install(snapshot, cid: value.receipt.conversation_id, rid: value.receipt.run_id) {
                         model.stopping = .confirmed; model.lastError = nil; model.failures = 0
                         return { [weak model] in model?.cancelReads() }

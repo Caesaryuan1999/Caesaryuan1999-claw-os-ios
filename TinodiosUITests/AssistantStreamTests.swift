@@ -2,6 +2,7 @@
 import XCTest
 import Foundation
 import Network
+import TinodeSDK
 @testable import Tinodios
 
 /// Loopback-only real TCP fixture. No configured server, model or credential is contacted.
@@ -21,6 +22,11 @@ private final class AssistantSocketServer {
         }
         func open() { send(Data("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n".utf8)) }
         func close() { connection.cancel() }
+        func observeClientClose(_ completion: @escaping () -> Void) {
+            connection.receive(minimumIncompleteLength: 1, maximumLength: 1) { _, _, ended, error in
+                if ended || error != nil { completion() }
+            }
+        }
         func fragments(_ values: [Data], index: Int = 0, done: (() -> Void)? = nil) {
             guard index < values.count else { done?(); return }
             send(values[index]) { self.fragments(values, index: index + 1, done: done) }
@@ -131,6 +137,9 @@ final class AssistantStreamTests: XCTestCase {
         XCTAssertNoThrow(try partial.append(Data("data: {".utf8))); XCTAssertThrowsError(try partial.validateEOF())
         XCTAssertTrue(ClawAssistantWire.decimal("9223372036854775807"))
         XCTAssertFalse(ClawAssistantWire.decimal("9223372036854775808"))
+        var burst = ClawAssistantSSEParser()
+        let frame = try AssistantBFixture.frame(AssistantBFixture.event("1"))
+        XCTAssertThrowsError(try burst.append((0..<1025).reduce(into: Data()) { data, _ in data.append(frame) }))
     }
 
     func testAccessControlHasNoPersistentIDAndDeadlineNeverSlides() throws {
@@ -149,6 +158,9 @@ final class AssistantStreamTests: XCTestCase {
     func testRealSocketChunksProduceEventsBeforeEOFAndStopUsesAnotherConnection() throws {
         let server = try AssistantSocketServer(); defer { server.stop() }
         let gotEvent = expectation(description: "real stream event before EOF")
+        gotEvent.assertForOverFulfill = true
+        let gotAfterDuplicates = expectation(description: "ordered event after duplicate burst")
+        gotAfterDuplicates.assertForOverFulfill = true
         let gotStop = expectation(description: "independent HTTP stop")
         let streamEnd = expectation(description: "cancelled reader")
         let caps = try AssistantBFixture.capabilities()
@@ -156,22 +168,29 @@ final class AssistantStreamTests: XCTestCase {
                                                isCurrent: { true })
         defer { service.cancelAll() }
         let frame = try AssistantBFixture.frame(AssistantBFixture.event("3"), newline: "\r\n")
+        let afterDuplicates = try AssistantBFixture.frame(AssistantBFixture.event("4", text: "尾"))
         server.install { request, reply in
             XCTAssertEqual(request.headers["authorization"], "token " + AssistantFixture.token)
             XCTAssertEqual(request.headers["x-tinode-apikey"], "synthetic-key")
             XCTAssertNil(request.headers["cookie"])
             if request.path.hasSuffix("/stream") {
                 XCTAssertEqual(request.headers["last-event-id"], "2"); XCTAssertFalse(request.path.contains("?"))
-                reply.open(); reply.fragments(frame.map { Data([$0]) }) // Deliberately leave connection open.
+                reply.open()
+                reply.fragments(frame.map { Data([$0]) }) {
+                    reply.send((0..<128).reduce(into: Data()) { data, _ in data.append(frame) } + afterDuplicates)
+                } // Duplicate frames must not enqueue duplicate consumer callbacks; leave stream open.
             } else if request.path.hasSuffix("/stop") {
                 XCTAssertEqual(request.method, "POST"); XCTAssertTrue(request.body.isEmpty)
                 reply.json(AssistantBFixture.snapshot(cursor: "3", revision: "3", state: "stopped"))
             } else { XCTFail("Unexpected fixture route"); reply.json(AssistantFixture.error("not_found"), status: 404) }
         }
         let stream = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "2", capabilities: caps,
-            event: { event in XCTAssertEqual(event.delta, "中文🙂"); gotEvent.fulfill() },
+            event: { event in
+                if event.id == "3" { XCTAssertEqual(event.delta, "中文🙂"); gotEvent.fulfill() }
+                else { XCTAssertEqual(event.id, "4"); XCTAssertEqual(event.delta, "尾"); gotAfterDuplicates.fulfill() }
+            },
             completion: { end in if case .cancelled = end { streamEnd.fulfill() } else { XCTFail("Expected explicit cancellation") } })
-        wait(for: [gotEvent], timeout: 5)
+        wait(for: [gotEvent, gotAfterDuplicates], timeout: 5, enforceOrder: true)
         service.run(AssistantBFixture.cid, runID: AssistantBFixture.rid, capabilities: caps, stop: true) { result in
             if case .success(let value) = result { XCTAssertEqual(value.receipt.state, "stopped"); gotStop.fulfill() }
             else { XCTFail("Real control request failed") }
@@ -190,25 +209,88 @@ final class AssistantStreamTests: XCTestCase {
             if status == 302 {
                 let header = "HTTP/1.1 302 Found\r\nLocation: \(server.url.absoluteString)redirect-target\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
                 reply.send(Data(header.utf8)) { reply.close() }
+            } else if status == 1410 {
+                reply.json(AssistantFixture.error("conversation_deleted"), status: 410)
+            } else if status == 2410 {
+                reply.json(AssistantFixture.error("permission_denied"), status: 410)
+            } else if status == 3410 {
+                reply.send(Data("HTTP/1.1 410 Fixture\r\nContent-Type: application/json\r\nContent-Length: 1\r\nConnection: close\r\n\r\n".utf8) + Data([0xFF])) { reply.close() }
+            } else if status == 4410 {
+                reply.send(Data("HTTP/1.1 410 Fixture\r\nContent-Type: application/json\r\nContent-Length: 65537\r\nConnection: close\r\n\r\n".utf8))
             } else {
-                reply.send(Data("HTTP/1.1 401 Unauthorized\r\nContent-Type: text/html\r\nContent-Length: 4\r\nConnection: close\r\n\r\nnope".utf8)) { reply.close() }
+                let actualStatus = status == 410 ? 410 : 401
+                reply.send(Data("HTTP/1.1 \(actualStatus) Fixture\r\nContent-Type: text/html\r\nContent-Length: 4\r\nConnection: close\r\n\r\nnope".utf8)) { reply.close() }
             }
         }
         let service = try ClawAssistantService(origin: server.url, apiKey: "synthetic-key", token: AssistantFixture.token, isCurrent: { true })
         defer { service.cancelAll() }
-        for status in [302, 401] {
+        for status in [302, 401, 410, 1410, 2410, 3410, 4410] {
             lock.lock(); mode = status; lock.unlock()
             let done = expectation(description: "real refused response")
             _ = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "0", capabilities: try AssistantBFixture.capabilities(),
                 event: { _ in XCTFail("Refused response leaked a frame") }, completion: { end in
                     guard case .failure(let error) = end else { XCTFail("Expected refusal"); return }
-                    XCTAssertEqual(error, status == 401 ? .server(401, "authentication_required") : .invalidResponse)
+                    let expected: ClawAssistantError = status == 401 ? .server(401, "authentication_required") :
+                        (status == 1410 ? .server(410, "conversation_deleted") : .invalidResponse)
+                    XCTAssertEqual(error, expected)
                     done.fulfill()
                 })
             wait(for: [done], timeout: 5)
         }
         lock.lock(); let actualRedirects = redirectedRequests; lock.unlock()
         XCTAssertEqual(actualRedirects, 0)
+    }
+
+    func testRealSocketOldStopIsRetiredBeforeNewConversationSubmission() throws {
+        let server = try AssistantSocketServer(); defer { server.stop() }
+        let fixture = try AssistantFixture.main { try AssistantFixture() }
+        var model: ClawAssistantRun?
+        defer { AssistantFixture.main { model?.retire(); fixture.retire() } }
+        try AssistantFixture.main {
+            fixture.scope.markRetired(clearAccount: false); fixture.scope.finishRetirement()
+            fixture.owner.hostName = "127.0.0.1:\(server.url.port!)"; fixture.owner.useTLS = false
+            fixture.scope = try ClawAssistantSession(owner: fixture.owner, generation: 2, origin: server.url,
+                gate: { [weak fixture] work in
+                    guard let fixture = fixture, fixture.slotActive else { return false }
+                    return fixture.owner.withActiveSession { work(); return true } ?? false
+                })
+            model = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
+            var stream: AssistantSocketServer.Reply?
+            var oldStop: AssistantSocketServer.Reply?
+            var newSubmission: AssistantSocketServer.Reply?
+            var oldStopClosed = false
+            server.install { request, reply in
+                DispatchQueue.main.async {
+                    if request.path.hasSuffix("/stop") {
+                        oldStop = reply
+                        reply.observeClientClose { DispatchQueue.main.async { oldStopClosed = true } }
+                    } else if request.path.hasSuffix("/stream") { stream = reply; reply.open() }
+                    else if request.method == "POST" { newSubmission = reply }
+                    else { reply.json(AssistantBFixture.snapshot()) }
+                }
+            }
+            model!.setVisible(true)
+            XCTAssertTrue(model!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
+            try AssistantFixture.until { stream != nil }
+            XCTAssertTrue(model!.stop())
+            try AssistantFixture.until { oldStop != nil }
+            stream!.send(try AssistantBFixture.frame(AssistantBFixture.event("3", kind: "terminal", state: "completed")))
+            try AssistantFixture.until { model?.projection?.terminal == true }
+            XCTAssertEqual(model?.stopping, .confirmed)
+            XCTAssertTrue(model!.submit(text: "B合成问题", conversationID: AssistantFixture.second))
+            model!.setVisible(false) // Pending POST remains; no unrelated B GET is needed for this assertion.
+            try AssistantFixture.until { newSubmission != nil && oldStopClosed }
+            XCTAssertEqual(model?.submission, .pending); XCTAssertEqual(model?.stopping, .idle)
+            XCTAssertNil(model?.projection); XCTAssertNil(model?.receipt)
+            // Even a queued old completion is also fenced by operation + all captured run identities.
+            oldStop!.json(AssistantBFixture.snapshot(cursor: "3", revision: "3", state: "completed"))
+            var value = AssistantBFixture.snapshot(requestID: try XCTUnwrap(model?.ticket?.input.request_id))
+            value["conversation_id"] = AssistantFixture.second
+            newSubmission!.json(value, status: 202)
+            try AssistantFixture.until { model?.submission == .accepted }
+            XCTAssertEqual(model?.receipt?.conversation_id, AssistantFixture.second)
+            XCTAssertEqual(model?.stopping, .idle)
+        }
     }
 
     func testRealSocketHeartbeatCannotExtendAbsoluteSixtySecondDeadline() throws {

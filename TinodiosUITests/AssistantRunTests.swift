@@ -106,7 +106,7 @@ final class AssistantRunTests: XCTestCase {
                 text: String(repeating: "\u{0}", count: 11000), retry_of: nil).body()) // Escaped JSON body > 64KiB.
             var events: [String: Any] = ["conversation_id": AssistantBFixture.cid, "run_id": AssistantBFixture.rid,
                 "items": [AssistantBFixture.event("2"), AssistantBFixture.event("3")],
-                "next_after_event": "3", "last_event": "3", "state": "running"]
+                "next_after_event": "", "last_event": "3", "state": "running"]
             let page: ClawAssistantRunEvents = try AssistantBFixture.decode(events)
             XCTAssertNoThrow(try page.validate())
             events["items"] = [AssistantBFixture.event("2"), AssistantBFixture.event("4")]
@@ -262,6 +262,101 @@ final class AssistantRunTests: XCTestCase {
             try AssistantFixture.until { self.run?.stopping == .confirmed }
             XCTAssertEqual(run?.projection?.state, "completed") // Never rename completed to stopped.
             XCTAssertEqual(run?.projection?.text, "完成")
+        }
+    }
+
+    func testEventsServiceRejectsIncompleteFinalPagesAndImpossibleCursors() throws {
+        try AssistantFixture.main {
+            let caps = try AssistantBFixture.capabilities()
+            let cases: [(String, [String], String, String, Bool)] = [
+                ("0", ["1"], "3", "1", true),
+                ("0", ["1", "2"], "2", "", true),
+                ("2", [], "2", "", true),
+                ("0", ["1"], "2", "", false), // Missing terminal page tail.
+                ("3", [], "2", "", false), // Requested cursor beyond authoritative last.
+                ("0", ["1"], "1", "1", false), // Nonempty next cannot equal last.
+                ("0", [], "2", "", false),
+                ("0", ["2"], "2", "", false),
+                ("0", ["1", "3"], "3", "", false)
+            ]
+            for (after, ids, last, next, valid) in cases {
+                AssistantFixtureProtocol.handler = { transport in
+                    XCTAssertEqual(URLComponents(url: transport.request.url!, resolvingAgainstBaseURL: false)?
+                        .queryItems?.first(where: { $0.name == "after_event" })?.value, after)
+                    transport.reply(["conversation_id": AssistantBFixture.cid, "run_id": AssistantBFixture.rid,
+                        "items": ids.map { AssistantBFixture.event($0) }, "last_event": last,
+                        "next_after_event": next, "state": "running"])
+                }
+                var result: Result<ClawAssistantRunEvents, ClawAssistantError>?
+                fixture.scope.service.events(AssistantBFixture.cid, runID: AssistantBFixture.rid,
+                    after: after, capabilities: caps) { value in DispatchQueue.main.async { result = value } }
+                try AssistantFixture.until { result != nil }
+                if valid { XCTAssertNoThrow(try result!.get()) }
+                else {
+                    guard case .failure(.invalidResponse) = result! else { XCTFail("Incomplete event page accepted"); return }
+                }
+            }
+        }
+    }
+
+    func testStopReplyMustMatchEveryCapturedRunIdentity() throws {
+        try AssistantFixture.main {
+            for key in ["conversation_id", "run_id", "request_id", "question_message_id", "answer_message_id", "legacy"] {
+                run?.retire()
+                run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
+                AssistantFixtureProtocol.handler = { transport in
+                    if transport.request.httpMethod == "POST" {
+                        var value = AssistantBFixture.snapshot(text: "错误回包", cursor: "3", revision: "3", state: "stopped")
+                        if key == "legacy" { value[key] = true }
+                        else { value[key] = "00000000-0000-4000-8000-000000000009" }
+                        transport.reply(value)
+                    } else { transport.reply(AssistantBFixture.snapshot()) }
+                }
+                XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
+                try AssistantFixture.until { self.run?.projection != nil }
+                let original = run?.projection
+                XCTAssertTrue(run!.stop())
+                try AssistantFixture.until { self.run?.stopping == .unknown }
+                XCTAssertEqual(run?.lastError, .invalidResponse)
+                XCTAssertEqual(run?.projection, original)
+                XCTAssertEqual(run?.receipt, original?.receipt)
+            }
+        }
+    }
+
+    func testSynchronousChangeRetirementCannotCreateSubmitOrStopRequests() throws {
+        try AssistantFixture.main {
+            for existing in [false, true] {
+                run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
+                let unexpected = expectation(description: "retired submit must not create HTTP request")
+                unexpected.isInverted = true
+                AssistantFixtureProtocol.handler = { _ in unexpected.fulfill() }
+                AssistantFixtureProtocol.requests = []
+                run!.changed = { [weak self] in
+                    guard let model = self?.run, model.submission == .pending else { return }
+                    model.changed = nil; model.retire()
+                }
+                _ = run!.submit(text: "合成问题", conversationID: existing ? AssistantBFixture.cid : nil)
+                XCTAssertEqual(run?.lastError, .retired); XCTAssertNil(run?.ticket)
+                XCTAssertEqual(XCTWaiter.wait(for: [unexpected], timeout: 0.25), .completed)
+                XCTAssertTrue(AssistantFixtureProtocol.requests.isEmpty)
+            }
+            run = try ClawAssistantRun(session: fixture.scope, capabilities: AssistantBFixture.capabilities())
+            AssistantFixtureProtocol.handler = { $0.reply(AssistantBFixture.snapshot()) }
+            XCTAssertTrue(run!.recover(conversationID: AssistantBFixture.cid, runID: AssistantBFixture.rid))
+            try AssistantFixture.until { self.run?.projection != nil }
+            AssistantFixtureProtocol.requests = []
+            let unexpected = expectation(description: "retired stop must not create HTTP request")
+            unexpected.isInverted = true
+            AssistantFixtureProtocol.handler = { _ in unexpected.fulfill() }
+            run!.changed = { [weak self] in
+                guard let model = self?.run, model.stopping == .pending else { return }
+                model.changed = nil; model.retire()
+            }
+            XCTAssertFalse(run!.stop())
+            XCTAssertEqual(run?.lastError, .retired); XCTAssertNil(run?.projection)
+            XCTAssertEqual(XCTWaiter.wait(for: [unexpected], timeout: 0.25), .completed)
+            XCTAssertTrue(AssistantFixtureProtocol.requests.isEmpty)
         }
     }
 

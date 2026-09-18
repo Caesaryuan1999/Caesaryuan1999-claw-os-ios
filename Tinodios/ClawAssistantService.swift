@@ -144,7 +144,9 @@ final class ClawAssistantService {
                        completion: { (result: Result<ClawAssistantRunEvents, ClawAssistantError>) in
             completion(result.flatMap { value in
                 guard value.conversation_id == id, value.run_id == runID,
-                      value.items.first.map({ ClawAssistantRunWire.next(after) == $0.id }) ?? true else {
+                      !ClawAssistantWire.less(value.last_event, after),
+                      value.items.first.map({ ClawAssistantRunWire.next(after) == $0.id }) ??
+                        (after == value.last_event && value.next_after_event.isEmpty) else {
                     return .failure(.invalidResponse)
                 }
                 return .success(value)
@@ -167,7 +169,7 @@ final class ClawAssistantService {
                                          method: "GET", body: nil)
         outgoing.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         outgoing.setValue(after, forHTTPHeaderField: "Last-Event-ID")
-        let task = ClawAssistantStream(request: outgoing, configuration: configuration, isCurrent: isCurrent,
+        let task = ClawAssistantStream(request: outgoing, configuration: configuration, after: after, isCurrent: isCurrent,
             event: event, completion: { [weak self] result in
                 guard let self = self else { return }
                 self.lock.lock(); self.requests.removeValue(forKey: requestID); self.lock.unlock()
