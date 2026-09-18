@@ -53,7 +53,11 @@ def run_smoke(build_root):
     pid = None
 
     def command(label, args, required=True):
-        completed = subprocess.run(args, capture_output=True, text=True, timeout=45, check=False)
+        try:
+            completed = subprocess.run(args, capture_output=True, text=True, timeout=45, check=False)
+        except subprocess.TimeoutExpired:
+            manifest["commands"].append({"step": label, "returncode": None, "timeout_seconds": 45})
+            raise RuntimeError(label + " exceeded 45 seconds") from None
         manifest["commands"].append({"step": label, "returncode": completed.returncode})
         if completed.returncode != 0 and required:
             raise RuntimeError(label + " failed with exit " + str(completed.returncode))
@@ -110,12 +114,30 @@ def run_smoke(build_root):
             raise RuntimeError("Expected simulator executable")
         manifest.update(bundle_id=bundle, executable=executable, binary_sha256=sha256(app / executable))
         sim_id = str(uuid.UUID((result / "simulator-id.txt").read_text().strip())).upper()
-        devices = json.loads(command("list_existing_devices", ["xcrun", "simctl", "list", "devices", "available", "--json"]).stdout)
-        selected = [d for runtime, entries in devices["devices"].items() if "iOS" in runtime
-                    for d in entries if d["udid"].upper() == sim_id]
-        if len(selected) != 1 or selected[0].get("state") != "Booted" or not selected[0].get("isAvailable"):
-            raise RuntimeError("The tested iOS simulator is not available and booted")
         manifest["simulator_id"] = sim_id
+        manifest["simulator_observations"] = []
+
+        def selected_simulator(label):
+            devices = json.loads(command(label, ["xcrun", "simctl", "list", "devices", "--json"]).stdout)
+            selected = [
+                {"runtime": runtime, "state": device.get("state"), "isAvailable": device.get("isAvailable")}
+                for runtime, entries in devices["devices"].items() if "iOS" in runtime
+                for device in entries if device.get("udid", "").upper() == sim_id
+            ]
+            manifest["simulator_observations"].append({"step": label, "matches": selected})
+            if len(selected) != 1:
+                raise RuntimeError("The tested iOS simulator is missing or ambiguous")
+            if selected[0]["isAvailable"] is not True:
+                raise RuntimeError("The tested iOS simulator is unavailable")
+            return selected[0]
+
+        selected = selected_simulator("list_existing_devices")
+        if selected["state"] == "Shutdown":
+            command("boot_tested_device", ["xcrun", "simctl", "boot", sim_id])
+            command("wait_tested_device_boot", ["xcrun", "simctl", "bootstatus", sim_id, "-b"])
+            selected = selected_simulator("verify_tested_device_boot")
+        if selected["state"] != "Booted":
+            raise RuntimeError("The tested iOS simulator is not booted")
         command("install", ["xcrun", "simctl", "install", sim_id, str(app)])
         installed = Path(command("installed_container", ["xcrun", "simctl", "get_app_container", sim_id, bundle, "app"]).stdout.strip()).resolve()
         if sim_id not in str(installed).upper() or not installed.is_dir():

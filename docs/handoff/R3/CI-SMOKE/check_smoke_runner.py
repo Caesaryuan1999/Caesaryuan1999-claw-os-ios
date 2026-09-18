@@ -18,7 +18,7 @@ BUNDLE = "app.claw.synthetic"
 
 
 class SmokeChecks(unittest.TestCase):
-    def exercise(self, failure=None):
+    def exercise(self, failure=None, initial_state="Booted", simulator_available=True):
         fixture_root = Path(__file__).resolve().parent / ".fixtures"
         fixture_root.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=fixture_root) as temporary:
@@ -44,13 +44,33 @@ class SmokeChecks(unittest.TestCase):
             installed.mkdir(parents=True)
             (installed / "Tinodios").write_bytes((app / "Tinodios").read_bytes())
 
+            observed_state = initial_state
+            calls = []
+
             def command(args, **kwargs):
+                nonlocal observed_state
+                calls.append(args)
                 code, output = 0, ""
                 if args[0] == "/bin/ps":
                     output = "1234 S Tinodios"
                 elif args[2] == "list":
-                    output = json.dumps({"devices": {"iOS-Synthetic": [{
-                        "udid": SIM, "isAvailable": True, "state": "Booted"}]}})
+                    entries = [{"udid": SIM, "isAvailable": simulator_available, "state": observed_state}]
+                    if failure == "missing":
+                        entries[0]["udid"] = "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA"
+                    elif failure == "duplicate":
+                        entries += entries.copy()
+                    output = json.dumps({"devices": {"iOS-Synthetic": entries}})
+                elif args[2] == "boot":
+                    self.assertEqual(args[3], SIM)
+                    if failure == "boot":
+                        code = 1
+                elif args[2] == "bootstatus":
+                    self.assertEqual(args[3:], [SIM, "-b"])
+                    self.assertEqual(kwargs["timeout"], 45)
+                    if failure == "boot-timeout":
+                        raise subprocess.TimeoutExpired(args, 45)
+                    if failure != "still-shutdown":
+                        observed_state = "Booted"
                 elif args[2] == "install" and failure == "install":
                     code = 1
                 elif args[2] == "get_app_container":
@@ -87,6 +107,22 @@ class SmokeChecks(unittest.TestCase):
             self.assertEqual(manifest["ui_journey"], "NOT_RUN")
             if failure == "crash":
                 self.assertEqual(len(manifest["crash_reports"]), 1)
+            observations = manifest["simulator_observations"]
+            if failure != "missing":
+                self.assertEqual(observations[0]["matches"][0],
+                                 {"runtime": "iOS-Synthetic", "state": initial_state,
+                                  "isAvailable": simulator_available})
+            if failure in ("missing", "duplicate", "unavailable", "boot", "boot-timeout", "still-shutdown", "unknown-state"):
+                self.assertFalse(any(call[2] == "install" for call in calls if call[0] == "xcrun"))
+            if initial_state == "Shutdown" and not failure:
+                self.assertEqual(observations[-1]["matches"][0]["state"], "Booted")
+                self.assertEqual([call[2] for call in calls if call[0] == "xcrun"][:4],
+                                 ["list", "boot", "bootstatus", "list"])
+            if failure == "boot-timeout":
+                self.assertEqual(manifest["commands"][-1]["timeout_seconds"], 45)
+            if failure in ("missing", "duplicate", "unavailable", "unknown-state"):
+                self.assertFalse(any(call[2] in ("boot", "bootstatus") for call in calls if call[0] == "xcrun"))
+            self.assertFalse(any(call[2] in ("create", "clone") for call in calls if call[0] == "xcrun"))
 
     def test_success_is_limited_to_cold_launch(self): self.exercise()
     def test_install_failure_stays_failed(self): self.exercise("install")
@@ -94,6 +130,14 @@ class SmokeChecks(unittest.TestCase):
     def test_wrong_executable_stays_failed(self): self.exercise("path")
     def test_screenshot_failure_stays_failed(self): self.exercise("screenshot")
     def test_current_pid_crash_stays_failed(self): self.exercise("crash")
+    def test_same_shutdown_device_boots_and_is_rechecked(self): self.exercise(initial_state="Shutdown")
+    def test_missing_device_never_selects_another(self): self.exercise("missing")
+    def test_unavailable_device_never_boots(self): self.exercise("unavailable", simulator_available=False)
+    def test_ambiguous_device_stays_failed(self): self.exercise("duplicate")
+    def test_boot_failure_prevents_install(self): self.exercise("boot", initial_state="Shutdown")
+    def test_boot_wait_is_bounded_and_recorded(self): self.exercise("boot-timeout", initial_state="Shutdown")
+    def test_boot_must_be_verified(self): self.exercise("still-shutdown", initial_state="Shutdown")
+    def test_unknown_state_is_not_promoted(self): self.exercise("unknown-state", initial_state="Creating")
 
 
 if __name__ == "__main__":
