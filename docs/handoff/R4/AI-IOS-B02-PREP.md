@@ -1,6 +1,6 @@
 # R4 AI iOS B02：已知 run 查看 / 恢复 / 明确停止（只读提案）
 
-本提案读取总控 `R4_AI_CLIENT_B02_TASK_PACK.md`，没有实施授权、没有源码/测试/CI 修改。当前 docs HEAD `d9f43b1848f1f0a8ee72071b9b2e6f3f2066f9c8`，生产 `b004af0d5c5d8ce2f7560fad04ed8711694c8e23`，B 核心 `e9eba400129c734315e8176d00e5b2a52e2bc74f`。CI39 run35402042528 / job105783842048 由总控执行；当前只知 SDK44 已通过，storage 仍在构建，不能把293+3期望写成通过。
+本提案读取总控 `R4_AI_CLIENT_B02_TASK_PACK.md`，B02 没有实施授权、没有源码/测试/CI 修改。提案初版提交 `db903725054d8fc7c7247d671d6452e57a0f645d`，生产仍为 `b004af0d5c5d8ce2f7560fad04ed8711694c8e23`，B 核心 `e9eba400129c734315e8176d00e5b2a52e2bc74f`。CI39 run35402042528 / job105783842048 实际 SDK44通过、storage245通过/4失败；四项均在 TCP fixture 初始化失败，导航/包/冷启未运行。独立测试修正 `34b675e7f1db76c90ca112e0f2588f1ddfb97696` 已封，后继原生待验；不能把293+3期望写成通过。
 
 ## 当前实际入口与缺口
 
@@ -33,7 +33,7 @@
 
 以当前 Session 的 capabilities.validateRuns 成功为显式 B 读取条件，不以 generation.available 推断；stream=false 仍可读 GET/历史。每次 load 固定当前读取模式、能力、cid、page generation，不在后续回调里借新能力解释旧页。
 
-B messages 每页10；user32KiB、assistant256KiB，UTF8逐字节计数，未知角色/状态整详情失效。最坏10个256KiB正文全部6倍JSON转义约15MiB，连元数据小于现24MiB预算；需真实最大转义页测试。新 POST 输入仍32000字节，本批没有提交入口，不将提交限额和历史读取上界混为一项。A limit20及 validator 原样。
+B messages 每页10；user 上限准确为32000个 UTF-8 字节，与服务 `limits.text_bytes` 及 A 用户文字限额一致，不能按32×1024放宽至32768；assistant 上限为262144个 UTF-8 字节（256×1024）。未知角色/状态整详情失效。最坏10个262144字节正文全部6倍JSON转义约15MiB，连元数据小于现24MiB预算；需真实最大转义页测试。新 POST 输入也仍为32000字节，本批没有提交入口。A limit20及 validator 原样。
 
 同一个 snapshot_revision 完整页集与重复 ID/seq/cursor 校验后一次提交；snapshot_changed 最多两次从头重取，仍保留上次完整快照。失败不跳行、不把暂存半页显示成完整历史。
 
@@ -67,7 +67,7 @@ stop 捕获确切旧 cid/rid/身份；等待200真实terminal，completed不改�
 
 新增 `TinodiosUITests/AssistantKnownRunTests.swift` 和 `AssistantKnownRunLayoutTests.swift`，复用现 App-hosted target 与实际 SDK/SQLite/URLSession consumer，追加 PBX membership/现 selector；不新 workflow/Pod/target，不重复未变60秒以凑数量。原293 native+3导航完整保留，只有真实受影响方法需要增量。
 
-- 实际 Service+History：B10最大转义页、角色限额、完整分页/同revision/坏页保旧/未知状态、A20兼容。
+- 实际 Service+History：B10最大转义页；user32000字节接受/32001拒绝、assistant262144接受/262145拒绝，包含多字节 UTF-8 跨界而非只数字符；完整分页/同revision/坏页保旧/未知状态、A20兼容。
 - 实际 Session/Run：known-only 三入口 generation=true 零创建POST；单knownRID/角色指针校验；重复prefix、旧history和新run版本；legacy缺指针只读。
 - 实际页面 lease + UINavigationController/生命周期：详情离开只取消reader，回来GET；旧view回调不关新reader；stop pending/unknown返回列表及再进原cid仍保留，跨cid明确提示/取消/返回原回答。
 - 真正消费者：stop200completed、失败unknown、activeGET仍unknown、显式再次stop；401/同UID新认证/旧owner晚回包清内容不清本地账号；删除pending/墓碑/迟回包不会复活。
