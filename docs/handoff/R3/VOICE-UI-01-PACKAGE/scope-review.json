@@ -1,0 +1,989 @@
+{
+  "baseline": "34a8b3e5ad4df210117e2e03b308576796ba55b2",
+  "target": "e6d0aa978daf6c2aa92f88e88deb2060658226f9",
+  "included_non_docs": 95,
+  "included_docs_tests": [
+    "docs/handoff/R3/CI-SMOKE/check_smoke_runner.py",
+    "docs/handoff/R3/CI21-CONFIG-01/verify_real_config.rb",
+    "docs/handoff/R3/LOCAL-DELETE-PLAN/reproduce_partial_delete.py",
+    "docs/handoff/R3/LOCAL-DELETE/check_local_delete_sqlite.py"
+  ],
+  "excluded_changed": [
+    {
+      "path": "docs/handoff/R3/ACCOUNT-DELETE-AUDIT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUDIO-REF-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUDIO-REF-01/red-source.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUDIO-REF-01/source-adapter-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUDIO-REF-01/source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUDIO-REF-01/verify_source_adapter.py",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH-CAPABILITIES-COPY/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH-CAPABILITIES-COPY/source-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH-CAPABILITIES-COPY/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH-COMPILE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH-COMPILE/compile-only.patch",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH-LEGACY-TRANSPORT/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH-LEGACY-TRANSPORT/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH-LEGACY-TRANSPORT/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH1/LEGACY-COMPAT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH1/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH1/legacy-compat-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH1/legacy-compat-static.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH1/scope-source-check.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH1/static-final.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH1/static-initial.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH3/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH3/after-source.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH3/before-source.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH3/static.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH4/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH4/after-source.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH4/before-source.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH4/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH4/outlet-scope.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/AUTH4/static.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI-SMOKE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI-SMOKE/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI-SMOKE/windows-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI-SMOKE03/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI-SMOKE04/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI-SMOKE04/green.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI-SMOKE04/red.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI-SMOKE04/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI11-FIXTURE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI11-FIXTURE/source-evidence.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI16-SMOKE-DIAG.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI19-VLC-HOST-DIAG/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI19-VLC-HOST-DIAG/source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI19-VLC-HOST-DIAG/verify_wiring.py",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI19-VLC-HOST-DIAG/wiring-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI20-HOST-LINK-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI20-HOST-LINK-01/ci20-link-red.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI20-HOST-LINK-01/source-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI20-HOST-LINK-01/source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI20-HOST-LINK-01/verify_hook_contract.py",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI21-CONFIG-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI21-CONFIG-01/ruby-config-results.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI21-CONFIG-01/source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI21-CONFIG-01/tool-provenance.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI22-AUDIO-QUOTE-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI22-AUDIO-QUOTE-01/source-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI3-AUTH-FIX/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI3-AUTH-FIX/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI3-DB-DIAG/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI3-DB-DIAG/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI3-DB-DIAG/invariants.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI3-DB-DIAG/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI4-UI-COMPILE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI4-UI-COMPILE/evidence.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI4-UI-COMPILE/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI5-DB-LIVE-DIAG/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI5-DB-LIVE-DIAG/source-evidence.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI5-DB-LIVE-DIAG/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI6-DB-FIXTURE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI6-DB-FIXTURE/source-evidence.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI6-DB-FIXTURE/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/CI8-COMPILE.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/COPY-DELETE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/COPY-DELETE/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/DB-INIT-GATE-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/DB-INIT-GATE-01/source-evidence.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/DB-INIT-GATE-01/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-56C4A7F-PLAN.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-CANDIDATE/CLAW-IOS-R3-source-test-ci.patch",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-CANDIDATE/README.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-CANDIDATE/apply-setup-first-attempt.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-CANDIDATE/bundle-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-CANDIDATE/commits.tsv",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-CANDIDATE/file-manifest.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-CANDIDATE/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-CANDIDATE/verify_forward_apply.py",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/CLAW-IOS-R3-source-test-ci.patch",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/README.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/bundle-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/commits.tsv",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/file-manifest.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/native-methods.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/packaging-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/prior-native-methods-4da8391.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-D381E07/verify_forward_apply.py",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/CLAW-IOS-R3-source-test-ci.patch",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/README.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/allowlist.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/baseline-prerequisites.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/bundle-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/commits.tsv",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/file-manifest.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/native-methods.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/packaging-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/paths.tsv",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/scope-review.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/FINAL-E6E07AFF/verify_forward_apply.py",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LICENSE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LICENSE/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LICENSE/static-final.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LICENSE/static-initial.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LICENSE/transform.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOCAL-DELETE-PLAN/PLAN.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOCAL-DELETE-PLAN/sqlite-red.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOCAL-DELETE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOCAL-DELETE/manifest.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOCAL-DELETE/sqlite-green.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOCAL-DELETE/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOGIN-LAYOUT-01.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOGOUT-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOGOUT-01/green.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOGOUT-01/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOGOUT-01/red.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/LOGOUT-01/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/NAVIGATION-KEYBOARD-EVIDENCE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/NAVIGATION-KEYBOARD-EVIDENCE/source-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/OWNED-IMAGE-02/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/OWNED-IMAGE-02/initial-static.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/OWNED-IMAGE-02/manifest.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/OWNED-IMAGE-02/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02-COMPAT/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02-COMPAT/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02-OFFLINE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02-OFFLINE/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02-OFFLINE/invariants.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02-OFFLINE/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02/static-policies-before.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC-02/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC/source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/PUBLIC/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-DELETE-ACK01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-DELETE-ACK01/source-after.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-DELETE-ACK01/source-before.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-DELETE-ACK01/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-LOG-IN-01/FOLLOWUP.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-LOG-IN-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-LOG-IN-01/catch-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-LOG-IN-01/catch-negative.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-LOG-IN-01/hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/SDK-LOG-IN-01/source-negative.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI01/policies-before-update.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI01/policies-final.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI01/scope-and-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI02/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI02/policies-before-update.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI02/policies-final.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI02/scope-and-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI03-PROPOSAL.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI03/IDENTITY-LOADING.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI03/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI03/outlet-check.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI03/source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI03/static-before-policy-update.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI03/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-AUDIT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-COPY.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-GROUP-NOTE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-GROUP-NOTE/source-evidence.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-GROUP-NOTE/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-MEDIA/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-MEDIA/initial-static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-MEDIA/source-evidence.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-MEDIA/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-NOTIFY/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UI04-NOTIFY/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UX-DEL-COPY/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UX-DEL/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UX-DEL/scope-source.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UX-DEL/static-final.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/UX-DEL/static-initial.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-DOWNLOAD/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-DOWNLOAD/count-policy-failure.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-DOWNLOAD/initial-static.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-DOWNLOAD/production.patch.gz",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-DOWNLOAD/red-source.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-DOWNLOAD/source-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-DOWNLOAD/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-OWNER-AUDIT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-UI-PLAN.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-UI/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-UI/source-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VIDEO-UI/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-AUDIT/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-AUDIT/source-scope.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/CI18-POD-EVIDENCE-FIX.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/PLAN.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/attachment-export-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/attachment-export-source-manifest.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/ci18-fix-source-manifest.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/ci18-lock-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/source-manifest.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VLC-PLAYBACK-PROBE/wiring-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-DATA-CLEANUP-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-DATA-CLEANUP-01/checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-DATA-CLEANUP-01/source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-LIFECYCLE-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-LIFECYCLE-01/audio-adapter-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-LIFECYCLE-01/red-source.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-LIFECYCLE-01/source-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-LIFECYCLE-01/source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-LIFECYCLE-01/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-LIFECYCLE-01/verify_audio_adapter.py",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-LIFECYCLE-01/verify_lifecycle_wiring.py",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RELIABILITY-AUDIT/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RESET-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RESET-01/adapter-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RESET-01/adapter-source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RESET-01/red-source-evidence.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RESET-01/source-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RESET-01/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RESET-02/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RESET-02/adapter-source-hashes.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-RESET-02/checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-UI-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-UI-01/check_source.py",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-UI-01/source-checks.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-UI-01/static-policies.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-UI-PLAN/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-UI-PLAN/figma-read.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-UI-PLAN/source-map.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-UPLOAD-COPY-01/REPORT.md",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/VOICE-UPLOAD-COPY-01/source-change.json",
+      "reason": "report/evidence/previous package, not required source"
+    },
+    {
+      "path": "docs/handoff/R3/login-final-static.json",
+      "reason": "report/evidence/previous package, not required source"
+    }
+  ],
+  "unchanged_private_metadata_check": {
+    "SharedUtils_no_delta": true,
+    "content_not_read": true
+  },
+  "excluded_categories": [
+    "private configuration",
+    "real push configuration",
+    "signing/key material",
+    "Pods/build/runtime",
+    "screenshots/xcresult/downloaded artifacts",
+    "generated evidence and prior patches"
+  ]
+}

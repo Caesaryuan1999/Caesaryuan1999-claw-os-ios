@@ -1,0 +1,40 @@
+{
+  "base": "0a7ba4470318e72064fe753ad2434b8a11329e72",
+  "target": "e6d0aa978daf6c2aa92f88e88deb2060658226f9",
+  "patch_bytes": 51144,
+  "patch_sha256": "5cabdf2df18f0af582260ea0252a2ce6b739df0962608cee422dc27f933094ca",
+  "actual_forward_apply": true,
+  "real_index_unchanged": true,
+  "unselected_entries_unchanged": true,
+  "files": [
+    {
+      "path": "Tinodios/widgets/SendMessageBar.swift",
+      "mode": "100644",
+      "blob": "ff16003c59810f822e2188a81c577fb718c15333",
+      "sha256": "44ea7ee941926448f2a6b98b1178921b9d9c8a8636d7590cce02681ee5bbb816",
+      "match": true
+    },
+    {
+      "path": "Tinodios/widgets/SendMessageBar.xib",
+      "mode": "100644",
+      "blob": "32774ff2d2cacdfdb1b267b125a1afdb38430795",
+      "sha256": "af3183d157f1b3606433a608b8293aedb62d49aa7ffb90c4dac349fe07622aab",
+      "match": true
+    },
+    {
+      "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+      "mode": "100644",
+      "blob": "b49336eb94b1882a1df53b535a43fc4860041e33",
+      "sha256": "7ebfa0e489892441382c50eec1847f4d7a8db4d582167eb4aa0eadc7af223825",
+      "match": true
+    },
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "mode": "100644",
+      "blob": "1378961103cfbb9ca8676d5759e245b869e836e0",
+      "sha256": "eaa9b3bcb824ddace1af90ea6711adbec2a11dc46335d556cd683de5ddb339f3",
+      "match": true
+    }
+  ],
+  "scope": "Git packaging only; new UIKit/XIB NOT_RUN"
+}

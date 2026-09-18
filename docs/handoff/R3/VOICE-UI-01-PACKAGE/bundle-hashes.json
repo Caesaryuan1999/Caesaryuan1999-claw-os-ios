@@ -1,0 +1,47 @@
+[
+  {
+    "path": "allowlist.json",
+    "bytes": 20502,
+    "sha256": "30bd7beefc8bea2a0eb9f8a4fccbca24271f29f95a433ee31ee87c2b681b5ba1"
+  },
+  {
+    "path": "CLAW-IOS-R3-source-test-ci.patch",
+    "bytes": 1072487,
+    "sha256": "b88e2a1dda2004d4890f5c2f529dcd588fad8becced514aefff1642eb9ee6d1f"
+  },
+  {
+    "path": "commits.tsv",
+    "bytes": 8043,
+    "sha256": "27df820beae98d1401941942853032c5953f7dea0ea3648e32b59ade1c4a7038"
+  },
+  {
+    "path": "file-manifest.json",
+    "bytes": 79375,
+    "sha256": "05dcdb1ef829338472de5e36fac08adb586a9c7328b1f7688017b4377d1dee63"
+  },
+  {
+    "path": "native-methods.json",
+    "bytes": 43594,
+    "sha256": "ebdd2f7c4d7746c2626c554dd8ba4aed221b376c9b0d290957abbedcca9e4470"
+  },
+  {
+    "path": "packaging-checks.json",
+    "bytes": 473,
+    "sha256": "76b6454bc0b255eb79249d16a0857590f69a6bc4700b859e3caedb2d6fc976ce"
+  },
+  {
+    "path": "README.md",
+    "bytes": 4416,
+    "sha256": "3406b34a591cc4e1ac6ab267e017ee9bcf6f093b2b3fadd9acd5f1cb5b98cde9"
+  },
+  {
+    "path": "scope-review.json",
+    "bytes": 37554,
+    "sha256": "628d131e23a6cf3507d752b9fa1ae01915fc2afc5e11541493a5b1487605c4e0"
+  },
+  {
+    "path": "verify_forward_apply.py",
+    "bytes": 8228,
+    "sha256": "2f3273b28c7654d0b34861418dcdef73017382cc67c797e4708e6686b58fe887"
+  }
+]

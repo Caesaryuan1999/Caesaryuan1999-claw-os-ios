@@ -1,0 +1,15 @@
+{
+  "sourceTarget": "e6d0aa978daf6c2aa92f88e88deb2060658226f9",
+  "forwardApply": "PASS",
+  "modeBlobSHA99": "PASS",
+  "currentIndexUnchanged": true,
+  "privateBlobsRead": false,
+  "nativeExecution": "new UI candidate NOT_RUN; parent CI23 0a7 SDK44/UIrunner167 PASS,VLC3PASS1FAIL; navigation/package/cold NOT_RUN",
+  "UIExecution": "NOT_RUN",
+  "methodInventoryOnly": {
+    "SDK": 44,
+    "UIrunner": 167,
+    "VLChost": 4,
+    "navigationSeparate": 3
+  }
+}
