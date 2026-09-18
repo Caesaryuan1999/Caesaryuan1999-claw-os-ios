@@ -1,0 +1,11 @@
+{
+  "evidence_level": "Windows actual Python runner with controlled macOS subprocess boundaries; not macOS",
+  "runner_source_parent": "1125ef87b14b24343dd1d3f7825cc8c28a9867f1",
+  "command": "rtk python -B docs/handoff/R3/CI-SMOKE/check_smoke_runner.py",
+  "actual_method_count": 43,
+  "passed": 35,
+  "failures": 7,
+  "errors": 1,
+  "failure_summary": "8 new diagnostic cases fail: no boot output artifacts; no post-timeout observation. Original 35 cases pass.",
+  "test_sha256": "9d25fb592e0d1309bae40a2d711960d51481a9948e4eec320319857e088f28c6"
+}

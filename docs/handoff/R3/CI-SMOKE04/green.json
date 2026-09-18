@@ -1,0 +1,20 @@
+{
+  "evidence_level": "Windows actual Python runner; macOS subprocess/libproc/time boundary controlled, not macOS execution",
+  "command": "rtk python -B docs/handoff/R3/CI-SMOKE/check_smoke_runner.py",
+  "actual_method_count": 43,
+  "passed": 43,
+  "failures": 0,
+  "errors": 0,
+  "smoke_methods": 35,
+  "export_methods": 8,
+  "new_smoke_methods": 8,
+  "checks": {
+    "process_install_launch_screenshot_crash_body_unchanged": true,
+    "native_tests_selectors_and_workflow_unchanged": true,
+    "production_UI_and_helpers_unchanged_since_1125": true
+  },
+  "sha256": {
+    "Scripts/ci/smoke_simulator_launch.py": "c90a3457f3af8941bcb10350a82a676c96f4b1d0d3151486723b2679bd11ed51",
+    "docs/handoff/R3/CI-SMOKE/check_smoke_runner.py": "9d25fb592e0d1309bae40a2d711960d51481a9948e4eec320319857e088f28c6"
+  }
+}

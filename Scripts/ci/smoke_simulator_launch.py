@@ -52,18 +52,72 @@ def run_smoke(build_root):
     executable = None
     pid = None
 
+    boot_steps = {"boot_tested_device", "wait_tested_device_boot"}
+
+    def record_boot_output(label, stdout, stderr):
+        if label not in boot_steps:
+            return True
+        entry = {"step": label, "limit_per_stream_bytes": 65536, "retained_region": "tail"}
+        manifest.setdefault("boot_command_output", []).append(entry)
+        try:
+            for stream, value in (("stdout", stdout), ("stderr", stderr)):
+                data = value.encode("utf-8") if isinstance(value, str) else (value or b"")
+                retained = data[-65536:]
+                target = output / (label + "." + stream + ".txt")
+                target.write_bytes(retained)
+                entry[stream] = {"file": target.name, "captured": value is not None,
+                                 "original_bytes": len(data), "saved_bytes": len(retained),
+                                 "truncated": len(data) > len(retained),
+                                 "sha256": hashlib.sha256(retained).hexdigest()}
+            return True
+        except Exception as error:
+            # No raw exception text/path and no replacement of a prior boot failure.
+            entry["error_type"] = type(error).__name__
+            return False
+
+    def observe_boot_timeout():
+        # One read-only query, with its own small budget. Even Booted never rescues the failure.
+        observation = {"status": "unknown", "simulator_id": manifest["simulator_id"],
+                       "timeout_seconds": 5}
+        manifest["boot_timeout_observation"] = observation
+        observed_at = time.monotonic()
+        try:
+            completed = subprocess.run(["xcrun", "simctl", "list", "devices", "--json"],
+                                       capture_output=True, text=True, timeout=5, check=False)
+            observation["returncode"] = completed.returncode
+            if completed.returncode != 0:
+                return
+            devices = json.loads(completed.stdout)
+            matches = [
+                {"runtime": runtime, "state": device.get("state"), "isAvailable": device.get("isAvailable")}
+                for runtime, entries in devices["devices"].items() if "iOS" in runtime
+                for device in entries if device.get("udid", "").upper() == manifest["simulator_id"]
+            ]
+            observation["matches"] = matches
+            observation["status"] = "observed" if len(matches) == 1 else "missing_or_ambiguous"
+        except Exception as error:
+            observation["error_type"] = type(error).__name__
+        finally:
+            observation["elapsed_seconds"] = round(time.monotonic() - observed_at, 6)
+
     def command(label, args, required=True):
         command_started = time.monotonic()
         try:
             completed = subprocess.run(args, capture_output=True, text=True, timeout=45, check=False)
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as error:
             manifest["commands"].append({"step": label, "returncode": None, "timeout_seconds": 45,
                                          "elapsed_seconds": round(time.monotonic() - command_started, 6)})
+            record_boot_output(label, error.stdout, error.stderr)
+            if label in boot_steps:
+                observe_boot_timeout()
             raise RuntimeError(label + " exceeded 45 seconds") from None
         manifest["commands"].append({"step": label, "returncode": completed.returncode,
                                      "elapsed_seconds": round(time.monotonic() - command_started, 6)})
+        output_saved = record_boot_output(label, completed.stdout, completed.stderr)
         if completed.returncode != 0 and required:
             raise RuntimeError(label + " failed with exit " + str(completed.returncode))
+        if not output_saved:
+            raise RuntimeError("Boot command output could not be recorded")
         return completed
 
     def previous_app_processes(installed, label):

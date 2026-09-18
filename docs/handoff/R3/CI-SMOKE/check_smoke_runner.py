@@ -23,7 +23,8 @@ BUNDLE = "app.claw.synthetic"
 
 class SmokeChecks(unittest.TestCase):
     def exercise(self, failure=None, initial_state="Booted", simulator_available=True,
-                 running=False, other_process=None):
+                 running=False, other_process=None, boot_streams=(None, None),
+                 diagnostic_case=None):
         fixture_root = Path(__file__).resolve().parent / ".fixtures"
         fixture_root.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=fixture_root) as temporary:
@@ -58,7 +59,7 @@ class SmokeChecks(unittest.TestCase):
             def command(args, **kwargs):
                 nonlocal observed_state, previous_running, scan_count
                 calls.append(args)
-                code, output = 0, ""
+                code, output, error_output = 0, "", ""
                 if args[0] == "/bin/ps":
                     if args[1:] == ["-axo", "pid=,ucomm="]:
                         scan_count += 1
@@ -77,21 +78,40 @@ class SmokeChecks(unittest.TestCase):
                         self.assertEqual(args, ["/bin/ps", "-p", "1234", "-o", "pid=,stat=,ucomm="])
                         output = "1234 S Tinodios"
                 elif args[2] == "list":
+                    if kwargs["timeout"] == 5:
+                        self.assertEqual(args, ["xcrun", "simctl", "list", "devices", "--json"])
+                        if diagnostic_case == "timeout":
+                            raise subprocess.TimeoutExpired(args, 5)
+                        if diagnostic_case == "error":
+                            return subprocess.CompletedProcess(args, 7, "", "diagnostic-only failure")
+                        if diagnostic_case == "malformed":
+                            return subprocess.CompletedProcess(args, 0, "not JSON diagnostic detail", "")
+                        if diagnostic_case == "booted":
+                            observed_state = "Booted"
                     entries = [{"udid": SIM, "isAvailable": simulator_available, "state": observed_state}]
                     if failure == "missing":
                         entries[0]["udid"] = "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA"
                     elif failure == "duplicate":
                         entries += entries.copy()
+                    if kwargs["timeout"] == 5:
+                        if diagnostic_case == "missing":
+                            entries = []
+                        entries.append({"udid": "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
+                                        "isAvailable": True, "state": "Unrelated", "name": "private-other-device"})
                     output = json.dumps({"devices": {"iOS-Synthetic": entries}})
                 elif args[2] == "boot":
                     self.assertEqual(args[3], SIM)
+                    output, error_output = boot_streams
+                    if failure == "boot-start-timeout":
+                        raise subprocess.TimeoutExpired(args, 45, output=output, stderr=error_output)
                     if failure == "boot":
                         code = 1
                 elif args[2] == "bootstatus":
                     self.assertEqual(args[3:], [SIM, "-b"])
                     self.assertEqual(kwargs["timeout"], 45)
+                    output, error_output = boot_streams
                     if failure == "boot-timeout":
-                        raise subprocess.TimeoutExpired(args, 45)
+                        raise subprocess.TimeoutExpired(args, 45, output=output, stderr=error_output)
                     if failure != "still-shutdown":
                         observed_state = "Booted"
                 elif args[2] == "install" and failure == "install":
@@ -120,7 +140,7 @@ class SmokeChecks(unittest.TestCase):
                     else:
                         Path(args[-1]).write_bytes(b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR"
                                                   + (390).to_bytes(4, "big") + (844).to_bytes(4, "big"))
-                return subprocess.CompletedProcess(args, code, output, "")
+                return subprocess.CompletedProcess(args, code, output, error_output)
 
             def lookup(candidate_pid):
                 lookups.append(candidate_pid)
@@ -187,6 +207,84 @@ class SmokeChecks(unittest.TestCase):
             if failure in ("missing", "duplicate", "unavailable", "unknown-state"):
                 self.assertFalse(any(call[2] in ("boot", "bootstatus") for call in calls if call[0] == "xcrun"))
             self.assertFalse(any(call[2] in ("create", "clone") for call in calls if call[0] == "xcrun"))
+            files = {p.name: p.read_bytes() for p in (result / "launch-smoke").glob("*.txt")}
+            return manifest, files, calls
+
+    def assert_timeout_stays_closed(self, result, failed_step="wait_tested_device_boot"):
+        manifest, files, calls = result
+        self.assertEqual(manifest["failure"], failed_step + " exceeded 45 seconds")
+        self.assertEqual(manifest["status"], "FAIL")
+        self.assertFalse(any(call[2] in ("install", "launch", "terminate", "shutdown", "erase")
+                             for call in calls if call[0] == "xcrun"))
+        self.assertEqual(sum(call[2] == "boot" for call in calls if call[0] == "xcrun"), 1)
+        self.assertEqual(sum(call[2] == "list" for call in calls if call[0] == "xcrun"), 2)
+        diagnostic = manifest["boot_timeout_observation"]
+        self.assertEqual(diagnostic["timeout_seconds"], 5)
+        self.assertEqual(diagnostic["simulator_id"], SIM)
+        self.assertGreaterEqual(diagnostic["elapsed_seconds"], 0)
+        self.assertNotIn("private-other-device", json.dumps(manifest))
+        self.assertNotIn("diagnostic-only failure", json.dumps(manifest))
+        self.assertNotIn("not JSON diagnostic detail", json.dumps(manifest))
+        return manifest, files, diagnostic
+
+    def test_boot_success_keeps_only_boot_command_text(self):
+        manifest, files, _ = self.exercise(initial_state="Shutdown", boot_streams=("phase complete", "notice"))
+        self.assertEqual(len(files), 4)
+        self.assertEqual(files["boot_tested_device.stdout.txt"], b"phase complete")
+        self.assertEqual(files["wait_tested_device_boot.stderr.txt"], b"notice")
+        self.assertNotIn("boot_timeout_observation", manifest)
+
+    def test_boot_nonzero_keeps_output_and_original_failure(self):
+        manifest, files, _ = self.exercise("boot", initial_state="Shutdown", boot_streams=("partial", "boot rejected"))
+        self.assertEqual(manifest["failure"], "boot_tested_device failed with exit 1")
+        self.assertEqual(files["boot_tested_device.stderr.txt"], b"boot rejected")
+        self.assertNotIn("boot_timeout_observation", manifest)
+
+    def test_boot_timeout_preserves_bounded_bytes_and_never_promotes_late_booted(self):
+        output = b"prefix" + b"x" * 70000 + b"last-stage"
+        result = self.exercise("boot-timeout", initial_state="Shutdown",
+                               boot_streams=(output, b"last-error"), diagnostic_case="booted")
+        manifest, files, diagnostic = self.assert_timeout_stays_closed(result)
+        self.assertEqual(diagnostic["status"], "observed")
+        self.assertEqual(diagnostic["matches"], [{"runtime": "iOS-Synthetic", "state": "Booted", "isAvailable": True}])
+        saved = files["wait_tested_device_boot.stdout.txt"]
+        self.assertEqual(saved, output[-65536:])
+        entry = manifest["boot_command_output"][-1]["stdout"]
+        self.assertEqual(entry["original_bytes"], len(output))
+        self.assertTrue(entry["truncated"])
+        self.assertEqual(entry["sha256"], hashlib.sha256(saved).hexdigest())
+
+    def test_boot_timeout_with_no_partial_output_remains_distinct_from_capture(self):
+        manifest, files, _ = self.assert_timeout_stays_closed(self.exercise("boot-timeout", initial_state="Shutdown"))
+        self.assertEqual(files["wait_tested_device_boot.stdout.txt"], b"")
+        self.assertFalse(manifest["boot_command_output"][-1]["stdout"]["captured"])
+
+    def test_boot_timeout_diagnostic_nonzero_does_not_replace_original(self):
+        _, _, diagnostic = self.assert_timeout_stays_closed(
+            self.exercise("boot-timeout", initial_state="Shutdown", diagnostic_case="error"))
+        self.assertEqual(diagnostic["returncode"], 7)
+        self.assertEqual(diagnostic["status"], "unknown")
+
+    def test_boot_timeout_diagnostic_budget_does_not_replace_original(self):
+        _, _, diagnostic = self.assert_timeout_stays_closed(
+            self.exercise("boot-timeout", initial_state="Shutdown", diagnostic_case="timeout"))
+        self.assertEqual(diagnostic["error_type"], "TimeoutExpired")
+        self.assertEqual(diagnostic["status"], "unknown")
+
+    def test_boot_timeout_malformed_diagnostic_never_leaks_response_or_continues(self):
+        _, _, diagnostic = self.assert_timeout_stays_closed(
+            self.exercise("boot-timeout", initial_state="Shutdown", diagnostic_case="malformed"))
+        self.assertEqual(diagnostic["error_type"], "JSONDecodeError")
+        self.assertEqual(diagnostic["status"], "unknown")
+
+    def test_initial_boot_timeout_observes_only_same_uuid_once(self):
+        manifest, files, diagnostic = self.assert_timeout_stays_closed(
+            self.exercise("boot-start-timeout", initial_state="Shutdown",
+                          boot_streams=(b"boot pending", None), diagnostic_case="missing"), "boot_tested_device")
+        self.assertEqual(files["boot_tested_device.stdout.txt"], b"boot pending")
+        self.assertEqual(diagnostic["matches"], [])
+        self.assertEqual(diagnostic["status"], "missing_or_ambiguous")
+        self.assertEqual(len(manifest["commands"]), 2)
 
     def test_success_is_limited_to_cold_launch(self): self.exercise()
     def test_running_app_must_be_terminated_then_proven_absent(self): self.exercise(running=True)
