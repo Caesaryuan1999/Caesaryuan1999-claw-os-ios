@@ -27,7 +27,7 @@ def process_path(pid):
     lookup.restype = ctypes.c_int
     buffer = ctypes.create_string_buffer(4096)
     if lookup(pid, buffer, len(buffer)) <= 0:
-        raise RuntimeError("Cannot resolve launched PID executable path")
+        raise RuntimeError("Cannot resolve app PID executable path")
     return Path(os.fsdecode(buffer.value)).resolve()
 
 
@@ -53,15 +53,48 @@ def run_smoke(build_root):
     pid = None
 
     def command(label, args, required=True):
+        command_started = time.monotonic()
         try:
             completed = subprocess.run(args, capture_output=True, text=True, timeout=45, check=False)
         except subprocess.TimeoutExpired:
-            manifest["commands"].append({"step": label, "returncode": None, "timeout_seconds": 45})
+            manifest["commands"].append({"step": label, "returncode": None, "timeout_seconds": 45,
+                                         "elapsed_seconds": round(time.monotonic() - command_started, 6)})
             raise RuntimeError(label + " exceeded 45 seconds") from None
-        manifest["commands"].append({"step": label, "returncode": completed.returncode})
+        manifest["commands"].append({"step": label, "returncode": completed.returncode,
+                                     "elapsed_seconds": round(time.monotonic() - command_started, 6)})
         if completed.returncode != 0 and required:
             raise RuntimeError(label + " failed with exit " + str(completed.returncode))
         return completed
+
+    def previous_app_processes(installed, label):
+        # Query names/PIDs only, never command arguments. Do not save other processes.
+        observation = {"step": label, "state": "unknown"}
+        manifest.setdefault("prelaunch_process_observations", []).append(observation)
+        records = command(label, ["/bin/ps", "-axo", "pid=,ucomm="]).stdout.strip().splitlines()
+        if not records:
+            raise RuntimeError("Process enumeration returned no records")
+        expected = (installed / executable).resolve()
+        matching = []
+        seen = set()
+        for record in records:
+            match = re.fullmatch(r"\s*(\d+)\s+(.+?)\s*", record)
+            if not match or int(match[1]) in seen:
+                raise RuntimeError("Process enumeration returned invalid records")
+            candidate_pid = int(match[1])
+            seen.add(candidate_pid)
+            if match[2] != executable:
+                continue
+            if candidate_pid <= 0:
+                raise RuntimeError("App process enumeration returned an invalid PID")
+            # A failed lookup, including a concurrent exit, is unknown rather than absence.
+            actual = process_path(candidate_pid)
+            if actual == expected:
+                matching.append(candidate_pid)
+            elif sim_id in {part.upper() for part in actual.parts}:
+                raise RuntimeError("Same-device app process has an unexpected installed path")
+        observation.update(state="running" if matching else "not_running", pids=matching,
+                           path_method="Darwin libproc.proc_pidpath")
+        return matching
 
     def verify_process(installed):
         record = command("process_status", ["/bin/ps", "-p", str(pid), "-o", "pid=,stat=,ucomm="]).stdout.strip()
@@ -140,12 +173,18 @@ def run_smoke(build_root):
             raise RuntimeError("The tested iOS simulator is not booted")
         command("install", ["xcrun", "simctl", "install", sim_id, str(app)])
         installed = Path(command("installed_container", ["xcrun", "simctl", "get_app_container", sim_id, bundle, "app"]).stdout.strip()).resolve()
-        if sim_id not in str(installed).upper() or not installed.is_dir():
+        if sim_id not in {part.upper() for part in installed.parts} or not installed.is_dir():
             raise RuntimeError("Installed container is not on the tested simulator")
         if sha256(installed / executable) != manifest["binary_sha256"]:
             raise RuntimeError("Installed executable differs from tested app")
-        # App may already be absent; terminate is preparation, not evidence of a successful launch.
-        command("terminate_previous", ["xcrun", "simctl", "terminate", sim_id, bundle], required=False)
+        previous = previous_app_processes(installed, "processes_before_launch")
+        if previous:
+            command("terminate_previous", ["xcrun", "simctl", "terminate", sim_id, bundle])
+            if previous_app_processes(installed, "processes_after_terminate"):
+                raise RuntimeError("App process remained after termination")
+        # Only a successful path-checked absence observation proves this precondition.
+        # Do not turn a failed/timeout terminate or an unresolved PID into a cold launch.
+        manifest["cold_start_precondition"] = "confirmed_not_running"
         launched = command("launch", ["xcrun", "simctl", "launch", sim_id, bundle]).stdout.strip()
         match = re.fullmatch(re.escape(bundle) + r":\s*(\d+)", launched)
         if not match or int(match[1]) <= 0:
