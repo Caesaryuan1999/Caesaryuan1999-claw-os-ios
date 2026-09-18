@@ -1,0 +1,82 @@
+{
+  "parent_source": "fdedf825490ea9fa420b54033e8c48d65f8fc8aa",
+  "level": "Windows source/original artifact checks; successor native NOT_RUN",
+  "checks": {
+    "only_capture_production_body_changed": true,
+    "capture_layout_then_geometry_without_suppression": true,
+    "element_category_section_index_intersection_filters": true,
+    "same_ten_methods": true,
+    "seven_other_method_bodies_unchanged": true,
+    "every_original_assertion_line_preserved": true,
+    "real_storyboard_content_before_push": true,
+    "no_direct_appearance_call": true,
+    "observes_real_remove_without_setting_retired": true,
+    "three_second_condition_deadline_and_no_animation_disable": true
+  },
+  "ci32": {
+    "sdk_pass": 44,
+    "storage_pass": 195,
+    "storage_fail": 3,
+    "storage_skip": 0,
+    "navigation_package_cold": "NOT_RUN",
+    "evidence": [
+      {
+        "zip_member": "ios-01-a-20260918-171147/storage-summary.json",
+        "bytes": 2772,
+        "sha256": "8a44b7cafdd996b04c1c00e4c13f25485665c3896e6ec674d77940f984a3d7dc"
+      },
+      {
+        "zip_member": "ios-01-a-20260918-171147/storage.log",
+        "bytes": 6161441,
+        "sha256": "96488e64d736486514dacd30ff96a6c549f0368535861d3aca73ede9f8059b21"
+      },
+      {
+        "zip_member": "ios-01-a-20260918-171147/storage-attachments/manifest.json",
+        "bytes": 44911,
+        "sha256": "5c229e0117b39548b9371be976718f301061e069467c3b7f232c8fac23fd6dfc"
+      },
+      {
+        "zip_member": "ios-01-a-20260918-171147/storage-attachments/95F2A055-062A-47B3-9B32-D69292141990.json",
+        "bytes": 291,
+        "sha256": "64caf0b3e0457a8b6c4befd8c5b9d2e5a07db1f9d66db67e250f8fd6e5e0ddb9"
+      },
+      {
+        "zip_member": "ios-01-a-20260918-171147/storage-attachments/4645065A-F999-45FB-8BDB-A31340C8103D.png",
+        "bytes": 90389,
+        "sha256": "25902b336f7cef0bc53255db7d25792730496432bc1aab99a0c69730920f023d"
+      },
+      {
+        "zip_member": "ios-01-a-20260918-171147/storage-attachments/E7A2C094-92F0-4053-B2AF-F1CBDB445822.ips",
+        "bytes": 49346,
+        "sha256": "cd7b23c6783b3b776f67045202f0c63ccf2af81db73da33d9181dba0c8eb4d21"
+      },
+      {
+        "zip_member": "ios-01-a-20260918-171147/storage-attachments/89D4D6C3-9608-4C88-AC7B-82E5E34044AA.json",
+        "bytes": 293,
+        "sha256": "bd19807ca116a6e26165e685e51407469f6872b2006112643afdeabe7d8df95e"
+      },
+      {
+        "zip_member": "ios-01-a-20260918-171147/storage-attachments/E7E61474-ABBB-4D75-BCCB-FBA19D602591.png",
+        "bytes": 31118,
+        "sha256": "6f7e5bd6f629e5696056cd8ca98cd0aefbb963cfa4cc5c9562201b45888a2796"
+      }
+    ]
+  },
+  "successor_expected": {
+    "native": 242,
+    "navigation": 3,
+    "chat_scroll_methods": 10
+  },
+  "sources": [
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "raw_sha256": "76eda90a383a58d640ef6a464c75a0a3051863ef7cf68b553cc1e3beca87d77b",
+      "git_blob": "17ff3715883a6975b2f4ab5963e98f991ceb4735"
+    },
+    {
+      "path": "TinodiosUITests/ChatScrollTests.swift",
+      "raw_sha256": "37d2737810c08eb7ca61fe569df356dd95a946d2efe2e048fd64e50184280070",
+      "git_blob": "7b080707e3d0fa99126c768e81962cbc3287ac23"
+    }
+  ]
+}

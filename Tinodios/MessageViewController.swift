@@ -1679,11 +1679,18 @@ extension MessageViewController {
             return ChatViewportSnapshot(anchors: [], offset: .zero, atBottom: false,
                                         interaction: chatInteractionRevision)
         }
+        // A contentOffset change can precede UICollectionView's visible-cell
+        // cache update. Capture current layout geometry, including newly visible
+        // neighbors, without suppressing scroll delegate intent invalidation.
+        list.layoutIfNeeded()
         let top = list.contentOffset.y + list.adjustedContentInset.top
         let bottom = list.contentOffset.y + list.bounds.height - list.adjustedContentInset.bottom
-        let attributes = list.indexPathsForVisibleItems.compactMap {
-            list.layoutAttributesForItem(at: $0)
-        }.filter { $0.indexPath.item < messages.count && $0.frame.maxY > top && $0.frame.minY < bottom }
+        let viewport = CGRect(x: list.contentOffset.x + list.adjustedContentInset.left, y: top,
+                              width: max(0, list.bounds.width - list.adjustedContentInset.left - list.adjustedContentInset.right),
+                              height: max(0, bottom - top))
+        let attributes = (list.collectionViewLayout.layoutAttributesForElements(in: viewport) ?? [])
+            .filter { $0.representedElementCategory == .cell && $0.indexPath.section == 0 &&
+                messages.indices.contains($0.indexPath.item) && $0.frame.intersects(viewport) }
             .sorted { $0.frame.minY < $1.frame.minY }
         let anchors = attributes.map { attribute -> ChatViewportAnchor in
             let message = messages[attribute.indexPath.item]
