@@ -1,0 +1,7 @@
+{
+  "source": "d61855fd1534cb864fb5f6848eec3fa1b7dcce4a",
+  "evidence": "SOURCE policy failure only; Swift red NOT_RUN on Windows",
+  "exit_code": 1,
+  "required_exact_ack_guard_present": false,
+  "counterexample": "dispatch resolves matching ctrl 205/300; prior delCurrentUser ignores packet before local deletion/logout"
+}

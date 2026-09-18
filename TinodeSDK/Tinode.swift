@@ -1591,17 +1591,28 @@ public class Tinode {
         guard let ownerUid = myUid else { return PromisedReply(error: TinodeError.invalidState("No authenticated account")) }
         let msgId = getNextMsgId()
         let msg = ClientMessage<Int, Int>(del: MsgClientDel(id: msgId, hard: hard))
-        return sendWithPromise(payload: msg, with: msgId).thenApply { [weak self] _ in
+        return sendWithPromise(payload: msg, with: msgId).thenApply { [weak self] packet in
             guard let this = self else { return nil }
-            return this.withActiveSession { () -> PromisedReply<ServerMessage>? in
-                guard this.myUid == ownerUid, this.store?.myUid == ownerUid else {
-                    return PromisedReply(error: TinodeError.invalidState("Session changed"))
-                }
-                this.store?.deleteAccount(ownerUid)
-                this.logout()
-                return nil
-            } ?? PromisedReply(error: TinodeError.invalidState("Session ended"))
+            return this.finishAccountDeletion(packet: packet, requestId: msgId, ownerUid: ownerUid)
         }
+    }
+
+    // Shared by the real request callback and native tests. A generic resolved
+    // Promise may contain 205, 3xx or metadata; none confirms account deletion.
+    func finishAccountDeletion(packet: ServerMessage?, requestId: String,
+                               ownerUid: String) -> PromisedReply<ServerMessage>? {
+        guard let ctrl = packet?.ctrl,
+              ctrl.id == requestId, ctrl.code == ServerMessage.kStatusOk else {
+            return PromisedReply(error: TinodeError.requestOutcomeUnknown("账号注销结果未确认，请重新登录核实。"))
+        }
+        return withActiveSession { () -> PromisedReply<ServerMessage>? in
+            guard self.myUid == ownerUid, self.store?.myUid == ownerUid else {
+                return PromisedReply(error: TinodeError.invalidState("Session changed"))
+            }
+            self.store?.deleteAccount(ownerUid)
+            self.logout()
+            return nil
+        } ?? PromisedReply(error: TinodeError.invalidState("Session ended"))
     }
 
     /// Low-level request to delete topic. Use {@link Topic#delete()} instead.

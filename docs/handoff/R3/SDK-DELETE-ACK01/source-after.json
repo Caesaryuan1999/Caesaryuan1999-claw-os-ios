@@ -1,0 +1,17 @@
+{
+  "exact_dispatch_preserved": true,
+  "exact_sendWithPromise_preserved": true,
+  "added_native_methods": [
+    "testAccountDeletion300CannotDeleteOrLogout",
+    "testAccountDeletion205CannotDeleteOrLogout",
+    "testAccountDeletion200ForExactRequestDeletesOnlyCapturedAccountAndRetires",
+    "testAccountDeletionMissingControlOrWrongRequestCannotCleanup",
+    "testAccountDeletion403CannotCleanupEvenIfPassedToCompletion",
+    "testAccountDeletionRetiredOwnerIgnoresLate200",
+    "testAccountDeletionStoreAccountChangeRejectsLate200"
+  ],
+  "expected_sdk": 37,
+  "expected_cumulative": 169,
+  "native_execution": "NOT_RUN; no Swift on Windows",
+  "production_files": 1
+}

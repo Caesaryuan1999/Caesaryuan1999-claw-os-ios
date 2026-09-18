@@ -182,6 +182,96 @@ class TinodeSDKTests: XCTestCase {
         XCTAssertEqual(try reply.getResult(), 42)
     }
 
+
+    private func deletionFixture() -> (Tinode, AccountDeletionStoreSpy) {
+        let store = AccountDeletionStoreSpy()
+        let sdk = Tinode(for: "delete-fixture", authenticateWith: "fixture", persistDataIn: store)
+        sdk.authToken = "synthetic-token"
+        return (sdk, store)
+    }
+
+    private func deletionPacket(code: Int, id: String = "delete-fixture") throws -> ServerMessage {
+        let payload: [String: Any] = ["ctrl": ["id": id, "code": code, "text": "fixture"]]
+        return try Tinode.jsonDecoder.decode(ServerMessage.self,
+            from: JSONSerialization.data(withJSONObject: payload))
+    }
+
+    private func assertDeletionUnknown(code: Int, file: StaticString = #filePath, line: UInt = #line) throws {
+        let (sdk, store) = deletionFixture()
+        let outcome = sdk.finishAccountDeletion(packet: try deletionPacket(code: code),
+            requestId: "delete-fixture", ownerUid: "usrDeleteA")
+        XCTAssertThrowsError(try XCTUnwrap(outcome).getResult(), file: file, line: line) { error in
+            guard case TinodeError.requestOutcomeUnknown = error else {
+                XCTFail("Expected uncertain deletion outcome", file: file, line: line); return
+            }
+        }
+        XCTAssertTrue(store.deleted.isEmpty, file: file, line: line)
+        XCTAssertEqual(store.logoutCalls, 0, file: file, line: line)
+        XCTAssertTrue(sdk.isSessionActive, file: file, line: line)
+        XCTAssertEqual(sdk.authToken, "synthetic-token", file: file, line: line)
+    }
+
+    func testAccountDeletion300CannotDeleteOrLogout() throws {
+        try assertDeletionUnknown(code: 300)
+    }
+
+    func testAccountDeletion205CannotDeleteOrLogout() throws {
+        try assertDeletionUnknown(code: 205)
+    }
+
+    func testAccountDeletion200ForExactRequestDeletesOnlyCapturedAccountAndRetires() throws {
+        let (sdk, store) = deletionFixture()
+        XCTAssertNil(sdk.finishAccountDeletion(packet: try deletionPacket(code: 200),
+            requestId: "delete-fixture", ownerUid: "usrDeleteA"))
+        XCTAssertEqual(store.deleted, ["usrDeleteA"])
+        XCTAssertFalse(sdk.isSessionActive)
+        XCTAssertNil(sdk.myUid)
+        XCTAssertNil(sdk.authToken)
+    }
+
+    func testAccountDeletionMissingControlOrWrongRequestCannotCleanup() throws {
+        for packet in [nil, ServerMessage(), try deletionPacket(code: 200, id: "other-request")] {
+            let (sdk, store) = deletionFixture()
+            let outcome = sdk.finishAccountDeletion(packet: packet,
+                requestId: "delete-fixture", ownerUid: "usrDeleteA")
+            XCTAssertThrowsError(try XCTUnwrap(outcome).getResult())
+            XCTAssertTrue(store.deleted.isEmpty)
+            XCTAssertEqual(store.logoutCalls, 0)
+            XCTAssertTrue(sdk.isSessionActive)
+        }
+        XCTAssertThrowsError(try Tinode.jsonDecoder.decode(ServerMessage.self, from: Data("{".utf8)))
+    }
+
+    func testAccountDeletion403CannotCleanupEvenIfPassedToCompletion() throws {
+        // Public dispatch rejects 403 before this helper; source policy preserves that branch.
+        try assertDeletionUnknown(code: 403)
+    }
+
+    func testAccountDeletionRetiredOwnerIgnoresLate200() throws {
+        let (sdk, store) = deletionFixture()
+        sdk.logout()
+        store.myUid = "usrDeleteB"
+        let priorLogoutCount = store.logoutCalls
+        let outcome = sdk.finishAccountDeletion(packet: try deletionPacket(code: 200),
+            requestId: "delete-fixture", ownerUid: "usrDeleteA")
+        XCTAssertThrowsError(try XCTUnwrap(outcome).getResult())
+        XCTAssertTrue(store.deleted.isEmpty)
+        XCTAssertEqual(store.myUid, "usrDeleteB")
+        XCTAssertEqual(store.logoutCalls, priorLogoutCount)
+    }
+
+    func testAccountDeletionStoreAccountChangeRejectsLate200() throws {
+        let (sdk, store) = deletionFixture()
+        store.myUid = "usrDeleteB"
+        let outcome = sdk.finishAccountDeletion(packet: try deletionPacket(code: 200),
+            requestId: "delete-fixture", ownerUid: "usrDeleteA")
+        XCTAssertThrowsError(try XCTUnwrap(outcome).getResult())
+        XCTAssertTrue(store.deleted.isEmpty)
+        XCTAssertEqual(store.myUid, "usrDeleteB")
+        XCTAssertEqual(store.logoutCalls, 0)
+        XCTAssertTrue(sdk.isSessionActive)
+    }
+
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
     }
@@ -332,4 +422,65 @@ class TinodeSDKTests: XCTestCase {
         }
     }
 
+}
+
+// Only local persistence effects are observed; Tinode session and completion logic are production.
+private final class AccountDeletionStoreSpy: Storage {
+    var initializationError: String? { nil }
+    var myUid: String? = "usrDeleteA"
+    var deviceToken: String?
+    var isReady: Bool { false }
+    var deleted = [String]()
+    var logoutCalls = 0
+    func logout() { logoutCalls += 1; myUid = nil }
+    func deleteAccount(_ uid: String) { deleted.append(uid) }
+    func setMyUid(uid: String, credMethods: [String]?) { fatalError("Unexpected persistence operation in deletion fixture") }
+    func setTimeAdjustment(adjustment: TimeInterval) { fatalError("Unexpected persistence operation in deletion fixture") }
+    func topicGetAll(from tinode: Tinode?) -> [TopicProto]? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func topicGet(from tinode: Tinode?, withName name: String?) -> TopicProto? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func topicAdd(topic: TopicProto) -> Int64 { fatalError("Unexpected persistence operation in deletion fixture") }
+    func topicUpdate(topic: TopicProto) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func topicDelete(topic: TopicProto, hard: Bool) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func setRead(topic: TopicProto, read: Int) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func setRecv(topic: TopicProto, recv: Int) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func subAdd(topic: TopicProto, sub: SubscriptionProto) -> Int64 { fatalError("Unexpected persistence operation in deletion fixture") }
+    func subUpdate(topic: TopicProto, sub: SubscriptionProto) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func subNew(topic: TopicProto, sub: SubscriptionProto) -> Int64 { fatalError("Unexpected persistence operation in deletion fixture") }
+    func subDelete(topic: TopicProto, sub: SubscriptionProto) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getSubscriptions(topic: TopicProto) -> [SubscriptionProto]? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func userGet(uid: String) -> UserProto? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func userAdd(user: UserProto) -> Int64 { fatalError("Unexpected persistence operation in deletion fixture") }
+    func userUpdate(user: UserProto) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgReceived(topic: TopicProto, sub: SubscriptionProto?, msg: MsgServerData?) -> Message? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgSend(topic: TopicProto, data: Drafty, head: [String: JSONValue]?) -> Message? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgDraft(topic: TopicProto, data: Drafty, head: [String: JSONValue]?) -> Message? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgDraftUpdate(topic: TopicProto, dbMessageId: Int64, data: Drafty) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgReady(topic: TopicProto, dbMessageId: Int64, data: Drafty) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgSyncing(topic: TopicProto, dbMessageId: Int64, sync: Bool) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgClaim(topic: TopicProto, message: Message) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgFailed(topic: TopicProto, dbMessageId: Int64) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgRejected(topic: TopicProto, dbMessageId: Int64) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgDiscardDraft(topic: TopicProto, dbMessageId: Int64) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgUnconfirmed(topic: TopicProto, dbMessageId: Int64) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgPruneFailed(topic: TopicProto) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgDiscard(topic: TopicProto, dbMessageId: Int64) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgDiscard(topic: TopicProto, seqId: Int) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgDelivered(topic: TopicProto, dbMessageId: Int64, timestamp: Date, seq: Int) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgMarkToDelete(topic: TopicProto, from idLo: Int, to idHi: Int, markAsHard: Bool) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgMarkToDelete(topic: TopicProto, ranges: [MsgRange]?, markAsHard: Bool) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgDelete(topic: TopicProto, delete id: Int, deleteFrom idLo: Int, deleteTo idHi: Int) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgDelete(topic: TopicProto, delete id: Int, deleteAllIn ranges: [MsgRange]?) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgRecvByRemote(sub: SubscriptionProto, recv: Int?) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgReadByRemote(sub: SubscriptionProto, read: Int?) -> Bool { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getCachedMessagesRange(topic: TopicProto) -> MsgRange? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func msgIsCached(topic: TopicProto, ranges: [MsgRange]) -> [MsgRange] { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getMissingRanges(topic: TopicProto, startFrom: Int, pageSize: Int, newer: Bool) -> [MsgRange] { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getMessageById(dbMessageId: Int64) -> Message? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getMessagePreviewById(dbMessageId: Int64) -> Message? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getQueuedMessages(topic: TopicProto) -> [Message]? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getQueuedMessageDeletes(topic: TopicProto, hard: Bool) -> [MsgRange]? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getLatestMessagePreviews() -> [Message]? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getMessagePage(topic: TopicProto, from: Int, limit: Int, forward: Bool) -> [Message]? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getMessage(fromTopic topic: TopicProto, byEffectiveSeqId seqId: Int) -> Message? { fatalError("Unexpected persistence operation in deletion fixture") }
+    func getAllMsgVersions(fromTopic topic: TopicProto, forSeq seqId: Int, limit: Int?) -> [Int]? { fatalError("Unexpected persistence operation in deletion fixture") }
 }
