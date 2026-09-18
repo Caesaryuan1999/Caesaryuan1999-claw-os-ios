@@ -55,7 +55,7 @@ class SettingsSecurityViewController: UITableViewController {
         anonUsersPermissions.textLabel?.text = NSLocalizedString("访客用户", comment: "Anonymous users")
         actionChangePassword.textLabel?.text = NSLocalizedString("修改密码", comment: "Change password")
         actionBlockedContacts.textLabel?.text = NSLocalizedString("已屏蔽联系人", comment: "Blocked contacts")
-        actionDeleteAccount.textLabel?.text = NSLocalizedString("删除账号", comment: "Delete account")
+        actionDeleteAccount.textLabel?.text = NSLocalizedString("注销账号", comment: "Delete account")
 
         configureSecurityCell(authUsersPermissions, title: "已登录用户", symbolName: "person.crop.circle",
                               detail: authPermissionsLabel.text)
@@ -63,7 +63,7 @@ class SettingsSecurityViewController: UITableViewController {
                               detail: anonPermissionsLabel.text)
         configureSecurityCell(actionChangePassword, title: "修改密码", symbolName: "key")
         configureSecurityCell(actionBlockedContacts, title: "已屏蔽联系人", symbolName: "hand.raised")
-        configureSecurityCell(actionDeleteAccount, title: "删除账号", symbolName: "trash", destructive: true)
+        configureSecurityCell(actionDeleteAccount, title: "注销账号", symbolName: "trash", destructive: true)
 
         // Logout is presented on the account overview screen. Keep the old static
         // cell connected for backwards-compatible storyboards, but remove it here.
@@ -394,10 +394,14 @@ class SettingsSecurityViewController: UITableViewController {
         guard let owner = tinode, Cache.isCurrent(owner) else { return }
         let uid = owner.myUid
         let generation = Cache.sessionGeneration
-        let alert = UIAlertController(title: nil, message: NSLocalizedString("确定要删除账号？此操作无法撤销。", comment: "Warning in delete account alert"), preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: NSLocalizedString("取消", comment: ""), style: .cancel, handler: nil))
+        let alert = UIAlertController(title: "注销账号",
+            message: "注销后将无法再用此账号登录。你当前拥有的群组也将被删除。在其他群组或与他人的聊天中，已发送的消息可能保留。此操作无法撤销。",
+            preferredStyle: .alert)
+        let cancel = UIAlertAction(title: "取消", style: .cancel)
+        alert.addAction(cancel)
+        alert.preferredAction = cancel
         alert.addAction(UIAlertAction(
-            title: NSLocalizedString("删除", comment: "Alert action"), style: .default,
+            title: "注销账号", style: .destructive,
             handler: { [weak self] _ in
                 self?.deleteAccount(owner: owner, uid: uid, generation: generation)
             }))

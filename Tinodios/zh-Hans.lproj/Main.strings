@@ -233,7 +233,7 @@
 "FeF-3T-sWp.text" = "添加成员";
 
 /* Class = "UILabel"; text = "Delete account"; ObjectID = "Fjs-5K-JCI"; */
-"Fjs-5K-JCI.text" = "删除帐户";
+"Fjs-5K-JCI.text" = "注销账号";
 
 /* Class = "UILabel"; text = "Server"; ObjectID = "FKi-Zf-cyS"; */
 "FKi-Zf-cyS.text" = "服务器";
