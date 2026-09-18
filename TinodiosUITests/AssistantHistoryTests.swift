@@ -363,14 +363,19 @@ final class AssistantHistoryTests: XCTestCase {
             let model = fixture.scope.history
             var held: [AssistantFixtureProtocol] = []
             AssistantFixtureProtocol.handler = { held.append($0) }
-            model.loadConversations(); model.loadConversations()
-            try AssistantFixture.until { held.count == 2 }
+            func waitForStage(_ stage: String, _ condition: () -> Bool) throws {
+                try XCTContext.runActivity(named: stage) { _ in try AssistantFixture.until(condition) }
+            }
+            model.loadConversations()
+            try waitForStage("first request started and remains pending") { held.count == 1 }
+            model.loadConversations()
+            try waitForStage("both requests started and remain pending") { held.count == 2 }
             held[1].reply(AssistantFixture.list([AssistantFixture.conversation(AssistantFixture.second)]))
-            try AssistantFixture.until { !model.listLoading }
+            try waitForStage("new page response consumed") { !model.listLoading }
             var oldConsumed = false
             fixture.afterNextMainGate = { oldConsumed = true }
             held[0].reply(AssistantFixture.list([AssistantFixture.conversation()]))
-            try AssistantFixture.until { oldConsumed }
+            try waitForStage("old page response reached its generation gate") { oldConsumed }
             XCTAssertEqual(model.conversations.first?.conversation_id, AssistantFixture.second)
             fixture.slotActive = false
             XCTAssertFalse(fixture.scope.isCurrent)
