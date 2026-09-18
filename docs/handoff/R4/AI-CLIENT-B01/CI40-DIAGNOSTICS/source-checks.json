@@ -1,0 +1,40 @@
+{
+  "scope": "Windows exact-source preservation; no native execution",
+  "baseline": "34b675e7f1db76c90ca112e0f2588f1ddfb97696",
+  "packaging_parent": "927c89c7b164a5f806c347dad919202f24d54425",
+  "source": "TinodiosUITests/AssistantStreamTests.swift",
+  "old_blob": "279f5699f5c7b9d1fc095841469921add7ac2ff3",
+  "old_sha256": "944c08471fdd5889584b0f064a38c4a2bc05c3c4211ea9c2bb3a6c38af76e221",
+  "new_sha256": "33d5b1a20dcbbcf8ba00c0e85a44058a8b1ea5eb096edbc2636c27a859246bfb",
+  "checks": {
+    "only_test_file_changed": true,
+    "method_count_7_same": true,
+    "six_other_methods_byte_identical": true,
+    "all_seven_raw_responses_byte_identical": true,
+    "all_original_refusal_assertion_lines_preserved": true,
+    "five_second_wait_unchanged": true,
+    "sixty_second_test_byte_identical": true,
+    "case_4410_still_header_only": true,
+    "diagnostic_rows_bound_128": true,
+    "diagnostic_helper_no_payload_or_error_strings": true
+  },
+  "unchanged_methods": [
+    "testProductionParserHandlesEveryUTF8BoundaryCRLFMultilineAndHeartbeat",
+    "testMalformedIDsUnknownStatesLargeFramesAndTruncatedUTF8FailClosed",
+    "testAccessControlHasNoPersistentIDAndDeadlineNeverSlides",
+    "testRealSocketChunksProduceEventsBeforeEOFAndStopUsesAnotherConnection",
+    "testRealSocketOldStopIsRetiredBeforeNewConversationSubmission",
+    "testRealSocketHeartbeatCannotExtendAbsoluteSixtySecondDeadline"
+  ],
+  "artifact": {
+    "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260919\\R4-ios-ci40-evidence.zip",
+    "sha256": "dc40962c88da1604ae6d7361e2e80980226e13a91e5cb91bd687b72c9dac1b07",
+    "ci40_native_passed": 292,
+    "ci40_native_failed": 1,
+    "ci40_native_skipped": 0,
+    "navigation_package_cold": "NOT_RUN"
+  },
+  "root_cause": "OPEN: original failure omitted case/delegate/send stages",
+  "expected_native": 293,
+  "expected_navigation": 3
+}

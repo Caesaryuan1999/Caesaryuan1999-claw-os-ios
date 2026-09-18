@@ -10,9 +10,14 @@ private final class AssistantSocketServer {
     struct Request { let method: String; let path: String; let headers: [String: String]; let body: Data }
     final class Reply {
         let connection: NWConnection
+        var sendObservation: ((Int, NWError?) -> Void)?
         init(_ connection: NWConnection) { self.connection = connection }
         func send(_ data: Data, completion: (() -> Void)? = nil) {
-            connection.send(content: data, completion: .contentProcessed { _ in completion?() })
+            let observation = sendObservation
+            connection.send(content: data, completion: .contentProcessed { error in
+                observation?(data.count, error)
+                completion?()
+            })
         }
         func json(_ value: Any, status: Int = 200) {
             let body = try! JSONSerialization.data(withJSONObject: value)
@@ -95,6 +100,56 @@ private final class AssistantSocketServer {
                 }
             }
             if end { peer.cancel() } else { self.read(peer, bytes: all) }
+        }
+    }
+}
+
+/// Fixed fixture categories and counts only; never captures request or response contents.
+private final class AssistantRefusalTrace {
+    private let lock = NSLock()
+    private let started = ProcessInfo.processInfo.systemUptime
+    private var rows: [[String: Any]] = []
+    private var dropped = 0
+
+    func record(_ stage: String, ordinal: Int, fixture: Int, values: [String: Any] = [:]) {
+        lock.lock(); defer { lock.unlock() }
+        guard rows.count < 128 else { dropped += 1; return }
+        var row = values
+        row["stage"] = stage; row["case_ordinal"] = ordinal; row["fixture_case"] = fixture
+        row["elapsed_us"] = Int((ProcessInfo.processInfo.systemUptime - started) * 1_000_000)
+        rows.append(row)
+    }
+    func data() throws -> Data {
+        lock.lock(); let snapshot = rows; let omitted = dropped; lock.unlock()
+        return try JSONSerialization.data(withJSONObject: ["events": snapshot, "dropped": omitted],
+                                          options: [.prettyPrinted, .sortedKeys])
+    }
+    static func sendResult(bytes: Int, error: NWError?) -> [String: Any] {
+        var value: [String: Any] = ["bytes": bytes, "success": error == nil]
+        if let error = error {
+            switch error {
+            case .posix(let code): value["error_category"] = "posix"; value["error_code"] = Int(code.rawValue)
+            case .dns(let code): value["error_category"] = "dns"; value["error_code"] = Int(code)
+            case .tls(let code): value["error_category"] = "tls"; value["error_code"] = Int(code)
+            @unknown default: value["error_category"] = "unknown"
+            }
+        }
+        return value
+    }
+    static func completionKind(_ end: ClawAssistantStreamEnd) -> String {
+        switch end {
+        case .eof: return "eof"
+        case .deadline: return "deadline"
+        case .cancelled: return "cancelled"
+        case .failure(let error):
+            switch error {
+            case .invalidResponse: return "failure.invalid_response"
+            case .transport: return "failure.transport"
+            case .server: return "failure.server"
+            case .retired: return "failure.retired"
+            case .responseTooLarge: return "failure.response_too_large"
+            default: return "failure.other"
+            }
         }
     }
 }
@@ -200,12 +255,28 @@ final class AssistantStreamTests: XCTestCase {
     }
 
     func testRealSocketRedirectAndNonJSON401NeverDeliverBody() throws {
+        let trace = AssistantRefusalTrace()
+        defer {
+            do {
+                let attachment = XCTAttachment(data: try trace.data(), uniformTypeIdentifier: "public.json")
+                attachment.name = "assistant-stream-refusal-stages"; attachment.lifetime = .keepAlways
+                add(attachment)
+            } catch { XCTFail("Unable to encode fixed refusal fixture evidence") }
+        }
         let server = try AssistantSocketServer(); defer { server.stop() }
         let lock = NSLock(); var redirectedRequests = 0; var mode = 302
+        var caseOrdinal = 0; var requestOrdinal = 0
         server.install { request, reply in
             lock.lock(); let status = mode
+            let ordinal = caseOrdinal; requestOrdinal += 1; let requestNumber = requestOrdinal
             if request.path == "/redirect-target" { redirectedRequests += 1 }
             lock.unlock()
+            trace.record("request_seen", ordinal: ordinal, fixture: status, values: ["request_ordinal": requestNumber])
+            reply.sendObservation = { bytes, error in
+                var values = AssistantRefusalTrace.sendResult(bytes: bytes, error: error)
+                values["request_ordinal"] = requestNumber
+                trace.record("send_completion", ordinal: ordinal, fixture: status, values: values)
+            }
             if status == 302 {
                 let header = "HTTP/1.1 302 Found\r\nLocation: \(server.url.absoluteString)redirect-target\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
                 reply.send(Data(header.utf8)) { reply.close() }
@@ -224,18 +295,25 @@ final class AssistantStreamTests: XCTestCase {
         }
         let service = try ClawAssistantService(origin: server.url, apiKey: "synthetic-key", token: AssistantFixture.token, isCurrent: { true })
         defer { service.cancelAll() }
-        for status in [302, 401, 410, 1410, 2410, 3410, 4410] {
-            lock.lock(); mode = status; lock.unlock()
-            let done = expectation(description: "real refused response")
-            _ = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "0", capabilities: try AssistantBFixture.capabilities(),
-                event: { _ in XCTFail("Refused response leaked a frame") }, completion: { end in
-                    guard case .failure(let error) = end else { XCTFail("Expected refusal"); return }
-                    let expected: ClawAssistantError = status == 401 ? .server(401, "authentication_required") :
-                        (status == 1410 ? .server(410, "conversation_deleted") : .invalidResponse)
-                    XCTAssertEqual(error, expected)
-                    done.fulfill()
-                })
-            wait(for: [done], timeout: 5)
+        for (index, status) in [302, 401, 410, 1410, 2410, 3410, 4410].enumerated() {
+            let ordinal = index + 1
+            try XCTContext.runActivity(named: "refusal case \(ordinal) fixture \(status)") { _ in
+                lock.lock(); mode = status; caseOrdinal = ordinal; lock.unlock()
+                trace.record("case_started", ordinal: ordinal, fixture: status)
+                let done = expectation(description: "real refused response case \(ordinal) fixture \(status)")
+                _ = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "0", capabilities: try AssistantBFixture.capabilities(),
+                    event: { _ in XCTFail("Refused response leaked a frame") }, completion: { end in
+                        trace.record("stream_completion", ordinal: ordinal, fixture: status,
+                                     values: ["kind": AssistantRefusalTrace.completionKind(end)])
+                        guard case .failure(let error) = end else { XCTFail("Expected refusal"); return }
+                        let expected: ClawAssistantError = status == 401 ? .server(401, "authentication_required") :
+                            (status == 1410 ? .server(410, "conversation_deleted") : .invalidResponse)
+                        XCTAssertEqual(error, expected)
+                        done.fulfill()
+                    })
+                wait(for: [done], timeout: 5)
+                trace.record("wait_returned", ordinal: ordinal, fixture: status)
+            }
         }
         lock.lock(); let actualRedirects = redirectedRequests; lock.unlock()
         XCTAssertEqual(actualRedirects, 0)
