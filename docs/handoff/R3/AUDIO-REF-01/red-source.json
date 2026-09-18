@@ -1,0 +1,14 @@
+{
+  "baseline": "6e5670f0475b70b51256cdfa1a2588bbefd988f0",
+  "messageInteractorBlob": "957739e19a32e8de9f5e5f63b424f78e090cf29e",
+  "initialBranch": "            draft = MessageInteractor.draftyAudio(refurl: ref, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count)\n            previewData = nil\n",
+  "completionBranch": "                    draft = MessageInteractor.draftyAudio(refurl: ref, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count)\n",
+  "draftyAudio": "    private static func draftyAudio(refurl: URL?, mimeType: String?, data: Data?, duration: Int, preview: Data, size: Int) -> Drafty? {\n        let ref: URL?\n        if let refurl = refurl, let base = Cache.tinode.baseURL(useWebsocketProtocol: false) {\n            ref = URL(string: refurl.relativize(from: base))\n        } else {\n            ref = nil\n        }\n        return try? Drafty(plainText: \" \").insertAudio(at: 0, mime: mimeType, bits: data, preview: preview, duration: duration, fname: nil, refurl: ref, size: size)\n    }\n",
+  "relativize": "    func relativize(from base: URL) -> String {\n        // Ensure that both URLs share the scheme (protocol) and authority:\n        guard self.scheme == base.scheme && self.host == base.host && self.port == base.port &&\n                self.user == base.user && self.password == base.password else {\n            return self.absoluteString\n        }\n\n        guard let components = URLComponents(url: self, resolvingAgainstBaseURL: false) else {\n            return self.absoluteString\n        }\n\n        return \"\\(components.path)?\\(components.query ?? \"\")\"\n    }\n",
+  "helperSHA256": "d2270520faa79d4a1495740258aa7e0cc5e8ba2d652c3787612281a9caaedcb9",
+  "relativizeSHA256": "987674835af293264a48f0dcada3d783e4f0f22780a2b005e5a7f4e22383397f",
+  "actual_argument": "ref",
+  "expected_argument": "srvUrl",
+  "source_assertion": "FAIL (red)",
+  "execution": "Windows source branch evidence; Swift/Drafty runtime NOT_RUN"
+}

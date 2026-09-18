@@ -1,0 +1,23 @@
+{
+  "files": [
+    {
+      "path": "Tinodios/MessageInteractor.swift",
+      "sha256": "8f5a5567345ab7716fb0cc1279049f276e3ea10c279798279c04af2e094006f6"
+    },
+    {
+      "path": "TinodeSDKTests/TinodeSDKTests.swift",
+      "sha256": "a7413fd3eaede1ecf7d59ca61c9507024711af5cf4d6b342d462787bb0e281c8"
+    },
+    {
+      "path": "TinodeSDK.xcodeproj/project.pbxproj",
+      "sha256": "e43e5f51802d6246dea8ba2fd58aae204a422c88bec88bf8a44618eb6634cbc9"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "sha256": "90e4b3838591167b08d398e8c04102a9090771b66c5beda92593e57182fdbd2f"
+    }
+  ],
+  "native_execution": "NOT_RUN",
+  "expected_native": 202,
+  "navigation_separate": 3
+}

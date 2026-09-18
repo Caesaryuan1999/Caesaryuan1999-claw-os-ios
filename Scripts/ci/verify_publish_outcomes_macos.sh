@@ -150,6 +150,96 @@ PY
   created_fixture=true
 fi
 
+# Compile the exact audio consumer snippets with real Drafty; no source fallback.
+python3 - "$result_dir/static.json" <<'AUDIO_UPLOAD_SOURCE'
+import hashlib, json, pathlib, re, subprocess, sys
+
+# A source adapter, not a reimplementation of the upload callback. Refuse drift.
+def bound_source(name):
+    raw = pathlib.Path(name).read_bytes().replace(b"\r\n", b"\n")
+    head_blob = subprocess.check_output(["git", "rev-parse", "HEAD:" + name], text=True).strip()
+    actual_blob = subprocess.check_output(["git", "hash-object", "--stdin"], input=raw).decode().strip()
+    assert actual_blob == head_blob, "Audio source differs from fixed HEAD blob"
+    return raw.decode("utf-8"), head_blob
+
+source, source_blob = bound_source("Tinodios/MessageInteractor.swift")
+urls, url_blob = bound_source("Tinodios/Utils.swift")
+anchor = '                guard let ctrl = serverMessage?.ctrl, ctrl.code == 200, let srvUrl = URL(string: ctrl.getStringParam(for: "url") ?? "") else {'
+assert source.count(anchor) == 1, "Audio completion ACK anchor must be unique"
+before, after = source.split(anchor)
+def audio_case(text):
+    matches = re.findall(r"(?ms)^\s*case \.audio:\n(.*?)^\s*case \.file:", text)
+    assert len(matches) == 1, "Audio case is missing or ambiguous"
+    return matches[0]
+initial, completion = audio_case(before), audio_case(after)
+methods = re.findall(r"(?ms)^    private static func draftyAudio\(.*?^    \}\n", source)
+relativizers = re.findall(r"(?ms)^    func relativize\(from base: URL\).*?^    \}\n", urls)
+assert len(methods) == len(relativizers) == 1, "Complete production method must be unique"
+method, relativize = methods[0], relativizers[0]
+# Preserved verbatim from the pre-fix production blob; never synthesized by replacing the new argument.
+legacy_blob = "957739e19a32e8de9f5e5f63b424f78e090cf29e"
+legacy_completion = '                    draft = MessageInteractor.draftyAudio(refurl: ref, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count)\n'
+assert hashlib.sha256(method.encode()).hexdigest() == "d2270520faa79d4a1495740258aa7e0cc5e8ba2d652c3787612281a9caaedcb9", "Audio helper changed; review the adapter"
+assert hashlib.sha256(relativize.encode()).hexdigest() == "987674835af293264a48f0dcada3d783e4f0f22780a2b005e5a7f4e22383397f", "URL helper changed; review the adapter"
+assert re.search(r"refurl: (\w+),", initial).group(1) == "ref", "Initial draft must keep its placeholder"
+assert re.search(r"refurl: (\w+),", completion).group(1) == "srvUrl", "Completed upload must use its server result"
+assert legacy_completion.strip().startswith("draft = MessageInteractor.draftyAudio(")
+assert completion.replace("refurl: srvUrl,", "refurl: ref,") == legacy_completion, "Unexpected completion delta"
+
+def wrapper(name, body):
+    return """
+    static func """ + name + """(ref: URL, srvUrl: URL, duration: Int, preview: Data, data: Data) -> Drafty? {
+        let mimeType = "audio/aac"
+        let def = AudioUploadDef(duration: duration, preview: preview, data: data)
+        var draft: Drafty?
+        var previewData: Data?
+""" + body + """
+        _ = previewData
+        return draft
+    }
+"""
+generated = """// Generated only from the fixed HEAD production source by verify_publish_outcomes_macos.sh.
+// Scope: actual upload branch statement + actual helpers + real Drafty; not a UIKit callback.
+import Foundation
+@testable import TinodeSDK
+
+private struct AudioUploadDef {
+    let duration: Int?
+    let preview: Data?
+    let data: Data
+}
+private enum Cache {
+    static let tinode = AudioBaseURL()
+}
+private struct AudioBaseURL {
+    func baseURL(useWebsocketProtocol: Bool) -> URL? { URL(string: "https://audio-fixture.invalid/") }
+}
+extension URL {
+""" + relativize + """
+}
+final class MessageInteractor {
+    static let sourceBlob = """ + json.dumps(source_blob) + """
+    static let originalBlob = """ + json.dumps(legacy_blob) + """
+""" + wrapper("completedAudio", completion) + wrapper("initialAudio", initial) + wrapper("legacyCompletedAudio", legacy_completion) + method + """
+}
+typealias AudioUploadConsumerFixture = MessageInteractor
+"""
+target = pathlib.Path("build/ci-generated/AudioUploadConsumerFixture.swift")
+target.parent.mkdir(parents=True, exist_ok=True)
+target.write_text(generated, encoding="utf-8", newline="\n")
+metadata = {"scope": "Production branch source adapter plus real Drafty; not full UIKit callback",
+            "sourceBlob": source_blob, "urlHelperBlob": url_blob, "legacyBlob": legacy_blob,
+            "initialSHA256": hashlib.sha256(initial.encode()).hexdigest(),
+            "completionSHA256": hashlib.sha256(completion.encode()).hexdigest(),
+            "helperSHA256": hashlib.sha256(method.encode()).hexdigest(),
+            "adapterSHA256": hashlib.sha256(generated.encode()).hexdigest()}
+report_path = pathlib.Path(sys.argv[1])
+report = json.loads(report_path.read_text(encoding="utf-8"))
+report["audio_upload_source_adapter"] = metadata
+report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+print("AUDIO_UPLOAD_SOURCE_ADAPTER " + json.dumps(metadata, separators=(",", ":")))
+AUDIO_UPLOAD_SOURCE
+
 xcodebuild test -workspace Tinodios.xcworkspace -scheme TinodeSDK \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \
   -parallel-testing-enabled NO \
@@ -229,7 +319,7 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
 unset TEST_RUNNER_CLAW_VLC_POD_EVIDENCE
-# Real App navigation is separate from 196 existing native methods and 4 VLC measurement methods.
+# Real App navigation is separate from 198 SDK/storage methods and 4 VLC measurement methods.
 # Same selected device and closed loopback endpoint; no login or OTP submission.
 xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \

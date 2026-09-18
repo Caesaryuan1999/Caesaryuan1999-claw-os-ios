@@ -38,6 +38,7 @@
 		B0876012243F1DD900B464D1 /* FndTopic.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0876011243F1DD900B464D1 /* FndTopic.swift */; };
 		B0876014243F1E4000B464D1 /* ComTopic.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0876013243F1E4000B464D1 /* ComTopic.swift */; };
 		B089261627838F4600C419C0 /* WebSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = B089261527838F4600C419C0 /* WebSocket.swift */; };
+		C1A045022026091800000001 /* AudioUploadConsumerFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A045012026091800000001 /* AudioUploadConsumerFixture.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +91,7 @@
 		C8B1F7A52439924B698AC915 /* libPods-TinodeSDKTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TinodeSDKTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D80621A4BCCAF3C0B58C06E5 /* Pods-TinodeSDK.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TinodeSDK.release.xcconfig"; path = "Pods/Target Support Files/Pods-TinodeSDK/Pods-TinodeSDK.release.xcconfig"; sourceTree = "<group>"; };
 		FD6888AEFAE0E94A350A75E8 /* Pods-TinodeSDKTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TinodeSDKTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-TinodeSDKTests/Pods-TinodeSDKTests.release.xcconfig"; sourceTree = "<group>"; };
+		C1A045012026091800000001 /* AudioUploadConsumerFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AudioUploadConsumerFixture.swift; path = "build/ci-generated/AudioUploadConsumerFixture.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -180,6 +182,7 @@
 			children = (
 				0A03AFD222759566003F6248 /* DraftyTest.swift */,
 				0A56CCE422759078006E2952 /* TinodeSDKTests.swift */,
+				C1A045012026091800000001 /* AudioUploadConsumerFixture.swift */,
 				0A56CCE622759078006E2952 /* Info.plist */,
 			);
 			path = TinodeSDKTests;
@@ -376,6 +379,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0A56CCE522759078006E2952 /* TinodeSDKTests.swift in Sources */,
+				C1A045022026091800000001 /* AudioUploadConsumerFixture.swift in Sources */,
 				0A03AFD322759566003F6248 /* DraftyTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

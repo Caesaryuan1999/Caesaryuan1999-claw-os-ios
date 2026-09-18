@@ -1,0 +1,40 @@
+{
+  "scope": "Actual CI extractor executed against real safe source Git snapshots; not Swift/Drafty runtime",
+  "production_delta": "one successful audio ref argument only",
+  "checks": [
+    {
+      "case": "legacy-red",
+      "expected_failure": true,
+      "exit": 1,
+      "outcome": "Completed upload must use its server result"
+    },
+    {
+      "case": "current-green",
+      "expected_failure": false,
+      "exit": 0,
+      "outcome": {
+        "scope": "Production branch source adapter plus real Drafty; not full UIKit callback",
+        "sourceBlob": "f90f826f543c5c3b050a4bb362687466b1376e25",
+        "urlHelperBlob": "974d9be8974b182169f43e0e9e9317e4e91e8b89",
+        "legacyBlob": "957739e19a32e8de9f5e5f63b424f78e090cf29e",
+        "initialSHA256": "dfe6aabd7ca440d3a71295605d2beedfb3171d824a489bbcf6b62c1f3a8e0b30",
+        "completionSHA256": "436829e857bcfcd660004fdf90fbb09c948152ec976a4e03725759d17cae12d1",
+        "helperSHA256": "d2270520faa79d4a1495740258aa7e0cc5e8ba2d652c3787612281a9caaedcb9",
+        "adapterSHA256": "faf8806c3fc6fab532abb2d5b01567200765384d0ddc7d70181081892884d0b7"
+      }
+    },
+    {
+      "case": "duplicate-case-rejected",
+      "expected_failure": true,
+      "exit": 1,
+      "outcome": "Audio case is missing or ambiguous"
+    },
+    {
+      "case": "dirty-source-rejected",
+      "expected_failure": true,
+      "exit": 1,
+      "outcome": "Audio source differs from fixed HEAD blob"
+    }
+  ],
+  "native_execution": "NOT_RUN; two methods prepared for later exact Mac CI"
+}

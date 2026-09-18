@@ -824,7 +824,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 var draft: Drafty?
                 switch type {
                 case .audio:
-                    draft = MessageInteractor.draftyAudio(refurl: ref, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count)
+                    draft = MessageInteractor.draftyAudio(refurl: srvUrl, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count)
                 case .file:
                     draft = try? Drafty().attachFile(mime: mimeType, fname: filename, refurl: srvUrl, size: def.data.count)
                 case .image:

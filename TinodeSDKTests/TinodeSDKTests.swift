@@ -11,6 +11,48 @@ import XCTest
 // TODO: add tests for Tinode here.
 class TinodeSDKTests: XCTestCase {
 
+    func testUploadedAudioConsumerReplacesPlaceholderWithServerReference() throws {
+        let placeholder = try XCTUnwrap(URL(string: "mid:uploading/voice.m4a"))
+        let server = try XCTUnwrap(URL(string: "https://audio-fixture.invalid/v0/file/audio-result"))
+        let preview = Data([12, 24, 36, 48])
+        let bytes = Data(repeating: 7, count: 4096)
+        let old = try XCTUnwrap(AudioUploadConsumerFixture.legacyCompletedAudio(
+            ref: placeholder, srvUrl: server, duration: 4200, preview: preview, data: bytes))
+        let oldEntity = try XCTUnwrap(old.ent?.first?.data)
+        // Fixed pre-fix production branch reproduces the wrong value with real Drafty.
+        XCTAssertEqual(oldEntity["ref"]?.asString(), placeholder.absoluteString)
+
+        let current = try XCTUnwrap(AudioUploadConsumerFixture.completedAudio(
+            ref: placeholder, srvUrl: server, duration: 4200, preview: preview, data: bytes))
+        let entity = try XCTUnwrap(current.ent?.first?.data)
+        XCTAssertEqual(entity["ref"]?.asString(), "/v0/file/audio-result?")
+        XCTAssertFalse(try XCTUnwrap(entity["ref"]?.asString()).hasPrefix("mid:"))
+        XCTAssertEqual(entity["duration"]?.asInt(), 4200)
+        XCTAssertEqual(entity["preview"]?.asData(), preview)
+        XCTAssertEqual(entity["size"]?.asInt(), bytes.count)
+        XCTAssertEqual(entity["mime"]?.asString(), "audio/aac")
+        XCTAssertNil(entity["val"])
+        XCTAssertEqual(AudioUploadConsumerFixture.sourceBlob.count, 40)
+        XCTAssertNotEqual(AudioUploadConsumerFixture.sourceBlob, AudioUploadConsumerFixture.originalBlob)
+    }
+
+    func testInitialAudioConsumerKeepsPlaceholderAndOriginalMetadata() throws {
+        let placeholder = try XCTUnwrap(URL(string: "mid:uploading/voice.m4a"))
+        let server = try XCTUnwrap(URL(string: "https://audio-fixture.invalid/v0/file/audio-result"))
+        let preview = Data([3, 6, 9])
+        let bytes = Data(repeating: 1, count: 512)
+        let initial = try XCTUnwrap(AudioUploadConsumerFixture.initialAudio(
+            ref: placeholder, srvUrl: server, duration: 3600, preview: preview, data: bytes))
+        let entity = try XCTUnwrap(initial.ent?.first?.data)
+        XCTAssertEqual(entity["ref"]?.asString(), placeholder.absoluteString)
+        XCTAssertEqual(entity["duration"]?.asInt(), 3600)
+        XCTAssertEqual(entity["preview"]?.asData(), preview)
+        XCTAssertEqual(entity["size"]?.asInt(), bytes.count)
+        XCTAssertEqual(entity["mime"]?.asString(), "audio/aac")
+        XCTAssertNil(entity["val"])
+    }
+
+
     func testLogoutRetiresLocalSessionWithoutNetworkAndClearsCredentials() throws {
         let sdk = Tinode(for: "fixture", authenticateWith: "fixture")
         sdk.myUid = "usrA"
