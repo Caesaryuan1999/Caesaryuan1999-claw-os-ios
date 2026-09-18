@@ -1,0 +1,871 @@
+{
+  "source_target": "1b20ec2971061dbc002d1748f0f252d87b69d0f7",
+  "report_parent": "09631feea099b5c86eeadc69235d09623015d552",
+  "run": 35364243217,
+  "job": 105662685988,
+  "artifact": 10555953810,
+  "artifact_bytes": 49718962,
+  "artifact_sha256": "a2407c6b100a70d52ab5c995ffe2ab5d2f0184dafd8305c806be3135e03fbe25",
+  "verification": "Downloaded local original artifact; SHA/46 extracted entity bytes compared to original ZIP; no new CI/build/simulator run",
+  "summaries": {
+    "sdk-summary.json": {
+      "passedTests": 44,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "startTime": 1789746432.156,
+      "finishTime": 1789746580.215,
+      "device": {
+        "architecture": "arm64",
+        "deviceId": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9",
+        "deviceName": "iPhone 16 Pro",
+        "modelName": "iPhone 16 Pro",
+        "osBuildNumber": "22F77",
+        "osVersion": "18.5",
+        "platform": "iOS Simulator"
+      }
+    },
+    "storage-summary.json": {
+      "passedTests": 188,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "startTime": 1789746588.869,
+      "finishTime": 1789746946.266,
+      "device": {
+        "architecture": "arm64",
+        "deviceId": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9",
+        "deviceName": "iPhone 16 Pro",
+        "modelName": "iPhone 16 Pro",
+        "osBuildNumber": "22F77",
+        "osVersion": "18.5",
+        "platform": "iOS Simulator"
+      }
+    },
+    "navigation-summary.json": {
+      "passedTests": 3,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "startTime": 1789746955.254,
+      "finishTime": 1789747247.2,
+      "device": {
+        "architecture": "arm64",
+        "deviceId": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9",
+        "deviceName": "iPhone 16 Pro",
+        "modelName": "iPhone 16 Pro",
+        "osBuildNumber": "22F77",
+        "osVersion": "18.5",
+        "platform": "iOS Simulator"
+      }
+    }
+  },
+  "native_total": 232,
+  "navigation_separate": 3,
+  "selected_breakdown": {
+    "SDK": 44,
+    "UIrunner": 175,
+    "VLC_host": 7,
+    "Voice_component_host": 6
+  },
+  "app": {
+    "commit": "1b20ec2971061dbc002d1748f0f252d87b69d0f7",
+    "run": "35364243217",
+    "artifact": "CLAW-OS-unsigned-simulator.zip",
+    "sha256": "66f1445024428df8fe53f1f651888086f59a243602eeaa077adb1424690dc656",
+    "bundle_id": "app.veilping.clawoschat",
+    "version": "1.22.12",
+    "build": "1736",
+    "platform": "iOS Simulator",
+    "signed": false,
+    "phone_installable": false,
+    "push_config": "disabled placeholder",
+    "backend": "127.0.0.1:9",
+    "scope": "SDK and SQLite tests passed; App UI, devices, network and push not accepted"
+  },
+  "app_zip_bytes": 37450312,
+  "cold_launch": {
+    "commit": "1b20ec2971061dbc002d1748f0f252d87b69d0f7",
+    "run": "35364243217",
+    "status": "PASS_COLD_LAUNCH_ONLY",
+    "scope": "Cold launch and process survival only; screenshot requires human review",
+    "ui_journey": "NOT_RUN",
+    "physical_device": "NOT_RUN",
+    "real_service": "NOT_RUN",
+    "push": "NOT_RUN",
+    "commands": [
+      {
+        "step": "list_existing_devices",
+        "returncode": 0,
+        "elapsed_seconds": 2.097838
+      },
+      {
+        "step": "boot_tested_device",
+        "returncode": 0,
+        "elapsed_seconds": 2.099178
+      },
+      {
+        "step": "wait_tested_device_boot",
+        "returncode": 0,
+        "elapsed_seconds": 40.712513
+      },
+      {
+        "step": "verify_tested_device_boot",
+        "returncode": 0,
+        "elapsed_seconds": 1.760069
+      },
+      {
+        "step": "install",
+        "returncode": 0,
+        "elapsed_seconds": 12.910777
+      },
+      {
+        "step": "installed_container",
+        "returncode": 0,
+        "elapsed_seconds": 3.379396
+      },
+      {
+        "step": "processes_before_launch",
+        "returncode": 0,
+        "elapsed_seconds": 0.049792
+      },
+      {
+        "step": "launch",
+        "returncode": 0,
+        "elapsed_seconds": 12.378858
+      },
+      {
+        "step": "process_status",
+        "returncode": 0,
+        "elapsed_seconds": 0.415985
+      },
+      {
+        "step": "screenshot",
+        "returncode": 0,
+        "elapsed_seconds": 7.040679
+      },
+      {
+        "step": "process_status",
+        "returncode": 0,
+        "elapsed_seconds": 0.008077
+      }
+    ],
+    "crash_reports": [],
+    "started_unix": 1789747261.9380631,
+    "tested_archive_sha256": "66f1445024428df8fe53f1f651888086f59a243602eeaa077adb1424690dc656",
+    "bundle_id": "app.veilping.clawoschat",
+    "executable": "Tinodios",
+    "binary_sha256": "9a426e841b940cfe1eaf261f0cafacda059fec4a4a83fea6731f8bda5b061135",
+    "simulator_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9",
+    "simulator_observations": [
+      {
+        "step": "list_existing_devices",
+        "matches": [
+          {
+            "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-18-5",
+            "state": "Shutdown",
+            "isAvailable": true
+          }
+        ]
+      },
+      {
+        "step": "verify_tested_device_boot",
+        "matches": [
+          {
+            "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-18-5",
+            "state": "Booted",
+            "isAvailable": true
+          }
+        ]
+      }
+    ],
+    "boot_command_output": [
+      {
+        "step": "boot_tested_device",
+        "limit_per_stream_bytes": 65536,
+        "retained_region": "tail",
+        "stdout": {
+          "file": "boot_tested_device.stdout.txt",
+          "captured": true,
+          "original_bytes": 0,
+          "saved_bytes": 0,
+          "truncated": false,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "file": "boot_tested_device.stderr.txt",
+          "captured": true,
+          "original_bytes": 0,
+          "saved_bytes": 0,
+          "truncated": false,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      {
+        "step": "wait_tested_device_boot",
+        "limit_per_stream_bytes": 65536,
+        "retained_region": "tail",
+        "stdout": {
+          "file": "wait_tested_device_boot.stdout.txt",
+          "captured": true,
+          "original_bytes": 120,
+          "saved_bytes": 120,
+          "truncated": false,
+          "sha256": "66467840b3953fc764b5074bba04b3ef1e686de447e000f04fcee9b0da1cf7d5"
+        },
+        "stderr": {
+          "file": "wait_tested_device_boot.stderr.txt",
+          "captured": true,
+          "original_bytes": 0,
+          "saved_bytes": 0,
+          "truncated": false,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    ],
+    "prelaunch_process_observations": [
+      {
+        "step": "processes_before_launch",
+        "state": "not_running",
+        "pids": [],
+        "path_method": "Darwin libproc.proc_pidpath"
+      }
+    ],
+    "cold_start_precondition": "confirmed_not_running",
+    "launched_pid": 46774,
+    "process": {
+      "pid": 46774,
+      "state": "Rs",
+      "executable": "Tinodios",
+      "path": "/Users/runner/Library/Developer/CoreSimulator/Devices/DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9/data/Containers/Bundle/Application/8D140803-D1D3-44F2-B4C0-943952E3A59C/Tinodios.app/Tinodios",
+      "path_method": "Darwin libproc.proc_pidpath"
+    },
+    "screenshot": {
+      "file": "cold-launch.png",
+      "sha256": "6475f1d68f2d0994b2cc47512203c98f2efc77a1db4446c21ed577bc9a620dfb",
+      "width": 1206,
+      "height": 2622,
+      "login_screen_review": "PENDING_HUMAN"
+    },
+    "finished_unix": 1789747352.309964
+  },
+  "reviewed_button_states": [
+    {
+      "json": "CD03E063-42F6-40C8-AC65-A051F1546DB6.json",
+      "png": "E6E3A64C-F3B6-47A1-87E6-A24248D8FA9B.png",
+      "case": "send-button-text-single-line",
+      "inputBeginEvents": 1,
+      "inputFirstResponder": true,
+      "actualInputLength": 6,
+      "windowPresent": true,
+      "delegateActions": [],
+      "button": {
+        "frame": [
+          0,
+          0,
+          64,
+          48
+        ],
+        "hasImage": false,
+        "imageViewHasImage": true,
+        "imageVisibility": {
+          "hasImage": true,
+          "nodes": [
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                23,
+                27.666666666666668
+              ],
+              "class": "UIImageView",
+              "clipsToBounds": true,
+              "hidden": true,
+              "windowFrame": [
+                342.3333333333333,
+                492,
+                23,
+                27.66666666666663
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                64,
+                48
+              ],
+              "class": "UIButton",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [
+                330,
+                482,
+                64,
+                48
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                64
+              ],
+              "class": "UIView",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [
+                0,
+                474,
+                402,
+                64
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                64
+              ],
+              "class": "Tinodios.SendMessageBar",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [
+                0,
+                474,
+                402,
+                64
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                400
+              ],
+              "class": "UIInputSetHostView",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [
+                0,
+                474,
+                402,
+                400
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                874
+              ],
+              "class": "UIInputSetContainerView",
+              "clipsToBounds": true,
+              "hidden": false,
+              "windowFrame": [
+                0,
+                0,
+                402,
+                874
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                874
+              ],
+              "class": "UITextEffectsWindow",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [],
+              "windowPresent": false
+            }
+          ],
+          "reason": "hidden_in_hierarchy",
+          "settled": true
+        },
+        "title": "发送",
+        "titleLines": 1
+      }
+    },
+    {
+      "json": "EB3518C9-3120-4517-AA8D-C6953D642A83.json",
+      "png": "F01FB3B0-3D83-4DEE-871F-236D31353E68.png",
+      "case": "send-button-empty-recording-restored",
+      "inputBeginEvents": 1,
+      "inputFirstResponder": true,
+      "actualInputLength": 0,
+      "windowPresent": true,
+      "delegateActions": [],
+      "button": {
+        "frame": [
+          0,
+          0,
+          48,
+          48
+        ],
+        "hasImage": true,
+        "imageViewHasImage": true,
+        "imageVisibility": {
+          "hasImage": true,
+          "nodes": [
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                23,
+                27.666666666666668
+              ],
+              "class": "UIImageView",
+              "clipsToBounds": true,
+              "hidden": false,
+              "windowFrame": [
+                358.3333333333333,
+                492,
+                23,
+                27.66666666666663
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                48,
+                48
+              ],
+              "class": "UIButton",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [
+                346,
+                482,
+                48,
+                48
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                64
+              ],
+              "class": "UIView",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [
+                0,
+                474,
+                402,
+                64
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                64
+              ],
+              "class": "Tinodios.SendMessageBar",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [
+                0,
+                474,
+                402,
+                64
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                400
+              ],
+              "class": "UIInputSetHostView",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [
+                0,
+                474,
+                402,
+                400
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                874
+              ],
+              "class": "UIInputSetContainerView",
+              "clipsToBounds": true,
+              "hidden": false,
+              "windowFrame": [
+                0,
+                0,
+                402,
+                874
+              ],
+              "windowPresent": true
+            },
+            {
+              "alpha": 1,
+              "animationKeys": [],
+              "bounds": [
+                0,
+                0,
+                402,
+                874
+              ],
+              "class": "UITextEffectsWindow",
+              "clipsToBounds": false,
+              "hidden": false,
+              "windowFrame": [],
+              "windowPresent": false
+            }
+          ],
+          "reason": "no_absence_evidence",
+          "settled": true
+        },
+        "title": "",
+        "titleLines": 1
+      }
+    }
+  ],
+  "visual_review": {
+    "cold_login": "Logo/login identity fields/register/reset/legacy entry visible; connection settings partially at lower edge, no new scroll/click claim",
+    "text": "Original component PNG shows one-line send and no mic; JSON shows cached image hidden",
+    "empty": "Original component PNG restores mic with no send title",
+    "limitations": "Two component PNGs are cropped actual UIKit bar rendering, not full keyboard screenshot or real recording/send/chat"
+  },
+  "entities": [
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/sdk-summary.json",
+      "bytes": 1262,
+      "sha256": "eb49921dc8a0e438801ef6fb71d3a7daad1a9ae1effa4dea25c041d4cc449629",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-summary.json",
+      "bytes": 1165,
+      "sha256": "c049b3d0f4490cd11321454ec8a98a67d06d8db93cdbb9cdd04f0f7dd592377b",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/navigation-summary.json",
+      "bytes": 966,
+      "sha256": "5cef0a9e814114e158adbbe80d531a2a08599371b11d49c8f7133f0d3983ceb1",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/simulator-manifest.json",
+      "bytes": 534,
+      "sha256": "00db979fc373bed00b7d8e24dd8ca95e55d20acbcb2b3dc1a55d181ceefb2e20",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/launch-smoke/manifest.json",
+      "bytes": 4585,
+      "sha256": "236bca1203ceba2b2e6c4d5cfee7a79f8995bab96df90f9e301d32606dcf2cac",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/manifest.json",
+      "bytes": 32711,
+      "sha256": "3270319993718bda1dfd7118d7fc37d4460ea2d24e76e022294ae514394090e9",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/86C50529-616F-4B3C-A81F-B9F0DFC2720A.json",
+      "bytes": 9428,
+      "sha256": "ed4e4550fd8c657b2425652e7a258c60793797a12a7438aaa27ac35cfa608067",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/67C9C58D-4E4C-4CB3-9DD3-296585D5D109.png",
+      "bytes": 185179,
+      "sha256": "b3ec9df9dae12c18606f23ce8097b36ff0670c8efb94ca779d9afe2764e6cba8",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/69F9A1C1-3697-4BD4-AFC2-9874324CC9E5.json",
+      "bytes": 9424,
+      "sha256": "6b293c35160af7b8fa2a4e5e0684a09b3d581af615f7be2dc06efac9d4f0ace3",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/3BE832B3-D80A-4088-96A6-00E9E35049C2.png",
+      "bytes": 185179,
+      "sha256": "b3ec9df9dae12c18606f23ce8097b36ff0670c8efb94ca779d9afe2764e6cba8",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/9871ED71-DDB8-42AC-988D-1AE5E14E450D.json",
+      "bytes": 7429,
+      "sha256": "f56ab89e22d6fb536910452742dfb20d42730b436956aff1030ec49962da6304",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/F7E086B6-BFF0-45B3-9979-27F6E9FCC5A5.png",
+      "bytes": 208745,
+      "sha256": "4981c482a474b45cd142810619a6763c8d98edfc99f41616537f031b4748151c",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/62C39127-0624-405A-8828-BBE7349D057B.json",
+      "bytes": 10275,
+      "sha256": "0425e750a3c2c0f7e1209840d36c104846b4935d44a0d398e3d394e3559a6442",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/BE8C10C8-195B-4664-A4CD-8CAAF095A641.png",
+      "bytes": 164108,
+      "sha256": "89afb32262ec700902d650925c64e11e755d5ebc7076cbbb423b2e4042e35f01",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/2C9C517C-66AA-4D0C-90F0-1BA625DEAF4B.json",
+      "bytes": 10269,
+      "sha256": "5f967be7e967963460e221fb5dec2455c18ebe1cd8ea8f7bc2a96374cd945fe2",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/78CE405E-80A3-4238-A76D-A88948EAD03E.png",
+      "bytes": 164108,
+      "sha256": "89afb32262ec700902d650925c64e11e755d5ebc7076cbbb423b2e4042e35f01",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/D073F1B1-A842-4D86-A17B-3D24F3C507F3.json",
+      "bytes": 7738,
+      "sha256": "18628ae63d8240a9ff6ca9d109e6ba3292bdeacf8c98df15f86dfc449c2a5b4d",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/4D23A20F-53C0-4CD6-A71D-A54B31BAE1D0.png",
+      "bytes": 164748,
+      "sha256": "ff53295d61180e341d7ee9e67c2c977567c11e61407baf6dc08b1cef9f934f9a",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/B8A87E97-5A77-49D9-9C55-6FA1C9876C11.json",
+      "bytes": 8003,
+      "sha256": "68b38796e427eff41bbd9bce068be1024605a68304327230506d74f5d4823851",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/961CCC0A-F88F-48CB-9716-769E52FA5CEC.png",
+      "bytes": 109578,
+      "sha256": "8d728bd0b653409f3be15f3621c21eea735160d817f34083db666713657e8989",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/B5881377-AC1C-4680-8426-627DD2AF533B.json",
+      "bytes": 7991,
+      "sha256": "b2dafb5b441ddbcbc29bcfeb16e09997aceaeaac3080269071a8b968782f463b",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/DFF6CA3B-C6A9-477A-918B-F6C565AC9F44.png",
+      "bytes": 109578,
+      "sha256": "8d728bd0b653409f3be15f3621c21eea735160d817f34083db666713657e8989",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/DE195206-FDB4-4324-AFDC-9ADB59BEE392.json",
+      "bytes": 7366,
+      "sha256": "7563376767a4523e874d9eb71ea213d64c42fb26555b440779d2a3200dbec2fd",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/6C6BA6E5-D7F4-4FCD-941E-74B7EA01FC51.png",
+      "bytes": 68469,
+      "sha256": "9e6e96f19c3d53e11635e2602c5fc9ffde059119e776252d0662a655354fb56c",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/9A062B97-F320-486E-BB08-195D628277D3.json",
+      "bytes": 7071,
+      "sha256": "e6ea91ff4104d70e4a542775484a88dda64df8863f995b55dd5916d29466184c",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/283EE9B0-1857-4568-8103-F7E39705583B.png",
+      "bytes": 57727,
+      "sha256": "ed147f2ae9792f5ab29962635858c6df1339af26a37cc6e6869c94762968241f",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/EB3518C9-3120-4517-AA8D-C6953D642A83.json",
+      "bytes": 7077,
+      "sha256": "3ca756f9e48ca3e4dd021d3344dbd685876b821a5f7f0acfb5120b4f3b38f3cd",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/F01FB3B0-3D83-4DEE-871F-236D31353E68.png",
+      "bytes": 57709,
+      "sha256": "8d8c1d697bf221c454793e7d0d511b37c5bfdb158c032c68533fd66e2f01df6c",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/CD03E063-42F6-40C8-AC65-A051F1546DB6.json",
+      "bytes": 7075,
+      "sha256": "702cbe6288f0cd072773b1877c30c7c757d183968a16b8e0b0820f098583dd08",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/E6E3A64C-F3B6-47A1-87E6-A24248D8FA9B.png",
+      "bytes": 68469,
+      "sha256": "9e6e96f19c3d53e11635e2602c5fc9ffde059119e776252d0662a655354fb56c",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/17EAA5DB-A6C1-4C57-AA53-FF4E3248E836.json",
+      "bytes": 6755,
+      "sha256": "3ac43bd0f3e0085ccbfd8ab963e77379d22f81a009fa85d7e663a93a2973be5a",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/2200AC11-B46D-4F35-9012-1C1569DE4C78.png",
+      "bytes": 103871,
+      "sha256": "431853c714ff25d1808fb9000c77a33ee0722ef4a1cf1f9768a38c1d3bf466eb",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/526E7198-A501-44EF-91C4-BF7AFA35C444.json",
+      "bytes": 10778,
+      "sha256": "0939573d7e1e434db4db0841dff6b747d3c0f58791298f8d67196f113c3bb62f",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/FBA1A227-BF9F-4728-9206-79E6AE80D68B.png",
+      "bytes": 168934,
+      "sha256": "3a45e06c91743989dda1a300f0d77cc13c966a64819868220db2df728b1f5f52",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/BEB0CC06-8E13-4049-A34C-2CCDF6BDE340.json",
+      "bytes": 10774,
+      "sha256": "380ed94dce8c283dcc56e4017c9242b5425e27ce2dfe787e4b028533baf9adf1",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/36AE788B-9D46-4591-A612-E4509286B676.png",
+      "bytes": 168934,
+      "sha256": "3a45e06c91743989dda1a300f0d77cc13c966a64819868220db2df728b1f5f52",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/DAA5CF2A-9D65-4E03-813D-CD4DCEB90810.json",
+      "bytes": 9780,
+      "sha256": "7decb9e74ed189cd83b7487e01cf0149ac2d4be5de3abf123c76706da68e0ba9",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/66D5943E-528F-4FCB-A720-3C811918D953.png",
+      "bytes": 168507,
+      "sha256": "b80f858a7ba84cf7a674b3930358cab5336ead1a961826d1c5f1293ae605be41",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/57EFEE4B-9A24-4A57-A2E2-F4CD076C232A.json",
+      "bytes": 7390,
+      "sha256": "9c2bc8fb7681fb36bb9d774e7b5aa9d5d1926f77d329b11972bd55ba7929f0bd",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/BE74959E-2B77-4443-AC00-7C629D7DE0AA.png",
+      "bytes": 185702,
+      "sha256": "a8627e3232262e0c17468e355fc48ded3042fa7d35b1c36d1659d9e52ef73524",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/926AC5D1-487F-4651-A6DD-6E2A121BEA9F.json",
+      "bytes": 8121,
+      "sha256": "15b4e952b418f0030c6de427ae6d9829b4eeb17dce29bcb7bfdcc128c65a158c",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/04BFD4AB-0F38-4133-82B0-E1158ABD5651.png",
+      "bytes": 102857,
+      "sha256": "a3435e4dd2bb01d433b1796ad81832a07a96c4d72b04765cf342442cb4bb23d4",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/7528D2AA-B72E-411F-ABDF-70CB2B7BD895.json",
+      "bytes": 8107,
+      "sha256": "d38e94d24db5f3f8fcad9d6b46c2a53e55f0147568292ba7a914c3b341ade2e8",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/storage-attachments/23374F25-1595-4DEB-AE0B-6A0AB06F6F84.png",
+      "bytes": 102857,
+      "sha256": "a3435e4dd2bb01d433b1796ad81832a07a96c4d72b04765cf342442cb4bb23d4",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/CLAW-OS-unsigned-simulator.zip",
+      "bytes": 37450312,
+      "sha256": "66f1445024428df8fe53f1f651888086f59a243602eeaa077adb1424690dc656",
+      "zip_bytes_equal": true
+    },
+    {
+      "file": "artifacts/integration/20260918/R3-ios-ci31-evidence/ios-01-a-20260918-154446/launch-smoke/cold-launch.png",
+      "bytes": 223289,
+      "sha256": "6475f1d68f2d0994b2cc47512203c98f2efc77a1db4446c21ed577bc9a620dfb",
+      "zip_bytes_equal": true
+    }
+  ],
+  "voice_assets_count": 38,
+  "root_review_sha256": "da0e1528b5ebdcdabbf1546a4ad1a46c182f86a5cb7b165c26e8c60689c60a8a",
+  "fixed_source_package_unchanged": {
+    "commit": "09631feea099b5c86eeadc69235d09623015d552",
+    "bundle_sha256": "594982b21474b2092aa2470614042f5dc26b2fe1479c89a20f32977cf52a0144",
+    "matched_entities": 14
+  },
+  "prior_CI30_failure": "Retained. Simulator boot readiness timeout before install/launch; internal cause remains unknown."
+}
