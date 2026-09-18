@@ -3,6 +3,7 @@
 // no chat route, credentials, microphone, recording, upload, or synthetic login.
 import XCTest
 import UIKit
+import UIKit.UIGestureRecognizerSubclass
 import TinodiosDB
 @testable import Tinodios
 
@@ -376,7 +377,10 @@ private final class ControlledLongPress: UILongPressGestureRecognizer {
     var phase: UIGestureRecognizer.State = .possible
     var point = CGPoint.zero
     weak var lastCoordinateView: UIView?
-    override var state: UIGestureRecognizer.State { phase }
+    override var state: UIGestureRecognizer.State {
+        get { phase }
+        set { phase = newValue }
+    }
     override func location(in view: UIView?) -> CGPoint { lastCoordinateView = view; return point }
 }
 

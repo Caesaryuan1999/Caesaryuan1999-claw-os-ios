@@ -1,0 +1,28 @@
+{
+  "red_candidate": "d45cbeacda88b0d7c9a371c95579e63d60153f82",
+  "ci27_run": 35351962458,
+  "ci27_job": 105621991726,
+  "mac_diagnostic_source": "Parent read actual job log at 13:51:15Z; artifact still being preserved by parent at review time",
+  "diagnostic": "VoiceLayoutTests.swift:379:18: cannot override mutable property with read-only property state",
+  "checks": {
+    "two_requested_changes_only": true,
+    "six_methods_unchanged": true,
+    "production_unchanged": true,
+    "wiring_host_and_selectors_unchanged": true,
+    "all_assertions_preserved_by_reverse_exact_bytes": true
+  },
+  "checks_passed": 5,
+  "before_blob_sha1": "dfc84dc7389befe4b9de59e59862fa3d3d508d65",
+  "before_sha256": "f72f623734d9ea86a6195904ecb464fa2081d10211c04bd9a507771a5fee2105",
+  "after_LF_sha256": "87a43b656f4198798d60396420428e6a8ba47412ee564524e8bd24f3eeab1a49",
+  "method_count": 6,
+  "next_native_expected": {
+    "SDK": 44,
+    "UIrunner": 175,
+    "VLC": 7,
+    "voice_component": 6,
+    "total": 232,
+    "navigation_separate": 3
+  },
+  "verification_layer": "Exact source delta only; Swift fix still NOT_RUN; CI27 SDK44 passed, remaining tests NOT_RUN"
+}
