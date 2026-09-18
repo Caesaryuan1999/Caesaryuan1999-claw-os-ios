@@ -1,0 +1,47 @@
+{
+  "base": "abc23071b23671323d7bce89340ea6ffb513cb3b",
+  "target": "49194cc56f5c1dfd894efd9a9be6877560e219d3",
+  "patch_bytes": 52307,
+  "patch_sha256": "275cde36f6ba7234533ac8ef0fae51eca7d5cc3a9125834241f9c769296c2fbf",
+  "actual_forward_apply": true,
+  "real_index_unchanged": true,
+  "unselected_entries_unchanged": true,
+  "files": [
+    {
+      "path": "Tinodios/ClawSecondaryUIState.swift",
+      "mode": "100644",
+      "blob": "8327e333ec5bda979d87264a5a4882f4fcb6a0f5",
+      "sha256": "270954fb48415d445e340df785a6387864184771328afcc9e3565f851411a4c8",
+      "match": true
+    },
+    {
+      "path": "Tinodios/VideoPreviewController.swift",
+      "mode": "100644",
+      "blob": "e9aacc51a75c3e051a8cdb2da9c82c2dc8a4ecb8",
+      "sha256": "588eef76c8f5b203049a7dbcf29d066dd070f0e595bbaa2712b2e355ccd3a09f",
+      "match": true
+    },
+    {
+      "path": "TinodiosUITests/OwnedImageTests.swift",
+      "mode": "100644",
+      "blob": "07ee1706aa6782110dfcde3259644b0871b1183c",
+      "sha256": "94101ad7088664e20b327c7351b88bbc71bec6563e8f4d6e11003a9c9c950941",
+      "match": true
+    },
+    {
+      "path": "TinodiosUITests/VLCPlaybackProbeTests.swift",
+      "mode": "100644",
+      "blob": "d8e62ee3ef4da6e0c107dc7d848e5e1caac80de8",
+      "sha256": "6187914f637d6baf6a5b152bcf175778ea79446e20987278c017a683baf7ce70",
+      "match": true
+    },
+    {
+      "path": "Scripts/ci/test_owned_image_policy.py",
+      "mode": "100644",
+      "blob": "6803aa1f1c28244944144e09eaf119f7966d99bd",
+      "sha256": "201bcc7136e1b2c55e1b94b44e525b0d9e8e3b3a71b2ecd622cbc259c6ba8abf",
+      "match": true
+    }
+  ],
+  "scope": "Git packaging only; new native/helper/VLC/UI methods NOT_RUN"
+}

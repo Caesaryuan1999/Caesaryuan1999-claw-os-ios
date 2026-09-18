@@ -1,0 +1,403 @@
+[
+  {
+    "path": ".github/workflows/ios-smoke.yml",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Podfile",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Podfile.lock",
+    "reason": "Exact Podfile checksum for already reviewed isolated VLC test-host configuration; frozen dependency versions"
+  },
+  {
+    "path": "Scripts/ci/prepare_license_plist.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/smoke_simulator_launch.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_active_contacts_layout_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_auth_ui_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_brand_ui_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_chat_list_branding_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_compact_message_layout_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_db_initialization_gate_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_db_live_diagnostics_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_delete_account_ack_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_figma_visual_contract_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_group_flow_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_group_note_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_license_plist.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_local_account_delete_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_logout_owner_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_media_attachment_policy.py",
+    "review_basis": "R3-IOS-VIDEO-UI approved video-only source policy"
+  },
+  {
+    "path": "Scripts/ci/test_message_background_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_notification_settings_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_owned_image_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units",
+    "reason": "Retain original21 and original10image count; cumulative29 includes approved8 methods"
+  },
+  {
+    "path": "Scripts/ci/test_premium_secondary_ui_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_public_directory_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_sdk_inbound_log_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_secondary_ui_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_signup_registration_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/test_topic_info_layout_policy.py",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodeSDK.xcodeproj/project.pbxproj",
+    "reason": "Actual SDK audio completion source adapter test membership"
+  },
+  {
+    "path": "TinodeSDK/Tinode.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodeSDK/model/Types.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodeSDKTests/TinodeSDKTests.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios.xcodeproj/project.pbxproj",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios.xcodeproj/xcshareddata/xcschemes/Tinodios.xcscheme",
+    "reason": "Separate real VLC foreground hosted tests; excluded from production archive"
+  },
+  {
+    "path": "Tinodios/AccountGeneralSettingsViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/AccountSettingsViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/AddByIDViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/Base.lproj/Main.storyboard",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/Cache.swift",
+    "reason": "Approved per-owner recording lease retirement"
+  },
+  {
+    "path": "Tinodios/ChatListInteractor.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/ChatListViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/ClawIdentityFlow.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/ClawIdentityService.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/ClawSecondaryUIState.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units",
+    "reason": "Approved VIDEO-OWNED-02 per-operation budget and actual-player file lease; retains earlier media/notification helpers"
+  },
+  {
+    "path": "Tinodios/CredentialsChangeViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/CredentialsViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/FilePreviewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/FindInteractor.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/FindViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/ImagePreviewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/LargeFileHelper.swift",
+    "review_basis": "VIDEO-DOWNLOAD owned foreground export, background upload preserved"
+  },
+  {
+    "path": "Tinodios/LoginViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/MediaRecorder.swift",
+    "reason": "Approved permission/initialization/lease/data-file responsibility repair, original copyright preserved"
+  },
+  {
+    "path": "Tinodios/MessageInteractor.swift",
+    "reason": "Approved original-owner audio submission, srvUrl completion, quote copy guard and accurate failure copy"
+  },
+  {
+    "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units",
+    "reason": "Inherited reviewed voice UI and isolated abc2307 nonoptional VLCTime compile correction"
+  },
+  {
+    "path": "Tinodios/MessageViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/NewChatTabController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/ResetPasswordViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/Settings.bundle/Acknowledgements.plist",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/SettingsHelpViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/SettingsNotificationsViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/SettingsSecurityViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/SignupViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/TopicGeneralViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/TopicInfoViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/TopicSecurityViewController.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/UiUtils.swift",
+    "review_basis": "VIDEO-DOWNLOAD captured owner/attempt main presentation"
+  },
+  {
+    "path": "Tinodios/Utils.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/VideoPreviewController.swift",
+    "review_basis": "VIDEO-DOWNLOAD and R3-IOS-VIDEO-UI approved changes",
+    "reason": "Approved VIDEO-OWNED-02 local prepared playback, original-owner lifecycle and separate share file"
+  },
+  {
+    "path": "Tinodios/format/AsyncImageTextAttachment.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/format/ThumbnailTransformer.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/widgets/ChatListViewCell.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/widgets/ChatListViewCell.xib",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/widgets/ContactViewCell.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/widgets/ContactViewCell.xib",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/widgets/RoundImageView.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/widgets/SendMessageBar.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/widgets/SendMessageBar.xib",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "Tinodios/zh-Hans.lproj/Main.strings",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosDB/BaseDb.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosDB/SqlStore.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosDB/UserDb.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosUITests/ConversationRemovalTests.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosUITests/IdentityFlowTests.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosUITests/IdentityNavigationUITests.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosUITests/MediaRecorderLifecycleTests.swift",
+    "reason": "Eight actual recorder class tests with explicit AV/device boundary injection"
+  },
+  {
+    "path": "TinodiosUITests/OwnedImageTests.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units",
+    "reason": "Original21 methods plus8 production helper/SDK/SQLite/native file methods"
+  },
+  {
+    "path": "TinodiosUITests/PublicDirectoryTests.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosUITests/SecondaryUIStateTests.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosUITests/SendMessageBarResetTests.swift",
+    "reason": "Four exact production-method + UIKit adapter tests; XIB explicitly not executed"
+  },
+  {
+    "path": "TinodiosUITests/TinodiosUITests.swift",
+    "review_basis": "Inherited approved FINAL-56C4A7F-PLAN source/test/CI allowlist; final Git bytes updated through the separately approved units"
+  },
+  {
+    "path": "TinodiosUITests/VLCPlaybackProbeTests.swift",
+    "reason": "Original4 real dependency observations including fixed403 evidence plus3 actual owned-file/lease/playlist methods; not blanket safety acceptance"
+  },
+  {
+    "path": "TinodiosVLCProbeHost/AppDelegate.swift",
+    "reason": "Isolated empty frontmost UIKit probe host; no production auth/network data"
+  },
+  {
+    "path": "docs/handoff/R3/CI-SMOKE/check_smoke_runner.py",
+    "review_basis": "Necessary executable fixture for actual Python runner and native attachment exporter; synthetic local files and controlled process boundary only"
+  },
+  {
+    "path": "docs/handoff/R3/CI21-CONFIG-01/verify_real_config.rb",
+    "reason": "Actual Ruby Config regression for the exact Podfile hook; synthetic containers, no credentials"
+  },
+  {
+    "path": "docs/handoff/R3/LOCAL-DELETE-PLAN/reproduce_partial_delete.py",
+    "review_basis": "Preserved executable red SQLite fault evidence; memory DB and synthetic ios113.sql, not a production database"
+  },
+  {
+    "path": "docs/handoff/R3/LOCAL-DELETE/check_local_delete_sqlite.py",
+    "review_basis": "Necessary green SQLite fault fixture; extracted production SQL; memory DB and synthetic ios113.sql"
+  }
+]

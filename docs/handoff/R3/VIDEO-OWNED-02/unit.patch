@@ -1,0 +1,982 @@
+diff --git a/Scripts/ci/test_owned_image_policy.py b/Scripts/ci/test_owned_image_policy.py
+index a21c28eef3d3657c11035011348981732dd68aa6..6803aa1f1c28244944144e09eaf119f7966d99bd 100644
+--- a/Scripts/ci/test_owned_image_policy.py
++++ b/Scripts/ci/test_owned_image_policy.py
+@@ -49,7 +49,8 @@ tests = read("TinodiosUITests/OwnedImageTests.swift")
+ # The original ten image methods remain; the same selected class now adds eleven file-transfer methods.
+ image_tests = tests[:tests.index("// Actual URLSession download tasks")]
+ assert len(re.findall(r"    func test\w+\(", image_tests)) == 10
+-assert len(re.findall(r"    func test\w+\(", tests)) == 21
++assert len(re.findall(r"    func test\w+\(", tests.split("// These methods execute the production budget/download/lease")[0])) == 21
++assert len(re.findall(r"    func test\w+\(", tests)) == 29  # VIDEO-OWNED-02 adds eight actual helper methods.
+ assert "BaseDb(databasePath:" in tests and "KingfisherManager.shared.retrieveImage" in tests
+ assert "RoundImageView(frame:" in tests and "AsyncImageTextAttachment(url:" in tests
+ assert "modifier.modified(for: current)" in tests and ".onlyFromCache" in tests
+diff --git a/Tinodios/ClawSecondaryUIState.swift b/Tinodios/ClawSecondaryUIState.swift
+index 9dd2bdb0a87bd93961c57d39247ebdfeb289c13c..8327e333ec5bda979d87264a5a4882f4fcb6a0f5 100644
+--- a/Tinodios/ClawSecondaryUIState.swift
++++ b/Tinodios/ClawSecondaryUIState.swift
+@@ -209,11 +209,16 @@ enum ClawMediaFiles {
+     }
+ 
+     /// Only paths created and registered by this process can be cleaned up.
+-    static func removeExport(_ url: URL) {
+-        exportLock.lock()
+-        let owned = ownedExports.remove(url) != nil
+-        exportLock.unlock()
+-        if owned { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
++    @discardableResult static func removeExport(_ url: URL) -> Bool {
++        exportLock.lock(); defer { exportLock.unlock() }
++        guard ownedExports.contains(url) else { return false }
++        do {
++            if FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path) {
++                try FileManager.default.removeItem(at: url.deletingLastPathComponent())
++            }
++            ownedExports.remove(url)
++            return true
++        } catch { return false } // Keep ownership when the filesystem refuses cleanup.
+     }
+ 
+     static func exportPNG(_ bytes: Data, suggestedName: String?, root: URL = FileManager.default.temporaryDirectory) throws -> URL {
+@@ -404,6 +409,7 @@ final class ClawOwnedImageLoader {
+ // Foreground-process download only. Uploads retain their independent background session.
+ enum ClawFileTransferError: Error {
+     case invalidURL, sessionExpired, cancelled, redirect, network, write, invalidData
++    case tooLarge, insufficientSpace, spaceUnavailable
+     case http(Int)
+ 
+     var message: String {
+@@ -411,6 +417,9 @@ enum ClawFileTransferError: Error {
+         case .sessionExpired, .cancelled: return "操作已结束，请重新打开此消息。"
+         case .http(403): return "当前账号无权访问此附件。"
+         case .write: return "无法准备分享文件，请稍后重试。"
++        case .tooLarge: return "视频超过本机预览大小限制，请返回聊天。"
++        case .insufficientSpace: return "本机可用空间不足，请释放空间后重新打开视频。"
++        case .spaceUnavailable: return "暂时无法确认本机可用空间，请稍后重新打开视频。"
+         default: return "附件暂时无法下载，请重试，或返回聊天检查此消息是否仍可访问。"
+         }
+     }
+@@ -444,6 +453,149 @@ final class ClawOwnedFilePresentation {
+     }
+ }
+ 
++/// A per-operation preview limit, not a server policy or a disk reservation.
++struct ClawVideoDownloadBudget {
++    static let reserveBytes: Int64 = 16 * 1024 * 1024
++    let maximumBytes: Int64
++    private let availableBytes: (URL) throws -> Int64
++
++    init(maximumBytes: Int64, availableBytes: @escaping (URL) throws -> Int64 = { root in
++        let attributes = try FileManager.default.attributesOfFileSystem(forPath: root.path)
++        guard let bytes = attributes[.systemFreeSize] as? NSNumber else { throw ClawFileTransferError.spaceUnavailable }
++        return bytes.int64Value
++    }) {
++        self.maximumBytes = maximumBytes
++        self.availableBytes = availableBytes
++    }
++
++    static func captured(from context: ClawOwnedImageContext) throws -> ClawVideoDownloadBudget {
++        guard let maximum = context.withCurrent({
++            context.owner.getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: 8 * 1024 * 1024)
++        }) else { throw ClawFileTransferError.sessionExpired }
++        return ClawVideoDownloadBudget(maximumBytes: maximum)
++    }
++
++    func preflight(at root: URL) throws {
++        let doubled = maximumBytes.multipliedReportingOverflow(by: 2)
++        let required = doubled.partialValue.addingReportingOverflow(Self.reserveBytes)
++        guard maximumBytes > 0, !doubled.overflow, !required.overflow else { throw ClawFileTransferError.tooLarge }
++        let available: Int64
++        do { available = try availableBytes(root) }
++        catch { throw ClawFileTransferError.spaceUnavailable }
++        guard available >= required.partialValue else { throw ClawFileTransferError.insufficientSpace }
++    }
++
++    func checkProgress(written: Int64, expected: Int64) throws {
++        guard maximumBytes > 0, written >= 0, written <= maximumBytes,
++              expected < 0 || expected <= maximumBytes else { throw ClawFileTransferError.tooLarge }
++    }
++
++    func checkFile(_ file: URL) throws {
++        let attributes = try FileManager.default.attributesOfItem(atPath: file.path)
++        let length = (attributes[.size] as? NSNumber)?.int64Value ?? 0
++        try checkProgress(written: length, expected: length)
++        guard length > 0 else { throw ClawFileTransferError.invalidData }
++    }
++}
++
++/// Main-thread responsibility for one actual player and its optional owned file.
++/// The generic callbacks capture that player, never the controller's later player.
++final class ClawOwnedPlaybackLease {
++    private static var pending = [UUID: ClawOwnedPlaybackLease]()
++    private let identity = UUID()
++    private let context: ClawOwnedImageContext
++    private let ownedFile: URL?
++    private let stop: () -> Void
++    private let isStopped: () -> Bool
++    private let detach: () -> Void
++    private let releaseMedia: () -> Void
++    private var observer: NSObjectProtocol?
++    private var stopTimer: Timer?
++    private var requestedPlay = false
++    private var observedStopped = false
++    private(set) var retired = false
++    private(set) var cleanupPending = false
++    private(set) var cleaned = false
++
++    init(context: ClawOwnedImageContext, ownedFile: URL?, player: AnyObject,
++         stop: @escaping () -> Void, isStopped: @escaping () -> Bool,
++         detach: @escaping () -> Void, releaseMedia: @escaping () -> Void) {
++        precondition(Thread.isMainThread)
++        self.context = context
++        self.ownedFile = ownedFile
++        self.stop = stop
++        self.isStopped = isStopped
++        self.detach = detach
++        self.releaseMedia = releaseMedia
++        // The fixed VLCKit notification is posted after its cached state is updated.
++        observer = NotificationCenter.default.addObserver(forName: Notification.Name("VLCMediaPlayerStateChanged"),
++            object: player, queue: .main) { [weak self] _ in
++                guard let self = self, self.retired, self.isStopped() else { return }
++                self.observedStopped = true
++                self.completeIfStopped()
++            }
++    }
++
++    @discardableResult func play(_ operation: () -> Void) -> Bool {
++        precondition(Thread.isMainThread)
++        guard !retired, context.isCurrent else { retire(); return false }
++        requestedPlay = true
++        observedStopped = false
++        operation() // SDK/Cache gates have returned: never call VLC while holding them.
++        return true
++    }
++
++    @discardableResult func checkOwner() -> Bool {
++        precondition(Thread.isMainThread)
++        guard !retired, context.isCurrent else { retire(); return false }
++        return true
++    }
++
++    func retire() {
++        precondition(Thread.isMainThread)
++        guard !retired else { return }
++        retired = true
++        Self.pending[identity] = self
++        stop()
++        detach()
++        // No polling of an initially cached `.stopped` as proof that async stop completed.
++        // Once play was requested, require this player's actual stop notification and state.
++        completeIfStopped()
++        guard !cleaned else { return }
++        let timer = Timer(timeInterval: 5, repeats: false) { [weak self] _ in
++            guard let self = self else { return }
++            self.stopTimer = nil
++            self.completeIfStopped()
++            self.cleanupPending = !self.cleaned
++            // No timeout unlink or repeated stop. Retain this attempt and its observer;
++            // a later real stop notification may still discharge its file responsibility.
++        }
++        stopTimer = timer
++        RunLoop.main.add(timer, forMode: .common)
++    }
++
++    private func completeIfStopped() {
++        guard retired, !cleaned, (!requestedPlay || observedStopped), isStopped() else { return }
++        releaseMedia()
++        if let ownedFile = ownedFile, !ClawMediaFiles.removeExport(ownedFile) {
++            cleanupPending = true
++            return
++        }
++        cleaned = true
++        cleanupPending = false
++        stopTimer?.invalidate()
++        stopTimer = nil
++        if let observer = observer { NotificationCenter.default.removeObserver(observer) }
++        observer = nil
++        Self.pending.removeValue(forKey: identity)
++    }
++
++    deinit {
++        if let observer = observer { NotificationCenter.default.removeObserver(observer) }
++        stopTimer?.invalidate()
++    }
++}
++
+ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSessionTaskDelegate {
+     typealias Completion = (Swift.Result<URL, Error>) -> Void
+     private let context: ClawOwnedImageContext
+@@ -451,6 +603,7 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
+     private let suggestedName: String?
+     private let root: URL
+     private let protocolClasses: [AnyClass]?
++    private let budget: ClawVideoDownloadBudget?
+     private let completion: Completion
+     private let lock = NSLock()
+     private var session: URLSession?
+@@ -460,12 +613,13 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
+     private var cancelled = false
+ 
+     init(context: ClawOwnedImageContext, suggestedName: String?, root: URL = FileManager.default.temporaryDirectory,
+-         protocolClasses: [AnyClass]? = nil, completion: @escaping Completion) {
++         protocolClasses: [AnyClass]? = nil, budget: ClawVideoDownloadBudget? = nil, completion: @escaping Completion) {
+         self.context = context
+         self.headers = context.withCurrent { context.owner.getRequestHeaders() } ?? [:]
+         self.suggestedName = suggestedName
+         self.root = root
+         self.protocolClasses = protocolClasses
++        self.budget = budget
+         self.completion = completion
+         super.init()
+     }
+@@ -500,6 +654,8 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
+             finish(.failure(context.isCurrent ? ClawFileTransferError.invalidURL : .sessionExpired))
+             return
+         }
++        do { try budget?.preflight(at: root) }
++        catch { finish(.failure(error)); return }
+         let session = URLSession(configuration: Self.configuration(protocolClasses: protocolClasses),
+                                  delegate: self, delegateQueue: nil)
+         let task = session.downloadTask(with: request)
+@@ -554,7 +710,9 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
+ 
+     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
+                     didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+-        if !context.isCurrent { finish(.failure(ClawFileTransferError.sessionExpired)) }
++        guard context.isCurrent else { finish(.failure(ClawFileTransferError.sessionExpired)); return }
++        do { try budget?.checkProgress(written: totalBytesWritten, expected: totalBytesExpectedToWrite) }
++        catch { finish(.failure(error)) }
+     }
+ 
+     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+@@ -568,19 +726,23 @@ final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSess
+               response.url == requested else { finish(.failure(ClawFileTransferError.invalidData)); return }
+         guard response.statusCode == 200 else { finish(.failure(ClawFileTransferError.http(response.statusCode))); return }
+         do {
++            try budget?.checkFile(location)
+             let attrs = try FileManager.default.attributesOfItem(atPath: location.path)
+             let length = (attrs[.size] as? NSNumber)?.int64Value ?? 0
++            try budget?.checkProgress(written: length, expected: response.expectedContentLength)
+             guard length > 0, response.expectedContentLength < 0 || response.expectedContentLength == length else {
+                 finish(.failure(ClawFileTransferError.invalidData)); return
+             }
+             guard context.isCurrent else { finish(.failure(ClawFileTransferError.sessionExpired)); return }
+             let export = try ClawMediaFiles.preserveDownload(location, suggestedName: suggestedName, root: root)
++            do { try budget?.checkFile(export) }
++            catch { ClawMediaFiles.removeExport(export); throw error }
+             guard context.isCurrent else {
+                 ClawMediaFiles.removeExport(export)
+                 finish(.failure(ClawFileTransferError.sessionExpired)); return
+             }
+             finish(.success(export))
+-        } catch { finish(.failure(ClawFileTransferError.write)) }
++        } catch { finish(.failure((error as? ClawFileTransferError) ?? .write)) }
+     }
+ 
+     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+diff --git a/Tinodios/VideoPreviewController.swift b/Tinodios/VideoPreviewController.swift
+index 6421051738ca887c782c684f0452a1614aa58a49..e9aacc51a75c3e051a8cdb2da9c82c2dc8a4ecb8 100644
+--- a/Tinodios/VideoPreviewController.swift
++++ b/Tinodios/VideoPreviewController.swift
+@@ -64,12 +64,17 @@ class VideoPreviewController: UIViewController {
+     private var isPreparingShare = false
+     private var keyboardOverlap: CGFloat = 0
+ 
+-    private let player = VLCMediaPlayer()
++    private var player = VLCMediaPlayer()
+     private let thumbnailer = ThumbnailFetcher()
+     private var didSubmitVideo = false
+ 
+     private var ownedContext: ClawOwnedImageContext?
+-    private var ownedHelper: LargeFileHelper?
++    private var playbackLease: ClawOwnedPlaybackLease?
++    private var playbackDownload: ClawOwnedFileDownload?
++    private var playbackBudget: ClawVideoDownloadBudget?
++    private var ownerTimer: Timer?
++    private var preparingPlayback = false
++    private var preparationFailure: ClawFileTransferError?
+     private var frozenContent: VideoPreviewContent?
+     private var sourceGeneration = UUID()
+     private var previewVisible = false
+@@ -82,7 +87,7 @@ class VideoPreviewController: UIViewController {
+                 invalidatePreview()
+                 frozenContent = nil
+                 ownedContext = nil
+-                ownedHelper = nil
++                playbackBudget = nil
+                 sourceAvailable = false
+                 renderPlayback()
+             }
+@@ -144,65 +149,116 @@ class VideoPreviewController: UIViewController {
+ 
+     private func setup() {
+         navigationItem.rightBarButtonItem = nil
+-        guard let content = self.previewContent, let context = Utils.ownedImageContext() else {
++        guard let content = self.previewContent,
++              let context = ownedContext ?? Utils.ownedImageContext(), context.isCurrent else {
++            preparationFailure = .sessionExpired
+             renderPlayback()
+             return
+         }
+         ownedContext = context
+-        ownedHelper = Cache.ifCurrent(context.owner) { Cache.getLargeFileHelper() }
+         frozenContent = content
++        preparationFailure = nil
++        sourceAvailable = false
++        preparingPlayback = false
++        playbackState = .loading
++        sourceGeneration = UUID()
++        let source = sourceGeneration
++        sendVideoBar.togglePreviewBar(with: content.pendingMessagePreview)
++        duration = content.duration
++        currentTimeLabel.text = "--:--"
++        startOwnerMonitor()
+ 
+-        var url: URL?
+-        var stream: Stream?
+         switch content.videoSrc {
+-        case .local(let videoUrl, _):
+-            url = videoUrl
++        case .local(let videoURL, _):
+             sendVideoBar.delegate = self
+-
+             sendVideoBar.replyPreviewDelegate = replyPreviewDelegate
+-            // Local previews retain the existing caption, reply and send accessory.
++            // The selected source is caller-owned. This preview never removes it.
++            beginPlayback(VLCMedia(url: videoURL), ownedFile: nil, source: source)
+         case .remote(let bits, let ref):
+             if let ref = ref {
+-                guard let mediaURL = context.resourceURL(from: ref) else {
+-                    renderPlayback()
+-                    return
++                guard let url = context.resourceURL(from: ref) else {
++                    failPreparation(.invalidURL); return
+                 }
+-                // VLC playback remains separate; the URL is bound to the captured owner.
+-                url = context.withCurrent { context.owner.addAuthQueryParams(mediaURL) }
+-            } else if let bits = bits, !bits.isEmpty {
+-                stream = InputStream(data: bits)
+-            } else {
++                do { playbackBudget = try ClawVideoDownloadBudget.captured(from: context) }
++                catch { failPreparation((error as? ClawFileTransferError) ?? .invalidData); return }
++                preparingPlayback = true
+                 renderPlayback()
+-                return
+-            }
++                let operation = ClawOwnedFileDownload(context: context, suggestedName: content.fileName,
++                    budget: playbackBudget) { [weak self] result in
++                    guard let self = self, self.acceptsSource(source) else {
++                        if case let .success(file) = result { ClawMediaFiles.removeExport(file) }
++                        return
++                    }
++                    self.playbackDownload = nil
++                    self.preparingPlayback = false
++                    switch result {
++                    case let .success(file):
++                        // A local entry point is not a container-content network sandbox.
++                        self.beginPlayback(VLCMedia(url: file), ownedFile: file, source: source)
++                    case let .failure(error):
++                        self.failPreparation((error as? ClawFileTransferError) ?? .network)
++                    }
++                }
++                playbackDownload = operation
++                operation.start(from: url)
++            } else if let bits = bits, !bits.isEmpty {
++                // Keep the pre-existing inline stream behavior.
++                beginPlayback(VLCMedia(stream: InputStream(data: bits)), ownedFile: nil, source: source)
++            } else { failPreparation(.invalidData) }
+         }
+-        sendVideoBar.togglePreviewBar(with: content.pendingMessagePreview)
+-        self.duration = content.duration
+-
+-        currentTimeLabel.text = "--:--"
++    }
+ 
+-        player.drawable = videoView
+-        var media: VLCMedia
+-        if let url = url {
+-            media = VLCMedia(url: url)
+-        } else if let stream = stream as? InputStream {
+-            media = VLCMedia(stream: stream)
+-        } else {
+-            renderPlayback()
++    private func beginPlayback(_ media: VLCMedia, ownedFile: URL?, source: UUID) {
++        guard acceptsSource(source), let context = ownedContext else {
++            if let ownedFile = ownedFile { ClawMediaFiles.removeExport(ownedFile) }
+             return
+         }
+-        player.media = media
+-        player.delegate = self
++        playbackLease?.retire()
++        let currentPlayer = VLCMediaPlayer()
++        player = currentPlayer
++        currentPlayer.drawable = videoView
++        currentPlayer.media = media
++        currentPlayer.delegate = self
++        let lease = ClawOwnedPlaybackLease(context: context, ownedFile: ownedFile, player: currentPlayer,
++            stop: { currentPlayer.stop() }, isStopped: { currentPlayer.state == .stopped },
++            detach: { currentPlayer.delegate = nil; currentPlayer.drawable = nil },
++            releaseMedia: { currentPlayer.media = nil })
++        playbackLease = lease
+         sourceAvailable = true
+         playbackState = .loading
+         renderPlayback()
+-        if context.isCurrent { player.play() }
++        if !lease.play({ currentPlayer.play() }) { failPreparation(.sessionExpired) }
++    }
++
++    private func failPreparation(_ error: ClawFileTransferError) {
++        preparingPlayback = false
++        preparationFailure = error
++        sourceAvailable = false
++        playbackState = .failed
++        renderPlayback()
++    }
++
++    private func startOwnerMonitor() {
++        ownerTimer?.invalidate()
++        let source = sourceGeneration
++        let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
++            guard let self = self, self.previewVisible, self.sourceGeneration == source else { return }
++            guard self.ownedContext?.isCurrent == true, self.playbackLease?.checkOwner() != false else {
++                self.invalidatePreview()
++                self.sendVideoBar.delegate = nil
++                self.resignFirstResponder()
++                self.reloadInputViews()
++                self.failPreparation(.sessionExpired)
++                return
++            }
++        }
++        ownerTimer = timer
++        RunLoop.main.add(timer, forMode: .common)
+     }
+ 
+     override func viewDidLoad() {
+         super.viewDidLoad()
+         configureInterface()
+-        setup()
+         // A custom inputAccessoryView is only installed after the controller
+         // becomes first responder. Without this, the video preview opens but
+         // the send bar is missing on iOS.
+@@ -212,8 +268,7 @@ class VideoPreviewController: UIViewController {
+     override func viewWillAppear(_ animated: Bool) {
+         super.viewWillAppear(animated)
+         previewVisible = true
+-        refreshPlaybackState()
+-        renderPlayback()
++        setup()
+     }
+ 
+     override func viewWillDisappear(_ animated: Bool) {
+@@ -223,12 +278,18 @@ class VideoPreviewController: UIViewController {
+ 
+     private func invalidatePreview() {
+         previewVisible = false
++        ownerTimer?.invalidate()
++        ownerTimer = nil
+         sourceGeneration = UUID()
++        playbackDownload?.cancel()
++        playbackDownload = nil
++        preparingPlayback = false
+         shareSlot.invalidate()
+         download?.cancel()
+         download = nil
+         isPreparingShare = false
+-        player.stop()
++        playbackLease?.retire()
++        playbackLease = nil
+     }
+ 
+     private func acceptsSource(_ generation: UUID) -> Bool {
+@@ -291,7 +352,15 @@ class VideoPreviewController: UIViewController {
+             name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
+     }
+ 
+-    deinit { NotificationCenter.default.removeObserver(self) }
++    deinit {
++        NotificationCenter.default.removeObserver(self)
++        ownerTimer?.invalidate()
++        playbackDownload?.cancel()
++        download?.cancel()
++        let lease = playbackLease
++        if Thread.isMainThread { lease?.retire() }
++        else { DispatchQueue.main.async { lease?.retire() } }
++    }
+ 
+     override func viewDidLayoutSubviews() {
+         super.viewDidLayoutSubviews()
+@@ -425,9 +494,31 @@ class VideoPreviewController: UIViewController {
+         muteButton.setTitle(soundTitle, for: .normal)
+         muteButton.accessibilityLabel = soundTitle
+         muteButton.isEnabled = !failed && !loading && audio != nil
+-        errorMessageLabel.text = ownedContext?.isCurrent != true
+-            ? "操作已结束，请返回聊天后重新打开。"
+-            : (canShareOriginal ? "你可以返回聊天后重新打开，或分享原文件。" : "请检查网络连接，或返回聊天后重新打开。")
++        returnButton.setTitle(preparingPlayback ? "取消并返回" : "返回聊天", for: .normal)
++        if preparingPlayback {
++            errorTitleLabel.text = "正在准备视频"
++            errorMessageLabel.text = "视频下载完成后即可播放。返回聊天将取消本次加载。"
++        } else if ownedContext?.isCurrent != true {
++            errorTitleLabel.text = "视频已停止"
++            errorMessageLabel.text = "当前会话已失效，请返回聊天后重新打开。"
++        } else if let failure = preparationFailure {
++            errorTitleLabel.text = "视频未加载完成"
++            switch failure {
++            case .network:
++                errorMessageLabel.text = "请检查网络后，返回聊天重新打开视频。"
++            case .http(403): errorMessageLabel.text = "当前账号无权查看这段视频。"
++            case .tooLarge, .insufficientSpace, .spaceUnavailable: errorMessageLabel.text = failure.message
++            case .write: errorMessageLabel.text = "无法准备本机视频文件，请稍后重新打开。"
++            case .redirect: errorMessageLabel.text = "视频地址发生跳转，暂时无法安全加载。请返回聊天。"
++            case .sessionExpired, .cancelled: errorMessageLabel.text = "操作已结束，请返回聊天后重新打开。"
++            default: errorMessageLabel.text = "视频文件无法完整获取，请返回聊天检查此消息是否仍可访问。"
++            }
++        } else {
++            errorTitleLabel.text = "视频暂时无法播放"
++            errorMessageLabel.text = canShareOriginal
++                ? "你可以返回聊天后重新打开，或分享原文件。"
++                : "请返回聊天检查此消息是否仍可访问。"
++        }
+         shareStack.isHidden = !canShareOriginal
+         shareButton.isEnabled = canShareOriginal && !isPreparingShare
+         shareButton.setTitle(isPreparingShare ? "正在准备分享…" : "分享视频", for: .normal)
+@@ -444,16 +535,15 @@ class VideoPreviewController: UIViewController {
+         guard acceptsSource(sourceGeneration), sourceAvailable, playbackState != .failed,
+               playbackState != .loading, playbackState != .buffering else { return }
+         if player.state == .ended || player.state == .stopped {
+-            player.stop()
+             player.position = 0
+-            player.play()
++            playbackLease?.play { player.play() }
+             return
+         }
+ 
+         if player.isPlaying {
+             player.pause()
+         } else {
+-            player.play()
++            playbackLease?.play { player.play() }
+         }
+     }
+ 
+@@ -497,11 +587,13 @@ class VideoPreviewController: UIViewController {
+             })
+         }
+         if let ref = ref {
+-            guard let url = context.resourceURL(from: ref), let helper = ownedHelper else {
++            guard let url = context.resourceURL(from: ref), let budget = playbackBudget else {
+                 completed(.failure(ClawFileTransferError.invalidURL)); return
+             }
+-            download = helper.startOwnedDownload(from: url, context: context,
+-                suggestedName: content.fileName, completion: completed)
++            let operation = ClawOwnedFileDownload(context: context, suggestedName: content.fileName,
++                                                  budget: budget, completion: completed)
++            download = operation
++            operation.start(from: url)
+         } else if let bits = bits, !bits.isEmpty {
+             DispatchQueue.global(qos: .userInitiated).async {
+                 let result: Swift.Result<URL, Error>
+diff --git a/TinodiosUITests/OwnedImageTests.swift b/TinodiosUITests/OwnedImageTests.swift
+index 3e92327ee84dc23c01a0bf266092174865fc2325..07ee1706aa6782110dfcde3259644b0871b1183c 100644
+--- a/TinodiosUITests/OwnedImageTests.swift
++++ b/TinodiosUITests/OwnedImageTests.swift
+@@ -362,7 +362,7 @@ final class OwnedImageTests: XCTestCase {
+ 
+ // Actual URLSession download tasks use this URLProtocol. No real account or external server is contacted.
+ private final class OwnedFileProtocol: URLProtocol {
+-    enum Reply { case body(Int, Data), failure, redirect(URL) }
++    enum Reply { case body(Int, Data), unknownLength(Data), declaredLength(Data, Int), failure, redirect(URL) }
+     static let handlerLock = NSLock()
+     static var handler: ((URLRequest, @escaping (Reply) -> Void) -> Void)?
+     private let stateLock = NSLock()
+@@ -387,6 +387,18 @@ private final class OwnedFileProtocol: URLProtocol {
+             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+             client?.urlProtocol(self, didLoad: body)
+             client?.urlProtocolDidFinishLoading(self)
++        case let .unknownLength(body):
++            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1",
++                headerFields: ["Content-Type": "application/octet-stream"])!
++            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
++            client?.urlProtocol(self, didLoad: body)
++            client?.urlProtocolDidFinishLoading(self)
++        case let .declaredLength(body, length):
++            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1",
++                headerFields: ["Content-Length": String(length)])!
++            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
++            client?.urlProtocol(self, didLoad: body)
++            client?.urlProtocolDidFinishLoading(self)
+         case .failure:
+             client?.urlProtocol(self, didFailWithError: URLError(.cannotConnectToHost))
+         case let .redirect(target):
+@@ -403,11 +415,12 @@ private final class OwnedFileProtocol: URLProtocol {
+ 
+ extension OwnedImageTests {
+     private func downloaded(context: ClawOwnedImageContext, url: URL,
+-                            root: URL = FileManager.default.temporaryDirectory) throws -> Swift.Result<URL, Error> {
++                            root: URL = FileManager.default.temporaryDirectory,
++                            budget: ClawVideoDownloadBudget? = nil) throws -> Swift.Result<URL, Error> {
+         let done = expectation(description: "owned download completes exactly once")
+         var captured: Swift.Result<URL, Error>?
+         let operation = ClawOwnedFileDownload(context: context, suggestedName: "../same.mp4", root: root,
+-                                             protocolClasses: [OwnedFileProtocol.self]) { result in
++                                             protocolClasses: [OwnedFileProtocol.self], budget: budget) { result in
+             XCTAssertTrue(Thread.isMainThread)
+             captured = result
+             done.fulfill()
+@@ -654,3 +667,196 @@ extension OwnedImageTests {
+         }
+     }
+ }
++
++
++// These methods execute the production budget/download/lease with actual SDK and SQLite owners.
++// The stop notification here is a controlled callback boundary; the VLC host separately runs the real player.
++extension OwnedImageTests {
++    func testVideoBudgetChecksTwoCopiesReserveOverflowAndRealFilesystem() throws {
++        let root = FileManager.default.temporaryDirectory
++        let limit: Int64 = 1024
++        var required: Int64 = 0
++        let exact = ClawVideoDownloadBudget(maximumBytes: limit) { _ in
++            required = 2 * limit + ClawVideoDownloadBudget.reserveBytes
++            return required
++        }
++        XCTAssertNoThrow(try exact.preflight(at: root))
++        XCTAssertEqual(required, 16 * 1024 * 1024 + 2048)
++        XCTAssertThrowsError(try ClawVideoDownloadBudget(maximumBytes: limit,
++            availableBytes: { _ in required - 1 }).preflight(at: root)) {
++                guard case ClawFileTransferError.insufficientSpace = $0 else { return XCTFail("wrong space category") }
++            }
++        for invalid in [Int64(0), -1, Int64.max, Int64.max / 2] {
++            XCTAssertThrowsError(try ClawVideoDownloadBudget(maximumBytes: invalid,
++                availableBytes: { _ in XCTFail("overflow must fail before space query"); return Int64.max }).preflight(at: root))
++        }
++        // Use the actual filesystem accessor, without assuming the runner has a particular free capacity.
++        let actual = ClawVideoDownloadBudget(maximumBytes: 1)
++        do { try actual.preflight(at: root) }
++        catch { guard case ClawFileTransferError.insufficientSpace = error else { throw error } }
++        let fixture = try OwnedImageFixture()
++        XCTAssertEqual(try ClawVideoDownloadBudget.captured(from: fixture.context()).maximumBytes, 8 * 1024 * 1024)
++    }
++
++    func testVideoDownloadRejectsKnownAndUnknownLengthOversize() throws {
++        let fixture = try OwnedImageFixture()
++        let context = try fixture.context()
++        let budget = ClawVideoDownloadBudget(maximumBytes: 4, availableBytes: { _ in Int64.max })
++        for unknown in [false, true] {
++            OwnedFileProtocol.respond { _, reply in
++                reply(unknown ? .unknownLength(Data(repeating: 8, count: 32)) : .body(200, Data(repeating: 8, count: 32)))
++            }
++            let result = try downloaded(context: context, url: fixture.origin, budget: budget)
++            guard case let .failure(error) = result, case ClawFileTransferError.tooLarge = error else {
++                return XCTFail("An oversized body must never become a playback file")
++            }
++        }
++        XCTAssertThrowsError(try budget.checkProgress(written: 1, expected: 5))
++        XCTAssertThrowsError(try budget.checkProgress(written: 5, expected: -1))
++        XCTAssertNoThrow(try budget.checkProgress(written: 4, expected: -1))
++    }
++
++    func testVideoBudgetRechecksActualFileAndPreservesBoundedDownload() throws {
++        let fixture = try OwnedImageFixture()
++        let context = try fixture.context()
++        let budget = ClawVideoDownloadBudget(maximumBytes: 4, availableBytes: { _ in Int64.max })
++        let file = try ClawMediaFiles.exportData(Data([1, 2, 3, 4]), suggestedName: "check.mp4")
++        defer { ClawMediaFiles.removeExport(file) }
++        XCTAssertNoThrow(try budget.checkFile(file))
++        try Data([1, 2, 3, 4, 5]).write(to: file)
++        XCTAssertThrowsError(try budget.checkFile(file)) {
++            guard case ClawFileTransferError.tooLarge = $0 else { return XCTFail("wrong final-file category") }
++        }
++        OwnedFileProtocol.respond { _, reply in reply(.unknownLength(Data([9, 8, 7, 6]))) }
++        let downloadedFile = try downloaded(context: context, url: fixture.origin, budget: budget).get()
++        XCTAssertEqual(try Data(contentsOf: downloadedFile), Data([9, 8, 7, 6]))
++        XCTAssertTrue(ClawMediaFiles.removeExport(downloadedFile))
++        OwnedFileProtocol.respond { _, reply in reply(.declaredLength(Data([1, 2]), 4)) }
++        guard case .failure = try downloaded(context: context, url: fixture.origin, budget: budget) else {
++            return XCTFail("A truncated 200 body must not become a playback file")
++        }
++    }
++
++    func testVideoDownloadSpaceFailuresNeverStartTransport() throws {
++        let fixture = try OwnedImageFixture()
++        let context = try fixture.context()
++        var requests = 0
++        OwnedFileProtocol.respond { _, reply in requests += 1; reply(.body(200, Data([1]))) }
++        for unavailable in [false, true] {
++            let budget = ClawVideoDownloadBudget(maximumBytes: 100) { _ in
++                if unavailable { throw CocoaError(.fileReadUnknown) }
++                return 1
++            }
++            let result = try downloaded(context: context, url: fixture.origin, budget: budget)
++            guard case let .failure(error) = result else { return XCTFail("space gate must reject") }
++            if unavailable {
++                guard case ClawFileTransferError.spaceUnavailable = error else { return XCTFail("wrong query category") }
++            } else {
++                guard case ClawFileTransferError.insufficientSpace = error else { return XCTFail("wrong low-space category") }
++            }
++        }
++        XCTAssertEqual(requests, 0)
++    }
++
++    func testPlaybackLeaseRejectsRetiredOwnerAtQueuedMainConsumption() throws {
++        let fixture = try OwnedImageFixture()
++        let context = try fixture.context()
++        let oldFile = try ClawMediaFiles.exportData(Data([1]), suggestedName: "a.mp4")
++        fixture.switchToB()
++        let newFile = try ClawMediaFiles.exportData(Data([2]), suggestedName: "b.mp4")
++        defer { ClawMediaFiles.removeExport(newFile) }
++        let delivered = expectation(description: "queued old owner cannot play")
++        DispatchQueue.main.async {
++            let player = NSObject()
++            let lease = ClawOwnedPlaybackLease(context: context, ownedFile: oldFile, player: player,
++                stop: {}, isStopped: { true }, detach: {}, releaseMedia: {})
++            XCTAssertFalse(lease.play { XCTFail("retired A must not start") })
++            XCTAssertTrue(lease.cleaned)
++            XCTAssertFalse(FileManager.default.fileExists(atPath: oldFile.path))
++            XCTAssertTrue(FileManager.default.fileExists(atPath: newFile.path))
++            delivered.fulfill()
++        }
++        wait(for: [delivered], timeout: 3)
++        XCTAssertEqual(fixture.store.myUid, "usrOwnedB")
++    }
++
++    func testPlaybackLeaseRequiresStoppedEventAndRetainsFileAfterTimeout() throws {
++        let fixture = try OwnedImageFixture()
++        let context = try fixture.context()
++        let file = try ClawMediaFiles.exportData(Data([1]), suggestedName: "owned.mp4")
++        let player = NSObject()
++        var stopped = false
++        var stops = 0
++        var lease: ClawOwnedPlaybackLease!
++        onMain {
++            lease = ClawOwnedPlaybackLease(context: context, ownedFile: file, player: player,
++                stop: { stops += 1 }, isStopped: { stopped }, detach: {}, releaseMedia: {})
++            XCTAssertTrue(lease.play {})
++            lease.retire(); lease.retire()
++            stopped = true // Cached state alone is deliberately insufficient.
++        }
++        let elapsed = expectation(description: "fixed stop deadline retains responsibility")
++        DispatchQueue.main.asyncAfter(deadline: .now() + 5.1) { elapsed.fulfill() }
++        wait(for: [elapsed], timeout: 6)
++        onMain {
++            XCTAssertTrue(lease.cleanupPending)
++            XCTAssertFalse(lease.cleaned)
++            XCTAssertEqual(stops, 1)
++            XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
++            NotificationCenter.default.post(name: Notification.Name("VLCMediaPlayerStateChanged"), object: player)
++            XCTAssertTrue(lease.cleaned)
++            XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
++        }
++    }
++
++    func testPlaybackLeaseOfflineOwnerAndLocalSourceArePreservedUntilRetirement() throws {
++        let fixture = try OwnedImageFixture()
++        let context = try fixture.context()
++        let local = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp4")
++        try Data([1, 2]).write(to: local)
++        defer { try? FileManager.default.removeItem(at: local) }
++        var lease: ClawOwnedPlaybackLease!
++        onMain {
++            lease = ClawOwnedPlaybackLease(context: context, ownedFile: nil, player: NSObject(),
++                stop: {}, isStopped: { true }, detach: {}, releaseMedia: {})
++            XCTAssertFalse(fixture.owner.isConnectionAuthenticated)
++            XCTAssertTrue(lease.checkOwner())
++        }
++        fixture.logout()
++        onMain {
++            XCTAssertFalse(lease.checkOwner())
++            XCTAssertTrue(lease.cleaned)
++        }
++        XCTAssertTrue(FileManager.default.fileExists(atPath: local.path))
++        XCTAssertFalse(ClawMediaFiles.removeExport(local))
++    }
++
++    func testPlaybackRetirementCannotStopNewAttemptOrDeleteShareFile() throws {
++        let fixture = try OwnedImageFixture()
++        let context = try fixture.context()
++        let old = try ClawMediaFiles.exportData(Data([1]), suggestedName: "play.mp4")
++        let share = try ClawMediaFiles.exportData(Data([1]), suggestedName: "share.mp4")
++        let next = try ClawMediaFiles.exportData(Data([2]), suggestedName: "next.mp4")
++        defer { ClawMediaFiles.removeExport(share) }
++        let a = NSObject(), b = NSObject()
++        var stoppedA = false, stoppedB = false, stopsA = 0, stopsB = 0
++        onMain {
++            let first = ClawOwnedPlaybackLease(context: context, ownedFile: old, player: a,
++                stop: { stopsA += 1 }, isStopped: { stoppedA }, detach: {}, releaseMedia: {})
++            let second = ClawOwnedPlaybackLease(context: context, ownedFile: next, player: b,
++                stop: { stopsB += 1 }, isStopped: { stoppedB }, detach: {}, releaseMedia: {})
++            XCTAssertTrue(first.play {}); XCTAssertTrue(second.play {})
++            first.retire()
++            stoppedA = true
++            NotificationCenter.default.post(name: Notification.Name("VLCMediaPlayerStateChanged"), object: a)
++            XCTAssertTrue(first.cleaned)
++            XCTAssertFalse(second.retired)
++            XCTAssertEqual(stopsA, 1); XCTAssertEqual(stopsB, 0)
++            XCTAssertTrue(FileManager.default.fileExists(atPath: next.path))
++            XCTAssertTrue(FileManager.default.fileExists(atPath: share.path))
++            second.retire(); stoppedB = true
++            NotificationCenter.default.post(name: Notification.Name("VLCMediaPlayerStateChanged"), object: b)
++            XCTAssertTrue(second.cleaned)
++        }
++    }
++}
+diff --git a/TinodiosUITests/VLCPlaybackProbeTests.swift b/TinodiosUITests/VLCPlaybackProbeTests.swift
+index aded85a752561af20853083a18603b6e43e569be..d8e62ee3ef4da6e0c107dc7d848e5e1caac80de8 100644
+--- a/TinodiosUITests/VLCPlaybackProbeTests.swift
++++ b/TinodiosUITests/VLCPlaybackProbeTests.swift
+@@ -772,6 +772,155 @@ final class VLCPlaybackProbeTests: XCTestCase {
+         }
+         try attach("vlc-reopen-cache-cookie", ["fixture": "MEASUREMENT_COMPLETED", "cases": results])
+     }
++
++    // New tests execute production owned download and lease with real loopback HTTP, SQLite and VLC.
++    // They do not instantiate VideoPreviewController or assert arbitrary-container network isolation.
++    private func ownedFixture(_ url: URL, context: ClawOwnedImageContext, maximum: Int64) throws -> URL {
++        let completed = expectation(description: "production owned loopback download")
++        var result: Swift.Result<URL, Error>?
++        let transfer = ClawOwnedFileDownload(context: context, suggestedName: "fixture.mp4",
++            budget: ClawVideoDownloadBudget(maximumBytes: maximum)) {
++                result = $0; completed.fulfill()
++            }
++        transfer.start(from: url)
++        wait(for: [completed], timeout: 8)
++        withExtendedLifetime(transfer) {}
++        return try XCTUnwrap(result).get()
++    }
++
++    private func ownedLease(_ playback: VLCProbePlayer, file: URL,
++                            context: ClawOwnedImageContext) -> ClawOwnedPlaybackLease {
++        vlcMain {
++            let player = playback.player
++            let lease = ClawOwnedPlaybackLease(context: context, ownedFile: file, player: player,
++                stop: { player.stop() }, isStopped: { player.state == .stopped },
++                detach: { player.drawable = nil }, releaseMedia: { player.media = nil })
++            // VLCProbePlayer starts its actual player at construction. Register the same play responsibility.
++            XCTAssertTrue(lease.play {})
++            return lease
++        }
++    }
++
++    @discardableResult private func closeOwned(_ playback: VLCProbePlayer, lease: ClawOwnedPlaybackLease) -> Bool {
++        vlcMain { lease.retire() }
++        if until(5, { vlcMain { lease.cleaned } }) { playback.hide(); return true }
++        XCTFail("Owned playback did not confirm stop and cleanup within the fixed five-second budget")
++        VLCProbePlayer.retainedAfterFailedStop.append(playback)
++        return false
++    }
++
++    func testOwnedDownloadedFileProducesRealVLCFrameTimeAndSeek() throws {
++        let server = try VLCProbeServer(); defer { server.stop() }
++        let bytes = try clip(blue: false)
++        let remote = server.add("owned-download", reply: .video(bytes, cacheable: false, cookie: false))
++        let account = try VLCProbeAccount(origin: server.origin)
++        let context = try account.context()
++        let file = try ownedFixture(remote, context: context, maximum: Int64(bytes.count))
++        XCTAssertTrue(file.isFileURL)
++        XCTAssertEqual(try Data(contentsOf: file), bytes)
++        let requestsBeforePlayer = server.observations().count
++        XCTAssertGreaterThan(requestsBeforePlayer, 0)
++        let playback = try VLCProbePlayer(url: file)
++        let lease = ownedLease(playback, file: file, context: context)
++        defer { closeOwned(playback, lease: lease) }
++        _ = try libraryEvidence(playback)
++        guard until(8, { self.decoded(playback) }) else {
++            progress = ["stage": "owned-local-decode", "metrics": playback.metrics(), "requests": server.observations()]
++            throw VLCProbeFailure.playback
++        }
++        XCTAssertEqual(try snapshot(playback, label: "owned-local-real-frame"), "A_red")
++        let seekable = vlcMain { playback.player.isSeekable }
++        XCTAssertTrue(seekable)
++        vlcMain {
++            playback.player.position = 0.6
++            XCTAssertTrue(lease.play { playback.player.play() })
++        }
++        let sought = until(3, { (playback.metrics()["timeMs"] as? Int ?? 0) >= 1500 })
++        XCTAssertTrue(sought)
++        XCTAssertEqual(server.observations().count, requestsBeforePlayer)
++        try attach("vlc-owned-local-playback", ["fixture": "MEASUREMENT_VALID",
++            "localEntry": file.isFileURL, "byteIdentical": true, "seekable": seekable, "seekObserved": sought,
++            "metrics": playback.metrics(), "requests": server.observations(),
++            "safety": "MP4_FIXTURE_ONLY_NOT_ARBITRARY_CONTAINER_ISOLATION"])
++    }
++
++    func testOwnedLeaseRetirementStopsRealPlayingAndPausedVLCBeforeFileRemoval() throws {
++        var observations = [[String: Any]]()
++        for paused in [false, true] {
++            let server = try VLCProbeServer(); defer { server.stop() }
++            let bytes = try clip(blue: false)
++            let remote = server.add("owned-retirement", reply: .video(bytes, cacheable: false, cookie: false))
++            let account = try VLCProbeAccount(origin: server.origin)
++            let context = try account.context()
++            let file = try ownedFixture(remote, context: context, maximum: Int64(bytes.count))
++            let share = try ClawMediaFiles.exportData(bytes, suggestedName: "separate-share.mp4")
++            defer { ClawMediaFiles.removeExport(share) }
++            let playback = try VLCProbePlayer(url: file)
++            let lease = ownedLease(playback, file: file, context: context)
++            _ = try libraryEvidence(playback)
++            guard until(8, { self.decoded(playback) }) else {
++                progress = ["stage": "owned-retirement-decode", "metrics": playback.metrics()]
++                closeOwned(playback, lease: lease); throw VLCProbeFailure.playback
++            }
++            if paused {
++                vlcMain { playback.player.pause() }
++                guard until(3, { vlcMain { playback.player.state == .paused } }) else {
++                    closeOwned(playback, lease: lease); throw VLCProbeFailure.playback
++                }
++            }
++            let before = playback.metrics()
++            account.retire()
++            vlcMain { XCTAssertFalse(lease.checkOwner()) }
++            let cleaned = until(5, { vlcMain { lease.cleaned } })
++            observations.append(["paused": paused, "before": before, "after": playback.metrics(),
++                "actualStopConfirmed": playback.stopped(), "leaseCleaned": cleaned,
++                "ownedFileRemoved": !FileManager.default.fileExists(atPath: file.path),
++                "shareFilePreserved": FileManager.default.fileExists(atPath: share.path)])
++            progress = ["stage": "owned-retirement", "cases": observations]
++            guard cleaned else {
++                VLCProbePlayer.retainedAfterFailedStop.append(playback)
++                throw VLCProbeFailure.playback
++            }
++            XCTAssertTrue(playback.stopped())
++            XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
++            XCTAssertTrue(FileManager.default.fileExists(atPath: share.path))
++            playback.hide()
++        }
++        try attach("vlc-owned-retirement", ["fixture": "MEASUREMENT_VALID", "cases": observations,
++            "scope": "production lease and actual player; owner check directly invoked, not VideoPreview polling UI"])
++    }
++
++    func testLocalPlaylistExternalReferenceRecordsRealVLCNetworkBehavior() throws {
++        let server = try VLCProbeServer(); defer { server.stop() }
++        let bytes = try clip(blue: false)
++        let local = root.appendingPathComponent("playlist-control.mp4")
++        try bytes.write(to: local, options: .withoutOverwriting)
++        XCTAssertEqual(try sampledFrame(local, label: "playlist-source-local-control"), "A_red")
++        let target = server.add("playlist-only-loopback", reply: .video(bytes, cacheable: false, cookie: false))
++        // The sole reference is this method's registered loopback server: no real endpoint or credentials.
++        let contents = Data(("#EXTM3U\n#EXTINF:3,synthetic\n" + target.absoluteString + "\n").utf8)
++        let file = try ClawMediaFiles.exportData(contents, suggestedName: "synthetic.m3u")
++        let original = XCTAttachment(data: contents, uniformTypeIdentifier: "public.m3u-playlist")
++        original.name = "synthetic-local-playlist-source"; original.lifetime = .keepAlways; add(original)
++        let account = try VLCProbeAccount(origin: server.origin)
++        let context = try account.context()
++        let playback = try VLCProbePlayer(url: file)
++        let lease = ownedLease(playback, file: file, context: context)
++        defer { closeOwned(playback, lease: lease) }
++        _ = try libraryEvidence(playback)
++        let start = Date()
++        let window = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in false }, object: nil)
++        XCTAssertEqual(XCTWaiter.wait(for: [window], timeout: 5), .timedOut)
++        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(start), 5)
++        let requests = server.observations()
++        let externalRead = !requests.isEmpty
++        try attach("vlc-local-playlist-reference", ["fixture": "MEASUREMENT_VALID",
++            "localEntry": true, "onlySyntheticLoopbackReference": true,
++            "externalReferenceRequested": externalRead, "requests": requests,
++            "metrics": playback.metrics(),
++            "safety": externalRead ? "CONFIRMED_SECONDARY_NETWORK_ACCESS" : "NOT_OBSERVED_NOT_NETWORK_ISOLATION_PROOF"])
++    }
++
+ }
+ 
+ private extension URL {

@@ -1,0 +1,19 @@
+{
+  "candidate": "76d0fe1062402a311a6e4e9378b7ee8d1639a3f1",
+  "forwardApply": true,
+  "patchSHA256": "1c85a9780aa068d890e600ff065d6e12c0abbbc26fa74c8cc43b4f0e61f3d451",
+  "nativeClassInventory": [
+    44,
+    175,
+    4,
+    3
+  ],
+  "nativeExpected": [
+    44,
+    175,
+    7,
+    3
+  ],
+  "accepted": false,
+  "reason": "new methods were outside XCTestCase; blocked before CI; corrected in 49194cc"
+}

@@ -1,0 +1,19 @@
+{
+  "source_target": "49194cc56f5c1dfd894efd9a9be6877560e219d3",
+  "latest_production_commit": "76d0fe1062402a311a6e4e9378b7ee8d1639a3f1",
+  "forward_apply": "PASS: real preserved BASE, independent temporary index, mode/blob/SHA99 and all unselected entries verified",
+  "unit_forward_apply": "PASS: five code/test/policy files from abc2307; actual index unchanged",
+  "static_source_checks": "34/34 source checks and44/44 source scripts; not Swift",
+  "native_inventory": {
+    "sdk": 44,
+    "uiRunner": 175,
+    "vlcHost": 7,
+    "total": 226,
+    "navigationSeparate": 3
+  },
+  "native_execution": "NOT_RUN for49194cc; CI25abc SDK44/UI167 PASS, VLC3PASS1FAIL fourth403; no VIDEO491 result inferred",
+  "page_device_execution": "VideoPreview full page, real services, system share, iPhone NOT_RUN",
+  "prior_failure_preserved": "76 methods mislocated under URL; actual selected-class inventory failed44/175/4/3; moved unchanged method bodies into XCTest in491",
+  "safety_observation": "M3U secondary network access pending actual VLC; fileURL is not network isolation",
+  "exclusions": "Private SharedUtils/push/signing/Pods/build/runtime/raw evidence; never read or checkout private blobs"
+}
