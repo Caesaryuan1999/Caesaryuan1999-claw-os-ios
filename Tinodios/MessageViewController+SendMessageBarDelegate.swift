@@ -267,7 +267,7 @@ extension MessageViewController: VLCMediaPlayerDelegate {
             guard let self = self, let player = notification.object as? VLCMediaPlayer,
                   self.recordingPlaybackPlayer === player, let recorder = self.voiceRecorder else { return }
             self.voiceUI(recorder) {
-                if let time = player.time?.value {
+                if let time = player.time.value {
                     self.sendMessageBar.audioPlaybackTime(TimeInterval(truncating: time) / 1000)
                 }
                 switch player.state {
