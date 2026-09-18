@@ -86,7 +86,8 @@ post_install do | installer |
 
   # Only the empty VLC host and its test bundle must not inherit the main App's
   # project-level Pods-Tinodios linker flags (devel/prod.xcconfig).
-  # Use each aggregate's generated flags, retaining its own required frameworks.
+  # Config stores OTHER_LDFLAGS separately: only to_hash serializes all categories.
+  puts "VLC_PROBE_CONFIG_VERSIONS ruby=#{RUBY_VERSION} cocoapods=#{Pod::VERSION} xcodeproj=#{Gem.loaded_specs.fetch('xcodeproj').version}"
   probe_targets = %w[TinodiosVLCProbeHost TinodiosVLCProbeTests]
   configured_probe_targets = []
   probe_projects = []
@@ -94,8 +95,22 @@ post_install do | installer |
     aggregate_target.user_targets.each do |user_target|
       next unless probe_targets.include?(user_target.name)
       user_target.build_configurations.each do |config|
-        generated = aggregate_target.xcconfigs.fetch(config.name).attributes.fetch('OTHER_LDFLAGS')
-        raise 'Missing VLC probe linker flags' unless generated.is_a?(String)
+        generated_config = aggregate_target.xcconfigs.fetch(config.name)
+        raise 'Invalid VLC probe configuration' unless generated_config.is_a?(Xcodeproj::Config)
+        serialized = generated_config.to_hash
+        generated = serialized['OTHER_LDFLAGS']
+        if generated.nil?
+          # An existing search-path-only test config may legitimately serialize no
+          # flags. Prove every parsed category empty instead of guessing a fallback.
+          categories = [:simple, :frameworks, :weak_frameworks, :libraries, :arg_files, :force_load]
+          parsed = generated_config.other_linker_flags
+          empty = parsed.keys.sort == categories.sort && parsed.values.all? { |value| value.is_a?(Set) } &&
+            (parsed.fetch(:simple) - Set.new(['$(inherited)', '${inherited}'])).empty? &&
+            (categories - [:simple]).all? { |category| parsed.fetch(category).empty? }
+          raise 'Missing VLC probe linker flags' unless user_target.name == 'TinodiosVLCProbeTests' && empty
+          generated = ''
+        end
+        raise 'Invalid VLC probe linker flags' unless generated.is_a?(String)
         flags = generated.gsub('$(inherited)', '').gsub('${inherited}', '').strip
         raise 'Unexpected application dependency in VLC probe' if flags.match?(/Firebase|FBLPromises|GoogleAppMeasurement|WebRTC/)
         if user_target.name == 'TinodiosVLCProbeHost'
@@ -104,6 +119,8 @@ post_install do | installer |
           end
         end
         config.build_settings['OTHER_LDFLAGS'] = flags
+        frameworks = generated_config.other_linker_flags.fetch(:frameworks).to_a.sort
+        puts "VLC_PROBE_LINK_CONFIG target=#{user_target.name} configuration=#{config.name} frameworks=#{frameworks.join(',')} empty=#{flags.empty?}"
       end
       configured_probe_targets << user_target.name
       probe_projects << aggregate_target.user_project

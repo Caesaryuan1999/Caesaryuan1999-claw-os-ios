@@ -1,0 +1,17 @@
+{
+  "ruby-download.json": {
+    "release": "https://github.com/oneclick/rubyinstaller2/releases/tag/RubyInstaller-3.3.12-1",
+    "asset": "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.3.12-1/rubyinstaller-3.3.12-1-x64.7z",
+    "size": 14911393,
+    "SHA256": "f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943",
+    "officialDigest": "sha256:f8d534a44e47e5b72abe557497763128b93e9356bd91397a3d7b9e0a11572943"
+  },
+  "xcodeproj-download.json": {
+    "version": "1.28.1",
+    "officialGemURI": "https://rubygems.org/gems/xcodeproj-1.28.1.gem",
+    "sha256": "6f12670f00739d9817ca27ac89d6ef01cc86050e22a0bc08a3131487e5b5cddc",
+    "officialSHA256": "6f12670f00739d9817ca27ac89d6ef01cc86050e22a0bc08a3131487e5b5cddc",
+    "scope": "Config source direct require; not full CocoaPods installation"
+  },
+  "installation_scope": "Portable official Ruby archive and Config-only official gem under artifacts/tools; no system PATH, service or MSYS2"
+}
