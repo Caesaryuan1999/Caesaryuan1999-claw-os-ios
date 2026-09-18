@@ -23,7 +23,7 @@ private final class VLCProbeServer {
         case redirect(URL, Int)
         case forbidden
     }
-    private struct Route { let label: String; let reply: Reply; let gated: Bool }
+    private struct Route { let label: String; let reply: Reply; let gated: Bool; let revision: Int }
     private let queue = DispatchQueue(label: "claw.vlc.loopback")
     private let listener: NWListener
     private var routes = [String: Route]()
@@ -72,14 +72,16 @@ private final class VLCProbeServer {
 
     func add(_ label: String, reply: Reply, gated: Bool = false) -> URL {
         let path = "/" + UUID().uuidString.lowercased() + ".mp4"
-        queue.sync { routes[path] = Route(label: label, reply: reply, gated: gated) }
+        queue.sync { routes[path] = Route(label: label, reply: reply, gated: gated, revision: 0) }
         return URL(string: path, relativeTo: origin)!.absoluteURL
     }
 
-    func replace(_ url: URL, reply: Reply) {
-        queue.sync {
-            guard let prior = routes[url.path] else { return }
-            routes[url.path] = Route(label: prior.label, reply: reply, gated: false)
+    @discardableResult func replace(_ url: URL, reply: Reply) throws -> Int {
+        try queue.sync {
+            guard let prior = routes[url.path] else { throw VLCProbeFailure.fixture }
+            let revision = prior.revision + 1
+            routes[url.path] = Route(label: prior.label, reply: reply, gated: false, revision: revision)
+            return revision
         }
     }
 
@@ -140,6 +142,8 @@ private final class VLCProbeServer {
         let index = events.count
         events.append([
             "route": route.label, "head": first[0] == "HEAD", "bytesSent": 0,
+            "requestSequence": index + 1, "fixtureRevision": route.revision, "responseStatus": 0,
+            "headerWrite": "not_started", "bodyWrite": "not_started", "responseWriteCompleted": false,
             "queryHasSecret": query.contains { $0.name == "secret" },
             "queryMatchesA": query.contains { $0.name == "secret" && $0.value == "vlc-synthetic-A" },
             "queryMatchesB": query.contains { $0.name == "secret" && $0.value == "vlc-synthetic-B" },
@@ -189,8 +193,12 @@ private final class VLCProbeServer {
                               "Content-Length: \(body.count)"] + extra).joined(separator: "\r\n").utf8)
             + Data("\r\n\r\n".utf8)
         let content = first[0] == "HEAD" ? Data() : body
+        events[index]["responseStatus"] = status
+        events[index]["headerWrite"] = "pending"
         peer.send(content: response, completion: .contentProcessed { [weak self] error in
-            guard let self = self, self.active, error == nil else { self?.close(peer); return }
+            guard let self = self else { return }
+            self.events[index]["headerWrite"] = error == nil ? "completed" : "failed"
+            guard self.active, error == nil else { self.close(peer); return }
             let write = { [weak self] in self?.sendBody(content, peer: peer, event: index) }
             if route.gated && !self.bodyReleased { self.pending.append { write() } } else { write() }
         })
@@ -198,9 +206,13 @@ private final class VLCProbeServer {
 
     private func sendBody(_ data: Data, peer: NWConnection, event: Int) {
         guard active, peers[ObjectIdentifier(peer)] != nil else { return }
+        events[event]["bodyWrite"] = "pending"
         peer.send(content: data, completion: .contentProcessed { [weak self] error in
             guard let self = self else { return }
+            self.events[event]["bodyWrite"] = error == nil ? "completed" : "failed"
             if error == nil { self.events[event]["bytesSent"] = data.count }
+            self.events[event]["responseWriteCompleted"] = error == nil &&
+                self.events[event]["headerWrite"] as? String == "completed"
             self.close(peer)
         })
     }
@@ -523,13 +535,16 @@ final class VLCPlaybackProbeTests: XCTestCase {
               try snapshot(playback, label: label) == "A_red" else { throw VLCProbeFailure.playback }
     }
 
-    private func sampledFrame(_ url: URL, label: String) throws -> String {
+    private func sampledFrame(_ url: URL, label: String,
+                              observation: (([String: Any]) -> Void)? = nil) throws -> String {
         let playback = try VLCProbePlayer(url: url); defer { cleanup(playback) }
         _ = try libraryEvidence(playback)
         let ready = until(8, { self.decoded(playback) })
         progress = ["stage": label, "metrics": playback.metrics()]
         guard ready else { throw VLCProbeFailure.playback }
-        return try snapshot(playback, label: label)
+        let color = try snapshot(playback, label: label)
+        observation?(["frame": color, "metrics": playback.metrics()])
+        return color
     }
 
     private func snapshot(_ playback: VLCProbePlayer, label: String) throws -> String {
@@ -652,31 +667,108 @@ final class VLCPlaybackProbeTests: XCTestCase {
             let raw = server.add("reopen", reply: .video(red, cacheable: cacheable, cookie: true))
             let account = try VLCProbeAccount(origin: server.origin)
             let url = account.owner.addAuthQueryParams(raw)
-            let firstColor = try sampledFrame(url, label: "vlc-cache-first")
-            XCTAssertEqual(firstColor, "A_red")
-            let firstCount = server.observations().count
-            server.replace(raw, reply: .video(blue, cacheable: cacheable, cookie: false))
-            let secondColor = try sampledFrame(url, label: "vlc-cache-second")
-            guard ["A_red", "B_blue"].contains(secondColor) else { throw VLCProbeFailure.snapshot }
-            let secondCount = server.observations().count
-            server.replace(raw, reply: .forbidden)
-            let third = try VLCProbePlayer(url: url)
-            let observed = until(5, { self.decoded(third) || third.terminal() })
-            let thirdMetrics = third.metrics()
-            let decodedDespite403 = (thirdMetrics["decoded"] as? Int ?? 0) > 0 || (thirdMetrics["displayed"] as? Int ?? 0) > 0
-            cleanup(third)
-            guard observed else {
-                progress = ["stage": "reopen-403-timeout", "metrics": thirdMetrics, "completedCases": results]
-                throw VLCProbeFailure.response
+            var currentCase: [String: Any] = ["cacheable": cacheable, "stage": "first-frame"]
+            do {
+                let firstColor = try sampledFrame(url, label: "vlc-cache-first") { currentCase["first"] = $0 }
+                XCTAssertEqual(firstColor, "A_red")
+                let firstCount = server.observations().count
+                currentCase["firstRequestCount"] = firstCount
+                currentCase["requestsAfterFirst"] = server.observations()
+                currentCase["stage"] = "second-frame"
+                try server.replace(raw, reply: .video(blue, cacheable: cacheable, cookie: false))
+                let secondColor = try sampledFrame(url, label: "vlc-cache-second") { currentCase["second"] = $0 }
+                guard ["A_red", "B_blue"].contains(secondColor) else { throw VLCProbeFailure.snapshot }
+                let secondCount = server.observations().count
+                currentCase["secondRequestCount"] = secondCount
+                currentCase["requestsAfterSecond"] = server.observations()
+                currentCase["stage"] = "third-403-window"
+                let revision = try server.replace(raw, reply: .forbidden)
+                currentCase["thirdFixtureRevision"] = revision
+                currentCase["thirdRequestSequenceAfter"] = secondCount
+                let third = try VLCProbePlayer(url: url)
+                var cleanupAttempted = false
+                defer {
+                    if !cleanupAttempted { currentCase["cleanupCompleted"] = cleanup(third) }
+                }
+
+                // A full fixed observation window: an initial stopped player
+                // or a transient error cannot end the measurement early.
+                guard deadline.timeIntervalSinceNow >= 5 else { throw VLCProbeFailure.response }
+                let started = ProcessInfo.processInfo.systemUptime
+                var samples = [[String: Any]]()
+                var maxDecoded = 0
+                var maxDisplayed = 0
+                let sampleLock = NSLock()
+                let sample = {
+                    let metrics = third.metrics()
+                    sampleLock.lock(); defer { sampleLock.unlock() }
+                    maxDecoded = max(maxDecoded, metrics["decoded"] as? Int ?? 0)
+                    maxDisplayed = max(maxDisplayed, metrics["displayed"] as? Int ?? 0)
+                    if samples.count < 64 {
+                        samples.append(["elapsedMs": Int((ProcessInfo.processInfo.systemUptime - started) * 1000),
+                            "state": metrics["state"] ?? -1, "decoded": metrics["decoded"] ?? 0,
+                            "displayed": metrics["displayed"] ?? 0, "readBytes": metrics["readBytes"] ?? 0,
+                            "timeMs": metrics["timeMs"] ?? 0])
+                    }
+                }
+                sample()
+                let polling = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in sample(); return false }, object: nil)
+                // A standalone waiter reaching its timeout means only that the
+                // observation window elapsed. HTTP/frame assertions below decide validity.
+                let waited = XCTWaiter.wait(for: [polling], timeout: 5)
+                sample()
+                let elapsed = ProcessInfo.processInfo.systemUptime - started
+                let thirdMetrics = third.metrics()
+                let requests = server.observations()
+                let matching = requests.filter {
+                    ($0["requestSequence"] as? Int ?? 0) > secondCount &&
+                        $0["fixtureRevision"] as? Int == revision
+                }
+                let completed403 = matching.contains {
+                    $0["responseStatus"] as? Int == 403 && $0["responseWriteCompleted"] as? Bool == true &&
+                        $0["headerWrite"] as? String == "completed" && $0["bodyWrite"] as? String == "completed"
+                }
+                sampleLock.lock()
+                let decodedDespite403 = maxDecoded > 0 || maxDisplayed > 0
+                currentCase["samples"] = samples
+                currentCase["maxDecoded"] = maxDecoded
+                currentCase["maxDisplayed"] = maxDisplayed
+                sampleLock.unlock()
+                currentCase["elapsedMs"] = Int(elapsed * 1000)
+                currentCase["thirdMetrics"] = thirdMetrics
+                currentCase["requestsAtWindowEnd"] = requests
+                currentCase["completed403ResponseWrite"] = completed403
+                currentCase["scopeOfResponseCompletion"] = "Local NWConnection accepted header/body writes; not proof client parsed response"
+                let stoppedOrTerminal = third.stopped() || third.terminal()
+                currentCase["thirdStoppedOrTerminal"] = stoppedOrTerminal
+                progress = ["stage": "reopen-403-observed", "currentCase": currentCase, "completedCases": results]
+                guard waited == .timedOut, elapsed >= 5,
+                      decodedDespite403 || (completed403 && stoppedOrTerminal) else {
+                    throw VLCProbeFailure.response
+                }
+                cleanupAttempted = true
+                let cleanupCompleted = cleanup(third)
+                currentCase["cleanupCompleted"] = cleanupCompleted
+                guard cleanupCompleted else { throw VLCProbeFailure.response }
+                currentCase["firstFrame"] = firstColor
+                currentCase["secondFrame"] = secondColor
+                currentCase["secondMadeRequest"] = secondCount > firstCount
+                currentCase["thirdMadeRequest"] = !matching.isEmpty
+                currentCase["decodedAfterServerChangedTo403"] = decodedDespite403
+                currentCase["safety"] = secondColor == "A_red" || decodedDespite403
+                    ? "CONFIRMED_GAP_OLD_CONTENT_REUSED" : "NOT_OBSERVED_WITHIN_FIXED_WINDOW"
+                currentCase["scope"] = "Same synthetic URL; five-second observation, not persistent cache/cross-account proof or production page"
+                currentCase["stage"] = "completed"
+                results.append(currentCase)
+                progress = ["stage": "reopen-matrix", "completedCases": results]
+            } catch {
+                let priorProgress = progress
+                currentCase["requestsAtFailure"] = server.observations()
+                progress = ["stage": "reopen-case-failed", "currentCase": currentCase,
+                            "priorStageEvidence": priorProgress, "completedCases": results,
+                            "safety": "NO_SAFETY_CONCLUSION_FOR_INCOMPLETE_CASE"]
+                throw error
             }
-            results.append(["cacheable": cacheable, "firstFrame": firstColor, "secondFrame": secondColor,
-                "secondMadeRequest": secondCount > firstCount,
-                "thirdMadeRequest": server.observations().count > secondCount,
-                "decodedAfterServerChangedTo403": decodedDespite403, "thirdMetrics": thirdMetrics,
-                "requests": server.observations(),
-                "safety": secondColor == "A_red" || decodedDespite403 ? "CONFIRMED_GAP_OLD_CONTENT_REUSED" : "NOT_OBSERVED_THIS_FIXTURE",
-                "scope": "Same complete synthetic URL; not proof of a persistent disk cache or cross-account exploit"])
-            progress = ["stage": "reopen-matrix", "completedCases": results]
         }
         try attach("vlc-reopen-cache-cookie", ["fixture": "MEASUREMENT_COMPLETED", "cases": results])
     }

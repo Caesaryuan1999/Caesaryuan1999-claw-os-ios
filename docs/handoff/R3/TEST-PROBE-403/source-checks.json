@@ -1,0 +1,35 @@
+{
+  "base": "7e12f3b4997bf80bb37629bfca809638f98b41c1",
+  "file": "TinodiosUITests/VLCPlaybackProbeTests.swift",
+  "rawSHA256": "83a34266d9c3e6d129ee1952bdb42986641b4bee8934d5e0b28f8584ac443f60",
+  "normalizedSHA256": "83a34266d9c3e6d129ee1952bdb42986641b4bee8934d5e0b28f8584ac443f60",
+  "methods": [
+    "testRealVLCFramesTimeDecodeAndCapturedCredentialURL",
+    "testRealVLCRedirectBehaviorRecordsOriginAndCredentialObservations",
+    "testRealVLCOwnerRetirementBeforeBodyReleaseRecordsContinuedReadAndDecode",
+    "testRealVLCReopenChangedContentAnd403RecordsCacheAndCookieBehavior"
+  ],
+  "checks": {
+    "same_exact_four_methods": true,
+    "unchanged_testRealVLCFramesTimeDecodeAndCapturedCredentialURL": true,
+    "unchanged_testRealVLCRedirectBehaviorRecordsOriginAndCredentialObservations": true,
+    "unchanged_testRealVLCOwnerRetirementBeforeBodyReleaseRecordsContinuedReadAndDecode": true,
+    "unchanged_decoded": true,
+    "unchanged_snapshot": true,
+    "unchanged_clip": true,
+    "unchanged_readFixture": true,
+    "unchanged_cleanup": true,
+    "unchanged_validateBaseline": true,
+    "unchanged_until": true,
+    "global_terminal_unchanged": true,
+    "five_second_full_window_and_separate_result_guard": true,
+    "request_and_fixture_revision_both_required": true,
+    "both_real_write_completions_required": true,
+    "zero_request_zero_frame_not_a_pass": true,
+    "both_cache_modes_unchanged": true,
+    "failure_keeps_current_case_requests_and_prior_evidence": true,
+    "default_player_options_unchanged": true,
+    "only_one_non_docs_file_changed": true
+  },
+  "scope": "Windows source inspection only; Swift/VLC NOT_RUN; no new native methods"
+}

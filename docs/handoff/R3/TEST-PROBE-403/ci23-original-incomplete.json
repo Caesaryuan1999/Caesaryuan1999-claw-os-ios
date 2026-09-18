@@ -1,0 +1,141 @@
+{
+  "dependencyEvidence" : {
+    "pod" : {
+      "archiveVerification" : "NOT_PERFORMED; spec checksum is not an archive hash",
+      "binarySHA256" : "1811afad5547ec0a6f002cec966a67e98961bb1d831390af0ae0ce1f6040d788",
+      "frameworkVersion" : "1.0",
+      "headers" : [
+        {
+          "bytes" : 28607,
+          "name" : "VLCMedia.h",
+          "sha256" : "6bdd355c97cce4342cc10d2a51519c20488e0c29f0559b46881ec6d902cf58f3"
+        },
+        {
+          "bytes" : 30472,
+          "name" : "VLCMediaPlayer.h",
+          "sha256" : "320ef15ca0e2eb45f659f23c52a6f2c2aae84069bd8fe6d6b50d477eabed32e6"
+        },
+        {
+          "bytes" : 6338,
+          "name" : "VLCLibrary.h",
+          "sha256" : "fb390a3bbc84c2256d9ca0f1cac1eb927215ae1d1c2e3b8d7c616c5d1d446d43"
+        }
+      ],
+      "locks" : [
+        {
+          "file" : "Podfile.lock",
+          "podVersion" : "3.6.0",
+          "sha256" : "db78904692ecedf0501939a963e29fca45b927187441fec3e218e73ce4179ae1",
+          "specChecksum" : "8fe98ae53b7464f32e4bdf527cc7d53053e4d3a5"
+        },
+        {
+          "file" : "Pods\/Manifest.lock",
+          "podVersion" : "3.6.0",
+          "sha256" : "db78904692ecedf0501939a963e29fca45b927187441fec3e218e73ce4179ae1",
+          "specChecksum" : "8fe98ae53b7464f32e4bdf527cc7d53053e4d3a5"
+        }
+      ],
+      "podVersion" : "3.6.0",
+      "simulatorArchitectures" : [
+        "arm64",
+        "i386",
+        "x86_64"
+      ],
+      "specChecksum" : "8fe98ae53b7464f32e4bdf527cc7d53053e4d3a5"
+    },
+    "runtimeChangeset" : "3.0.21-49-gd1840ca85f",
+    "runtimeVersion" : "3.0.21 Vetinari",
+    "scope" : "Real MobileVLCKit dependency; VideoPreviewController is not instantiated"
+  },
+  "fixture" : "INCOMPLETE_OR_FAILED",
+  "host" : {
+    "applicationState" : 0,
+    "expectedHost" : true,
+    "keyWindowPresent" : true,
+    "legacyLifecycle" : false,
+    "scenePresent" : true,
+    "sceneState" : 0,
+    "windowHeight" : 874,
+    "windowHidden" : false,
+    "windowWidth" : 402
+  },
+  "lastProgress" : {
+    "completedCases" : [
+
+    ],
+    "metrics" : {
+      "decoded" : 0,
+      "displayed" : 0,
+      "drawableHeight" : 160,
+      "drawableHidden" : false,
+      "drawableInHostWindow" : true,
+      "drawableWidth" : 160,
+      "hasVideoOut" : false,
+      "height" : 0,
+      "host" : {
+        "applicationState" : 0,
+        "expectedHost" : true,
+        "keyWindowPresent" : true,
+        "legacyLifecycle" : false,
+        "scenePresent" : true,
+        "sceneState" : 0,
+        "windowHeight" : 874,
+        "windowHidden" : false,
+        "windowWidth" : 402
+      },
+      "hostAtStart" : {
+        "applicationState" : 0,
+        "expectedHost" : true,
+        "keyWindowPresent" : true,
+        "legacyLifecycle" : false,
+        "scenePresent" : true,
+        "sceneState" : 0,
+        "windowHeight" : 874,
+        "windowHidden" : false,
+        "windowWidth" : 402
+      },
+      "readBytes" : 0,
+      "state" : 0,
+      "timeMs" : 0,
+      "width" : 0
+    },
+    "stage" : "reopen-403-timeout"
+  },
+  "safety" : "NO_SAFETY_CONCLUSION",
+  "sourceFixtures" : [
+    {
+      "appleReadback" : {
+        "allFrameColorsMatch" : true,
+        "decoder" : "AVAssetReaderTrackOutput BGRA",
+        "expectedColor" : "A_red",
+        "frames" : 90,
+        "height" : 64,
+        "lastPTSMs" : 2966,
+        "scope" : "Apple decoded source control; not VLC display evidence",
+        "status" : "PASS",
+        "width" : 64
+      },
+      "bytes" : 6678,
+      "name" : "source-fixture-red",
+      "scope" : "Original AVAssetWriter input; not XCTest screen recording",
+      "sha256" : "749b1051198fa9a14e68a5e58f7ffbe858d63a20e891d6d76161d9aeb4c992ab"
+    },
+    {
+      "appleReadback" : {
+        "allFrameColorsMatch" : true,
+        "decoder" : "AVAssetReaderTrackOutput BGRA",
+        "expectedColor" : "B_blue",
+        "frames" : 90,
+        "height" : 64,
+        "lastPTSMs" : 2966,
+        "scope" : "Apple decoded source control; not VLC display evidence",
+        "status" : "PASS",
+        "width" : 64
+      },
+      "bytes" : 6692,
+      "name" : "source-fixture-blue",
+      "scope" : "Original AVAssetWriter input; not XCTest screen recording",
+      "sha256" : "97cd666b2caa8e7bfec512a13c72ca81f4ba520ca4142f87b08c86bc1c8cfec0"
+    }
+  ]
+}
