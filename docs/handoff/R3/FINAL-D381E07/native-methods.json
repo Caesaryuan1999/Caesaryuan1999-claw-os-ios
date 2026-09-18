@@ -1,0 +1,968 @@
+{
+  "candidate": "d381e074fd1ede395f6c21a658f37020661acd78",
+  "expected_only_not_execution": 181,
+  "classes": [
+    {
+      "target": "TinodeSDKTests",
+      "class": "TinodeSDKTests",
+      "count": 41,
+      "methods": [
+        {
+          "name": "testLogoutRetiresLocalSessionWithoutNetworkAndClearsCredentials",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 14
+        },
+        {
+          "name": "testSessionGateSerializesInFlightCallbackBeforeLogout",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 42
+        },
+        {
+          "name": "testQueuedConsumerCallbackIsSuppressedAfterSessionRetirement",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 63
+        },
+        {
+          "name": "testConsumerCallbackRunsOnMainWithoutHoldingSDKSessionLock",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 75
+        },
+        {
+          "name": "testCleanupBoundaryRemainsAvailableForRetiredSession",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 89
+        },
+        {
+          "name": "testPublishTimeoutNeverReturnsToAutomaticQueue",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 98
+        },
+        {
+          "name": "testPublishDisconnectAfterDispatchNeverReturnsToAutomaticQueue",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 103
+        },
+        {
+          "name": "testPublishOfflineBeforeDispatchCanRemainQueued",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 108
+        },
+        {
+          "name": "testDraftOrSubscriptionFailureDoesNotClaimAnUnknownServerOutcome",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 113
+        },
+        {
+          "name": "testExplicitPermissionRejectionIsFailedAndNotQueued",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 118
+        },
+        {
+          "name": "testGatewayFailureAndUnexpectedFailureRemainUnconfirmed",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 123
+        },
+        {
+          "name": "testPublishConfirmationRejectsMissingOrNonPositiveSequence",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 130
+        },
+        {
+          "name": "testPublishConfirmationUsesServerSequence",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 142
+        },
+        {
+          "name": "testC3UUIDIsFreshLowercaseV4AndOverridesForwardedIdentity",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 148
+        },
+        {
+          "name": "testC3ConflictReasonDecodedFromWirePreservesOther409Context",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 159
+        },
+        {
+          "name": "testC3DirectPublishWithoutCurrentCapabilityRejectsBeforeTransport",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 171
+        },
+        {
+          "name": "testLateFailureCannotChangeAResolvedRequest",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 178
+        },
+        {
+          "name": "testAccountDeletion300CannotDeleteOrLogout",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 214
+        },
+        {
+          "name": "testAccountDeletion205CannotDeleteOrLogout",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 218
+        },
+        {
+          "name": "testAccountDeletion200ForExactRequestDeletesOnlyCapturedAccountAndRetires",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 222
+        },
+        {
+          "name": "testAccountDeletionMissingControlOrWrongRequestCannotCleanup",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 232
+        },
+        {
+          "name": "testAccountDeletion403CannotCleanupEvenIfPassedToCompletion",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 245
+        },
+        {
+          "name": "testAccountDeletionRetiredOwnerIgnoresLate200",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 250
+        },
+        {
+          "name": "testAccountDeletionStoreAccountChangeRejectsLate200",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 263
+        },
+        {
+          "name": "testConfirmedDeletionFailedLocalCleanupRetiresWithSpecificError",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 275
+        },
+        {
+          "name": "testConfirmedDeletionUnsupportedStorageRetiresWithoutBlindVoidDelete",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 292
+        },
+        {
+          "name": "testLocalCleanupRecoveryRunsActualWriteInsideAnonymousSlotGate",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 303
+        },
+        {
+          "name": "testLocalCleanupRecoveryRejectsChangedGenerationAccountStoreAndRetirement",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 318
+        },
+        {
+          "name": "testExample",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 346
+        },
+        {
+          "name": "testPushConfigurationAcceptsCompleteEnabledConfiguration",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 351
+        },
+        {
+          "name": "testPushConfigurationRejectsDisabledConfiguration",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 355
+        },
+        {
+          "name": "testPushConfigurationRejectsPlaceholderConfiguration",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 362
+        },
+        {
+          "name": "testPushConfigurationRejectsMissingRequiredValue",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 369
+        },
+        {
+          "name": "testPushConfigurationRejectsZeroSenderId",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 376
+        },
+        {
+          "name": "testSubscriptionIndexDeduplicatesUsersAndKeepsNewestRecord",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 383
+        },
+        {
+          "name": "testSubscriptionIndexSkipsMalformedCachedRows",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 401
+        },
+        {
+          "name": "testPrivateCommentFirstValueEncodesOnlyCommentDelta",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 415
+        },
+        {
+          "name": "testPrivateCommentACKMergePreservesOtherKeysPublicAndTags",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 427
+        },
+        {
+          "name": "testPrivateCommentClearUsesNullSentinelAndACKReadsEmpty",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 444
+        },
+        {
+          "name": "testPrivateCommentNoChangeProducesNoPatchAndPreservesTextBytes",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 461
+        },
+        {
+          "name": "testPerformanceExample",
+          "file": "TinodeSDKTests/TinodeSDKTests.swift",
+          "line": 481
+        }
+      ]
+    },
+    {
+      "target": "TinodiosUITests",
+      "class": "PublishStorageTests",
+      "count": 4,
+      "methods": [
+        {
+          "name": "testTwoConcurrentClaimsDispatchOnlyOneCopy",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 17
+        },
+        {
+          "name": "testReopenPreservesUnknownAndOnlyReplaysNeverSentMessages",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 41
+        },
+        {
+          "name": "testOnlyConfirmedMessagesAreSynced",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 59
+        },
+        {
+          "name": "testLateFailureCannotDowngradeAcceptedOrUnknownMessages",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 71
+        }
+      ]
+    },
+    {
+      "target": "TinodiosUITests",
+      "class": "LocalMigrationTests",
+      "count": 62,
+      "methods": [
+        {
+          "name": "testSchemaReadPropagatesSQLiteStepError",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 233
+        },
+        {
+          "name": "testLocalDeletionEveryStatementFailureRollsBackAllAccountsAndRows",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 311
+        },
+        {
+          "name": "testLocalDeletionCommitFailureRollsBackAndRetainsActivePointer",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 327
+        },
+        {
+          "name": "testLocalDeletionZeroAccountRowEffectRollsBackChildDeletes",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 341
+        },
+        {
+          "name": "testLocalDeletionEmptyChildrenAndRepeatedCleanupAreSuccessful",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 354
+        },
+        {
+          "name": "testLocalDeletionPreservesOtherAccountMarkersAndAutoincrement",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 372
+        },
+        {
+          "name": "testLocalDeletionCrossAccountForeignKeyFailureRollsBackWithoutExpandingScope",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 388
+        },
+        {
+          "name": "testLocalCleanupRecoveryCannotDeleteAfterAnotherAccountBecomesCurrent",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 401
+        },
+        {
+          "name": "testLocalCleanupFailureCanLogoutAndRetryOnlyCapturedAccountAnonymously",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 419
+        },
+        {
+          "name": "testFirstUpgradeIsolatesLegacy20And30AndPreservesAllOtherData",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 441
+        },
+        {
+          "name": "testRepeatedNSEOpenLeavesNew20AndMainApp30Untouched",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 455
+        },
+        {
+          "name": "testFreshDatabaseHasMarkerBeforeFirstMessage",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 469
+        },
+        {
+          "name": "testUnsupportedVersionsAndLogoutPreserveExistingTables",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 479
+        },
+        {
+          "name": "testUnknownColumnTableAndTriggerAreRejectedWithoutRepair",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 495
+        },
+        {
+          "name": "testMissingUniqueIndexAndWrongPartialPredicateAreRejected",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 509
+        },
+        {
+          "name": "testForeignKeyViolationsAndWrongDefinitionsAreRejected",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 520
+        },
+        {
+          "name": "testUnknownMarkerRuleBlocksWithoutQuarantine",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 531
+        },
+        {
+          "name": "testMarkerInsertFailureRollsBackPriorStatusUpdates",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 540
+        },
+        {
+          "name": "testCommitFailureCannotExposeSuccessfulMarker",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 549
+        },
+        {
+          "name": "testTwoConcurrentInitializersCommitOnlyOneMarker",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 560
+        },
+        {
+          "name": "testInitializationGateAllowsDifferentPathsToOpenConcurrently",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 583
+        },
+        {
+          "name": "testInitializationGateReleasesAfterOriginalSchemaError",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 643
+        },
+        {
+          "name": "testInitializationGateRejectsSameThreadReentryWithoutDeadlock",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 661
+        },
+        {
+          "name": "testInitializationGateCanonicalAliasesUseTheActualSameGate",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 702
+        },
+        {
+          "name": "testInitializerWaitsForWriterAndSucceedsAfterRelease",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 729
+        },
+        {
+          "name": "testInitializationDiagnosticContainsOnlyStageCategoryAndNumericCodes",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 770
+        },
+        {
+          "name": "testLiveInitializationDiagnosticPreservesOriginalSQLiteError",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 790
+        },
+        {
+          "name": "testUnsupportedWalDatabaseBytesSurviveBlockedOpenAndLogout",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 848
+        },
+        {
+          "name": "testLogoutPreservesOutboundIdentityAndReactivation",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 888
+        },
+        {
+          "name": "testStaleSDKLogoutAndDeviceFailureCannotDeactivateNewAccount",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 916
+        },
+        {
+          "name": "testLogoutCommitFailureDetachesAndBlocksWithoutClearingData",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 932
+        },
+        {
+          "name": "testAnonymousRetainedStoreCannotReadOrModifyMessages",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 949
+        },
+        {
+          "name": "testDifferentAccountsSameTopicNameNeverSharePreviewsOrRowLookups",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 973
+        },
+        {
+          "name": "testLateDraftAndAcknowledgementForAccountACannotChangeAccountB",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 992
+        },
+        {
+          "name": "testExternallyDeactivatedAccountBlocksCachedHandleReads",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1011
+        },
+        {
+          "name": "testC3BoundaryDoesNotTrustInheritedUUIDOr31And36",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1022
+        },
+        {
+          "name": "testC3RecoveryAndRepeatedNSEInitialization",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1038
+        },
+        {
+          "name": "testC3NewMessagesOverrideForwardedUUIDAndDraftReadyFreezesPayload",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1050
+        },
+        {
+          "name": "testC3AtomicClaimChecksScopeAndRetainsOriginalKey",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1069
+        },
+        {
+          "name": "testC3TwoConcurrentConnectionsOnlyOneClaim",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1084
+        },
+        {
+          "name": "testC3ClaimCommitFailureDoesNotAuthorizeDispatch",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1109
+        },
+        {
+          "name": "testC3StaleQueuedSnapshotCannotClaimAnUnconfirmedRetry",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1119
+        },
+        {
+          "name": "testC3StaleLogicalIdentityCannotClaimAReusedLocalRow",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1139
+        },
+        {
+          "name": "testC3LateUploadFailureAndCancelCannotTouchClaimedOrUnknown",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1155
+        },
+        {
+          "name": "testC3Legacy35WithUUIDNeverClaimsAndRaw36DisplaysUnknown",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1171
+        },
+        {
+          "name": "testC3NoCapabilityKeepsPersistentQueueAndPromiseRejected",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1184
+        },
+        {
+          "name": "testC3AckAfterUnknownConfirmsAndLateErrorsCannotDowngrade",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1194
+        },
+        {
+          "name": "testC3RetrySecondGateFailureRestoresUnknownRatherThanNewQueue",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1206
+        },
+        {
+          "name": "testC3NewSendSecondGateFailureReturnsToNewQueue",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1221
+        },
+        {
+          "name": "testC3LateSecondGateFailureCannotDowngradeCommittedAck",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1231
+        },
+        {
+          "name": "testC3HistoryBeforeAckPreservesLocalIdAndOneServerSequence",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1244
+        },
+        {
+          "name": "testC3ExistingHistoryCollisionMergesOnlyMatchingIdentity",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1258
+        },
+        {
+          "name": "testC3DifferentUUIDOrSenderCollisionCannotDeleteHistory",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1269
+        },
+        {
+          "name": "testC3AckCommitFailureDoesNotAdvanceCacheOrLoseHistory",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1285
+        },
+        {
+          "name": "testC3ServerDeleteRangePreservesUnconfirmedLocalRows",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1302
+        },
+        {
+          "name": "testOfflineLocalContactsUseRetainedAccountAndDisappearAfterLogout",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1319
+        },
+        {
+          "name": "testLocalContactReadRejectsReplacementAndMidReadAccountSwitch",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1347
+        },
+        {
+          "name": "testPublicAliasFirstInsertAndReopenPreservesPublicIdentifier",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1386
+        },
+        {
+          "name": "testPublicIdentifierLegacyFallbackAndAliasOrder",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1402
+        },
+        {
+          "name": "testPublicIdentifierNeverFallsBackToPrivateIdentity",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1413
+        },
+        {
+          "name": "testPublicIdentifierSameContactRemainsAccountScoped",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1427
+        },
+        {
+          "name": "testBlockedStoragePreventsSDKConnectPublishAndLocalAcknowledgement",
+          "file": "TinodiosUITests/TinodiosUITests.swift",
+          "line": 1446
+        }
+      ]
+    },
+    {
+      "target": "TinodiosUITests",
+      "class": "IdentityFlowTests",
+      "count": 29,
+      "methods": [
+        {
+          "name": "testNonTLSLegacyOriginKeepsSDKLoginWithoutCreatingHTTPTransport",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 116
+        },
+        {
+          "name": "testAbsentHTTPTransportCannotSendAnyNewIdentityRequest",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 142
+        },
+        {
+          "name": "testIdentifierNormalizationKeepsPlusAndDotsAndRejectsUnicode",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 162
+        },
+        {
+          "name": "testNewPasswordPolicyDoesNotTrimOrAcceptNonASCII",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 172
+        },
+        {
+          "name": "testOriginRequiresHTTPSExceptExactLoopback",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 179
+        },
+        {
+          "name": "testRedirectDelegateRejectsEvenSameOrigin",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 189
+        },
+        {
+          "name": "testDisabledCapabilitiesAndLegalGateDoNotSubmitChallenge",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 201
+        },
+        {
+          "name": "testSupportedCapabilitiesStillRequireAvailableLegalResources",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 216
+        },
+        {
+          "name": "testUnavailableMethodCannotSendOTP",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 225
+        },
+        {
+          "name": "testUncertainChallengeExplicitRetryFreezesRequestBytesAndIdentifier",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 234
+        },
+        {
+          "name": "testChallengeCooldownAndExpiryUseClockWithoutResending",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 257
+        },
+        {
+          "name": "testVerifyLostResponseDiscardsChallengeInsteadOfReusingMissingProof",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 268
+        },
+        {
+          "name": "testProofExpiryDoesNotSendNewMutation",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 276
+        },
+        {
+          "name": "testPendingRegistrationRetrySurvivesProofExpiryWithIdenticalBytes",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 284
+        },
+        {
+          "name": "testProofInvalidClearsProofAndPermitsNewVerification",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 302
+        },
+        {
+          "name": "testLoginPreservesOldPasswordBytesAndCommitsOnlyAfterWS",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 312
+        },
+        {
+          "name": "testHTTPAndWSUIDMismatchRetiresWithoutPersistingToken",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 329
+        },
+        {
+          "name": "testCommitGateRejectsSessionRetiredAtPersistenceBoundary",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 339
+        },
+        {
+          "name": "testHostGenerationChangeDiscardsLateWebSocketResult",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 347
+        },
+        {
+          "name": "testLeavingFlowRetiresStartedSessionAndDiscardsLateResult",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 364
+        },
+        {
+          "name": "testLegacyBasicKeepsPasswordBytesAndRejectsUnavailableVerification",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 378
+        },
+        {
+          "name": "testDeliveryUncertainStartsFreshChallengeOnlyAfterCooldown",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 392
+        },
+        {
+          "name": "testLoginRetryAfterBlocksHTTPUntilDeadline",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 413
+        },
+        {
+          "name": "testExpiredHTTPTokenDoesNotStartWebSocket",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 428
+        },
+        {
+          "name": "testRegisteredUIDMismatchDoesNotStartWebSocket",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 436
+        },
+        {
+          "name": "testResetMutationUsesResetEndpointAndRequiresReauthentication",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 445
+        },
+        {
+          "name": "testMissingAUTH404StillAllowsOriginalBasicLogin",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 471
+        },
+        {
+          "name": "testExplicitLegacyFalseSurvivesDisabledAUTHCapabilities",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 488
+        },
+        {
+          "name": "testFailedAUTHTransportAllowsOriginalBasicButNotNewIdentityLogin",
+          "file": "TinodiosUITests/IdentityFlowTests.swift",
+          "line": 503
+        }
+      ]
+    },
+    {
+      "target": "TinodiosUITests",
+      "class": "ConversationRemovalTests",
+      "count": 9,
+      "methods": [
+        {
+          "name": "testP2PDeleteTicketRoutesOnlyP2P",
+          "file": "TinodiosUITests/ConversationRemovalTests.swift",
+          "line": 14
+        },
+        {
+          "name": "testOldAccountConfirmationCannotDispatchInNewAccount",
+          "file": "TinodiosUITests/ConversationRemovalTests.swift",
+          "line": 21
+        },
+        {
+          "name": "testReplacementTopicObjectDoesNotReuseOldConfirmation",
+          "file": "TinodiosUITests/ConversationRemovalTests.swift",
+          "line": 27
+        },
+        {
+          "name": "testMemberExitUsesExplicitUnsubscribeNotDeleteTopic",
+          "file": "TinodiosUITests/ConversationRemovalTests.swift",
+          "line": 33
+        },
+        {
+          "name": "testPromotedOwnerCannotReuseMemberExitConfirmation",
+          "file": "TinodiosUITests/ConversationRemovalTests.swift",
+          "line": 38
+        },
+        {
+          "name": "testDissolveRequiresActualOwnerAndRejectsAdminWithoutOwnership",
+          "file": "TinodiosUITests/ConversationRemovalTests.swift",
+          "line": 43
+        },
+        {
+          "name": "testTransferredOwnerCannotReuseDissolveConfirmation",
+          "file": "TinodiosUITests/ConversationRemovalTests.swift",
+          "line": 50
+        },
+        {
+          "name": "testSavedMessagesConfirmationCannotDissolveGroup",
+          "file": "TinodiosUITests/ConversationRemovalTests.swift",
+          "line": 56
+        },
+        {
+          "name": "testUnknownTopicKindDoesNotDispatchAnyDestructiveAction",
+          "file": "TinodiosUITests/ConversationRemovalTests.swift",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "target": "TinodiosUITests",
+      "class": "PublicDirectoryTests",
+      "count": 13,
+      "methods": [
+        {
+          "name": "testUIDShapedPublicAliasUsesOnlyExactAliasTerm",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 13
+        },
+        {
+          "name": "testNormalNameKeepsPublicAliasAndLegacyBasicWithoutRawTerm",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 19
+        },
+        {
+          "name": "testLegacyBasicAndAliasLengthsMatchPublicDirectoryContract",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 27
+        },
+        {
+          "name": "testAdvancedExpressionsAndPrivateIdentitySyntaxCannotPassThrough",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 40
+        },
+        {
+          "name": "testAliasDisplayIsAuthoritativeButNeverInventedFromUID",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 47
+        },
+        {
+          "name": "testConsumerUsesServerReturnedUIDInsteadOfManualInput",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 53
+        },
+        {
+          "name": "testUIDLookingResultWithoutExactAliasCannotBeConsumed",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 62
+        },
+        {
+          "name": "testNonUserDirectoryResultCannotBeConsumed",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 71
+        },
+        {
+          "name": "testTypingNewInputRejectsVisibleOldSelectionBeforeDebounce",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 78
+        },
+        {
+          "name": "testSameTextNewRequestRejectsOlderResponseAndClick",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 87
+        },
+        {
+          "name": "testChangedSDKOwnerRejectsResponseAndSelection",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 96
+        },
+        {
+          "name": "testInvalidNewQueryRetiresPreviousValidRequest",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 103
+        },
+        {
+          "name": "testConsumerActionRunsOutsideInternalLock",
+          "file": "TinodiosUITests/PublicDirectoryTests.swift",
+          "line": 111
+        }
+      ]
+    },
+    {
+      "target": "TinodiosUITests",
+      "class": "SecondaryUIStateTests",
+      "count": 13,
+      "methods": [
+        {
+          "name": "testNotificationNotDeterminedRequestsPermission",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 7
+        },
+        {
+          "name": "testNotificationDeniedOpensSettingsInsteadOfRequestingAgain",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 15
+        },
+        {
+          "name": "testNotificationAuthorizedWithDisabledAlertOrCenterNeedsSettings",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 23
+        },
+        {
+          "name": "testNotificationGrantedModesKeepUsablePreferencesWithoutReprompt",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 34
+        },
+        {
+          "name": "testNotificationReturnFromSettingsUsesNewSnapshot",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 44
+        },
+        {
+          "name": "testInlineImageRequiresActualDecodeBeforeSharing",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 60
+        },
+        {
+          "name": "testImageReferenceLoadingFailureAndRetryNeverSharePlaceholder",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 71
+        },
+        {
+          "name": "testImageForbiddenRemovesPreviouslyReadyExport",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 86
+        },
+        {
+          "name": "testMediaSessionRejectsLogoutAccountSwapAndOldGeneration",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 95
+        },
+        {
+          "name": "testMediaCacheKeySeparatesAccountsAndOriginsWithoutPlaintext",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 106
+        },
+        {
+          "name": "testActualKingfisherMemoryCacheIgnoresLegacyAndOtherAccountKeys",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 124
+        },
+        {
+          "name": "testPNGExportsUseDistinctSafeDirectoriesForRemoteNames",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 141
+        },
+        {
+          "name": "testFileReadUsesActualFoundationDataAndReportsMissingFile",
+          "file": "TinodiosUITests/SecondaryUIStateTests.swift",
+          "line": 162
+        }
+      ]
+    },
+    {
+      "target": "TinodiosUITests",
+      "class": "OwnedImageTests",
+      "count": 10,
+      "methods": [
+        {
+          "name": "testProductionModifierUsesCapturedHeadersOnlyForSameOrigin",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 115
+        },
+        {
+          "name": "testNilResourceFailsActualUtilsPromiseWithoutStartingTransport",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 146
+        },
+        {
+          "name": "testOriginalOwnerGateRejectsRetirementAndStoreOrSlotChange",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 161
+        },
+        {
+          "name": "testRealKingfisherCacheLoadsOfflineAAndCannotServeB",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 180
+        },
+        {
+          "name": "testActualRoundViewKeepsBImageWhenACompletesLate",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 214
+        },
+        {
+          "name": "testActualRoundViewDefaultAndBrandResetsInvalidatePendingImage",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 239
+        },
+        {
+          "name": "testActualAttachmentSuccessPostprocessesAndRedraws",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 263
+        },
+        {
+          "name": "testActualAttachmentLogoutRejectsImageAndRedraw",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 293
+        },
+        {
+          "name": "testActualAttachmentURLReplacementRejectsOldRequest",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 322
+        },
+        {
+          "name": "testActualUtilsPromiseSettlesAfterOwnerRetiresWithoutSuccess",
+          "file": "TinodiosUITests/OwnedImageTests.swift",
+          "line": 342
+        }
+      ]
+    }
+  ],
+  "loop_count_note": "LocalMigrationTests.testTwoConcurrentInitializersCommitOnlyOneMarker is one method with12 rounds/24 openings"
+}

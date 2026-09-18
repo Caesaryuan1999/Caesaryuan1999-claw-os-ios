@@ -1,0 +1,43 @@
+7a0966ae6401d529f63a21708059f12bb838c8d0	feat(ios): apply R3 A theme and core navigation
+12c92452a72a8b501171228532172d059d802343	feat(ios): clarify chat composer and message presentation
+d077e02b1340cd5996196fcd6bd247fd43b28134	feat(ios): wire AUTH-A1 identity flows and native regression coverage
+7f0b8a49966efd8d61a6e84151b3e2429266f586	fix(ios): keep original account login independent of AUTH endpoints
+f93235f953b8cab2171c1ab6bb130ccf98a1b53b	fix(ios): retire old login after password change outcome
+9f591cc78eddea8f2ef3e97746def55939bdb185	fix(ios): make login credential settings read-only
+8712f7b305f197411f1803efc23b21a6187a2e08	fix(ios): bind destructive chat actions to explicit intent and account
+df372b1510569b20d3d40a2c82f4e67fe55cfaae	fix(ios): preserve license text while removing invalid XML controls
+b0565267689414f5642c7b8274062501196c57d2	style: remove trailing blank lines from new verification files
+62ce8470cd3b3cd344dd003406e835f48aa39cad	fix(ios): persist and display public alias before legacy basic tags
+ae88055d55b81fb10eba6ec27d2a180cdf029943	fix(ios): pass explicit credential argument to token login
+adf55d14098cf58d3c22a7a2c788a7c6dfc76652	feat(ios): apply D1 layouts to contacts and personal profile
+ff6487e848eba42c0eb0a421b271444c8ed7d419	fix(ios): clarify group dissolution history and saved-copy scope
+4681442909d9e1495c42d99695a40cbc60f12eba	fix(ios): distinguish unavailable credentials from unbound identities
+69e2b80f7223a17ea8449cc770c6265f7023d777	fix(ios): keep legacy SDK login independent of AUTH transport
+34da10e566ee3e61fdafa80ba140e65aeaf1a875	ci(ios): capture bounded cold-launch simulator evidence
+e67e68fefc65f0886aaabcecec079e280a277825	docs(ios): record committed shell syntax verification
+557d90092a52d02f89409b90396a788300528e61	test(auth): separate disabled capability and legal prerequisites
+8927c053a0360a767a13cdd87bb600c265fde9b9	fix(contacts): bind public directory results to exact query and owner
+fd7d0c52fffedde0e773c6a97521daa59181b91f	diagnostic(db): preserve safe initializer stage and error codes
+61fd4ae482a65cbb465c455805fc792b8de350a1	fix(contacts): bound legacy public basic lookup to server lengths
+80d17a0f50e6cfe67e772d5970de58b7dbe0eb5e	fix(account): bind logout confirmations and delete callbacks to owner
+a02c61c7ef033fe17fbb4f3b95b0db6afad5cbf2	fix(contacts): retain current account contacts while offline
+1be51a5b6fcc846f825d22064e58130f763c7868	fix(sdk): log a fixed inbound packet event
+3f3d438d70dce742ea91bdf231c34699a18e26e4	fix(ui): use supported UISearchBar searchTextField API
+f3043d923aa0f0c996b6a2967a9d2c33acefb435	fix(sdk): keep receive failure logs free of error text
+4cb9f496b2a458bb813c4d5e6c1d787dc18c88ae	docs: seal R3 source patch and CI5 failure evidence
+4821062e9cf503c35137e8150d7c93813077c687	db: capture live numeric initialization errors without retry
+f8035d34809acb5fc7e912f010b56f98d00af8aa	docs: audit six secondary UI routes and recovery gaps
+f46c9f085528db4c99acc2d35f7f13e2fa1f3db8	fix: save private group notes as scoped metadata deltas
+003a1df9cfa5b4699540e160b390a8edd10bb3d5	test: preserve nullable SQLite errors and repeat isolated migration races
+547dc97da2069a3fd373076fe1227e245b2f474a	Clarify chat information and private note labels
+c6095b620170ef78b53ab43c998a1c3252479081	Align chat information copy source assertion
+9ffdf84f26d55e6a154442e17fc749f8bc9c3f90	Recover notification permissions using actual system authorization state
+3c21ce0048108c356bee08e5f7dfdbdf0cde4328	Recover image and file previews with account-scoped media and safe sharing
+a5d95cbbfc609d34f9b24aa62cfbbbd72e7d3a51	Serialize each database initialization lifecycle with a reentry-safe path gate
+7bacc0dd7f0dfc3660b12c624cfcae4665ff9a7f	Disambiguate Kingfisher image resources in preview and native test
+810475713f1cddbe3ecd960d48345dc10cfefb3e	Scope shared media consumers to captured account sessions
+d61855fd1534cb864fb5f6848eec3fa1b7dcce4a	Boot only the tested available simulator before cold-launch smoke
+805dbf3181ec6dfb3796b9a3164a808e655b4710	Require the exact account deletion ACK before local cleanup
+4da8391b19ebe03d4a4ed7d4fb21ae428a89167e	Clarify account deletion consequences and default to cancel
+6bf302b9fdeb3d6778d7712f63bea04e9cb934ae	Make confirmed account local cleanup atomic and observable
+d381e074fd1ede395f6c21a658f37020661acd78	Keep registration and password recovery in one accessible login row
