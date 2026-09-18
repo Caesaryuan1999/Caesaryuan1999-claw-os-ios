@@ -89,7 +89,7 @@ class SendMessageBar: UIView {
     @IBOutlet weak var horizontalSliderView: UIView!
 
     // Constraints.
-    private var sendButtonConstrains: CGPoint!
+    private var sendButtonConstrains: CGPoint?
     // Position in SendMessageBar coordinates.
     private var sendButtonLocation: CGPoint!
 
@@ -190,7 +190,7 @@ class SendMessageBar: UIView {
         switch sender.state {
         case .began:
             let loc = sender.location(in: self)
-            self.sendButtonConstrains = CGPoint(x: self.sendButtonHorizontal.constant, y: self.sendButtonVertical.constant)
+            self.captureRecordingGestureOrigin()
             self.sendButtonLocation = CGPoint(x: loc.x, y: loc.y)
             self.delegate?.sendMessageBar(recordAudio: .start)
         case .ended:
@@ -466,9 +466,18 @@ class SendMessageBar: UIView {
         showAudioBar(.hidden)
     }
 
+    private func captureRecordingGestureOrigin() {
+        sendButtonConstrains = CGPoint(x: sendButtonHorizontal.constant, y: sendButtonVertical.constant)
+    }
+
     private func resetRecordingGesture() {
-        sendButtonHorizontal.constant = sendButtonConstrains.x
-        sendButtonVertical.constant = sendButtonConstrains.y
+        // A page may disappear without ever beginning a recording gesture.
+        // Consume the snapshot so a later reset cannot overwrite a new layout.
+        if let origin = sendButtonConstrains {
+            sendButtonHorizontal.constant = origin.x
+            sendButtonVertical.constant = origin.y
+            sendButtonConstrains = nil
+        }
         verticalSliderView.isHidden = true
         horizontalSliderView.isHidden = true
         sendButtonSize.constant = Constants.kButtonSizeNormal
@@ -541,11 +550,7 @@ class SendMessageBar: UIView {
 
     func audioBarState(_ state: AudioBarAction) {
         UIView.animate(withDuration: 0.15, delay: 0, options: UIView.AnimationOptions.curveEaseIn, animations: {
-            self.sendButtonHorizontal.constant = self.sendButtonConstrains.x
-            self.sendButtonVertical.constant = self.sendButtonConstrains.y
-            self.verticalSliderView.isHidden = true
-            self.horizontalSliderView.isHidden = true
-            self.sendButtonSize.constant = Constants.kButtonSizeNormal
+            self.resetRecordingGesture()
             if state == .lock {
                 self.updateSendButtonAppearance(sending: true)
                 self.showAudioBar(.longInitial)

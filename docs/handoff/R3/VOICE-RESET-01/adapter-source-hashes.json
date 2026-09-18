@@ -1,0 +1,10 @@
+{
+  "scope": "Complete production capture/reset methods + real UIKit; showAudioBar spy, no XIB/page",
+  "sourceBlob": "b24f9e74b5a0289178bc5ec7bc7fe214614096a2",
+  "methodSHA256": {
+    "captureRecordingGestureOrigin": "b17814db36553753c00d9a28d928272459170ac94ad16b48ebd23223c48b85fa",
+    "resetRecordingGesture": "c1d456314cf8e554b1e2e7b5fc10ebc05759eacb31839eee4ed90d864c5db1bf",
+    "resetRecordingState": "b3d2e8b91bb1109d5a36260c1bb04af28ca2242b0bd13ebcb2c56a07c1aa27b5"
+  },
+  "adapterSHA256": "afdbc9cec4ba6072d1e4d0d9ab8db946ab7959c789ff4bad273dd602f804ae08"
+}

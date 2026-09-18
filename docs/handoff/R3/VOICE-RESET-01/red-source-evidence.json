@@ -1,0 +1,10 @@
+{
+  "base": "785461b2006dbc0260472ebfe3cd36907fcbca27",
+  "blob": "08257e5af521bd680bd2a927a66f2bb84fa0bdbd",
+  "source_proven_chain": [
+    "MessageViewController.viewWillDisappear -> discardVoiceRecording -> resetRecordingState",
+    "sendButtonConstrains IUO only assigned by longPressed.began",
+    "resetRecordingGesture dereferences snapshot.x/.y before gesture"
+  ],
+  "native_red_execution": "NOT_RUN: Windows has no UIKit/Swift runtime; extractor legacy rejection is not a crash reproduction"
+}

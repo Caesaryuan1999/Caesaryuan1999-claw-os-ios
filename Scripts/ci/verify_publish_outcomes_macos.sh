@@ -242,6 +242,73 @@ report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 print("AUDIO_UPLOAD_SOURCE_ADAPTER " + json.dumps(metadata, separators=(",", ":")))
 AUDIO_UPLOAD_SOURCE
 
+# Execute complete production reset methods with real UIKit; XIB presentation is a named spy boundary.
+python3 - "$result_dir/static.json" <<'VOICE_RESET_SOURCE'
+import hashlib, json, pathlib, re, subprocess, sys
+
+name = "Tinodios/widgets/SendMessageBar.swift"
+raw = pathlib.Path(name).read_bytes().replace(b"\r\n", b"\n")
+source_blob = subprocess.check_output(["git", "rev-parse", "HEAD:" + name], text=True).strip()
+actual_blob = subprocess.check_output(["git", "hash-object", "--stdin"], input=raw).decode().strip()
+assert actual_blob == source_blob, "Voice reset source differs from fixed HEAD blob"
+source = raw.decode("utf-8")
+expected = {
+    "captureRecordingGestureOrigin": "b17814db36553753c00d9a28d928272459170ac94ad16b48ebd23223c48b85fa",
+    "resetRecordingGesture": "c1d456314cf8e554b1e2e7b5fc10ebc05759eacb31839eee4ed90d864c5db1bf",
+    "resetRecordingState": "b3d2e8b91bb1109d5a36260c1bb04af28ca2242b0bd13ebcb2c56a07c1aa27b5",
+}
+methods = []
+for method, digest in expected.items():
+    matches = re.findall(r"(?ms)^    (?:private )?func " + method + r"\(\) \{\n.*?^    \}\n", source)
+    assert len(matches) == 1, "Voice reset method is missing or ambiguous: " + method
+    assert hashlib.sha256(matches[0].encode()).hexdigest() == digest, "Voice reset method drift: " + method
+    methods.append(matches[0])
+assert source.count("private var sendButtonConstrains: CGPoint?") == 1, "Optional snapshot declaration changed"
+assert source.count("self.captureRecordingGestureOrigin()") == 1, "Gesture must use the captured production snapshot"
+began = re.findall(r"(?ms)^        case \.began:\n(.*?)^        case \.ended:", source)
+assert len(began) == 1 and "self.captureRecordingGestureOrigin()" in began[0], "Capture must run in actual gesture begin"
+action = re.findall(r"(?ms)^    func audioBarState\(_ state: AudioBarAction\) \{\n.*?^    \}\n", source)
+assert len(action) == 1 and action[0].count("self.resetRecordingGesture()") == 1, "Lock/cancel must use actual reset"
+normal = re.findall(r"(?m)^        static let kButtonSizeNormal: CGFloat = [0-9]+$", source)
+assert len(normal) == 1, "Production button size must be unique"
+generated = '''// Generated from fixed HEAD complete methods; no XIB or chat-page claim.
+import UIKit
+
+final class SendMessageBarResetSource: UIView {
+    static let sourceBlob = ''' + json.dumps(source_blob) + '''
+    private enum Constants {
+''' + normal[0] + '''
+    }
+    enum AudioBarState { case hidden }
+    var sendButtonConstrains: CGPoint?
+    var recordingStarted = false
+    var audioLocked = false
+    let verticalSliderView = UIView()
+    let horizontalSliderView = UIView()
+    private let button = UIView()
+    lazy var sendButtonHorizontal = button.centerXAnchor.constraint(equalTo: trailingAnchor, constant: -26)
+    lazy var sendButtonVertical = button.centerYAnchor.constraint(equalTo: bottomAnchor, constant: -28)
+    lazy var sendButtonSize = button.widthAnchor.constraint(equalToConstant: Constants.kButtonSizeNormal)
+    private(set) var hiddenPresentationCalls = 0
+    var normalButtonSize: CGFloat { Constants.kButtonSizeNormal }
+    // Test admission only: executes the exact private production capture method below.
+    func captureCurrentLayoutForGesture() { captureRecordingGestureOrigin() }
+    // Explicit presentation spy: the real showAudioBar/XIB is NOT adapted or executed here.
+    private func showAudioBar(_ state: AudioBarState) { hiddenPresentationCalls += 1 }
+''' + "\n".join(methods) + "}\n"
+target = pathlib.Path("build/ci-generated/SendMessageBarResetSource.swift")
+target.parent.mkdir(parents=True, exist_ok=True)
+target.write_text(generated, encoding="utf-8", newline="\n")
+metadata = {"scope": "Complete production capture/reset methods + real UIKit; showAudioBar spy, no XIB/page",
+            "sourceBlob": source_blob, "methodSHA256": expected,
+            "adapterSHA256": hashlib.sha256(generated.encode()).hexdigest()}
+report_path = pathlib.Path(sys.argv[1])
+report = json.loads(report_path.read_text(encoding="utf-8"))
+report["voice_reset_source_adapter"] = metadata
+report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+print("VOICE_RESET_SOURCE_ADAPTER " + json.dumps(metadata, separators=(",", ":")))
+VOICE_RESET_SOURCE
+
 xcodebuild test -workspace Tinodios.xcworkspace -scheme TinodeSDK \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \
   -parallel-testing-enabled NO \
@@ -318,11 +385,12 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -only-testing:TinodiosUITests/SecondaryUIStateTests \
   -only-testing:TinodiosUITests/OwnedImageTests \
   -only-testing:TinodiosUITests/MediaRecorderLifecycleTests \
+  -only-testing:TinodiosUITests/SendMessageBarResetTests \
   -only-testing:TinodiosVLCProbeTests/VLCPlaybackProbeTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
 unset TEST_RUNNER_CLAW_VLC_POD_EVIDENCE
-# Real App navigation is separate from 198 SDK/storage methods and 4 VLC measurement methods.
+# Real App navigation is separate from the selected SDK/storage methods and 4 VLC measurement methods.
 # Same selected device and closed loopback endpoint; no login or OTP submission.
 xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -configuration Debug -destination "platform=iOS Simulator,id=$sim_id" \

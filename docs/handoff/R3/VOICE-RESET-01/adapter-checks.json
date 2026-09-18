@@ -1,0 +1,38 @@
+{
+  "level": "Windows execution of exact CI Python extractor in synthetic Git fixture; not Swift/UIKit",
+  "checks": [
+    {
+      "name": "fixed HEAD generates exact complete methods",
+      "pass": true,
+      "adapter_exit": 0,
+      "expected_error_category": null
+    },
+    {
+      "name": "dirty source rejected",
+      "pass": true,
+      "adapter_exit": 1,
+      "expected_error_category": "differs from fixed HEAD blob"
+    },
+    {
+      "name": "duplicate complete method rejected",
+      "pass": true,
+      "adapter_exit": 1,
+      "expected_error_category": "missing or ambiguous"
+    },
+    {
+      "name": "committed method drift rejected",
+      "pass": true,
+      "adapter_exit": 1,
+      "expected_error_category": "method drift"
+    },
+    {
+      "name": "legacy exact source lacks reviewed capture",
+      "pass": true,
+      "adapter_exit": 1,
+      "expected_error_category": "missing or ambiguous"
+    }
+  ],
+  "count": 5,
+  "legacy_blob": "08257e5af521bd680bd2a927a66f2bb84fa0bdbd",
+  "extractor_sha256": "b54adf2d0b6e6849a14e0d2c38bb3e9baf89727bb370a9ae5f304fc2c7618dd8"
+}

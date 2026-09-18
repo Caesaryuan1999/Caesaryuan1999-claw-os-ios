@@ -1,0 +1,43 @@
+{
+  "level": "source graph and counts; native pending Mac",
+  "counts": {
+    "TinodeSDKTests": 43,
+    "PublishStorageTests": 4,
+    "LocalMigrationTests": 62,
+    "IdentityFlowTests": 30,
+    "ConversationRemovalTests": 9,
+    "PublicDirectoryTests": 13,
+    "SecondaryUIStateTests": 16,
+    "OwnedImageTests": 21,
+    "MediaRecorderLifecycleTests": 8,
+    "SendMessageBarResetTests": 4,
+    "VLCPlaybackProbeTests": 4,
+    "IdentityNavigationUITests": 3
+  },
+  "original_selectors_preserved": true,
+  "new_test_source_membership_once": true,
+  "production_file_count": 1,
+  "test_wiring_file_count": 3,
+  "files": [
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "sha256": "575884342e3b5d83f239f038aafc1068c1a03d4fa7c33d6f8290f6ada99ee812",
+      "bytes": 23154
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "sha256": "b36f6e0377024ca4aad45a4eddcccf04094798e799eb1acea70e3cbd2007d09c",
+      "bytes": 124012
+    },
+    {
+      "path": "Tinodios/widgets/SendMessageBar.swift",
+      "sha256": "d7be36eb50c074e79fa4d296b3fe790eef0ace0c025d95d89b94c9ad7388072b",
+      "bytes": 33811
+    },
+    {
+      "path": "TinodiosUITests/SendMessageBarResetTests.swift",
+      "sha256": "7d0bf820ef940cc8f83b1ea6c6e18b34a49ab4ba351006e3f0f6ede2966b4eb4",
+      "bytes": 3738
+    }
+  ]
+}
