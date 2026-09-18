@@ -1,0 +1,33 @@
+{
+  "parent": "0a3c145d2f5c8d8d27b578617d206c17ddb1ef87",
+  "scope": "source checks only; UIKit/native NOT_RUN",
+  "checks": {
+    "parent_has_will_disappear_retirement": true,
+    "exact_vc_reverse_equals_parent": true,
+    "did_move_added_once": true,
+    "same_ten_method_names": true,
+    "nine_other_method_bodies_unchanged": true,
+    "controlled_cancel_keeps_source_and_invalidates_intent": true,
+    "real_pop_has_previous_page_and_old_source_is_rejected": true
+  },
+  "tracked_changed_code": [
+    "Tinodios/MessageViewController.swift",
+    "TinodiosUITests/ChatScrollTests.swift"
+  ],
+  "files": [
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "raw_sha256": "b082058ca6481a95f6c22b79116590dabbcc9c5b515b78f438f0ab3327d74c30",
+      "git_blob": "7ebb6305a60852126c50663170edc2cb986f5f88"
+    },
+    {
+      "path": "TinodiosUITests/ChatScrollTests.swift",
+      "raw_sha256": "86d3626ebe997cc4cfc2beef66495b3e4f05de3ae89f6e6f450594da8940eea0",
+      "git_blob": "9fba6a07fb6fa2777eac468ad20154529aa70bab"
+    }
+  ],
+  "native_method_count": 10,
+  "expected_native_total": 242,
+  "expected_navigation": 3,
+  "old_candidate_and_packages": "preserved, not resealed"
+}

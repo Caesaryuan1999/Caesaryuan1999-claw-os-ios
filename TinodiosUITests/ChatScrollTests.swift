@@ -239,6 +239,28 @@ final class ChatScrollTests: XCTestCase {
             XCTAssertEqual(controller.messages.first?.msgId, 1)
             controller.displayChatMessages(messages: rows(200...240), source: ChatDisplaySource(page: UUID(), topic: controller.topic!), intent: .passive)
             XCTAssertEqual(controller.messages.first?.msgId, 1)
+            // Controlled UIKit appearance callbacks, not an interactive touch gesture.
+            let retainedSource = try XCTUnwrap(controller.chatDisplaySource)
+            let beforeDisappearing = controller.chatInteractionRevision
+            controller.reportedMovingFromParent = true
+            controller.viewWillDisappear(false)
+            controller.reportedMovingFromParent = false
+            controller.viewWillAppear(false) // Cancellation returns to this same contained page.
+            XCTAssertGreaterThan(controller.chatInteractionRevision, beforeDisappearing)
+            XCTAssertEqual(controller.chatDisplaySource, retainedSource)
+            controller.displayChatMessages(messages: rows(1...42), source: retainedSource, intent: .preserve)
+            try settled()
+            XCTAssertEqual(controller.messages.count, 42)
+
+            // Real navigation removal: supply a previous page so pop is not a no-op.
+            let navigation = try XCTUnwrap(controller.navigationController)
+            navigation.setViewControllers([UIViewController(), controller], animated: false)
+            XCTAssertTrue(navigation.popViewController(animated: false) === controller)
+            XCTAssertNil(controller.parent)
+            XCTAssertTrue(controller.chatPageRetired)
+            XCTAssertNil(controller.chatDisplaySource)
+            controller.displayChatMessages(messages: rows(100...150), source: retainedSource, intent: .passive)
+            XCTAssertEqual(controller.messages.count, 42, "Popped page rejects original-source presentation")
         }
     }
 
@@ -345,6 +367,8 @@ private final class NeutralChatController: MessageViewController {
     override func viewDidLoad() {}
     override func viewDidAppear(_ animated: Bool) {}
     override var inputAccessoryView: UIView? { nil }
+    var reportedMovingFromParent = false
+    override var isMovingFromParent: Bool { reportedMovingFromParent || super.isMovingFromParent }
 }
 
 private final class NeutralFilePreview: FilePreviewController {

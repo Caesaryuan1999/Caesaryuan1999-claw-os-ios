@@ -864,9 +864,18 @@ class MessageViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         invalidateChatDisplayIntent()
-        if isMovingFromParent || isBeingDismissed { chatPageRetired = true }
         voicePageActive = false
         discardVoiceRecording()
+    }
+
+    override func didMove(toParent parent: UIViewController?) {
+        super.didMove(toParent: parent)
+        // A cancelled interactive pop has only begun disappearing. Retire
+        // display admission after UIKit actually removes this child instead.
+        if parent == nil {
+            invalidateChatDisplayIntent()
+            chatPageRetired = true
+        }
     }
 
     @objc func audioSessionInterrupted(_ notification: Notification) {
