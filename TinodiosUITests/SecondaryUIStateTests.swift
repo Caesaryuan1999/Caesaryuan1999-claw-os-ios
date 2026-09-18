@@ -172,3 +172,67 @@ final class SecondaryUIStateTests: XCTestCase {
     }
 
 }
+
+
+extension SecondaryUIStateTests {
+    func testGenericExportsConfineRemoteNamesAndOnlyRemoveOwnedFiles() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let sentinel = root.appendingPathComponent("sentinel.mp4")
+        let original = Data("original".utf8)
+        try original.write(to: sentinel)
+        let bytes = Data([1, 2, 3])
+        for name in ["../sentinel.mp4", sentinel.path, "..\\sentinel.mp4", "/", "..", "same.mp4", "same.mp4"] {
+            let file = try ClawMediaFiles.exportData(bytes, suggestedName: name, root: root)
+            XCTAssertEqual(file.resolvingSymlinksInPath().deletingLastPathComponent().deletingLastPathComponent(),
+                           root.resolvingSymlinksInPath().appendingPathComponent("ClawMediaExports", isDirectory: true))
+            XCTAssertEqual(try Data(contentsOf: file), bytes)
+            XCTAssertEqual(try Data(contentsOf: sentinel), original)
+            ClawMediaFiles.removeExport(sentinel)
+            XCTAssertEqual(try Data(contentsOf: sentinel), original)
+            ClawMediaFiles.removeExport(file)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
+        }
+    }
+
+    func testGenericConcurrentSameNamesUseDistinctDirectoriesAndPreserveDownloadSource() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let lock = NSLock()
+        var paths = [URL]()
+        var failures = 0
+        DispatchQueue.concurrentPerform(iterations: 8) { index in
+            do {
+                let file = try ClawMediaFiles.exportData(Data([UInt8(index)]), suggestedName: "same.mp4", root: root)
+                lock.lock(); paths.append(file); lock.unlock()
+            } catch { lock.lock(); failures += 1; lock.unlock() }
+        }
+        XCTAssertEqual(failures, 0)
+        XCTAssertEqual(Set(paths).count, 8)
+        let source = root.appendingPathComponent("download.tmp")
+        try Data([42]).write(to: source)
+        let preserved = try ClawMediaFiles.preserveDownload(source, suggestedName: "same.mp4", root: root)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertEqual(try Data(contentsOf: preserved), Data([42]))
+        (paths + [preserved]).forEach { ClawMediaFiles.removeExport($0) }
+    }
+
+    func testGenericExportRejectsSymlinkNamespaceWithoutTouchingOutsideSentinel() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let outside = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: outside)
+        }
+        let sentinel = outside.appendingPathComponent("sentinel")
+        try Data([77]).write(to: sentinel)
+        try FileManager.default.createSymbolicLink(at: root.appendingPathComponent("ClawMediaExports"), withDestinationURL: outside)
+        XCTAssertThrowsError(try ClawMediaFiles.exportData(Data([1]), suggestedName: "sentinel", root: root))
+        XCTAssertEqual(try Data(contentsOf: sentinel), Data([77]))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: outside.path), ["sentinel"])
+    }
+}

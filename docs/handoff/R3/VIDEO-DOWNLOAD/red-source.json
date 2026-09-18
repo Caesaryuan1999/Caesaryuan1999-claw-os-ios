@@ -1,0 +1,15 @@
+{
+  "base": "e90332a417b722baabd8c71b60901f530e06b0aa",
+  "level": "source counterexamples only; NOT Swift or HTTP red execution",
+  "defects_confirmed": {
+    "external_ref_reaches_unconditional_download_headers": true,
+    "inline_message_filename_becomes_documents_write": true,
+    "download_error_callback_only_in_success_delegate": true,
+    "http_status_not_checked_in_download_success_delegate": true
+  },
+  "scenarios": [
+    "external HTTPS ref + share sends account headers",
+    "inline ../name or existing name is not confined",
+    "transport failure drops callback; HTTP 403 body can share"
+  ]
+}

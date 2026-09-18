@@ -45,7 +45,24 @@ class VideoPreviewController: UIViewController {
     private let thumbnailer = ThumbnailFetcher()
     private var didSubmitVideo = false
 
-    var previewContent: VideoPreviewContent?
+    private var ownedContext: ClawOwnedImageContext?
+    private var ownedHelper: LargeFileHelper?
+    private var frozenContent: VideoPreviewContent?
+    private var sourceGeneration = UUID()
+    private var previewVisible = false
+    private let shareSlot = ClawOwnedImageSlot()
+    private var download: ClawOwnedFileDownload?
+
+    var previewContent: VideoPreviewContent? {
+        didSet {
+            if isViewLoaded {
+                invalidatePreview()
+                frozenContent = nil
+                ownedContext = nil
+                ownedHelper = nil
+            }
+        }
+    }
     var replyPreviewDelegate: PendingMessagePreviewDelegate?
 
     var duration: Int = 0 {
@@ -101,7 +118,14 @@ class VideoPreviewController: UIViewController {
     }
 
     private func setup() {
-        guard let content = self.previewContent else { return }
+        navigationItem.rightBarButtonItem?.isEnabled = false
+        guard let content = self.previewContent, let context = Utils.ownedImageContext() else { return }
+        ownedContext = context
+        ownedHelper = Cache.ifCurrent(context.owner) { Cache.getLargeFileHelper() }
+        frozenContent = content
+        navigationItem.rightBarButtonItem?.image = nil
+        navigationItem.rightBarButtonItem?.title = "分享视频"
+        navigationItem.rightBarButtonItem?.accessibilityLabel = "分享视频"
 
         var url: URL?
         var stream: Stream?
@@ -114,8 +138,10 @@ class VideoPreviewController: UIViewController {
             // Hide [Save video] button.
             navigationItem.rightBarButtonItem = nil
         case .remote(let bits, let ref):
-            if let ref = ref, let tinodeUrl = URL(string: ref, relativeTo: Cache.tinode.baseURL(useWebsocketProtocol: false)) {
-                url = Cache.tinode.addAuthQueryParams(tinodeUrl)
+            if let ref = ref {
+                guard let mediaURL = context.resourceURL(from: ref) else { return }
+                // VLC playback remains separate; the URL is bound to the captured owner.
+                url = context.withCurrent { context.owner.addAuthQueryParams(mediaURL) }
             } else if let bits = bits, !bits.isEmpty {
                 stream = InputStream(data: bits)
             } else {
@@ -143,7 +169,7 @@ class VideoPreviewController: UIViewController {
         }
         player.media = media
         player.delegate = self
-        player.play()
+        if context.isCurrent { player.play() }
 
         setInterfaceColors()
     }
@@ -157,9 +183,28 @@ class VideoPreviewController: UIViewController {
         DispatchQueue.main.async { self.becomeFirstResponder() }
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        previewVisible = true
+        navigationItem.rightBarButtonItem?.isEnabled = ownedContext?.isCurrent == true
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        invalidatePreview()
+    }
+
+    private func invalidatePreview() {
+        previewVisible = false
+        sourceGeneration = UUID()
+        shareSlot.invalidate()
+        download?.cancel()
+        download = nil
         player.stop()
+    }
+
+    private func acceptsSource(_ generation: UUID) -> Bool {
+        previewVisible && frozenContent != nil && sourceGeneration == generation && ownedContext?.isCurrent == true
     }
 
     /// The `sendImageBar` is used as an optional `inputAccessoryView` in the view controller.
@@ -208,6 +253,7 @@ class VideoPreviewController: UIViewController {
     }
 
     @IBAction func playPauseClicked(_ sender: Any) {
+        guard acceptsSource(sourceGeneration) else { return }
         if player.state == .ended || player.state == .stopped {
             player.stop()
             player.position = 0
@@ -223,37 +269,64 @@ class VideoPreviewController: UIViewController {
     }
 
     @IBAction func videoSliderChanged(_ sender: Any) {
-        guard self.duration > 0 && player.isSeekable else { return }
+        guard acceptsSource(sourceGeneration), self.duration > 0 && player.isSeekable else { return }
         let value = (sender as! UISlider).value
         player.position = value
     }
 
     @IBAction func saveVideoButtonClicked(_ sender: Any) {
-        guard let content = previewContent, case let .remote(bits, ref) = content.videoSrc else { return }
-
-        let downloadBtn = sender as! UIBarButtonItem
-        let picturesUrl: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let destinationURL = picturesUrl.appendingPathComponent(content.fileName ?? Utils.uniqueFilename(forMime: content.contentType))
-
-        if let ref = ref, let url = URL(string: ref, relativeTo: Cache.tinode.baseURL(useWebsocketProtocol: false)) {
-            downloadBtn.isEnabled = false
-            Cache.getLargeFileHelper().startDownload(from: url) { _ in
-                downloadBtn.isEnabled = true
+        guard acceptsSource(sourceGeneration), let context = ownedContext,
+              let content = frozenContent, case let .remote(bits, ref) = content.videoSrc,
+              let button = sender as? UIBarButtonItem else { return }
+        let source = sourceGeneration
+        let attempt = shareSlot.invalidate()
+        download?.cancel()
+        button.isEnabled = false
+        let presentation = ClawOwnedFilePresentation(context: context, attemptIsCurrent: { [weak self] in
+            self?.acceptsSource(source) == true && self?.shareSlot.accepts(attempt) == true
+        })
+        let completed: ClawOwnedFileDownload.Completion = { [weak self, weak button] result in
+            guard let self = self, let button = button else {
+                if case let .success(file) = result { ClawMediaFiles.removeExport(file) }
+                return
             }
-        } else if let bits = bits {
-            defer { downloadBtn.isEnabled = true }
-            do {
-                downloadBtn.isEnabled = false
-                try FileManager.default.createDirectory(at: picturesUrl, withIntermediateDirectories: true, attributes: nil)
-                try bits.write(to: destinationURL)
-                UiUtils.presentFileSharingVC(for: destinationURL)
-            } catch {
-                Cache.log.info("Failed to save video as %@: %@", destinationURL.absoluteString, error.localizedDescription)
+            presentation.complete(result, restore: {
+                self.download = nil
+                button.isEnabled = true
+            }, success: { file in
+                UiUtils.presentFileSharingVC(for: file, presentation: presentation, from: self)
+            }, failure: { error in
+                UiUtils.showToast(message: (error as? ClawFileTransferError)?.message
+                    ?? ClawFileTransferError.write.message)
+            })
+        }
+        if let ref = ref {
+            guard let url = context.resourceURL(from: ref), let helper = ownedHelper else {
+                completed(.failure(ClawFileTransferError.invalidURL)); return
             }
+            download = helper.startOwnedDownload(from: url, context: context,
+                suggestedName: content.fileName, completion: completed)
+        } else if let bits = bits, !bits.isEmpty {
+            DispatchQueue.global(qos: .userInitiated).async {
+                let result: Swift.Result<URL, Error>
+                do {
+                    guard context.isCurrent else { throw ClawFileTransferError.sessionExpired }
+                    let file = try ClawMediaFiles.exportData(bits, suggestedName: content.fileName)
+                    if context.isCurrent { result = .success(file) }
+                    else {
+                        ClawMediaFiles.removeExport(file)
+                        result = .failure(ClawFileTransferError.sessionExpired)
+                    }
+                } catch { result = .failure(ClawFileTransferError.write) }
+                DispatchQueue.main.async { completed(result) }
+            }
+        } else {
+            completed(.failure(ClawFileTransferError.invalidData))
         }
     }
 
     @IBAction func muteButtonClicked(_ sender: Any) {
+        guard acceptsSource(sourceGeneration) else { return }
         if let btn = sender as? UIButton, let audio = player.audio {
             let isMuted = audio.isMuted
             audio.isMuted = !isMuted
@@ -266,13 +339,18 @@ class VideoPreviewController: UIViewController {
 
 extension VideoPreviewController: VLCMediaPlayerDelegate {
     func mediaPlayerStateChanged(_ aNotification: Notification) {
-        guard let player = aNotification.object as? VLCMediaPlayer else { return }
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in self?.mediaPlayerStateChanged(aNotification) }
+            return
+        }
+        guard acceptsSource(sourceGeneration), let player = aNotification.object as? VLCMediaPlayer,
+              player === self.player else { return }
         switch player.state {
         case .playing:
             // Auto-play for remote videos only.
             var shouldPause = false
             if case .none = thumbnailer.state {
-                if case .local(_, _) = previewContent!.videoSrc {
+                if case .local(_, _) = frozenContent!.videoSrc {
                     // Video's just started playing.
                     thumbnailer.startFetching(fromMedia: player.media!)
                     shouldPause = true
@@ -331,14 +409,19 @@ extension VideoPreviewController: VLCMediaPlayerDelegate {
     }
 
     func mediaPlayerTimeChanged(_ aNotification: Notification) {
-        guard let player = aNotification.object as? VLCMediaPlayer else { return }
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in self?.mediaPlayerTimeChanged(aNotification) }
+            return
+        }
+        guard acceptsSource(sourceGeneration), let player = aNotification.object as? VLCMediaPlayer,
+              player === self.player else { return }
         setTime(player.time)
     }
 }
 
 extension VideoPreviewController: SendImageBarDelegate {
     func sendImageBar(caption: String?) {
-        guard let originalContent = self.previewContent,
+        guard acceptsSource(sourceGeneration), let originalContent = frozenContent,
               case .local(let url, _) = originalContent.videoSrc,
               let media = player.media,
               !didSubmitVideo else { return }
@@ -352,27 +435,31 @@ extension VideoPreviewController: SendImageBarDelegate {
         let duration = max(Int(truncating: media.length.value ?? 0), 0)
         let mimeType = originalContent.contentType ?? Utils.mimeForUrl(url: url, ifMissing: "video/mp4")
         let fileName = originalContent.fileName ?? url.lastPathComponent
-        thumbnailer.getThumbmail { thumbnail in
-            var preview: UIImage?
-            if let th = thumbnail {
-                preview = UIImage(cgImage: th)
-            }
-            let content2 = VideoPreviewContent(
-                videoSrc: .local(url, preview),
-                duration: duration,
-                fileName: fileName.isEmpty ? Utils.uniqueFilename(forMime: mimeType) : fileName,
-                contentType: mimeType,
-                size: 0,
-                width: width,
-                height: height,
-                caption: caption,
-                pendingMessagePreview: nil
-            )
+        let source = sourceGeneration
+        thumbnailer.getThumbmail { [weak self] thumbnail in
+            DispatchQueue.main.async {
+                guard let self = self, self.acceptsSource(source) else { return }
+                var preview: UIImage?
+                if let th = thumbnail {
+                    preview = UIImage(cgImage: th)
+                }
+                let content2 = VideoPreviewContent(
+                    videoSrc: .local(url, preview),
+                    duration: duration,
+                    fileName: fileName.isEmpty ? Utils.uniqueFilename(forMime: mimeType) : fileName,
+                    contentType: mimeType,
+                    size: 0,
+                    width: width,
+                    height: height,
+                    caption: caption,
+                    pendingMessagePreview: nil
+                )
 
-            // This notification is received by the MessageViewController.
-            NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content2)
-            // Return to MessageViewController.
-            self.navigationController?.popViewController(animated: true)
+                // This notification is received by the MessageViewController.
+                NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content2)
+                // Return to MessageViewController.
+                self.navigationController?.popViewController(animated: true)
+            }
         }
     }
 

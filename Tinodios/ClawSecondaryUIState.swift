@@ -148,20 +148,81 @@ enum ClawMediaFiles {
         return "claw-media-v1-" + SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
-    /// Caller controls root. Each export gets a new directory; remote names never become paths.
+    private static let exportLock = NSLock()
+    private static var ownedExports = Set<URL>()
+
+    private static func leafName(_ suggested: String?, fallback: String) -> String {
+        let leaf = ((suggested ?? fallback).replacingOccurrences(of: "\\", with: "/") as NSString).lastPathComponent
+        var cleaned = ""
+        for scalar in leaf.unicodeScalars {
+            guard !CharacterSet.controlCharacters.contains(scalar),
+                  !CharacterSet(charactersIn: "/\\:").contains(scalar) else { continue }
+            let candidate = cleaned + String(scalar)
+            if candidate.utf8.count > 180 { break }
+            cleaned = candidate
+        }
+        return cleaned.isEmpty || cleaned == "." || cleaned == ".." ? fallback : cleaned
+    }
+
+    /// Each operation owns one UUID directory. The supplied root is never removed.
+    private static func export(root: URL, namespace: String, name: String,
+                               write: (URL) throws -> Void) throws -> URL {
+        let fm = FileManager.default
+        let root = root.standardizedFileURL.resolvingSymlinksInPath()
+        let base = root.appendingPathComponent(namespace, isDirectory: true)
+        try fm.createDirectory(at: base, withIntermediateDirectories: true)
+        guard base.resolvingSymlinksInPath().path == base.path else { throw ClawFileTransferError.write }
+        let directory = base.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        guard !fm.fileExists(atPath: directory.path) else { throw ClawFileTransferError.write }
+        try fm.createDirectory(at: directory, withIntermediateDirectories: false)
+        do {
+            let target = directory.appendingPathComponent(name, isDirectory: false)
+            guard directory.resolvingSymlinksInPath().path == directory.path,
+                  target.standardizedFileURL.resolvingSymlinksInPath().deletingLastPathComponent() == directory,
+                  !fm.fileExists(atPath: target.path) else { throw ClawFileTransferError.write }
+            try write(target)
+            exportLock.lock()
+            ownedExports.insert(target)
+            exportLock.unlock()
+            return target
+        } catch {
+            try? fm.removeItem(at: directory)
+            throw error
+        }
+    }
+
+    static func exportData(_ bytes: Data, suggestedName: String?,
+                           root: URL = FileManager.default.temporaryDirectory) throws -> URL {
+        try export(root: root, namespace: "ClawMediaExports",
+                   name: leafName(suggestedName, fallback: "附件")) {
+            try bytes.write(to: $0, options: .withoutOverwriting)
+        }
+    }
+
+    /// Called synchronously before URLSession removes its temporary download.
+    static func preserveDownload(_ source: URL, suggestedName: String?,
+                                 root: URL = FileManager.default.temporaryDirectory) throws -> URL {
+        try export(root: root, namespace: "ClawMediaExports",
+                   name: leafName(suggestedName, fallback: "附件")) {
+            try FileManager.default.moveItem(at: source, to: $0)
+        }
+    }
+
+    /// Only paths created and registered by this process can be cleaned up.
+    static func removeExport(_ url: URL) {
+        exportLock.lock()
+        let owned = ownedExports.remove(url) != nil
+        exportLock.unlock()
+        if owned { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+    }
+
     static func exportPNG(_ bytes: Data, suggestedName: String?, root: URL = FileManager.default.temporaryDirectory) throws -> URL {
-        let leaf = ((suggestedName ?? "图片").replacingOccurrences(of: "\\", with: "/") as NSString).lastPathComponent
+        let leaf = leafName(suggestedName, fallback: "图片")
         let stem = (leaf as NSString).deletingPathExtension
-        let cleaned = String(stem.unicodeScalars.filter {
-            !CharacterSet.controlCharacters.contains($0) && !CharacterSet(charactersIn: "/\\:").contains($0)
-        }.map { String($0) }.joined().prefix(100))
-        let name = cleaned.isEmpty || cleaned == "." || cleaned == ".." ? "图片" : cleaned
-        let directory = root.appendingPathComponent("ClawImageExports", isDirectory: true)
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let destination = directory.appendingPathComponent(name + ".png", isDirectory: false)
-        try bytes.write(to: destination, options: .withoutOverwriting)
-        return destination
+        let name = stem.isEmpty || stem == "." || stem == ".." ? "图片" : stem
+        return try export(root: root, namespace: "ClawImageExports", name: name + ".png") {
+            try bytes.write(to: $0, options: .withoutOverwriting)
+        }
     }
 }
 
@@ -336,5 +397,195 @@ final class ClawOwnedImageLoader {
         }
         load.bind(task)
         return load
+    }
+}
+
+
+// Foreground-process download only. Uploads retain their independent background session.
+enum ClawFileTransferError: Error {
+    case invalidURL, sessionExpired, cancelled, redirect, network, write, invalidData
+    case http(Int)
+
+    var message: String {
+        switch self {
+        case .sessionExpired, .cancelled: return "操作已结束，请重新打开此消息。"
+        case .http(403): return "当前账号无权访问此附件。"
+        case .write: return "无法准备分享文件，请稍后重试。"
+        default: return "附件暂时无法下载，请重试，或返回聊天检查此消息是否仍可访问。"
+        }
+    }
+}
+
+/// UIKit callers execute this gate on main immediately before presentation, with no SDK lock held.
+final class ClawOwnedFilePresentation {
+    let context: ClawOwnedImageContext
+    private let attemptIsCurrent: () -> Bool
+    init(context: ClawOwnedImageContext, attemptIsCurrent: @escaping () -> Bool) {
+        self.context = context
+        self.attemptIsCurrent = attemptIsCurrent
+    }
+    @discardableResult func consume(_ operation: () -> Void) -> Bool {
+        guard Thread.isMainThread, context.isCurrent, attemptIsCurrent() else { return false }
+        operation()
+        return true
+    }
+
+    /// Actual Video and legacy download terminal consumers share this UI boundary.
+    func complete(_ result: Swift.Result<URL, Error>, restore: () -> Void,
+                  success: (URL) -> Void, failure: (Error) -> Void) {
+        let consumed = consume {
+            restore()
+            switch result {
+            case let .success(url): success(url)
+            case let .failure(error): failure(error)
+            }
+        }
+        if !consumed, case let .success(url) = result { ClawMediaFiles.removeExport(url) }
+    }
+}
+
+final class ClawOwnedFileDownload: NSObject, URLSessionDownloadDelegate, URLSessionTaskDelegate {
+    typealias Completion = (Swift.Result<URL, Error>) -> Void
+    private let context: ClawOwnedImageContext
+    private let headers: [String: String]
+    private let suggestedName: String?
+    private let root: URL
+    private let protocolClasses: [AnyClass]?
+    private let completion: Completion
+    private let lock = NSLock()
+    private var session: URLSession?
+    private var task: URLSessionDownloadTask?
+    private var requestedURL: URL?
+    private var finished = false
+    private var cancelled = false
+
+    init(context: ClawOwnedImageContext, suggestedName: String?, root: URL = FileManager.default.temporaryDirectory,
+         protocolClasses: [AnyClass]? = nil, completion: @escaping Completion) {
+        self.context = context
+        self.headers = context.withCurrent { context.owner.getRequestHeaders() } ?? [:]
+        self.suggestedName = suggestedName
+        self.root = root
+        self.protocolClasses = protocolClasses
+        self.completion = completion
+        super.init()
+    }
+
+    static func configuration(protocolClasses: [AnyClass]? = nil) -> URLSessionConfiguration {
+        let config = URLSessionConfiguration.ephemeral
+        config.urlCache = nil
+        config.httpCookieStorage = nil
+        config.httpShouldSetCookies = false
+        config.urlCredentialStorage = nil
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.timeoutIntervalForRequest = 30
+        config.timeoutIntervalForResource = 300
+        config.protocolClasses = protocolClasses
+        return config
+    }
+
+    /// The actual task uses this frozen-header request, never a later Cache/SDK.
+    func request(from url: URL) -> URLRequest? {
+        guard context.isCurrent, ClawMediaFiles.isAllowedMediaURL(url, service: context.serviceURL) else { return nil }
+        var request = URLRequest(url: url.absoluteURL, cachePolicy: .reloadIgnoringLocalCacheData)
+        request.httpShouldHandleCookies = false
+        request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+        if ClawMediaFiles.origin(url) == ClawMediaFiles.origin(context.serviceURL) {
+            headers.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
+        }
+        return request
+    }
+
+    func start(from url: URL) {
+        guard let request = request(from: url) else {
+            finish(.failure(context.isCurrent ? ClawFileTransferError.invalidURL : .sessionExpired))
+            return
+        }
+        let session = URLSession(configuration: Self.configuration(protocolClasses: protocolClasses),
+                                 delegate: self, delegateQueue: nil)
+        let task = session.downloadTask(with: request)
+        lock.lock()
+        guard !finished, self.session == nil else { lock.unlock(); session.invalidateAndCancel(); return }
+        self.session = session
+        self.task = task
+        requestedURL = request.url
+        lock.unlock()
+        guard context.isCurrent else { finish(.failure(ClawFileTransferError.sessionExpired)); return }
+        task.resume()
+    }
+
+    func cancel() {
+        lock.lock()
+        cancelled = true
+        lock.unlock()
+        finish(.failure(ClawFileTransferError.cancelled))
+    }
+
+    private func finish(_ result: Swift.Result<URL, Error>) {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            if case let .success(url) = result { ClawMediaFiles.removeExport(url) }
+            return
+        }
+        finished = true
+        let transport = session
+        session = nil
+        task = nil
+        lock.unlock()
+        transport?.invalidateAndCancel()
+        DispatchQueue.main.async {
+            self.lock.lock()
+            let cancelled = self.cancelled
+            self.lock.unlock()
+            if cancelled || !self.context.isCurrent {
+                if case let .success(url) = result { ClawMediaFiles.removeExport(url) }
+                self.completion(.failure(cancelled ? ClawFileTransferError.cancelled : .sessionExpired))
+            } else {
+                self.completion(result)
+            }
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
+        completionHandler(nil)
+        finish(.failure(ClawFileTransferError.redirect))
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
+                    didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+        if !context.isCurrent { finish(.failure(ClawFileTransferError.sessionExpired)) }
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        guard context.isCurrent else { finish(.failure(ClawFileTransferError.sessionExpired)); return }
+        lock.lock()
+        let stopped = finished || cancelled
+        let requested = requestedURL
+        lock.unlock()
+        guard !stopped else { return }
+        guard let response = downloadTask.response as? HTTPURLResponse,
+              response.url == requested else { finish(.failure(ClawFileTransferError.invalidData)); return }
+        guard response.statusCode == 200 else { finish(.failure(ClawFileTransferError.http(response.statusCode))); return }
+        do {
+            let attrs = try FileManager.default.attributesOfItem(atPath: location.path)
+            let length = (attrs[.size] as? NSNumber)?.int64Value ?? 0
+            guard length > 0, response.expectedContentLength < 0 || response.expectedContentLength == length else {
+                finish(.failure(ClawFileTransferError.invalidData)); return
+            }
+            guard context.isCurrent else { finish(.failure(ClawFileTransferError.sessionExpired)); return }
+            let export = try ClawMediaFiles.preserveDownload(location, suggestedName: suggestedName, root: root)
+            guard context.isCurrent else {
+                ClawMediaFiles.removeExport(export)
+                finish(.failure(ClawFileTransferError.sessionExpired)); return
+            }
+            finish(.success(export))
+        } catch { finish(.failure(ClawFileTransferError.write)) }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        // A valid download already completed through didFinishDownloadingTo.
+        // The exactly-once gate ignores that subsequent completion.
+        finish(.failure(error == nil ? ClawFileTransferError.invalidData : .network))
     }
 }

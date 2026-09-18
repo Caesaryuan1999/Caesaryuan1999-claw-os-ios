@@ -46,7 +46,10 @@ assert "context?.resourceURL(from: ref), context: context" in thumbnail
 assert "let applied = context.withCurrent" in thumbnail
 
 tests = read("TinodiosUITests/OwnedImageTests.swift")
-assert len(re.findall(r"    func test\w+\(", tests)) == 10
+# The original ten image methods remain; the same selected class now adds eleven file-transfer methods.
+image_tests = tests[:tests.index("// Actual URLSession download tasks")]
+assert len(re.findall(r"    func test\w+\(", image_tests)) == 10
+assert len(re.findall(r"    func test\w+\(", tests)) == 21
 assert "BaseDb(databasePath:" in tests and "KingfisherManager.shared.retrieveImage" in tests
 assert "RoundImageView(frame:" in tests and "AsyncImageTextAttachment(url:" in tests
 assert "modifier.modified(for: current)" in tests and ".onlyFromCache" in tests

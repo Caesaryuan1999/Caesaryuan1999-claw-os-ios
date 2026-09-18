@@ -1,0 +1,63 @@
+{
+  "base": "e90332a417b722baabd8c71b60901f530e06b0aa",
+  "level": "Windows static comparisons only; native NOT_RUN",
+  "checks": {
+    "upload_policy_and_payload_type_unchanged": true,
+    "background_config_and_header_utilities_unchanged": true,
+    "all_upload_request_retry_cancel_functions_unchanged": true,
+    "upload_receive_delegate_unchanged": true,
+    "upload_completion_and_progress_unchanged_after_download_branch": true,
+    "legacy_download_signature_preserved": true,
+    "background_residual_cannot_export": true,
+    "video_no_documents_write_or_late_cache_credentials": true,
+    "actual_terminal_consumers_use_shared_gate": true,
+    "video_error_no_path_or_error_text_log": true,
+    "new_download_no_url_cache_cookie_store": true,
+    "explicit_http_200_and_redirect_rejection": true,
+    "original_image_test_prefix_unchanged": true,
+    "original_secondary_test_prefix_unchanged": true
+  },
+  "production_files": [
+    "Tinodios/VideoPreviewController.swift",
+    "Tinodios/LargeFileHelper.swift",
+    "Tinodios/ClawSecondaryUIState.swift",
+    "Tinodios/UiUtils.swift"
+  ],
+  "test_files": [
+    "TinodiosUITests/OwnedImageTests.swift",
+    "TinodiosUITests/SecondaryUIStateTests.swift"
+  ],
+  "policy_count_file": "Scripts/ci/test_owned_image_policy.py",
+  "new_native_methods": {
+    "TinodiosUITests/OwnedImageTests.swift": [
+      "testFileDownloadConfigurationAndFrozenHeadersAreAccountScoped",
+      "testActualFileDownloadRequestsKeepExternalAnonymousAndPreserveBytes",
+      "testActualFileDownloadRejectsRedirectBeforeTargetRequest",
+      "testActualFileDownloadRejectsHTTPErrorPartialAndEmptyBodies",
+      "testActualFileDownloadNetworkFailureCompletesAndCanRetry",
+      "testActualFileDownloadLateResponseRejectsAccountAndSameUIDGenerationChange",
+      "testActualFileDownloadCancellationCompletesOnceAndNeverContactsAfterEarlyCancel",
+      "testActualFileDownloadWriteFailureDoesNotOverwriteSuppliedRoot",
+      "testActualFilePresentationGateRejectsOldAttemptOwnerAndOffMainConsumption",
+      "testActualFileDownloadCancelInFlightCompletesOnlyOnce",
+      "testActualFileTerminalConsumerRestoresCurrentButtonForFailureAndSuccess"
+    ],
+    "TinodiosUITests/SecondaryUIStateTests.swift": [
+      "testGenericExportsConfineRemoteNamesAndOnlyRemoveOwnedFiles",
+      "testGenericConcurrentSameNamesUseDistinctDirectoriesAndPreserveDownloadSource",
+      "testGenericExportRejectsSymlinkNamespaceWithoutTouchingOutsideSentinel"
+    ]
+  },
+  "expected_native_total": 196,
+  "expected_sdk": 41,
+  "expected_storage": 155,
+  "expected_navigation": 3,
+  "worktree_sha256": {
+    "Tinodios/VideoPreviewController.swift": "3d100dcde21eec7b2bd224b1c49523579c00dc4aa7979d83f9fed0d4a1753d05",
+    "Tinodios/LargeFileHelper.swift": "3dddfe67997dec588090fa2e094607a807b3232fcc81c1826506ee063b8b46a8",
+    "Tinodios/ClawSecondaryUIState.swift": "91cdcfa0fff27d252ecae2ebf6c43af7abfac5cab6b93d1e472f412dd1a0dab1",
+    "Tinodios/UiUtils.swift": "6d3fcc180ca191bb81dc293db5138657df851fb6a4b777b654955f6e9c4176bc",
+    "TinodiosUITests/OwnedImageTests.swift": "3bdf66676d7794c1b1059cadd4f041a4736632401c8596ddbf12969cc0207c77",
+    "TinodiosUITests/SecondaryUIStateTests.swift": "0c2277ca9348dd49f6e3a9b45ef5bfb9bd9373b299b61e50f91ebc18b115c294"
+  }
+}

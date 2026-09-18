@@ -139,7 +139,7 @@ public class LargeFileHelper: NSObject {
 
     private var urlSession: URLSession!
     private var activeUploads: [String: Upload] = [:]
-    private var downloadCallbacks: [Int: ((Error?) -> Void)] = [:]
+    private var ownedDownloads: [UUID: ClawOwnedFileDownload] = [:]
     private var tinode: Tinode!
     // Numeric id of upload.
     private var reqId = 0
@@ -158,7 +158,9 @@ public class LargeFileHelper: NSObject {
                 upload.task?.cancel()
             }
             activeUploads.removeAll()
-            downloadCallbacks.removeAll()
+            let downloads = Array(ownedDownloads.values)
+            ownedDownloads.removeAll()
+            downloads.forEach { $0.cancel() }
             urlSession.invalidateAndCancel()
         }
     }
@@ -336,21 +338,41 @@ public class LargeFileHelper: NSObject {
         }
     }
 
+    /// Compatibility adapter: the original helper/owner is captured at this entry.
+    /// Older message call sites keep their signature; they never regain authority from a new Cache slot.
     public func startDownload(from url: URL, completion: ((Error?) -> Void)? = nil) {
-        tinode.withActiveSession {
-            guard !invalidated else { return }
-            var request = URLRequest(url: url)
-            LargeFileHelper.addCommonHeaders(to: &request, using: self.tinode)
-
-            let task = urlSession.downloadTask(with: request)
-            if let completion = completion {
-                downloadCallbacks[task.taskIdentifier] = { [weak self] error in
-                    self?.deliverOnMain { completion(error) }
-                }
-            }
-            task.resume()
-
+        guard let context = Utils.ownedImageContext(), context.owner === tinode else {
+            deliverOnMain { completion?(ClawFileTransferError.sessionExpired) }
+            return
         }
+        let presentation = ClawOwnedFilePresentation(context: context, attemptIsCurrent: { true })
+        startOwnedDownload(from: url, context: context, suggestedName: url.lastPathComponent) { result in
+            presentation.complete(result, restore: {}, success: { file in
+                UiUtils.presentFileSharingVC(for: file, presentation: presentation)
+                completion?(nil)
+            }, failure: { error in
+                completion?(error)
+                UiUtils.showToast(message: (error as? ClawFileTransferError)?.message
+                    ?? ClawFileTransferError.network.message)
+            })
+        }
+    }
+
+    @discardableResult
+    func startOwnedDownload(from url: URL, context: ClawOwnedImageContext, suggestedName: String?,
+                            completion: @escaping ClawOwnedFileDownload.Completion) -> ClawOwnedFileDownload {
+        let id = UUID()
+        let operation = ClawOwnedFileDownload(context: context, suggestedName: suggestedName) { [weak self] result in
+            if let self = self { self.tinode.withSessionLock { self.ownedDownloads.removeValue(forKey: id) } }
+            completion(result)
+        }
+        let accepted = tinode.withActiveSession { () -> Bool in
+            guard !invalidated, context.owner === tinode else { return false }
+            ownedDownloads[id] = operation
+            return true
+        } ?? false
+        if accepted { operation.start(from: url) } else { operation.cancel() }
+        return operation
     }
 }
 
@@ -382,6 +404,8 @@ extension LargeFileHelper: URLSessionDataDelegate {
 // Upload progress
 extension LargeFileHelper: URLSessionTaskDelegate {
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError: Error?) {
+        // Residual downloads from an older background session cannot export or log private URLs/errors.
+        if task is URLSessionDownloadTask { task.cancel(); return }
         tinode.withActiveSession {
             guard !invalidated else { return }
             Cache.log.info("Upload (id=%@) complete. Status: %@", task.taskDescription ?? "UNKNOWN", didCompleteWithError?.localizedDescription ?? "ok")
@@ -445,40 +469,10 @@ extension LargeFileHelper: URLSessionTaskDelegate {
     }
 }
 
-// Downloads.
+// Background downloads from an older build are not trusted exports. This session is now upload-only.
+// Do not move/delete a Documents path or share their response. URLSession owns the temporary file.
 extension LargeFileHelper: URLSessionDownloadDelegate {
     public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-        tinode.withActiveSession {
-            guard !invalidated else { return }
-            defer {
-                if let cb = downloadCallbacks.removeValue(forKey: downloadTask.taskIdentifier) {
-                    cb(downloadTask.error)
-                }
-            }
-            guard downloadTask.error == nil else {
-                Cache.log.error("LargeFileHelper - download failed: %@", downloadTask.error!.localizedDescription)
-                return
-            }
-
-            guard let url = downloadTask.originalRequest?.url else { return }
-            let fn = url.extractQueryParam(named: "origfn") ?? url.lastPathComponent
-
-            let documentsUrl: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            let destinationURL = documentsUrl.appendingPathComponent(fn)
-
-            let fileManager = FileManager.default
-            do {
-                try fileManager.removeItem(at: destinationURL)
-            } catch {
-                // Non-fatal: file probably doesn't exist
-            }
-            do {
-                try fileManager.moveItem(at: location, to: destinationURL)
-                UiUtils.presentFileSharingVC(for: destinationURL, for: tinode)
-            } catch {
-                Cache.log.error("LargeFileHelper - could not copy file to disk: %@", error.localizedDescription)
-            }
-
-        }
+        downloadTask.cancel()
     }
 }

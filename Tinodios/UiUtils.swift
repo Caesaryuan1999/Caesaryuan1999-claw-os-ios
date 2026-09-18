@@ -751,6 +751,28 @@ class UiUtils {
         }
     }
 
+    static func presentFileSharingVC(for fileUrl: URL, presentation: ClawOwnedFilePresentation,
+                                     from presenter: UIViewController? = nil) {
+        DispatchQueue.main.async {
+            let consumed = presentation.consume {
+                let top = UiUtils.topViewController(
+                    rootViewController: (UIApplication.shared.delegate as? AppDelegate)?.window?.rootViewController)
+                guard let top = top, presenter == nil || top === presenter else {
+                    ClawMediaFiles.removeExport(fileUrl)
+                    return
+                }
+                let activity = UIActivityViewController(activityItems: [fileUrl], applicationActivities: nil)
+                activity.completionWithItemsHandler = { _, _, _, _ in ClawMediaFiles.removeExport(fileUrl) }
+                if let popover = activity.popoverPresentationController {
+                    popover.sourceView = top.view
+                    popover.sourceRect = CGRect(x: top.view.bounds.midX, y: top.view.bounds.maxY - 1, width: 1, height: 1)
+                }
+                top.present(activity, animated: true)
+            }
+            if !consumed { ClawMediaFiles.removeExport(fileUrl) }
+        }
+    }
+
     public static func toggleProgressOverlay(in parent: UIViewController, visible: Bool, title: String? = nil) {
         DispatchQueue.main.async {
             if visible {
