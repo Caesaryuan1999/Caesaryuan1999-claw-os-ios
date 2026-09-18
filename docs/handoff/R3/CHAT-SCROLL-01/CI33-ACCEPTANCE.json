@@ -1,0 +1,351 @@
+{
+  "source": "b0984075ca79ffef93658f702005dd19a773616b",
+  "run": "35375538413",
+  "job": "105699232079",
+  "local": {
+    "branch": "codex/r3-20260918-ios",
+    "head_before_acceptance_docs": "6c0a00bd48877a89899ec1f1cf52d0c195aa2b62",
+    "tracked_dirty": 0,
+    "untracked_files_before_new_acceptance_docs": 19781,
+    "code_equal_ci_source": true
+  },
+  "archive": {
+    "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci33-evidence.zip",
+    "bytes": 50270844,
+    "sha256": "0e7227eeec0d351efe518632f23e1f90af1c4f9f6bb3acb6be6ab72af3158f1d"
+  },
+  "tests": {
+    "sdk": {
+      "passed": 44,
+      "failed": 0,
+      "skipped": 0,
+      "summary_sha256": "11e6a7eb152f46061561419d94f34670d6799913abc3687106ca991a83dc3f62"
+    },
+    "storage": {
+      "passed": 198,
+      "failed": 0,
+      "skipped": 0,
+      "summary_sha256": "0e42368861a71ba1ee8e9cc9910c6cd4bb76ce1c510c23ff3a3c314c8a85f7b0"
+    },
+    "navigation": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "summary_sha256": "ca7c57944f5cd2e85419f5d80ad4e09657182262d60d8becfde4e5c2b40eb323"
+    }
+  },
+  "chat_scroll_methods": [
+    {
+      "name": "testEditCaptureAndPinnedLocalReloadKeepHistory",
+      "status": "PASS",
+      "seconds": 1.191
+    },
+    {
+      "name": "testFirstNonemptyOnlyOnceAndZeroSequenceDraftsKeepIdentity",
+      "status": "PASS",
+      "seconds": 0.153
+    },
+    {
+      "name": "testLargePassiveBatchPreservesHistoryAndBottomFollows",
+      "status": "PASS",
+      "seconds": 0.8
+    },
+    {
+      "name": "testLatestButtonIsRealVisibleAdaptiveAndInvalidatesOldRestore",
+      "status": "PASS",
+      "seconds": 0.23
+    },
+    {
+      "name": "testNewSubmissionConsumedOnceThenAckAndUnknownScrollPreserve",
+      "status": "PASS",
+      "seconds": 0.159
+    },
+    {
+      "name": "testOverlappingRealTwoPhaseBatchesDoNotReplaceActiveArray",
+      "status": "PASS",
+      "seconds": 0.172
+    },
+    {
+      "name": "testPrependHeightChangeAndDeletedAnchorUseRealAttributes",
+      "status": "PASS",
+      "seconds": 0.781
+    },
+    {
+      "name": "testPreviewButtonCapturesBeforeHandoffAndLateWorkCannotMintTicket",
+      "status": "PASS",
+      "seconds": 0.817
+    },
+    {
+      "name": "testQuoteNoOpAndOriginalPageSourceRejectLatePresentation",
+      "status": "PASS",
+      "seconds": 0.362
+    },
+    {
+      "name": "testUserMovementBetweenBatchPhasesInvalidatesSubmission",
+      "status": "PASS",
+      "seconds": 0.169
+    }
+  ],
+  "selected_native_attachments": {
+    "count": 61,
+    "zip_vs_extracted_bytes": "PASS",
+    "ordered_member_digest": "8cf0d642c1373ed1e4968207f1480e9c98f694fae6895fb521336b5459bee49c",
+    "ci32_fixed_test_attachments": [
+      {
+        "test": "ChatScrollTests/testNewSubmissionConsumedOnceThenAckAndUnknownScrollPreserve()",
+        "file": "56D80220-DA7C-4EF7-AA2A-01FCCEE9418B.json",
+        "sha256": "fac65c18e7108fc316887363343676c5752849ba0e330625129afa091bf7816c",
+        "geometry": {
+          "anchorIDs": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "anchorOffsets": [
+            -10,
+            50,
+            110,
+            170,
+            230,
+            290,
+            350,
+            410,
+            470,
+            530,
+            590,
+            650,
+            710
+          ],
+          "atBottom": false,
+          "controllerCompletedRemovals": 0,
+          "controllerHasParent": true,
+          "controllerInWindow": true,
+          "count": 43,
+          "interaction": 5,
+          "navigationDidShowCount": 1,
+          "offsetY": 310,
+          "queueCount": 0,
+          "rendering": false,
+          "scope": "neutral cells, production MessageVC consumer and real UICollectionView"
+        }
+      },
+      {
+        "test": "ChatScrollTests/testNewSubmissionConsumedOnceThenAckAndUnknownScrollPreserve()",
+        "file": "7C9DC9F2-928D-4C93-9DA0-FCF1C6FEBFDC.png",
+        "sha256": "25902b336f7cef0bc53255db7d25792730496432bc1aab99a0c69730920f023d"
+      },
+      {
+        "test": "ChatScrollTests/testPreviewButtonCapturesBeforeHandoffAndLateWorkCannotMintTicket()",
+        "file": "AADAFA22-686D-42AC-9351-9B6FE12A0CDC.json",
+        "sha256": "60223a1f37c0beb46578fe3a3fc37778c60c17f8dd1b0a944847bf2cbb166ff8",
+        "geometry": {
+          "anchorIDs": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "anchorOffsets": [
+            -10,
+            50,
+            110,
+            170,
+            230,
+            290,
+            350,
+            410,
+            470,
+            530,
+            590,
+            650,
+            710
+          ],
+          "atBottom": false,
+          "controllerCompletedRemovals": 0,
+          "controllerHasParent": true,
+          "controllerInWindow": true,
+          "count": 41,
+          "interaction": 5,
+          "navigationDidShowCount": 3,
+          "offsetY": 430,
+          "queueCount": 0,
+          "rendering": false,
+          "scope": "neutral cells, production MessageVC consumer and real UICollectionView"
+        }
+      },
+      {
+        "test": "ChatScrollTests/testPreviewButtonCapturesBeforeHandoffAndLateWorkCannotMintTicket()",
+        "file": "40B78FAC-E216-46B4-BD78-849BDC05F9EE.png",
+        "sha256": "25902b336f7cef0bc53255db7d25792730496432bc1aab99a0c69730920f023d"
+      },
+      {
+        "test": "ChatScrollTests/testQuoteNoOpAndOriginalPageSourceRejectLatePresentation()",
+        "file": "1C59E09B-7E59-499A-8035-E59210467829.json",
+        "sha256": "eaf04fda9d79f47ede0dcbf15afddffb823275c6be49b87355c88881c84c2f50",
+        "geometry": {
+          "anchorIDs": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "anchorOffsets": [
+            -10,
+            50,
+            110,
+            170,
+            230,
+            290,
+            350,
+            410,
+            470,
+            530,
+            590,
+            650,
+            710
+          ],
+          "atBottom": false,
+          "controllerCompletedRemovals": 1,
+          "controllerHasParent": false,
+          "controllerInWindow": false,
+          "count": 42,
+          "interaction": 6,
+          "navigationDidShowCount": 2,
+          "offsetY": 430,
+          "queueCount": 0,
+          "rendering": false,
+          "scope": "neutral cells, production MessageVC consumer and real UICollectionView"
+        }
+      },
+      {
+        "test": "ChatScrollTests/testQuoteNoOpAndOriginalPageSourceRejectLatePresentation()",
+        "file": "F23ADCCD-B543-4080-B0F7-B6905AEBFEDA.json",
+        "sha256": "80294500d2895bcbef5feae522c8f7e896498747568609dbf053846868d0bc39",
+        "geometry": {
+          "anchorIDs": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "anchorOffsets": [
+            -10,
+            50,
+            110,
+            170,
+            230,
+            290,
+            350,
+            410,
+            470,
+            530,
+            590,
+            650,
+            710
+          ],
+          "atBottom": false,
+          "controllerCompletedRemovals": 0,
+          "controllerHasParent": true,
+          "controllerInWindow": true,
+          "count": 42,
+          "interaction": 4,
+          "navigationDidShowCount": 1,
+          "offsetY": 430,
+          "queueCount": 0,
+          "rendering": false,
+          "scope": "neutral cells, production MessageVC consumer and real UICollectionView"
+        }
+      },
+      {
+        "test": "ChatScrollTests/testQuoteNoOpAndOriginalPageSourceRejectLatePresentation()",
+        "file": "9B2373FD-9CF7-41EE-85C1-DA8C2FCF42E6.png",
+        "sha256": "91dee97339e1bfe32d31ca71d1b199fd5da13351bb2c1bae01acc468a02133be"
+      }
+    ]
+  },
+  "app": {
+    "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci33-evidence\\ios-01-a-20260918-173905\\CLAW-OS-unsigned-simulator.zip",
+    "bytes": 37665378,
+    "sha256": "22c2ad33ec01022c6eef3d9291f733779d6573e3cda4eee26cdcbc167c763e96",
+    "binary_sha256": "9a426e841b940cfe1eaf261f0cafacda059fec4a4a83fea6731f8bda5b061135",
+    "bundle_id": "app.veilping.clawoschat",
+    "version": "1.22.12",
+    "build": "1736",
+    "platform": "iOS Simulator",
+    "phone_installable": false,
+    "real_service": "NOT_RUN"
+  },
+  "cold_launch": {
+    "simulator_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9",
+    "pid": 40215,
+    "boot_seconds": 34.583029,
+    "limit_seconds": 45,
+    "precondition": "confirmed_not_running",
+    "process_path_method": "Darwin libproc.proc_pidpath",
+    "screenshot": {
+      "file": "cold-launch.png",
+      "sha256": "9590caf145a4fca6d948e272b9ca624319943f829b1235be850624e8073be997",
+      "width": 1206,
+      "height": 2622,
+      "login_screen_review": "PENDING_HUMAN"
+    },
+    "human_review": "Original login PNG viewed; no interaction claim",
+    "crash_reports": [],
+    "manifest_sha256": "4009e64e104b1c325dbb6128590552df95c3e8239c118a80615795f09c20147b"
+  },
+  "ordered_patch_chain": [
+    {
+      "path": "docs/handoff/R3/FINAL-1B20EC2/CLAW-IOS-R3-source-test-ci.patch",
+      "bytes": 1165207,
+      "sha256": "448633865dec72f1c178dce9ff0f4690b14bdc7eed039c38b1fe91259d85580f"
+    },
+    {
+      "path": "docs/handoff/R3/CHAT-SCROLL-01/FINAL-FDEDF825/unit.patch",
+      "bytes": 97716,
+      "sha256": "29cc92f25a9b21100c9fb38b29796460810d946f146a7d365a3b60cb2e48e9f3"
+    },
+    {
+      "path": "docs/handoff/R3/CHAT-SCROLL-01/FOLLOWUP-B098407/unit.patch",
+      "bytes": 16477,
+      "sha256": "718837601a66f7e344b0f37c7c6e4f8ae0f9f63dfac3a25e314f1e37874c8da8"
+    }
+  ],
+  "boundary": "Simulator App-hosted neutral cells/FlowLayout and actual FilePreview storyboard; not complete production chat UI, touch gesture, upload/publish, device or real communication acceptance. CI32 evidence preserved."
+}
