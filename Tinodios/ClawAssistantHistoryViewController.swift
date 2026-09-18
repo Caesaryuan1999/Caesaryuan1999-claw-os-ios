@@ -145,7 +145,15 @@ private final class ClawAssistantHistoryCell: UITableViewCell {
             let format = DateFormatter(); format.dateStyle = .medium; format.timeStyle = .short
             updated.text = format.string(from: date)
         } else { updated.text = nil }
-        state.text = deletion == .pending ? "正在删除…" : (deletion == .unknown ? "删除结果暂未确认" : nil)
+        state.textColor = ClawTheme.warning
+        switch deletion {
+        case .pending?: state.text = "正在删除…"
+        case .unknown?: state.text = "删除结果暂未确认"
+        case .rejected(let error)?:
+            state.text = "删除未完成。" + error.message
+            state.textColor = ClawTheme.danger
+        default: state.text = nil
+        }
         state.isHidden = state.text == nil
         accessibilityLabel = [name.text, updated.text, state.text].compactMap { $0 }.joined(separator: "，")
     }

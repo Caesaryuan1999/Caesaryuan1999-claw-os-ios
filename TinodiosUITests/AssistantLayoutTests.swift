@@ -238,4 +238,48 @@ final class AssistantLayoutTests: XCTestCase {
             XCTAssertEqual(fixture.scope.account.draft, "")
         }
     }
+
+    func testRealHistoryRowShowsExplicitDeletionRejectionWithoutRemovingConversation() throws {
+        try AssistantFixture.main {
+            var status = 403
+            AssistantFixtureProtocol.handler = {
+                if $0.request.httpMethod == "DELETE" {
+                    $0.reply(AssistantFixture.error(status == 403 ? "permission_denied" : "not_found"), status: status)
+                } else { $0.reply(AssistantFixture.list([AssistantFixture.conversation()])) }
+            }
+            let history = ClawAssistantHistoryViewController(session: fixture.scope)
+            let navigation = UINavigationController(rootViewController: history)
+            try host(navigation, accessibility: true)
+            let model = fixture.scope.history
+            try AssistantFixture.until { model.hasListSnapshot && !model.listLoading }
+            let table = try XCTUnwrap(all(history.view).compactMap { $0 as? UITableView }.first)
+            let index = IndexPath(row: 0, section: 0)
+            for code in [403, 404] {
+                status = code
+                // Actual transport -> History -> observing original UIKit row. The
+                // separate confirmation test covers alert presentation/cancel semantics.
+                model.deleteConversation(AssistantFixture.first)
+                try AssistantFixture.until { model.deletions[AssistantFixture.first] != .pending }
+                let error = ClawAssistantError.server(code, code == 403 ? "permission_denied" : "not_found")
+                XCTAssertEqual(model.deletions[AssistantFixture.first], .rejected(error))
+                XCTAssertEqual(model.conversations.map { $0.conversation_id }, [AssistantFixture.first])
+                table.layoutIfNeeded(); table.scrollToRow(at: index, at: .middle, animated: false)
+                table.layoutIfNeeded()
+                let cell = try XCTUnwrap(table.cellForRow(at: index))
+                let message = try XCTUnwrap(all(cell).compactMap { $0 as? UILabel }.first {
+                    $0.text == "删除未完成。" + error.message
+                })
+                XCTAssertFalse(message.isHidden)
+                XCTAssertNotNil(message.window)
+                let required = message.sizeThatFits(CGSize(width: message.bounds.width, height: .greatestFiniteMagnitude))
+                XCTAssertGreaterThan(message.bounds.width, 0)
+                XCTAssertLessThanOrEqual(required.height, message.bounds.height + 1)
+                XCTAssertTrue(cell.accessibilityLabel?.contains(error.message) == true)
+                XCTAssertFalse(cell.accessibilityLabel?.contains("已删除") == true)
+                try evidence("history-delete-rejected-" + String(code), history.view)
+            }
+            XCTAssertEqual(AssistantFixtureProtocol.requests.filter { $0.httpMethod == "DELETE" }.count, 2)
+            XCTAssertFalse(AssistantFixtureProtocol.requests.contains { $0.httpMethod == "POST" })
+        }
+    }
 }
