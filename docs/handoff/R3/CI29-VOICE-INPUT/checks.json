@@ -1,0 +1,25 @@
+{
+  "base": "603476bf93b652821af7f83afdba00bb023c3cf4",
+  "file": "TinodiosUITests/VoiceLayoutTests.swift",
+  "base_blob": "35057bd2fdef6c3f7141b3af226ef1692fc6b326",
+  "working_sha256": "4a2dbe2053367703cc595949742fbc775aac10e090c301da50950629f48f8cdd",
+  "method_names": [
+    "testOriginalNibLoadsAndResetsWithoutRecording",
+    "testRecordingStatesAndOriginalButtonsForwardActions",
+    "testDynamicTypeDarkLightAndScrollableMinimumTargets",
+    "testInputAccessoryKeyboardAppearsAndDismisses",
+    "testResetAfterGestureDoesNotReusePreviousLayout",
+    "testControlledGestureHandlerUsesSameWindowAndThresholds"
+  ],
+  "checks": {
+    "same_six_methods_five_unchanged_method_bodies": true,
+    "all_previous_assert_lines_retained_except_internal_image_nil_replaced_by_visible_absence": true,
+    "specific_current_input_begin_notification_before_assignment": true,
+    "actualText_assertion_and_no_send": true,
+    "strict_absence_reasons_and_animation_settled_only": true,
+    "no_geometry_zero_or_clip_only_acceptance": true,
+    "only_authorized_test_file_changed": true,
+    "git_diff_check": true
+  },
+  "native": "NOT_RUN for this correction; expected SDK44+UI175+VLC7+Voice6=232 plus navigation3; CI29 e1ed was 231 pass/1 fail"
+}

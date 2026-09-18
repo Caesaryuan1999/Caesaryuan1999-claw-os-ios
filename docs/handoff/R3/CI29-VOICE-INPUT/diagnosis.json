@@ -1,0 +1,59 @@
+{
+  "candidate": "e1ed950147233f8e9df05ad025e5e356d0097dae",
+  "run": 35357924685,
+  "job": 105641753202,
+  "zip_sha256": "4b2a1b12de52dcba2a995e829eda93969ad5754efc18b1d39d0c319d2176f0f7",
+  "original_attachments": [
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci29-evidence\\ios-01-a-20260918-144324\\storage-attachments\\6080E82C-F76B-4090-85B7-7D3F6E7C23A5.json",
+      "sha256": "b8aa44dd12aacd62ed3eb4703377e65d2756a1d506da71e3fc24af31c85b4c46",
+      "zip_byte_match": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci29-evidence\\ios-01-a-20260918-144324\\storage-attachments\\EC839B41-9311-4165-B19B-FCEB78046C40.json",
+      "sha256": "2f88bc86a08c57264b715cf85170c226c39ca9b01da64da06832fb2bbbaf1611",
+      "zip_byte_match": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci29-evidence\\ios-01-a-20260918-144324\\storage-attachments\\8D8A6964-D2F8-4F86-975B-82D4EEC33A1F.png",
+      "sha256": "0d1f80c53e98702f14c65698867ae94451fc92ef5f1aa2f50242b985edf59561",
+      "zip_byte_match": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci29-evidence\\ios-01-a-20260918-144324\\storage-attachments\\8E035B59-58C6-423C-BFCB-EEF142D3F98D.png",
+      "sha256": "f422c547f00f1ea6cbc9a4000c188369361a4af194acbcaa4e35482935a18f0e",
+      "zip_byte_match": true
+    }
+  ],
+  "source_chain_status": "fixture missing actual editing is source-confirmed; original actualText and imageView visibility geometry were not captured",
+  "native_actual": {
+    "SDK": 44,
+    "UIrunner": 175,
+    "VLC": 7,
+    "voice_pass": 5,
+    "voice_fail": 1,
+    "navigation": "NOT_RUN"
+  },
+  "official_docs": [
+    {
+      "url": "https://developer.apple.com/documentation/uikit/uiview/alpha",
+      "downloaded_markdown_sha256": "5577de56e736d81fbdb55cbe6ad5f1d78ad1c6e6d4b71d04664d29f41505c882"
+    },
+    {
+      "url": "https://developer.apple.com/documentation/uikit/uiview/clipstobounds",
+      "downloaded_markdown_sha256": "8ef962a69c608668ec4f87b7bb8edb6563b53ef54bdc99af0e6e9617de0f7d2d"
+    },
+    {
+      "url": "https://developer.apple.com/documentation/uikit/uibutton/currentimage",
+      "downloaded_markdown_sha256": "f94b54e44ec7dea1003f2ce5e5885a9bb68ee55a5ffefb45a69f6fd7c4f62faa"
+    },
+    {
+      "url": "https://developer.apple.com/documentation/uikit/uibutton/imageview",
+      "downloaded_markdown_sha256": "2796a2dc3b9eb8c7825e408d6fa02a7ae0875a9d1af974b874880eae9a494a33"
+    },
+    {
+      "url": "https://developer.apple.com/documentation/uikit/uiview/ishidden",
+      "downloaded_markdown_sha256": "7dd285b456612dc34d04348b0b1e5a75e6b2d09cd839b8548efef49c33828a6c"
+    }
+  ]
+}

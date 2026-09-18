@@ -18,6 +18,7 @@ final class VoiceLayoutTests: XCTestCase {
     private var keyboardSequence = 0
     private var keyboardSamples = [[String: Any]]()
     private var lastHitEvidence = [String: Any]()
+    private var inputBeginEvents = 0
 
     private func main<T>(_ body: () throws -> T) rethrows -> T {
         if Thread.isMainThread { return try body() }
@@ -41,6 +42,7 @@ final class VoiceLayoutTests: XCTestCase {
             previousWindow = UIApplication.shared.windows.first(where: { $0.isKeyWindow })
             keyboardFrame = .zero; keyboardShows = 0; keyboardHides = 0
             keyboardSequence = 0; keyboardSamples = []; lastHitEvidence = [:]
+            inputBeginEvents = 0
             for name in [UIResponder.keyboardDidShowNotification, UIResponder.keyboardDidHideNotification,
                          UIResponder.keyboardDidChangeFrameNotification] {
                 keyboardTokens.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) {
@@ -68,6 +70,12 @@ final class VoiceLayoutTests: XCTestCase {
             }
             let value = AccessoryFixture()
             fixture = value
+            keyboardTokens.append(NotificationCenter.default.addObserver(
+                forName: UITextView.textDidBeginEditingNotification, object: value.bar.inputField, queue: .main) {
+                [weak self] _ in
+                precondition(Thread.isMainThread)
+                self?.inputBeginEvents += 1
+            })
             value.window.makeKeyAndVisible()
             XCTAssertTrue(value.controller.becomeFirstResponder())
             try awaitMain("original accessory visible", seconds: 3) {
@@ -148,6 +156,40 @@ final class VoiceLayoutTests: XCTestCase {
         }
     }
 
+    private func viewAndAncestors(_ view: UIView) -> [UIView] {
+        precondition(Thread.isMainThread)
+        var result: [UIView] = [], current: UIView? = view
+        while let value = current { result.append(value); current = value.superview }
+        return result
+    }
+
+    private func sendImageVisibility(_ button: UIButton) -> (notVisible: Bool, evidence: [String: Any]) {
+        precondition(Thread.isMainThread)
+        guard let imageView = button.imageView else {
+            return (true, ["reason": "no_image_view", "nodes": []])
+        }
+        let chain = viewAndAncestors(imageView)
+        let reason: String
+        if imageView.image == nil { reason = "no_image" }
+        else if imageView.window == nil { reason = "detached_from_window" }
+        else if chain.contains(where: { $0.isHidden }) { reason = "hidden_in_hierarchy" }
+        else if chain.contains(where: { $0.alpha == 0 }) { reason = "zero_alpha_in_hierarchy" }
+        else { reason = "no_absence_evidence" }
+        let nodes: [[String: Any]] = chain.map { view in
+            let frame = view.window.map { view.convert(view.bounds, to: $0) }
+            let windowFrame: [CGFloat] = frame.map { [$0.minX, $0.minY, $0.width, $0.height] } ?? []
+            return ["class": NSStringFromClass(type(of: view)), "hidden": view.isHidden,
+                    "alpha": view.alpha, "windowPresent": view.window != nil,
+                    "bounds": [view.bounds.minX, view.bounds.minY, view.bounds.width, view.bounds.height],
+                    "windowFrame": windowFrame, "clipsToBounds": view.clipsToBounds,
+                    "animationKeys": view.layer.animationKeys() ?? []]
+        }
+        let settled = chain.allSatisfy { $0.layer.animationKeys()?.isEmpty ?? true }
+        // A zero size or clipping rectangle alone is not proof that the retained image cannot draw.
+        return (reason != "no_absence_evidence" && settled,
+                ["reason": reason, "settled": settled, "hasImage": imageView.image != nil, "nodes": nodes])
+    }
+
     func testOriginalNibLoadsAndResetsWithoutRecording() throws {
         try main {
             let f = try current(), bar = f.bar
@@ -173,10 +215,24 @@ final class VoiceLayoutTests: XCTestCase {
             let originalImage = try XCTUnwrap(bar.sendButton.currentImage)
             if #available(iOS 15.0, *) { XCTAssertNil(bar.sendButton.configuration) }
             XCTAssertNil(bar.sendButton.currentTitle)
-            bar.inputField.text = "组件布局测试" // synthetic, never submitted
+            let beforeBegin = inputBeginEvents
+            XCTAssertFalse(bar.inputField.isFirstResponder)
+            XCTAssertTrue(bar.inputField.becomeFirstResponder())
+            try awaitMain("this input began editing", seconds: 3) {
+                self.inputBeginEvents > beforeBegin && bar.inputField.isFirstResponder
+            }
+            let syntheticInput = "组件布局测试" // never submitted
+            bar.inputField.text = syntheticInput
+            XCTAssertEqual(bar.inputField.actualText, syntheticInput)
             bar.textViewDidChange(bar.inputField); f.settle(); try awaitPresentation(f)
             XCTAssertNil(bar.sendButton.currentImage)
-            XCTAssertNil(bar.sendButton.imageView?.image)
+            let buttonWindow = try XCTUnwrap(bar.sendButton.window)
+            XCTAssertTrue(viewAndAncestors(bar.sendButton).allSatisfy { !$0.isHidden && $0.alpha > 0 })
+            let buttonFrame = bar.sendButton.convert(bar.sendButton.bounds, to: buttonWindow)
+            let visibleFrame = buttonFrame.intersection(buttonWindow.bounds)
+            XCTAssertGreaterThanOrEqual(visibleFrame.width, buttonFrame.width - 0.5)
+            XCTAssertGreaterThanOrEqual(visibleFrame.height, buttonFrame.height - 0.5)
+            XCTAssertTrue(sendImageVisibility(bar.sendButton).notVisible, "Image absence requires actual visibility evidence")
             if #available(iOS 15.0, *) { XCTAssertNil(bar.sendButton.configuration) }
             XCTAssertEqual(bar.sendButton.currentTitle, "发送")
             let label = try XCTUnwrap(bar.sendButton.titleLabel)
@@ -188,6 +244,7 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(bar.sendButton.bounds.height, 48)
             try capture("send-button-text-single-line", f)
             bar.inputField.text = ""; bar.textViewDidChange(bar.inputField); f.settle(); try awaitPresentation(f)
+            XCTAssertTrue(bar.inputField.actualText.isEmpty)
             XCTAssertNil(bar.sendButton.currentTitle)
             XCTAssertTrue(try XCTUnwrap(bar.sendButton.currentImage).isEqual(originalImage))
             if #available(iOS 15.0, *) { XCTAssertNil(bar.sendButton.configuration) }
@@ -437,9 +494,11 @@ final class VoiceLayoutTests: XCTestCase {
                 "keys": $0.layer.animationKeys() ?? []] as [String: Any] },
             "sendButton": ["hasImage": bar.sendButton.currentImage != nil, "title": bar.sendButton.currentTitle ?? "",
                            "imageViewHasImage": bar.sendButton.imageView?.image != nil,
+                           "imageVisibility": sendImageVisibility(bar.sendButton).evidence,
                            "titleLines": bar.sendButton.titleLabel?.numberOfLines ?? -1,
                            "frame": rect(bar.sendButton.bounds)],
             "inputFirstResponder": bar.inputField.isFirstResponder,
+            "inputBeginEvents": inputBeginEvents, "actualInputLength": bar.inputField.actualText.count,
             "buttons": buttons.map { ["id": $0.accessibilityIdentifier ?? "", "hidden": $0.isHidden,
                                        "frame": rect($0.convert($0.bounds, to: bar)), "height": $0.bounds.height] as [String: Any] },
             "delegateActions": f.spy.actions, "componentDelegateHasNetworkImplementation": false
