@@ -61,8 +61,7 @@ class ChatListViewCell: UITableViewCell {
         unreadCount.font = ClawTheme.font(12, weight: .semibold, style: .caption1)
         let labels: [UILabel] = [title, subtitle, messageTimeLabel, unreadCount]
         labels.forEach { $0.adjustsFontForContentSizeCategory = true }
-        unreadCount.constraints.first(where: { $0.firstAttribute == .height })?.constant =
-            max(24, ceil(unreadCount.font.lineHeight) + 8)
+        updateUnreadBadgeMetrics()
         unreadCount.layer.cornerRadius = 10
         unreadCount.layer.cornerCurve = .continuous
         unreadCount.clipsToBounds = true
@@ -230,10 +229,27 @@ class ChatListViewCell: UITableViewCell {
 
     override func layoutSubviews() {
         updateRowAxes()
+        updateUnreadBadgeMetrics()
         super.layoutSubviews()
-        unreadCount.constraints.first(where: { $0.firstAttribute == .height })?.constant =
-            max(24, ceil(unreadCount.font.lineHeight) + 8)
+        // UIKit can resolve the inherited Dynamic Type font while laying out the
+        // nib label. Reconcile both dimensions with that font before rounding.
+        if updateUnreadBadgeMetrics() { contentView.layoutIfNeeded() }
         unreadCount.layer.cornerRadius = unreadCount.bounds.height / 2
+    }
+
+    @discardableResult
+    private func updateUnreadBadgeMetrics() -> Bool {
+        guard let label = unreadCount, let width = unreadCountWidth, let font = label.font else { return false }
+        let height = max(24, ceil(font.lineHeight) + 8)
+        let textWidth = ((label.text ?? "") as NSString).size(withAttributes: [.font: font]).width
+        let desiredWidth = label.isHidden ? CGFloat.leastNonzeroMagnitude : max(height, ceil(textWidth) + 12)
+        var changed = false
+        if width.constant != desiredWidth { width.constant = desiredWidth; changed = true }
+        if let constraint = label.constraints.first(where: { $0.firstAttribute == .height }),
+           constraint.constant != height {
+            constraint.constant = height; changed = true
+        }
+        return changed
     }
 
     private func setMessageStatusVisibility(hidden: Bool) {
@@ -307,13 +323,10 @@ class ChatListViewCell: UITableViewCell {
         if unread > 0 {
             unreadCount.text = unread > 9 ? "9+" : String(unread)
             unreadCount.isHidden = false
-            let badgeTextWidth = (unreadCount.text! as NSString).size(
-                withAttributes: [.font: unreadCount.font!]).width
-            unreadCountWidth.constant = max(24, ceil(badgeTextWidth) + 12)
         } else {
             unreadCount.isHidden = true
-            unreadCountWidth.constant = .leastNonzeroMagnitude
         }
+        updateUnreadBadgeMetrics()
 
         let isBlocked = !topic.isJoiner
         iconBlocked.isHidden = !isBlocked

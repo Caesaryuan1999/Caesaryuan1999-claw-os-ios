@@ -3,6 +3,7 @@
 // Synthetic in-memory data only; no login, permission prompt, query, publish or server ACK.
 import XCTest
 import UIKit
+import CoreText
 import Contacts
 import TinodeSDK
 import TinodiosDB
@@ -151,6 +152,25 @@ final class CoreListLayoutTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(label.bounds.height + 1, required, file: file, line: line)
     }
 
+    private func unreadBadgeFits(_ cell: ChatListViewCell, text: String,
+                                 file: StaticString = #filePath, line: UInt = #line) {
+        let label = cell.unreadCount!
+        XCTAssertEqual(label.text, text, file: file, line: line)
+        XCTAssertFalse(label.isHidden, file: file, line: line)
+        XCTAssertTrue(label.adjustsFontForContentSizeCategory, file: file, line: line)
+        XCTAssertFalse(label.adjustsFontSizeToFitWidth, file: file, line: line)
+        XCTAssertEqual(label.numberOfLines, 1, file: file, line: line)
+        let shaped = CTLineCreateWithAttributedString(NSAttributedString(string: text,
+            attributes: [.font: label.font!]) as CFAttributedString)
+        let glyphWidth = CGFloat(CTLineGetTypographicBounds(shaped, nil, nil, nil))
+        XCTAssertGreaterThan(glyphWidth, 0, file: file, line: line)
+        XCTAssertGreaterThanOrEqual(label.bounds.width + 1, ceil(glyphWidth) + 12, file: file, line: line)
+        XCTAssertGreaterThanOrEqual(label.bounds.width + 1, label.bounds.height, file: file, line: line)
+        XCTAssertEqual(cell.unreadCountWidth.constant, label.bounds.width, accuracy: 1, file: file, line: line)
+        readable(label, file: file, line: line)
+        contained(label, in: cell, file: file, line: line)
+    }
+
     private func allViews(_ root: UIView) -> [UIView] {
         [root] + root.subviews.flatMap { allViews($0) }
     }
@@ -182,6 +202,7 @@ final class CoreListLayoutTests: XCTestCase {
             XCTAssertTrue((cell.subtitle.attributedText?.string ?? "").contains("真实 Drafty"))
             XCTAssertEqual(cell.unreadCount.text, "9+")
             XCTAssertFalse(cell.unreadCount.isHidden)
+            unreadBadgeFits(cell, text: "9+")
             XCTAssertFalse(try XCTUnwrap(allViews(cell).first { $0.accessibilityIdentifier == "claw.conversation.divider" }).isHidden)
             contained(cell.title, in: cell); contained(cell.unreadCount, in: cell)
             try evidence("conversation-continuous", view: controller.view)
@@ -270,9 +291,41 @@ final class CoreListLayoutTests: XCTestCase {
                 }
                 contained(chat.title, in: chat); contained(chat.unreadCount, in: chat)
                 contained(contact.title, in: contact); contained(contact.subtitle, in: contact)
+                XCTAssertGreaterThan(chat.unreadCount.font.pointSize, 12)
+                unreadBadgeFits(chat, text: "9+")
                 XCTAssertEqual(chat.traitCollection.userInterfaceStyle, style)
                 XCTAssertEqual(contact.traitCollection.preferredContentSizeCategory, .accessibilityExtraExtraExtraLarge)
                 try evidence(style == .dark ? "rows-ax-dark" : "rows-ax-light", view: controller.view)
+                let unreadTopic = try topic()
+                unreadTopic.read = 7 // Single digit at the same current AX font.
+                chat.fillFromTopic(topic: unreadTopic)
+                fit(chat, in: controller.view)
+                unreadBadgeFits(chat, text: "5")
+                try evidence(style == .dark ? "badge-single-ax-dark" : "badge-single-ax-light", view: controller.view)
+                unreadTopic.read = unreadTopic.seq
+                chat.fillFromTopic(topic: unreadTopic)
+                fit(chat, in: controller.view)
+                XCTAssertTrue(chat.unreadCount.isHidden)
+                unreadTopic.read = 2
+                chat.fillFromTopic(topic: unreadTopic)
+                let enlargedFontSize = chat.unreadCount.font.pointSize
+                let standard = UIViewController(); try host(standard, style: style)
+                fit(chat, in: standard.view)
+                try until {
+                    chat.setNeedsLayout(); chat.layoutIfNeeded()
+                    return chat.traitCollection.preferredContentSizeCategory == .large &&
+                        chat.unreadCount.font.pointSize < enlargedFontSize
+                }
+                unreadBadgeFits(chat, text: "9+")
+                let enlarged = UIViewController()
+                try host(enlarged, category: .accessibilityExtraExtraExtraLarge, style: style)
+                fit(chat, in: enlarged.view)
+                try until {
+                    chat.setNeedsLayout(); chat.layoutIfNeeded()
+                    return chat.unreadCount.font.pointSize > 12
+                }
+                unreadBadgeFits(chat, text: "9+")
+                try evidence(style == .dark ? "badge-regrown-ax-dark" : "badge-regrown-ax-light", view: enlarged.view)
             }
         }
     }
@@ -420,10 +473,16 @@ final class CoreListLayoutTests: XCTestCase {
             $0 is UILabel || $0 is UIButton || $0 is UITableViewCell
         }.map {
             let r = $0.convert($0.bounds, to: view)
+            let badge = $0.accessibilityIdentifier == "unreadCount" ? $0 as? UILabel : nil
+            let badgeGlyphWidth = badge.map { label in
+                CTLineGetTypographicBounds(CTLineCreateWithAttributedString(NSAttributedString(
+                    string: label.text ?? "", attributes: [.font: label.font!]) as CFAttributedString), nil, nil, nil)
+            } ?? 0
             return ["kind": String(describing: type(of: $0)), "identifier": $0.accessibilityIdentifier ?? "",
                     "x": r.minX, "y": r.minY, "width": r.width, "height": r.height,
                     "hidden": $0.isHidden, "alpha": $0.alpha,
-                    "font": ($0 as? UILabel)?.font.pointSize ?? 0]
+                    "font": ($0 as? UILabel)?.font.pointSize ?? 0,
+                    "unreadGlyphWidth": badgeGlyphWidth]
         }
         let data: [String: Any] = ["scope": "original UIKit/nibs with synthetic in-memory data; no authenticated journey",
             "width": view.bounds.width, "height": view.bounds.height,
