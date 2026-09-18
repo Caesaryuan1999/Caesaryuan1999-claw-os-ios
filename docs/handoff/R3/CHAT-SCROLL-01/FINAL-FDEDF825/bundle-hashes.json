@@ -1,0 +1,30 @@
+{
+  "sourceTarget": "fdedf825490ea9fa420b54033e8c48d65f8fc8aa",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 3289,
+      "sha256": "425b678114286217744b86218c1037568bbd07e83b70acd1f95f128db9ad3d11"
+    },
+    {
+      "path": "package_unit.py",
+      "bytes": 3867,
+      "sha256": "5b8fb13c25f18ecca7b55b6c0a3c067c44d5684dcc7e27d0b58314234555966e"
+    },
+    {
+      "path": "line-endings.json",
+      "bytes": 5634,
+      "sha256": "afc5b144109cdc1333c2bfd04d545c326316063c49c48d15c96e29c7b3937f56"
+    },
+    {
+      "path": "unit.patch",
+      "bytes": 97716,
+      "sha256": "29cc92f25a9b21100c9fb38b29796460810d946f146a7d365a3b60cb2e48e9f3"
+    },
+    {
+      "path": "unit-package.json",
+      "bytes": 4679,
+      "sha256": "f51715458342873a01c089e2ceba82b9ad1dd4653234f87728a4ba23d7cf5927"
+    }
+  ]
+}

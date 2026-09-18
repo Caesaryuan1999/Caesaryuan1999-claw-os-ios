@@ -1,0 +1,110 @@
+{
+  "base": "0a54fcf1ecb35a6f3511815ed59c7750f692ea2d",
+  "sourceTarget": "fdedf825490ea9fa420b54033e8c48d65f8fc8aa",
+  "patch": {
+    "path": "unit.patch",
+    "sha256": "29cc92f25a9b21100c9fb38b29796460810d946f146a7d365a3b60cb2e48e9f3",
+    "bytes": 97716
+  },
+  "paths": {
+    "Tinodios/FilePreviewController.swift": {
+      "mode": "100644",
+      "gitBlob": "9e865ce00e0962f2fec732c95bd4c8d8da22c272",
+      "gitBytesSHA256": "3462a0c8d1177615858dcbed62e60a23ab5daa5ccc3747f8b22b66cc0fd6dcdf",
+      "bytes": 6402
+    },
+    "Tinodios/ImagePreviewController.swift": {
+      "mode": "100644",
+      "gitBlob": "16c023be1991aac5ba1686eeca7b9931e97052d2",
+      "gitBytesSHA256": "2f185adf7d24f501e222d9af476cf80c61acc37603ffdb933206a2cf79d1e078",
+      "bytes": 13689
+    },
+    "Tinodios/MessageInteractor.swift": {
+      "mode": "100644",
+      "gitBlob": "df66a0f28e14760034fb9c4805adb361b38ee998",
+      "gitBytesSHA256": "812985deb810ebd6890c399d71f0fd14a4a5ff8cc3a961bc09a1e825f6499789",
+      "bytes": 54634
+    },
+    "Tinodios/MessagePresenter.swift": {
+      "mode": "100644",
+      "gitBlob": "9e8a1de554bb7a0941bd2b457fab2a4d499aa1e7",
+      "gitBytesSHA256": "2205ced0b67b7aadcbd5d26280f87eb2a54529f22107c08615ab79217c675b64",
+      "bytes": 4145
+    },
+    "Tinodios/MessageViewController+MessageCellDelegate.swift": {
+      "mode": "100644",
+      "gitBlob": "2fd1a394813b9e4e6358a2ef6849c2236b6eeefc",
+      "gitBytesSHA256": "0c448f1bac2f35f0ba4c357bc6f8e5ab196ca83760c34bf6ce706c6632a53a30",
+      "bytes": 35826
+    },
+    "Tinodios/MessageViewController+MessageDisplayLogic.swift": {
+      "mode": "100644",
+      "gitBlob": "d72c82c04e2fa33912ac63f62f1c6f4c88e36aca",
+      "gitBytesSHA256": "8cff056791ff7ea98a40f047ffce8ba1aee075b733930b65e04a70f5dbad964a",
+      "bytes": 11154
+    },
+    "Tinodios/MessageViewController+SendMessageBarDelegate.swift": {
+      "mode": "100644",
+      "gitBlob": "7a186f8cbcb26447c3db7d03bd57044d430f8ffa",
+      "gitBytesSHA256": "d177f1675dbb761527a32a52154156d44e10360e0081a48512d64c7f4c5eb063",
+      "bytes": 13248
+    },
+    "Tinodios/MessageViewController.swift": {
+      "mode": "100644",
+      "gitBlob": "7ebb6305a60852126c50663170edc2cb986f5f88",
+      "gitBytesSHA256": "551e94302200d92031cdf61e93fa0fb2b6251309f63f70411e67fa4f41fcbe8d",
+      "bytes": 84434
+    },
+    "Tinodios/VideoPreviewController.swift": {
+      "mode": "100644",
+      "gitBlob": "42b6b6eb264263c4d5a293409c967a8aaba2b1f1",
+      "gitBytesSHA256": "a4d6ebd927dce41b130891f7d5f77262d4b06126023bc4d6fbfa362aa279d058",
+      "bytes": 33585
+    },
+    "TinodiosUITests/ChatScrollTests.swift": {
+      "mode": "100644",
+      "gitBlob": "9fba6a07fb6fa2777eac468ad20154529aa70bab",
+      "gitBytesSHA256": "86d3626ebe997cc4cfc2beef66495b3e4f05de3ae89f6e6f450594da8940eea0",
+      "bytes": 23042
+    },
+    "Tinodios.xcodeproj/project.pbxproj": {
+      "mode": "100644",
+      "gitBlob": "9f79c03c6bd48526d085a181492ea296584d4ec8",
+      "gitBytesSHA256": "1b754f88d67896563ed7e5dbc3a60cca1b1aed18ec672fc2c2a9131697ff7858",
+      "bytes": 128221
+    },
+    "Scripts/ci/verify_publish_outcomes_macos.sh": {
+      "mode": "100644",
+      "gitBlob": "3cbcfb58714dc8f6f6d327898bfad003d6837be6",
+      "gitBytesSHA256": "055703f8d0f04d6bc6315e168209bb700c8d1bee881dda3f2400c95e274b4f2a",
+      "bytes": 24184
+    },
+    "Scripts/ci/test_brand_ui_policy.py": {
+      "mode": "100644",
+      "gitBlob": "138dd3b1145aa34993a62b6370d264ef4b421fb7",
+      "gitBytesSHA256": "cb8c36def486aff70882baf1aaa5f3f231beca124338fcb363c04134b65fa7fb",
+      "bytes": 6018
+    }
+  },
+  "independentIndexForwardApply": "PASS --check then actual --cached apply",
+  "unselectedEntriesUnchanged": true,
+  "originalIndexUnchanged": true,
+  "resultTree": "b19175ad44a9857d878eb4ce2c716c781f67c979",
+  "validation": "Windows packaging/source only; candidate Mac/native NOT_RUN",
+  "nativeExpected": {
+    "existing": 232,
+    "new": 10,
+    "total": 242,
+    "navigationSeparate": 3
+  },
+  "excluded": [
+    "private configuration",
+    "SharedUtils",
+    "credentials/push/signing",
+    "Pods/build/runtime",
+    "historical WIP",
+    "docs/evidence"
+  ],
+  "restore": "In an isolated checkout of the exact base with private configuration preserved: git apply --check unit.patch; git apply unit.patch. Verify listed Git blobs/modes before CI. No reset/clean or database deletion.",
+  "rollback": "Use preserved base code/checkpoint in a separate checkout; retain the current account database and private configuration. This patch makes no schema changes."
+}

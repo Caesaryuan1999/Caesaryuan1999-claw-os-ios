@@ -1,0 +1,1756 @@
+diff --git a/Scripts/ci/test_brand_ui_policy.py b/Scripts/ci/test_brand_ui_policy.py
+index 85d992bb4d789591bb824e4b75c41f1be0f0d8d0..138dd3b1145aa34993a62b6370d264ef4b421fb7 100644
+--- a/Scripts/ci/test_brand_ui_policy.py
++++ b/Scripts/ci/test_brand_ui_policy.py
+@@ -124,7 +124,12 @@ def main() -> None:
+ 
+     message = MESSAGE.read_text(encoding="utf-8")
+     assert 'ClawTheme.symbol("phone.fill"' in message
+-    assert 'symbolName: "chevron.down"' in message
++    assert 'buttonGoToLatest.setTitle("回到最新消息", for: .normal)' in message
++    assert 'buttonGoToLatest.accessibilityLabel = "回到最新消息"' in message
++    assert 'widthAnchor.constraint(greaterThanOrEqualToConstant: 44.0)' in message
++    assert 'heightAnchor.constraint(greaterThanOrEqualToConstant: 44)' in message
++    assert 'view.safeAreaLayoutGuide.leadingAnchor' in message
++    assert 'adjustsFontForContentSizeCategory = true' in message
+     assert 'title: "语音通话"' in message
+     assert 'title: "视频通话"' in message
+ 
+diff --git a/Scripts/ci/verify_publish_outcomes_macos.sh b/Scripts/ci/verify_publish_outcomes_macos.sh
+index 5601a616318c397f11211b7e682cee4b81e09f4e..3cbcfb58714dc8f6f6d327898bfad003d6837be6 100644
+--- a/Scripts/ci/verify_publish_outcomes_macos.sh
++++ b/Scripts/ci/verify_publish_outcomes_macos.sh
+@@ -397,6 +397,7 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
+   -only-testing:TinodiosUITests/SendMessageBarResetTests \
+   -only-testing:TinodiosVLCProbeTests/VLCPlaybackProbeTests \
+   -only-testing:TinodiosVoiceLayoutTests/VoiceLayoutTests \
++  -only-testing:TinodiosVoiceLayoutTests/ChatScrollTests \
+   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
+   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"
+ unset TEST_RUNNER_CLAW_VLC_POD_EVIDENCE
+diff --git a/Tinodios.xcodeproj/project.pbxproj b/Tinodios.xcodeproj/project.pbxproj
+index 5a7a075d285b7ed7485f591f5976feecdc8e5d40..9f79c03c6bd48526d085a181492ea296584d4ec8 100644
+--- a/Tinodios.xcodeproj/project.pbxproj
++++ b/Tinodios.xcodeproj/project.pbxproj
+@@ -7,6 +7,7 @@
+ 	objects = {
+ 
+ /* Begin PBXBuildFile section */
++		C1A050000000000000000002 /* ChatScrollTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A050000000000000000001; };
+ 		0A0016E721E7236900088188 /* MessageInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0016E621E7236900088188 /* MessageInteractor.swift */; };
+ 		0A0016E921E736CD00088188 /* MessagePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0016E821E736CD00088188 /* MessagePresenter.swift */; };
+ 		0A0380D821B3CC8100A3FA0E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0380D721B3CC8100A3FA0E /* AppDelegate.swift */; };
+@@ -266,6 +267,7 @@
+ /* End PBXCopyFilesBuildPhase section */
+ 
+ /* Begin PBXFileReference section */
++		C1A050000000000000000001 /* ChatScrollTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatScrollTests.swift; sourceTree = "<group>"; };
+ 		0A0016E621E7236900088188 /* MessageInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInteractor.swift; sourceTree = "<group>"; };
+ 		0A0016E821E736CD00088188 /* MessagePresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagePresenter.swift; sourceTree = "<group>"; };
+ 		0A0380D421B3CC8100A3FA0E /* Tinodios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tinodios.app; sourceTree = BUILT_PRODUCTS_DIR; };
+@@ -677,6 +679,7 @@
+ 				C1A046012026091800000001 /* MediaRecorderLifecycleTests.swift */,
+ 				C1A047012026091800000001 /* SendMessageBarResetTests.swift */,
+ 				C1A048000000000000000001 /* VoiceLayoutTests.swift */,
++				C1A050000000000000000001 /* ChatScrollTests.swift */,
+ 				C1A047012026091800000002 /* SendMessageBarResetSource.swift */,
+ 				C1A041012026091800000001 /* OwnedImageTests.swift */,
+ 				C1A042012026091800000001 /* IdentityNavigationUITests.swift */,
+@@ -1343,7 +1346,7 @@
+ 			files = (C1A043022026091800000001, C1A04400000000000000001D, );
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 		};
+-		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, ); runOnlyForDeploymentPostprocessing = 0; };
++		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, ); runOnlyForDeploymentPostprocessing = 0; };
+ /* End PBXSourcesBuildPhase section */
+ 
+ /* Begin PBXTargetDependency section */
+diff --git a/Tinodios/FilePreviewController.swift b/Tinodios/FilePreviewController.swift
+index 0af7b279f960484acac586573ddccbd8707111ec..9e865ce00e0962f2fec732c95bd4c8d8da22c272 100644
+--- a/Tinodios/FilePreviewController.swift
++++ b/Tinodios/FilePreviewController.swift
+@@ -23,6 +23,7 @@ struct FilePreviewContent {
+ class FilePreviewController: UIViewController, UIScrollViewDelegate {
+ 
+     var previewContent: FilePreviewContent?
++    var captureDisplayIntent: (() -> ChatDisplayIntent)?
+     var replyPreviewDelegate: PendingMessagePreviewDelegate?
+     private var sending = false
+     @IBOutlet weak var sendButton: UIButton!
+@@ -43,10 +44,12 @@ class FilePreviewController: UIViewController, UIScrollViewDelegate {
+ 
+     @IBAction func sendFileAttachment(_ sender: UIButton) {
+         guard let content = previewContent, !sending else { return }
++        let displayIntent = captureDisplayIntent?() ?? .passive
+         sending = true
+         sendButton.isEnabled = false
+         // The existing message flow owns upload and publish state.
+-        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content)
++        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content,
++            userInfo: [ChatDisplayIntent.notificationKey: displayIntent])
+         // Return to MessageViewController.
+         navigationController?.popViewController(animated: true)
+     }
+diff --git a/Tinodios/ImagePreviewController.swift b/Tinodios/ImagePreviewController.swift
+index 56cf381dd6ef43a36cefaf357af2b2aa52b3e0b6..16c023be1991aac5ba1686eeca7b9931e97052d2 100644
+--- a/Tinodios/ImagePreviewController.swift
++++ b/Tinodios/ImagePreviewController.swift
+@@ -33,6 +33,7 @@ class ImagePreviewController: UIViewController, UIScrollViewDelegate {
+     @IBOutlet weak var imageView: UIImageView!
+ 
+     var previewContent: ImagePreviewContent?
++    var captureDisplayIntent: (() -> ChatDisplayIntent)?
+     var replyPreviewDelegate: PendingMessagePreviewDelegate?
+     private let mediaState = ClawMediaPreviewState()
+     private var mediaOwner: Tinode?
+@@ -278,6 +279,7 @@ extension ImagePreviewController: SendImageBarDelegate {
+     func sendImageBar(caption: String?) {
+         guard let originalContent = self.previewContent else { return }
+         guard case let .uiimage(originalImage) = originalContent.imgContent else { return }
++        let displayIntent = captureDisplayIntent?() ?? .passive
+ 
+         let mimeType = originalContent.contentType == "image/png" ?  "image/png" : "image/jpeg"
+         // Ensure image linear dimensions are under the limits.
+@@ -295,7 +297,8 @@ extension ImagePreviewController: SendImageBarDelegate {
+         )
+ 
+         // This notification is received by the MessageViewController.
+-        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content)
++        NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content,
++            userInfo: [ChatDisplayIntent.notificationKey: displayIntent])
+         // Return to MessageViewController.
+         navigationController?.popViewController(animated: true)
+     }
+diff --git a/Tinodios/MessageInteractor.swift b/Tinodios/MessageInteractor.swift
+index d133ad68bca0d1a337d2ddf6f6cb15306c50f43f..df66a0f28e14760034fb9c4805adb361b38ee998 100644
+--- a/Tinodios/MessageInteractor.swift
++++ b/Tinodios/MessageInteractor.swift
+@@ -26,7 +26,7 @@ protocol MessageBusinessLogic: AnyObject {
+     func cleanup()
+     func leaveTopic()
+ 
+-    func sendMessage(content: Drafty)
++    func sendMessage(content: Drafty, displayIntent: ChatDisplayIntent)
+     func sendReadNotification(explicitSeq: Int?, when deadline: DispatchTime)
+     func sendTypingNotification()
+     func enablePeersMessaging()
+@@ -35,11 +35,11 @@ protocol MessageBusinessLogic: AnyObject {
+     func blockTopic()
+ 
+     func submitRecordedAudio(_ def: UploadDef, owner: Tinode, uid: String,
+-                             generation: UInt64, topicName: String) -> Bool
+-    func uploadAudio(_ def: UploadDef)
+-    func uploadFile(_ def: UploadDef)
+-    func uploadImage(_ def: UploadDef)
+-    func uploadVideo(_ def: UploadDef)
++                             generation: UInt64, topicName: String, displayIntent: ChatDisplayIntent) -> Bool
++    func uploadAudio(_ def: UploadDef, displayIntent: ChatDisplayIntent)
++    func uploadFile(_ def: UploadDef, displayIntent: ChatDisplayIntent)
++    func uploadImage(_ def: UploadDef, displayIntent: ChatDisplayIntent)
++    func uploadVideo(_ def: UploadDef, displayIntent: ChatDisplayIntent)
+ 
+     func prepareQuoted(to msg: Message?, isReply: Bool) -> PromisedReply<PendingMessage>?
+     func dismissPendingMessage()
+@@ -51,6 +51,11 @@ protocol MessageBusinessLogic: AnyObject {
+     var pendingMessage: PendingMessage? { get }
+ }
+ 
++extension MessageBusinessLogic {
++    // Legacy non-button callers receive no active scroll privilege.
++    func sendMessage(content: Drafty) { sendMessage(content: content, displayIntent: .passive) }
++}
++
+ protocol MessageDataStore {
+     var topicName: String? { get set }
+     var topic: DefaultComTopic? { get set }
+@@ -191,7 +196,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+         }
+ 
+         if let pins = topic?.pinned {
+-            self.presenter?.displayPinnedMessages(pins: pins, selected: 0)
++            self.presenter?.displayPinnedMessages(pins: pins, selected: 0, source: topic.flatMap { chatSource(for: $0) })
+         }
+ 
+         return self.topic != nil
+@@ -217,6 +222,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+             return true
+         }
+         let tinode = Cache.tinode
++        let source = chatSource(for: topic)
+         guard tinode.isConnectionAuthenticated else {
+             // If connection is not ready, wait for completion.
+             // MessageInteractor.attachToTopic() will be called again from the onLogin callback.
+@@ -247,7 +253,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+                     self?.messageInteractorQueue.async {
+                         self?.topic?.syncAll().then(
+                             onSuccess: { [weak self] _ in
+-                                self?.loadMessagesFromCache()
++                                self?.loadMessagesFromCache(displayIntent: .passive, source: source, originalTopic: topic)
+                                 return nil
+                             },
+                             onFailure: { err in
+@@ -259,7 +265,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+                     if self?.topicId == -1 {
+                         self?.topicId = BaseDb.sharedInstance.topicDb?.getId(topic: self?.topicName)
+                     }
+-                    self?.loadMessagesFromCache()
++                    self?.loadMessagesFromCache(displayIntent: .passive, source: source, originalTopic: topic)
+                     self?.presenter?.applyTopicPermissions(withError: nil)
+                     return nil
+                 },
+@@ -352,10 +358,23 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+         self.pendingMessage = .forwarded(message: message, from: forwardedFrom, preview: preview)
+     }
+ 
+-    func sendMessage(content: Drafty) {
++    func sendMessage(content: Drafty, displayIntent: ChatDisplayIntent = .passive) {
+         guard let topic = self.topic else { return }
++        let source = displayIntent.source ?? chatSource(for: topic)
++        let localIntent: ChatDisplayIntent
++        let laterIntent: ChatDisplayIntent
++        if displayIntent.preservesReadingPosition {
++            localIntent = .preserve
++            laterIntent = .preserve
++        } else if case .edit? = pendingMessage {
++            localIntent = .preserve
++            laterIntent = .preserve
++        } else {
++            localIntent = displayIntent
++            laterIntent = .passive
++        }
+         defer {
+-            loadMessagesFromCache()
++            loadMessagesFromCache(displayIntent: localIntent, source: source, originalTopic: topic)
+         }
+         var message = content
+         var head: [String: JSONValue]? = nil
+@@ -376,15 +395,15 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+         }
+         topic.publish(content: message, withExtraHeaders: head).then(
+             onSuccess: { [weak self] _ in
+-                self?.loadMessagesFromCache()
++                self?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic)
+                 if editedSeq > 0 {
+-                    self?.reloadPinned(forSeq: editedSeq)
++                    self?.presenter?.reloadPinned(forSeq: editedSeq, source: source)
+                 }
+                 return nil
+             },
+             onFailure: { [weak self] err in
+                 Cache.log.error("sendMessage error: %@", err.localizedDescription)
+-                self?.loadMessagesFromCache()
++                self?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic)
+                 if PublishFailureDisposition.forError(err) == .unconfirmed {
+                     DispatchQueue.main.async {
+                         UiUtils.showToast(message: "消息可能已发送，请先查看最新聊天记录。")
+@@ -447,13 +466,29 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+ 
+     /// Load the most recent `kMessagesPerPage` messages from cache.
+     func loadMessagesFromCache(scrollToMostRecentMessage: Bool = true) {
+-        guard let t = self.topic else { return }
++        loadMessagesFromCache(displayIntent: scrollToMostRecentMessage ? .passive : .preserve)
++    }
++
++    private func chatSource(for topic: DefaultComTopic) -> ChatDisplaySource? {
++        guard let presenter = presenter else { return nil }
++        return ChatDisplaySource(page: presenter.chatPageID, topic: topic)
++    }
++
++    private func loadMessagesFromCache(displayIntent: ChatDisplayIntent,
++                                       source originalSource: ChatDisplaySource? = nil,
++                                       originalTopic: DefaultComTopic? = nil) {
++        guard let t = originalTopic ?? self.topic else { return }
++        // Source is fixed before either the DB queue or the main-thread hop.
++        let source = originalSource ?? chatSource(for: t)
+         let numToLoad = self.pagesToLoad * MessageInteractor.kMessagesPerPage
+         self.messageInteractorQueue.async {
+             if let messagePage = BaseDb.sharedInstance.sqlStore?.getMessagePage(topic: t, from: Int.max, limit: numToLoad, forward: false) {
++                guard self.topic === t else { return }
+                 // Replace messages with the new page.
+                 self.messages = messagePage.map { $0 as! StoredMessage }.reversed()
+-                self.presenter?.presentMessages(messages: self.messages, scrollToMostRecentMessage)
++                if let source = source {
++                    self.presenter?.presentMessages(messages: self.messages, source: source, intent: displayIntent)
++                }
+             }
+         }
+     }
+@@ -465,6 +500,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+             return
+         }
+ 
++        let source = chatSource(for: t)
+         let firstSeqId = self.messages.first?.seqId ?? Int.max
+         if firstSeqId <= 1 {
+             self.presenter?.endRefresh()
+@@ -493,13 +529,16 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+                 if let err = error {
+                     Cache.log.error("Failed to load message page: %@", err.localizedDescription)
+                 } else if let messagePage = messages, !messagePage.isEmpty {
++                    guard self?.topic === t else { return }
+                     var page = messagePage.map { $0 as! StoredMessage }
+                     // Page is returned in descending order, reverse.
+                     page.reverse()
+                     // Append older messages to the end of the fetched page.
+                     page.append(contentsOf: self?.messages ?? [])
+                     self?.messages = page
+-                    self?.presenter?.presentMessages(messages: page, false)
++                    if let source = source {
++                        self?.presenter?.presentMessages(messages: page, source: source, intent: .preserve)
++                    }
+                 }
+             })
+         }
+@@ -509,6 +548,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+         guard let topic = topic, let store = topic.store else {
+             return
+         }
++        let source = chatSource(for: topic)
+         if message.isUnconfirmed || message.status == BaseDb.Status.sending.rawValue || message.status == BaseDb.Status.sendingC3.rawValue {
+             // A local draft ID cannot retract a possibly accepted server message.
+             DispatchQueue.main.async {
+@@ -539,7 +579,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+             let committed = commitLocalDeletes(
+                 store: store, topic: topic,
+                 dbMessageIds: localDbMessageIds, seqIds: localSeqIds)
+-            loadMessagesFromCache()
++            loadMessagesFromCache(displayIntent: .preserve, source: source, originalTopic: topic)
+             if !committed {
+                 DispatchQueue.main.async {
+                     UiUtils.showToast(message: NSLocalizedString("操作失败", comment: "Message deletion failure"))
+@@ -560,7 +600,9 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+             !remoteSeqSet.contains($0.seqId) && !localDbMessageIds.contains($0.msgId)
+         }
+         messages = visibleMessages
+-        presenter?.presentMessages(messages: visibleMessages, false)
++        if let source = source {
++            presenter?.presentMessages(messages: visibleMessages, source: source, intent: .preserve)
++        }
+ 
+         topic.delMessages(ids: uniqueSeqIds, hard: hard).then(
+             onSuccess: { [weak self] _ in
+@@ -570,7 +612,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+                     dbMessageIds: localDbMessageIds, seqIds: localSeqIds)
+                 DispatchQueue.main.async {
+                     self.deleteSeqIdsInFlight.subtract(uniqueSeqIds)
+-                    self.loadMessagesFromCache()
++                    self.loadMessagesFromCache(displayIntent: .preserve, source: source, originalTopic: topic)
+                     if !committed {
+                         UiUtils.showToast(message: NSLocalizedString("操作失败", comment: "Message deletion failure"))
+                     }
+@@ -580,7 +622,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+             onFailure: { [weak self] err in
+                 DispatchQueue.main.async {
+                     self?.deleteSeqIdsInFlight.subtract(uniqueSeqIds)
+-                    self?.loadMessagesFromCache()
++                    self?.loadMessagesFromCache(displayIntent: .preserve, source: source, originalTopic: topic)
+                     UiUtils.showToast(message: String(format: NSLocalizedString("删除失败：%@", comment: "Message deletion failure"), err.localizedDescription))
+                 }
+                 return nil
+@@ -658,7 +700,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+     }
+ 
+     func reloadPinned(forSeq seq: Int) {
+-        self.presenter?.reloadPinned(forSeq: seq)
++        self.presenter?.reloadPinned(forSeq: seq, source: topic.flatMap { chatSource(for: $0) })
+     }
+ 
+     static private func existingInteractor(for topicName: String?) -> MessageInteractor? {
+@@ -680,27 +722,33 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+         return result
+     }
+ 
+-    func uploadImage(_ def: UploadDef) {
+-        uploadMessageAttachment(type: .image, def)
++    func uploadImage(_ def: UploadDef, displayIntent: ChatDisplayIntent = .passive) {
++        uploadMessageAttachment(type: .image, def, displayIntent: displayIntent)
+     }
+ 
+-    func uploadFile(_ def: UploadDef) {
+-        uploadMessageAttachment(type: .file, def)
++    func uploadFile(_ def: UploadDef, displayIntent: ChatDisplayIntent = .passive) {
++        uploadMessageAttachment(type: .file, def, displayIntent: displayIntent)
+     }
+ 
+     // True means the original local message/upload entry accepted the handoff.
+     // It is never a server-ACK or delivered result.
+     func submitRecordedAudio(_ def: UploadDef, owner: Tinode, uid: String,
+-                             generation: UInt64, topicName: String) -> Bool {
++                             generation: UInt64, topicName: String, displayIntent: ChatDisplayIntent = .passive) -> Bool {
+         guard let topic = topic, topic.name == topicName, let duration = def.duration,
+               let preview = def.preview, !def.data.isEmpty else { return false }
++        let source = displayIntent.source ?? chatSource(for: topic)
++        let localIntent: ChatDisplayIntent
++        let laterIntent: ChatDisplayIntent
++        if displayIntent.preservesReadingPosition { localIntent = .preserve; laterIntent = .preserve }
++        else if case .edit? = pendingMessage { localIntent = .preserve; laterIntent = .preserve }
++        else { localIntent = displayIntent; laterIntent = .passive }
+         let scope = RecordedAudioScope(owner: owner, uid: uid, generation: generation, topic: topic)
+         guard scope.isCurrent else { return false }
+         let maxInband = owner.getServerLimit(for: Tinode.kMaxMessageSize,
+             withDefault: MessageViewController.kMaxInbandAttachmentSize) * 3 / 4 - 1024
+         if def.data.count > maxInband {
+             guard let helper = Cache.largeFileHelper(for: owner), scope.isCurrent else { return false }
+-            return uploadMessageAttachment(type: .audio, def, audioScope: scope, audioHelper: helper)
++            return uploadMessageAttachment(type: .audio, def, displayIntent: localIntent, audioScope: scope, audioHelper: helper)
+         }
+         guard var content = try? Drafty(plainText: " ").insertAudio(at: 0, mime: def.mimeType,
+                 bits: def.data, preview: preview, duration: duration, fname: nil, refurl: nil,
+@@ -719,11 +767,11 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+         guard scope.isCurrent else { return false }
+         let promise = topic.publish(content: content, withExtraHeaders: head)
+         promise.then(onSuccess: { [weak self] _ in
+-            scope.present { self?.loadMessagesFromCache() }
++            scope.present { self?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic) }
+             return nil
+         }, onFailure: { [weak self] error in
+             scope.present {
+-                self?.loadMessagesFromCache()
++                self?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic)
+                 if PublishFailureDisposition.forError(error) == .unconfirmed {
+                     UiUtils.showToast(message: "消息可能已发送，请先查看最新聊天记录。")
+                 } else if case TinodeError.requestNotSent(let reason) = error {
+@@ -737,27 +785,34 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+         if scope.isCurrent {
+             dismissPendingMessage()
+             presenter?.dismissPendingMessagePreviewBar()
+-            loadMessagesFromCache()
++            loadMessagesFromCache(displayIntent: localIntent, source: source, originalTopic: topic)
+         }
+         return true
+     }
+ 
+-    func uploadAudio(_ def: UploadDef) {
+-        uploadMessageAttachment(type: .audio, def)
++    func uploadAudio(_ def: UploadDef, displayIntent: ChatDisplayIntent = .passive) {
++        uploadMessageAttachment(type: .audio, def, displayIntent: displayIntent)
+     }
+ 
+-    func uploadVideo(_ def: UploadDef) {
+-        uploadMessageAttachment(type: .video, def)
++    func uploadVideo(_ def: UploadDef, displayIntent: ChatDisplayIntent = .passive) {
++        uploadMessageAttachment(type: .video, def, displayIntent: displayIntent)
+     }
+ 
+     @discardableResult
+     private func uploadMessageAttachment(type: AttachmentType, _ def: UploadDef,
++                                         displayIntent: ChatDisplayIntent = .passive,
+                                          audioScope: RecordedAudioScope? = nil,
+                                          audioHelper: LargeFileHelper? = nil) -> Bool {
+         guard let topic = topic else { return false }
+         let owner = audioScope?.owner ?? Cache.tinode
+         guard audioScope?.isCurrent ?? true else { return false }
+         guard audioScope == nil || audioHelper != nil else { return false }
++        let source = displayIntent.source ?? chatSource(for: topic)
++        let localIntent: ChatDisplayIntent
++        let laterIntent: ChatDisplayIntent
++        if displayIntent.preservesReadingPosition { localIntent = .preserve; laterIntent = .preserve }
++        else if case .edit? = pendingMessage { localIntent = .preserve; laterIntent = .preserve }
++        else { localIntent = displayIntent; laterIntent = .passive }
+         let audioBase = owner.baseURL(useWebsocketProtocol: false)
+         let mimeType = def.mimeType ?? {
+             switch type {
+@@ -897,7 +952,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+                             _ = topic.store?.msgFailed(topic: topic, dbMessageId: msg.msgId)
+                         }
+                     }
+-                    interactor?.loadMessagesFromCache()
++                    interactor?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic)
+                 }
+                 guard error == nil else {
+                     switch error! {
+@@ -953,13 +1008,13 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+                             throw error
+                         })
+                         .thenFinally({
+-                            if let scope = audioScope { scope.present { interactor?.loadMessagesFromCache() } }
+-                            else { interactor?.loadMessagesFromCache() }
++                            if let scope = audioScope { scope.present { interactor?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic) } }
++                            else { interactor?.loadMessagesFromCache(displayIntent: laterIntent, source: source, originalTopic: topic) }
+                         })
+                     success = true
+                 }
+             }
+-            if audioScope?.isCurrent ?? true { self.loadMessagesFromCache() }
++            if audioScope?.isCurrent ?? true { self.loadMessagesFromCache(displayIntent: localIntent, source: source, originalTopic: topic) }
+             return true
+         }
+         return false
+@@ -1040,22 +1095,22 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+         case "recv":
+             if let oldRecv = self.lastSeenRecv {
+                 if let newRecv = info.seq, oldRecv < newRecv {
+-                    self.presenter?.reloadMessages(fromSeqId: oldRecv + 1, toSeqId: newRecv)
++                    self.presenter?.reloadMessages(fromSeqId: oldRecv + 1, toSeqId: newRecv, source: topic.flatMap { chatSource(for: $0) })
+                     self.lastSeenRecv = newRecv
+                 }
+             } else {
+                 self.lastSeenRead = info.seq
+-                self.presenter?.reloadAllMessages()
++                self.presenter?.reloadAllMessages(source: topic.flatMap { chatSource(for: $0) })
+             }
+         case "read":
+             if let oldRead = self.lastSeenRead {
+                 if let newRead = info.seq, oldRead < newRead {
+-                    self.presenter?.reloadMessages(fromSeqId: oldRead + 1, toSeqId: newRead)
++                    self.presenter?.reloadMessages(fromSeqId: oldRead + 1, toSeqId: newRead, source: topic.flatMap { chatSource(for: $0) })
+                     self.lastSeenRead = newRead
+                 }
+             } else {
+                 self.lastSeenRead = info.seq
+-                self.presenter?.reloadAllMessages()
++                self.presenter?.reloadAllMessages(source: topic.flatMap { chatSource(for: $0) })
+             }
+         default:
+             break
+@@ -1067,7 +1122,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+             self.newSubsAvailable = false
+             // Reload messages so we can correctly display messages from
+             // new users (subscriptions).
+-            self.presenter?.reloadAllMessages()
++            self.presenter?.reloadAllMessages(source: topic.flatMap { chatSource(for: $0) })
+         }
+     }
+     override func onMetaDesc(desc: Description<TheCard, PrivateType>) {
+@@ -1087,7 +1142,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
+     }
+     override func onMetaAux(aux: [String:JSONValue]) {
+         guard let topic = topic else { return }
+-        self.presenter?.displayPinnedMessages(pins: topic.pinned, selected: -1)
++        self.presenter?.displayPinnedMessages(pins: topic.pinned, selected: -1, source: chatSource(for: topic))
+     }
+ 
+     override func onAllMessagesReceived(count: Int) {
+diff --git a/Tinodios/MessagePresenter.swift b/Tinodios/MessagePresenter.swift
+index 41211bffafacb1a6ff75fee790f2de751efec73b..9e8a1de554bb7a0941bd2b457fab2a4d499aa1e7 100644
+--- a/Tinodios/MessagePresenter.swift
++++ b/Tinodios/MessagePresenter.swift
+@@ -9,15 +9,16 @@ import TinodeSDK
+ import TinodiosDB
+ 
+ protocol MessagePresentationLogic {
++    var chatPageID: UUID { get }
+     func switchTopic(topic: String?)
+     func updateTitleBar(pub: TheCard?, online: Bool?, deleted: Bool)
+     func setOnline(online: Bool?)
+     func runTypingAnimation()
+-    func displayPinnedMessages(pins: [Int], selected: Int)
+-    func reloadPinned(forSeq: Int)
+-    func presentMessages(messages: [StoredMessage], _ scrollToMostRecentMessage: Bool)
+-    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int)
+-    func reloadAllMessages()
++    func displayPinnedMessages(pins: [Int], selected: Int, source: ChatDisplaySource?)
++    func reloadPinned(forSeq: Int, source: ChatDisplaySource?)
++    func presentMessages(messages: [StoredMessage], source: ChatDisplaySource, intent: ChatDisplayIntent)
++    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int, source: ChatDisplaySource?)
++    func reloadAllMessages(source: ChatDisplaySource?)
+     func updateProgress(forMsgId msgId: Int64, progress: Float)
+     func applyTopicPermissions(withError: Error?)
+     func endRefresh()
+@@ -27,6 +28,8 @@ protocol MessagePresentationLogic {
+ }
+ 
+ class MessagePresenter: MessagePresentationLogic {
++    let chatPageID: UUID
++    init(pageID: UUID) { chatPageID = pageID }
+     weak var viewController: MessageDisplayLogic?
+ 
+     func switchTopic(topic: String?) {
+@@ -45,29 +48,29 @@ class MessagePresenter: MessagePresentationLogic {
+             self.viewController?.setOnline(online: online)
+         }
+     }
+-    func displayPinnedMessages(pins: [Int], selected: Int) {
++    func displayPinnedMessages(pins: [Int], selected: Int, source: ChatDisplaySource?) {
+         DispatchQueue.main.async {
+-            self.viewController?.displayPinnedMessages(pins: pins, selected: selected)
++            self.viewController?.displayPinnedMessages(pins: pins, selected: selected, source: source)
+         }
+     }
+-    func reloadPinned(forSeq seq: Int) {
++    func reloadPinned(forSeq seq: Int, source: ChatDisplaySource?) {
+         DispatchQueue.main.async {
+-            self.viewController?.reloadPinned(forSeq: seq)
++            self.viewController?.reloadPinned(forSeq: seq, source: source)
+         }
+     }
+-    func presentMessages(messages: [StoredMessage], _ scrollToMostRecentMessage: Bool) {
++    func presentMessages(messages: [StoredMessage], source: ChatDisplaySource, intent: ChatDisplayIntent) {
+         DispatchQueue.main.async {
+-            self.viewController?.displayChatMessages(messages: messages, scrollToMostRecentMessage)
++            self.viewController?.displayChatMessages(messages: messages, source: source, intent: intent)
+         }
+     }
+-    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int) {
++    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int, source: ChatDisplaySource?) {
+         DispatchQueue.main.async {
+-            self.viewController?.reloadMessages(fromSeqId: loId, toSeqId: hiId)
++            self.viewController?.reloadMessages(fromSeqId: loId, toSeqId: hiId, source: source)
+         }
+     }
+-    func reloadAllMessages() {
++    func reloadAllMessages(source: ChatDisplaySource?) {
+         DispatchQueue.main.async {
+-            self.viewController?.reloadAllMessages()
++            self.viewController?.reloadAllMessages(source: source)
+         }
+     }
+     func updateProgress(forMsgId msgId: Int64, progress: Float) {
+diff --git a/Tinodios/MessageViewController+MessageCellDelegate.swift b/Tinodios/MessageViewController+MessageCellDelegate.swift
+index 6f5947513f4f41d66c2b5cd0b1a633732eab996c..2fd1a394813b9e4e6358a2ef6849c2236b6eeefc 100644
+--- a/Tinodios/MessageViewController+MessageCellDelegate.swift
++++ b/Tinodios/MessageViewController+MessageCellDelegate.swift
+@@ -767,6 +767,7 @@ extension MessageViewController: MessageCellDelegate {
+     }
+ 
+     func scrollToAndAnimate(seqId: Int) {
++        invalidateChatDisplayIntent()
+         guard let index = messageSeqIdIndex[seqId] else { return }
+         let path = IndexPath(item: index, section: 0)
+         if let cell = collectionView.cellForItem(at: path) as? MessageCell {
+diff --git a/Tinodios/MessageViewController+MessageDisplayLogic.swift b/Tinodios/MessageViewController+MessageDisplayLogic.swift
+index 2f017606f5293c6766e2bf28c109bc2abce514dd..d72c82c04e2fa33912ac63f62f1c6f4c88e36aca 100644
+--- a/Tinodios/MessageViewController+MessageDisplayLogic.swift
++++ b/Tinodios/MessageViewController+MessageDisplayLogic.swift
+@@ -71,22 +71,23 @@ extension MessageViewController: MessageDisplayLogic {
+         }
+     }
+ 
+-    func displayPinnedMessages(pins: [Int], selected: Int) {
++    func displayPinnedMessages(pins: [Int], selected: Int, source: ChatDisplaySource?) {
++        guard let source = source, chatDisplaySource == source else { return }
+         assert(Thread.isMainThread)
+         guard collectionView != nil else { return }
+ 
+-        self.pinnedMessageSeqs = pins
+-        if selected >= 0 && selected < pins.count {
+-            self.pinnedSelectionIndex = selected
++        reloadChatLayoutPreservingViewport { [weak self] in
++            self?.pinnedMessageSeqs = pins
++            if selected >= 0 && selected < pins.count {
++                self?.pinnedSelectionIndex = selected
++            }
+         }
+-        collectionView.reloadSections(IndexSet(integer: 0))
+-        collectionView.layoutIfNeeded()
+     }
+ 
+-    func reloadPinned(forSeq seq: Int) {
++    func reloadPinned(forSeq seq: Int, source: ChatDisplaySource?) {
++        guard let source = source, chatDisplaySource == source else { return }
+         if self.pinnedMessageSeqs.contains(where: { $0 == seq }) {
+-            collectionView.reloadSections(IndexSet(integer: 0))
+-            collectionView.layoutIfNeeded()
++            reloadChatLayoutPreservingViewport()
+         }
+     }
+ 
+@@ -100,103 +101,95 @@ extension MessageViewController: MessageDisplayLogic {
+         navBarAvatarView.presentTypingAnimation(steps: 30)
+     }
+ 
+-    func reloadAllMessages() {
++    func reloadAllMessages(source: ChatDisplaySource?) {
++        guard let source = source, chatDisplaySource == source else { return }
+         assert(Thread.isMainThread)
+-        collectionView.reloadSections(IndexSet(integer: 0))
++        reloadChatLayoutPreservingViewport()
+     }
+ 
+-    func displayChatMessages(messages: [StoredMessage], _ scrollToMostRecentMessage: Bool) {
++    func displayChatMessages(messages newData: [StoredMessage], source: ChatDisplaySource, intent: ChatDisplayIntent) {
+         assert(Thread.isMainThread)
+-        guard collectionView != nil else { return }
+-        let oldData = self.messages
+-        let newData: [StoredMessage] = messages
+-
+-        // Both empty: no change.
+-        guard !oldData.isEmpty || !newData.isEmpty else { return }
+-
+-        self.messageSeqIdIndex = newData.enumerated().reduce([Int: Int]()) { (dict, item) -> [Int: Int] in
+-            var dict = dict
+-            dict[item.element.seqId] = item.offset
+-            return dict
+-        }
+-        self.messageDbIdIndex = newData.enumerated().reduce([Int64: Int]()) { (dict, item) -> [Int64: Int] in
+-            var dict = dict
+-            dict[item.element.msgId] = item.offset
+-            return dict
+-        }
+-
+-        // Update batch stats.
+-        let now = Date()
+-        let delta = newData.count - oldData.count
+-        if now.millisecondsSince1970 > self.lastMessageReceived.millisecondsSince1970 + Constants.kUpdateBatchTimeDeltaThresholdMs {
+-            self.updateBatchSize = delta
+-        } else {
+-            self.updateBatchSize += delta
+-        }
+-        self.lastMessageReceived = now
+-
+-        if oldData.isEmpty || newData.isEmpty || self.updateBatchSize > Constants.kUpdateBatchFullRefreshThreshold {
+-            self.messages = newData
+-            collectionView.reloadSections(IndexSet(integer: 0))
+-            collectionView.layoutIfNeeded()
+-            if scrollToMostRecentMessage {
+-                collectionView.scrollToBottom()
++        guard chatDisplaySource == source else { return }
++        enqueueChatPresentation { [weak self] done in
++            guard let self = self, self.chatDisplaySource == source, let list = self.collectionView else {
++                done(); return
+             }
+-        } else {
+-            // Get indexes of inserted and deleted items.
+-            let diff = Utils.diffMessageArray(sortedOld: oldData, sortedNew: newData)
+-
+-            // Each insertion or deletion may change the appearance of the preceeding and following messages.
+-            // Calculate indexes of all items which need to be updated.
+-            var refresh: [Int] = []
+-            for index in diff.mutated {
+-                if index > 0 {
+-                    // Refresh the preceeding item.
+-                    refresh.append(index - 1)
++            let oldData = self.messages
++            guard !oldData.isEmpty || !newData.isEmpty else { done(); return }
++            let viewport = self.captureChatViewport()
++            if !oldData.isEmpty && newData.isEmpty { self.chatEmptyFollowLatest = viewport.atBottom }
++            let firstNonempty = !self.chatPresentedNonempty && !newData.isEmpty
++            if !newData.isEmpty { self.chatPresentedNonempty = true }
++            let install = {
++                self.messages = newData
++                self.messageSeqIdIndex = newData.enumerated().reduce(into: [Int: Int]()) { result, entry in
++                    result[entry.element.seqId] = entry.offset
+                 }
+-                if index < newData.count - 1 {
+-                    // Refresh the following item.
+-                    refresh.append(index + 1)
++                self.messageDbIdIndex = newData.enumerated().reduce(into: [Int64: Int]()) { result, entry in
++                    result[entry.element.msgId] = entry.offset
+                 }
+-                if index < newData.count {
+-                    refresh.append(index)
++            }
++            let finish = {
++                self.finishChatViewport(viewport, source: source, intent: intent, firstNonempty: firstNonempty)
++                done()
++            }
++            // Keep the original batching threshold; it has no bearing on user intent.
++            let now = Date()
++            let delta = newData.count - oldData.count
++            if now.millisecondsSince1970 > self.lastMessageReceived.millisecondsSince1970 + Constants.kUpdateBatchTimeDeltaThresholdMs {
++                self.updateBatchSize = delta
++            } else {
++                self.updateBatchSize += delta
++            }
++            self.lastMessageReceived = now
++            if oldData.isEmpty || newData.isEmpty || self.updateBatchSize > Constants.kUpdateBatchFullRefreshThreshold {
++                self.withChatProgrammaticLayout {
++                    install()
++                    list.reloadSections(IndexSet(integer: 0))
++                    list.layoutIfNeeded()
+                 }
++                finish()
++                return
+             }
+-            // Ensure uniqueness of values. No need to reload newly inserted values.
+-            // The app will crash if the same index is marked as removed and refreshed. Which seems
+-            // to be an Apple bug because removed index is against the old array, refreshed against the new.
+-            refresh = Array(Set(refresh).subtracting(Set(diff.inserted)))
+ 
+-            if !diff.inserted.isEmpty || !diff.removed.isEmpty {
+-                collectionView.performBatchUpdates({ () -> Void in
+-                    self.messages = newData
+-                    if diff.removed.count > 0 {
+-                        collectionView.deleteItems(at: diff.removed.map { IndexPath(item: $0, section: 0) })
+-                    }
+-                    if diff.inserted.count > 0 {
+-                        collectionView.insertItems(at: diff.inserted.map { IndexPath(item: $0, section: 0) })
+-                    }
+-                }, completion: nil)
++            // Diff against the array actually on screen, never a queued snapshot.
++            let diff = Utils.diffMessageArray(sortedOld: oldData, sortedNew: newData)
++            var refresh = Set<Int>()
++            for index in diff.mutated {
++                for neighbor in (index - 1)...(index + 1) where neighbor >= 0 && neighbor < newData.count {
++                    refresh.insert(neighbor)
++                }
++            }
++            refresh.subtract(diff.inserted)
++            let refreshPaths = refresh.sorted().map { IndexPath(item: $0, section: 0) }
++            let refreshPhase = {
++                guard self.chatDisplaySource == source else { done(); return }
++                guard !refreshPaths.isEmpty else { finish(); return }
++                self.withChatProgrammaticLayout {
++                    list.performBatchUpdates({ list.reloadItems(at: refreshPaths) }, completion: { _ in finish() })
++                }
+             }
+-            if !refresh.isEmpty {
+-                collectionView.performBatchUpdates({ () -> Void in
+-                    self.messages = newData
+-                    self.collectionView.reloadItems(at: refresh.map { IndexPath(item: $0, section: 0) })
+-                    self.collectionView.layoutIfNeeded()
+-                    if scrollToMostRecentMessage {
+-                        self.collectionView.scrollToBottom()
+-                    }
+-                }, completion: nil)
++            if !diff.inserted.isEmpty || !diff.removed.isEmpty {
++                self.withChatProgrammaticLayout {
++                    list.performBatchUpdates({
++                        install()
++                        list.deleteItems(at: diff.removed.map { IndexPath(item: $0, section: 0) })
++                        list.insertItems(at: diff.inserted.map { IndexPath(item: $0, section: 0) })
++                    }, completion: { _ in refreshPhase() })
++                }
++            } else {
++                install()
++                refreshPhase()
+             }
+         }
+     }
+ 
+-    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int) {
++    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int, source: ChatDisplaySource?) {
++        guard let source = source, chatDisplaySource == source else { return }
+         assert(Thread.isMainThread)
+         guard self.collectionView != nil else { return }
+-        let hiIdUpper = hiId + 1
+-        let rowIds = (loId..<hiIdUpper).map { self.messageSeqIdIndex[$0] }.filter { $0 != nil }
+-        self.collectionView.reloadItems(at: rowIds.map { IndexPath(item: $0!, section: 0) })
++        guard loId <= hiId else { return }
++        reloadChatLayoutPreservingViewport(reloadRange: loId...hiId)
+     }
+ 
+     func updateProgress(forMsgId msgId: Int64, progress: Float) {
+diff --git a/Tinodios/MessageViewController+SendMessageBarDelegate.swift b/Tinodios/MessageViewController+SendMessageBarDelegate.swift
+index 0051e4f76ba54f606526998e971cd88e82488075..7a186f8cbcb26447c3db7d03bd57044d430f8ffa 100644
+--- a/Tinodios/MessageViewController+SendMessageBarDelegate.swift
++++ b/Tinodios/MessageViewController+SendMessageBarDelegate.swift
+@@ -18,7 +18,8 @@ extension MessageViewController: SendMessageBarDelegate {
+     static let kMaxAttachmentSize: Int64 = 1 << 23
+ 
+     func sendMessageBar(sendText: String) {
+-        interactor?.sendMessage(content: Drafty(content: sendText))
++        let displayIntent = captureChatSubmissionIntent()
++        interactor?.sendMessage(content: Drafty(content: sendText), displayIntent: displayIntent)
+     }
+ 
+     func sendMessageBar(attachment: MessageAttachmentAction) {
+diff --git a/Tinodios/MessageViewController.swift b/Tinodios/MessageViewController.swift
+index c8299244acf44ada8281290f69d01542bfdc6b94..7ebb6305a60852126c50663170edc2cb986f5f88 100644
+--- a/Tinodios/MessageViewController.swift
++++ b/Tinodios/MessageViewController.swift
+@@ -10,6 +10,55 @@ import UIKit
+ import TinodeSDK
+ import TinodiosDB
+ 
++// App-only display metadata. Never serialized into message headers or storage.
++struct ChatDisplaySource: Equatable {
++    let page: UUID
++    let topic: DefaultComTopic
++    init(page: UUID, topic: DefaultComTopic) {
++        self.page = page
++        self.topic = topic
++    }
++    static func == (lhs: Self, rhs: Self) -> Bool { lhs.page == rhs.page && lhs.topic === rhs.topic }
++}
++
++struct ChatSubmissionDisplayTicket {
++    let source: ChatDisplaySource
++    let interaction: UInt64
++    let submission: UInt64
++    let editing: Bool
++}
++
++enum ChatDisplayIntent {
++    case passive
++    case preserve
++    case submission(ChatSubmissionDisplayTicket)
++    static let notificationKey = "claw.chat.displayIntent"
++    var source: ChatDisplaySource? {
++        if case .submission(let ticket) = self { return ticket.source }
++        return nil
++    }
++    var preservesReadingPosition: Bool {
++        switch self {
++        case .preserve: return true
++        case .submission(let ticket): return ticket.editing
++        case .passive: return false
++        }
++    }
++}
++
++struct ChatViewportAnchor {
++    let dbID: Int64
++    let seq: Int
++    let offset: CGFloat
++}
++
++struct ChatViewportSnapshot {
++    let anchors: [ChatViewportAnchor]
++    let offset: CGPoint
++    let atBottom: Bool
++    let interaction: UInt64
++}
++
+ enum MessageBubbleLayoutPolicy {
+     // Content-sized bubbles with a conservative ceiling for long messages.
+     // This keeps short messages compact and lets Dynamic Type wrap naturally.
+@@ -37,13 +86,13 @@ protocol MessageDisplayLogic: AnyObject {
+     func updateTitleBar(pub: TheCard?, online: Bool?, deleted: Bool)
+     func setOnline(online: Bool?)
+     func runTypingAnimation()
+-    func displayChatMessages(messages: [StoredMessage], _ scrollToMostRecentMessage: Bool)
+-    func reloadAllMessages()
+-    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int)
++    func displayChatMessages(messages: [StoredMessage], source: ChatDisplaySource, intent: ChatDisplayIntent)
++    func reloadAllMessages(source: ChatDisplaySource?)
++    func reloadMessages(fromSeqId loId: Int, toSeqId hiId: Int, source: ChatDisplaySource?)
+     func updateProgress(forMsgId msgId: Int64, progress: Float)
+     func applyTopicPermissions(withError: Error?)
+-    func displayPinnedMessages(pins: [Int], selected: Int)
+-    func reloadPinned(forSeq: Int)
++    func displayPinnedMessages(pins: [Int], selected: Int, source: ChatDisplaySource?)
++    func reloadPinned(forSeq: Int, source: ChatDisplaySource?)
+     func endRefresh()
+     func dismissVC()
+     // Display or dismiss preview (e.g. reply preview) in the send message bar.
+@@ -59,6 +108,18 @@ protocol PendingMessagePreviewDelegate: AnyObject {
+ }
+ 
+ class MessageViewController: UIViewController {
++    let chatPageID = UUID()
++    var chatInteractionRevision: UInt64 = 0
++    var chatSubmissionRevision: UInt64 = 0
++    var chatConsumedSubmission: UInt64?
++    var chatPresentedNonempty = false
++    var chatEmptyFollowLatest = false
++    var chatPageRetired = false
++    var chatProgrammaticDepth = 0
++    var chatLastObservedOffset: CGPoint?
++    var chatPresentationRunning = false
++    var chatPresentationQueue: [(@escaping () -> Void) -> Void] = []
++
+     // Other controllers may send these notification to MessageViewController which will execute corresponding send message action.
+     public static let kNotificationSendAttachment = "SendAttachment"
+ 
+@@ -200,6 +261,7 @@ class MessageViewController: UIViewController {
+     /// Button [GO to latest message].
+     private weak var goToLatestButton: UIButton!
+     private var goToLatestButtonBottomAnchor: NSLayoutConstraint!
++    private var goToLatestButtonMinimumHeight: NSLayoutConstraint!
+     var bulkSelectionMode = false
+     var selectedBulkMessageSeqIds = Set<Int>()
+     private var bulkSelectionOriginalTitle: String?
+@@ -343,7 +405,7 @@ class MessageViewController: UIViewController {
+         self.imagePicker = ImagePicker(presentationController: self, delegate: self, editable: false, allowVideo: true)
+ 
+         let interactor = MessageInteractor()
+-        let presenter = MessagePresenter()
++        let presenter = MessagePresenter(pageID: chatPageID)
+         interactor.presenter = presenter
+         presenter.viewController = self
+ 
+@@ -379,7 +441,7 @@ class MessageViewController: UIViewController {
+         self.messages.forEach { ($0 as? StoredMessage)?.cachedContent = nil }
+         // Force a full redraw so the view can readjust the messages
+         // in the view for the new screen dimensions.
+-        self.collectionView?.reloadDataAndKeepOffset()
++        reloadChatLayoutPreservingViewport()
+     }
+ 
+     // MARK: lifecycle
+@@ -572,11 +634,14 @@ class MessageViewController: UIViewController {
+         buttonGoToLatest.backgroundColor = ClawTheme.surface
+         buttonGoToLatest.layer.borderWidth = 1
+         buttonGoToLatest.layer.borderColor = ClawTheme.border.cgColor
+-        ClawTheme.styleIconButton(
+-            buttonGoToLatest,
+-            symbolName: "chevron.down",
+-            pointSize: 16,
+-            tintColor: ClawTheme.primary)
++        buttonGoToLatest.setTitle("回到最新消息", for: .normal)
++        buttonGoToLatest.accessibilityLabel = "回到最新消息"
++        buttonGoToLatest.setTitleColor(ClawTheme.primary, for: .normal)
++        buttonGoToLatest.titleLabel?.font = .preferredFont(forTextStyle: .callout)
++        buttonGoToLatest.titleLabel?.adjustsFontForContentSizeCategory = true
++        buttonGoToLatest.titleLabel?.numberOfLines = 0
++        buttonGoToLatest.titleLabel?.textAlignment = .center
++        buttonGoToLatest.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
+         buttonGoToLatest.layer.cornerRadius = 22
+         buttonGoToLatest.layer.shadowColor = UIColor.black.cgColor
+         buttonGoToLatest.layer.shadowOpacity = 0.12
+@@ -591,9 +656,11 @@ class MessageViewController: UIViewController {
+         // Button on the bottom-right.
+         self.goToLatestButton.translatesAutoresizingMaskIntoConstraints = false
+         self.goToLatestButtonBottomAnchor = self.goToLatestButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -(inputAccessoryView?.frame.height ?? 0) - 16)
++        self.goToLatestButtonMinimumHeight = self.goToLatestButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44)
+         NSLayoutConstraint.activate([
+-            self.goToLatestButton.widthAnchor.constraint(equalToConstant: 44.0),
+-            self.goToLatestButton.heightAnchor.constraint(equalToConstant: 44.0),
++            self.goToLatestButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 44.0),
++            self.goToLatestButtonMinimumHeight,
++            self.goToLatestButton.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 8),
+             self.goToLatestButtonBottomAnchor,
+             self.goToLatestButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -8)])
+     }
+@@ -631,7 +698,13 @@ class MessageViewController: UIViewController {
+         }
+ 
+         self.collectionViewBottomAnchor.constant = -(inputAccessoryView?.frame.height ?? 0)
+-        self.goToLatestButtonBottomAnchor.constant = -(inputAccessoryView?.frame.height ?? 0) - 16
++        let accessoryHeight = inputAccessoryView?.frame.height ?? 0
++        self.goToLatestButtonBottomAnchor.constant = -accessoryHeight - 16 - (accessoryHeight > 0 ? 0 : view.safeAreaInsets.bottom)
++        if let title = goToLatestButton.titleLabel {
++            let width = max(1, view.bounds.width - view.safeAreaInsets.left - view.safeAreaInsets.right - 48)
++            title.preferredMaxLayoutWidth = width
++            goToLatestButtonMinimumHeight.constant = max(44, title.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height + 20)
++        }
+ 
+         // Otherwise setting contentInset after viewDidAppear will be animated.
+         if isInitialLayout {
+@@ -673,25 +746,33 @@ class MessageViewController: UIViewController {
+     }
+ 
+     @objc func goToLastMessage() {
+-        collectionView.scrollToBottom(animated: true)
++        invalidateChatDisplayIntent()
++        chatEmptyFollowLatest = true
++        guard let collectionView = collectionView else { return }
++        withChatProgrammaticLayout {
++            collectionView.layoutIfNeeded()
++            collectionView.setContentOffset(CGPoint(x: collectionView.contentOffset.x, y: chatMaximumOffset), animated: false)
++        }
++        updateChatLatestButton()
+     }
+ 
+     @objc func sendAttachment(notification: NSNotification) {
++        let displayIntent = notification.userInfo?[ChatDisplayIntent.notificationKey] as? ChatDisplayIntent ?? .passive
+         // Attachment size less base64 expansion and overhead.
+         let maxInbandSize = self.maxInbandSize
+         switch notification.object {
+         case let content as FilePreviewContent:
+             if content.data.count > maxInbandSize {
+-                self.interactor?.uploadFile(UploadDef(filename: content.fileName, mimeType: content.contentType, data: content.data))
++                self.interactor?.uploadFile(UploadDef(filename: content.fileName, mimeType: content.contentType, data: content.data), displayIntent: displayIntent)
+             } else {
+-                _ = interactor?.sendMessage(content: Drafty().attachFile(mime: content.contentType, bits: content.data, fname: content.fileName))
++                _ = interactor?.sendMessage(content: Drafty().attachFile(mime: content.contentType, bits: content.data, fname: content.fileName), displayIntent: displayIntent)
+             }
+         case let content as ImagePreviewContent:
+             guard case let ImagePreviewContent.ImageContent.uiimage(image) = content.imgContent else { return }
+ 
+             guard let data = image.pixelData(forMimeType: content.contentType) else { return }
+             if data.count > maxInbandSize {
+-                self.interactor?.uploadImage(UploadDef(caption: content.caption, filename: content.fileName, mimeType: content.contentType, image: image, data: data, width: image.size.width * image.scale, height: image.size.height * image.scale))
++                self.interactor?.uploadImage(UploadDef(caption: content.caption, filename: content.fileName, mimeType: content.contentType, image: image, data: data, width: image.size.width * image.scale, height: image.size.height * image.scale), displayIntent: displayIntent)
+             } else {
+                 let imageWidth = max(content.width ?? Int(image.size.width * image.scale), 1)
+                 let imageHeight = max(content.height ?? Int(image.size.height * image.scale), 1)
+@@ -699,16 +780,16 @@ class MessageViewController: UIViewController {
+                 if let caption = content.caption {
+                     _ = drafty.appendLineBreak().append(Drafty(plainText: caption))
+                 }
+-                _ = interactor?.sendMessage(content: drafty)
++                _ = interactor?.sendMessage(content: drafty, displayIntent: displayIntent)
+             }
+         case let content as VideoPreviewContent:
+-            sendVideoAttachment(withContent: content)
++            sendVideoAttachment(withContent: content, displayIntent: displayIntent)
+         default:
+             break
+         }
+     }
+ 
+-    private func sendVideoAttachment(withContent content: VideoPreviewContent) {
++    private func sendVideoAttachment(withContent content: VideoPreviewContent, displayIntent: ChatDisplayIntent) {
+         guard case let VideoPreviewContent.VideoSource.local(url, poster) = content.videoSrc else { return }
+         let maxAttachmentSize = Cache.tinode.getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: MessageViewController.kMaxAttachmentSize)
+         do {
+@@ -763,12 +844,12 @@ class MessageViewController: UIViewController {
+                                                                width: CGFloat(videoWidth),
+                                                                height: CGFloat(videoHeight),
+                                                                duration: duration, preview: preview, previewMime: previewMime,
+-                                                               previewOutOfBand: previewSize > Constants.kMaxPosterSize))
++                                                               previewOutOfBand: previewSize > Constants.kMaxPosterSize), displayIntent: displayIntent)
+                     } else if let drafty = try? Drafty(plainText: " ").insertVideo(at: 0, mime: mime, bits: data, refurl: nil, duration: duration, width: videoWidth, height: videoHeight, fname: fileName, size: data.count, preMime: previewMime, preview: preview, previewRef: nil) {
+                         if let caption = content.caption {
+                             _ = drafty.appendLineBreak().append(Drafty(plainText: caption))
+                         }
+-                        _ = self.interactor?.sendMessage(content: drafty)
++                        _ = self.interactor?.sendMessage(content: drafty, displayIntent: displayIntent)
+                     }
+                 }
+             } catch {
+@@ -782,10 +863,21 @@ class MessageViewController: UIViewController {
+ 
+     override func viewWillDisappear(_ animated: Bool) {
+         super.viewWillDisappear(animated)
++        invalidateChatDisplayIntent()
+         voicePageActive = false
+         discardVoiceRecording()
+     }
+ 
++    override func didMove(toParent parent: UIViewController?) {
++        super.didMove(toParent: parent)
++        // A cancelled interactive pop has only begun disappearing. Retire
++        // display admission after UIKit actually removes this child instead.
++        if parent == nil {
++            invalidateChatDisplayIntent()
++            chatPageRetired = true
++        }
++    }
++
+     @objc func audioSessionInterrupted(_ notification: Notification) {
+         guard let value = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+               AVAudioSession.InterruptionType(rawValue: value) == .began else { return }
+@@ -883,6 +975,7 @@ class MessageViewController: UIViewController {
+         guard voiceRecorder === recorder, voiceScopeIsCurrent(), voiceTopicName == topicName,
+               UIApplication.shared.applicationState == .active, let owner = voiceOwner,
+               let uid = voiceUID, let generation = voiceGeneration, let name = voiceTopicName else { return }
++        let displayIntent = captureChatSubmissionIntent()
+         stopRecordingPlayback(discard: true)
+         do {
+             let (recording, data) = try recorder.prepareSubmission(minimumDuration: Constants.kMinDuration)
+@@ -890,7 +983,7 @@ class MessageViewController: UIViewController {
+             let def = UploadDef(mimeType: Utils.mimeForUrl(url: recording.url, ifMissing: "audio/m4a"),
+                                 data: data, duration: recording.duration, preview: recording.preview)
+             guard interactor?.submitRecordedAudio(def, owner: owner, uid: uid,
+-                    generation: generation, topicName: name) == true else {
++                    generation: generation, topicName: name, displayIntent: displayIntent) == true else {
+                 voiceUI(recorder) { UiUtils.showToast(message: "录音尚未提交，请检查当前账号与会话后重试。") }
+                 return
+             }
+@@ -920,14 +1013,17 @@ class MessageViewController: UIViewController {
+             let destinationVC = segue.destination as! ImagePreviewController
+             destinationVC.previewContent = (sender as! ImagePreviewContent)
+             destinationVC.replyPreviewDelegate = self
++            destinationVC.captureDisplayIntent = chatPreviewIntentCapture(for: destinationVC)
+         case "ShowFilePreview":
+             let destinationVC = segue.destination as! FilePreviewController
+             destinationVC.previewContent = (sender as! FilePreviewContent)
+             destinationVC.replyPreviewDelegate = self
++            destinationVC.captureDisplayIntent = chatPreviewIntentCapture(for: destinationVC)
+         case "ShowVideoPreview":
+             let destinationVC = segue.destination as! VideoPreviewController
+             destinationVC.previewContent = (sender as! VideoPreviewContent)
+             destinationVC.replyPreviewDelegate = self
++            destinationVC.captureDisplayIntent = chatPreviewIntentCapture(for: destinationVC)
+         case "Messages2Call":
+             let destinationVC = segue.destination as! CallViewController
+             if let call = sender as? CallManager.Call {
+@@ -1523,14 +1619,180 @@ extension MessageViewController: ForwardToDelegate {
+     }
+ }
+ 
++extension MessageViewController {
++    var chatDisplaySource: ChatDisplaySource? {
++        guard !chatPageRetired, let topic = topic else { return nil }
++        return ChatDisplaySource(page: chatPageID, topic: topic)
++    }
++
++    func invalidateChatDisplayIntent() {
++        assert(Thread.isMainThread)
++        chatInteractionRevision &+= 1
++        if messages.isEmpty { chatEmptyFollowLatest = false }
++    }
++
++    func captureChatSubmissionIntent() -> ChatDisplayIntent {
++        assert(Thread.isMainThread)
++        chatSubmissionRevision &+= 1
++        let editing: Bool
++        if case .edit? = interactor?.pendingMessage { editing = true } else { editing = false }
++        guard let source = chatDisplaySource else { return .preserve }
++        return .submission(ChatSubmissionDisplayTicket(source: source,
++            interaction: chatInteractionRevision, submission: chatSubmissionRevision, editing: editing))
++    }
++
++    func chatPreviewIntentCapture(for preview: UIViewController) -> () -> ChatDisplayIntent {
++        let originalSource = chatDisplaySource
++        return { [weak self, weak preview] in
++            // The chat is normally offscreen while its preview is on top. This
++            // is an ownership check for UI intent, not a send authorization gate.
++            guard let self = self, let preview = preview,
++                  originalSource != nil, self.chatDisplaySource == originalSource,
++                  let stack = self.navigationController?.viewControllers,
++                  stack.contains(where: { $0 === self }), stack.last === preview else { return .preserve }
++            return self.captureChatSubmissionIntent()
++        }
++    }
++
++    var chatMaximumOffset: CGFloat {
++        guard let list = collectionView else { return 0 }
++        return max(-list.adjustedContentInset.top,
++                   list.contentSize.height - list.bounds.height + list.adjustedContentInset.bottom)
++    }
++
++    func updateChatLatestButton() {
++        guard let list = collectionView, let button = goToLatestButton else { return }
++        button.isHidden = list.contentOffset.y >= chatMaximumOffset - 40
++    }
++
++    func withChatProgrammaticLayout(_ operation: () -> Void) {
++        chatProgrammaticDepth += 1
++        defer {
++            chatLastObservedOffset = collectionView?.contentOffset
++            chatProgrammaticDepth -= 1
++        }
++        operation()
++    }
++
++    func captureChatViewport() -> ChatViewportSnapshot {
++        guard let list = collectionView else {
++            return ChatViewportSnapshot(anchors: [], offset: .zero, atBottom: false,
++                                        interaction: chatInteractionRevision)
++        }
++        let top = list.contentOffset.y + list.adjustedContentInset.top
++        let bottom = list.contentOffset.y + list.bounds.height - list.adjustedContentInset.bottom
++        let attributes = list.indexPathsForVisibleItems.compactMap {
++            list.layoutAttributesForItem(at: $0)
++        }.filter { $0.indexPath.item < messages.count && $0.frame.maxY > top && $0.frame.minY < bottom }
++            .sorted { $0.frame.minY < $1.frame.minY }
++        let anchors = attributes.map { attribute -> ChatViewportAnchor in
++            let message = messages[attribute.indexPath.item]
++            return ChatViewportAnchor(dbID: message.msgId, seq: message.seqId,
++                                      offset: attribute.frame.minY - top)
++        }
++        let atBottom = messages.isEmpty
++            ? (chatPresentedNonempty ? chatEmptyFollowLatest : chatInteractionRevision == 0 || chatEmptyFollowLatest)
++            : list.contentOffset.y >= chatMaximumOffset - 40
++        return ChatViewportSnapshot(anchors: anchors, offset: list.contentOffset,
++            atBottom: atBottom, interaction: chatInteractionRevision)
++    }
++
++    func finishChatViewport(_ snapshot: ChatViewportSnapshot, source: ChatDisplaySource,
++                            intent: ChatDisplayIntent, firstNonempty: Bool = false) {
++        guard chatDisplaySource == source, snapshot.interaction == chatInteractionRevision,
++              let list = collectionView else { return }
++        withChatProgrammaticLayout {
++            list.layoutIfNeeded()
++            var latest = false
++            switch intent {
++            case .preserve: break
++            case .passive:
++                latest = snapshot.atBottom || (firstNonempty && chatInteractionRevision == 0)
++            case .submission(let ticket):
++                if ticket.editing { break }
++                if ticket.source == source, ticket.interaction == chatInteractionRevision,
++                   ticket.submission == chatSubmissionRevision, chatConsumedSubmission != ticket.submission,
++                   !messages.isEmpty {
++                    chatConsumedSubmission = ticket.submission
++                    latest = true
++                } else {
++                    latest = snapshot.atBottom
++                }
++            }
++            var y = snapshot.offset.y
++            if latest {
++                y = chatMaximumOffset
++            } else {
++                for anchor in snapshot.anchors {
++                    let byID = anchor.dbID > 0 ? messages.firstIndex { $0.msgId == anchor.dbID } : nil
++                    let index = byID ?? (anchor.seq > 0 ? messages.firstIndex { $0.seqId == anchor.seq } : nil)
++                    if let index = index, let attributes = list.layoutAttributesForItem(at: IndexPath(item: index, section: 0)) {
++                        y = attributes.frame.minY - anchor.offset - list.adjustedContentInset.top
++                        break
++                    }
++                }
++            }
++            y = min(chatMaximumOffset, max(-list.adjustedContentInset.top, y))
++            list.setContentOffset(CGPoint(x: snapshot.offset.x, y: y), animated: false)
++        }
++        updateChatLatestButton()
++    }
++
++    // Only UIKit work is serialized. Later snapshots do not replace the array
++    // until both phases of the currently presented batch have completed.
++    func enqueueChatPresentation(_ operation: @escaping (@escaping () -> Void) -> Void) {
++        assert(Thread.isMainThread)
++        chatPresentationQueue.append(operation)
++        drainChatPresentations()
++    }
++
++    func drainChatPresentations() {
++        guard !chatPresentationRunning, !chatPresentationQueue.isEmpty else { return }
++        chatPresentationRunning = true
++        let operation = chatPresentationQueue.removeFirst()
++        operation { [weak self] in
++            guard let self = self else { return }
++            self.chatPresentationRunning = false
++            self.drainChatPresentations()
++        }
++    }
++
++    func reloadChatLayoutPreservingViewport(reloadRange: ClosedRange<Int>? = nil, _ changes: (() -> Void)? = nil) {
++        guard let source = chatDisplaySource else { return }
++        enqueueChatPresentation { [weak self] done in
++            guard let self = self, self.chatDisplaySource == source, let list = self.collectionView else {
++                done(); return
++            }
++            let viewport = self.captureChatViewport()
++            self.withChatProgrammaticLayout {
++                changes?()
++                if let range = reloadRange {
++                    let paths = self.messageSeqIdIndex.filter { range.contains($0.key) }.map { IndexPath(item: $0.value, section: 0) }
++                    list.reloadItems(at: paths)
++                } else {
++                    list.reloadSections(IndexSet(integer: 0))
++                }
++                list.layoutIfNeeded()
++            }
++            self.finishChatViewport(viewport, source: source, intent: .preserve)
++            done()
++        }
++    }
++}
++
+ extension MessageViewController: UICollectionViewDelegate {
++    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
++        invalidateChatDisplayIntent()
++    }
++
+     func scrollViewDidScroll(_ scrollView: UIScrollView) {
+-        let isHidden = scrollView.contentOffset.y + scrollView.frame.size.height + 40 >= scrollView.contentSize.height
+-        if self.goToLatestButton.isHidden != isHidden {
+-            UIView.transition(with: self.goToLatestButton, duration: 0.4, options: .transitionCrossDissolve, animations: {
+-                self.goToLatestButton.isHidden = isHidden
+-            }, completion: nil)
++        if chatProgrammaticDepth == 0, let previous = chatLastObservedOffset,
++           previous != scrollView.contentOffset {
++            // Includes accessibility and other unattributed viewport movement.
++            invalidateChatDisplayIntent()
+         }
++        chatLastObservedOffset = scrollView.contentOffset
++        updateChatLatestButton()
+     }
+ 
+     func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+diff --git a/Tinodios/VideoPreviewController.swift b/Tinodios/VideoPreviewController.swift
+index e9aacc51a75c3e051a8cdb2da9c82c2dc8a4ecb8..42b6b6eb264263c4d5a293409c967a8aaba2b1f1 100644
+--- a/Tinodios/VideoPreviewController.swift
++++ b/Tinodios/VideoPreviewController.swift
+@@ -93,6 +93,7 @@ class VideoPreviewController: UIViewController {
+             }
+         }
+     }
++    var captureDisplayIntent: (() -> ChatDisplayIntent)?
+     var replyPreviewDelegate: PendingMessagePreviewDelegate?
+ 
+     var duration: Int = 0 {
+@@ -712,6 +713,7 @@ extension VideoPreviewController: SendImageBarDelegate {
+               let media = player.media,
+               !didSubmitVideo else { return }
+ 
++        let displayIntent = captureDisplayIntent?() ?? .passive
+         didSubmitVideo = true
+         sendVideoBar.sendButton.isEnabled = false
+ 
+@@ -742,7 +744,8 @@ extension VideoPreviewController: SendImageBarDelegate {
+                 )
+ 
+                 // This notification is received by the MessageViewController.
+-                NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content2)
++                NotificationCenter.default.post(name: Notification.Name(MessageViewController.kNotificationSendAttachment), object: content2,
++                    userInfo: [ChatDisplayIntent.notificationKey: displayIntent])
+                 // Return to MessageViewController.
+                 self.navigationController?.popViewController(animated: true)
+             }
+diff --git a/TinodiosUITests/ChatScrollTests.swift b/TinodiosUITests/ChatScrollTests.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..9fba6a07fb6fa2777eac468ad20154529aa70bab
+--- /dev/null
++++ b/TinodiosUITests/ChatScrollTests.swift
+@@ -0,0 +1,394 @@
++// Copyright (c) 2026 CLAW OS contributors.
++// App-hosted real MessageVC display consumers + MessageView/UICollectionView.
++// Neutral cells and synthetic StoredMessage only: no login, publish, read receipt,
++// microphone, thumbnail generation, or complete authenticated chat journey.
++import XCTest
++import UIKit
++import TinodeSDK
++import TinodiosDB
++@testable import Tinodios
++
++final class ChatScrollTests: XCTestCase {
++    private enum Failure: Error { case initialState, deadline }
++    private var controller: NeutralChatController!
++    private var cells: NeutralCells!
++    private var window: UIWindow!
++    private var previousWindow: UIWindow?
++    private var layout: UICollectionViewFlowLayout!
++
++    private func main<T>(_ work: () throws -> T) rethrows -> T {
++        if Thread.isMainThread { return try work() }
++        return try DispatchQueue.main.sync(execute: work)
++    }
++
++    override func setUpWithError() throws {
++        continueAfterFailure = false
++        try main {
++            guard Bundle.main.bundleIdentifier == "app.veilping.clawoschat",
++                  Bundle.main.object(forInfoDictionaryKey: "HOST_NAME") as? String == "127.0.0.1:9",
++                  SharedUtils.getAuthToken() == nil, Cache.tinode.myUid == nil,
++                  Cache.tinode.store?.myUid == nil, !Cache.tinode.isConnectionAuthenticated else {
++                XCTFail("Unexpected authenticated or network host state"); throw Failure.initialState
++            }
++            previousWindow = UIApplication.shared.windows.first(where: { $0.isKeyWindow })
++            controller = NeutralChatController()
++            controller.interactor = nil // No business route is installed in this neutral fixture.
++            controller.topic = try XCTUnwrap(Tinode.newTopic(withTinode: nil, forTopic: "grp-scroll-fixture") as? DefaultComTopic)
++            controller.loadViewIfNeeded() // Actual production loadView, including the latest button.
++            layout = UICollectionViewFlowLayout()
++            layout.itemSize = CGSize(width: 240, height: 56)
++            layout.minimumLineSpacing = 4
++            controller.collectionView.setCollectionViewLayout(layout, animated: false)
++            controller.collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "neutral")
++            cells = NeutralCells(controller)
++            controller.collectionView.dataSource = cells
++            window = UIWindow(frame: UIScreen.main.bounds)
++            if let scene = previousWindow?.windowScene { window.windowScene = scene }
++            window.rootViewController = UINavigationController(rootViewController: controller)
++            window.makeKeyAndVisible()
++            window.layoutIfNeeded(); controller.view.layoutIfNeeded()
++            XCTAssertNotNil(controller.collectionView.window)
++        }
++    }
++
++    override func tearDownWithError() throws {
++        try main {
++            defer {
++                window?.isHidden = true
++                controller?.collectionView.dataSource = nil
++                window?.rootViewController = nil
++                controller = nil; cells = nil; window = nil
++                previousWindow?.makeKey(); previousWindow = nil
++            }
++            if controller != nil { try evidence("final-viewport") }
++        }
++    }
++
++    private func rows(_ range: ClosedRange<Int>) -> [StoredMessage] {
++        range.map { index in
++            let message = StoredMessage()
++            message.msgId = Int64(index); message.seq = index
++            message.content = Drafty(content: "合成消息 \(index)")
++            message.ts = Date(timeIntervalSince1970: Double(index))
++            return message
++        }
++    }
++
++    private func present(_ messages: [StoredMessage], _ intent: ChatDisplayIntent = .passive) throws {
++        controller.displayChatMessages(messages: messages, source: try XCTUnwrap(controller.chatDisplaySource), intent: intent)
++        try settled()
++    }
++
++    private func settled() throws {
++        let end = ProcessInfo.processInfo.systemUptime + 3
++        while controller.chatPresentationRunning || !controller.chatPresentationQueue.isEmpty {
++            guard ProcessInfo.processInfo.systemUptime < end else { XCTFail("UI batch deadline"); throw Failure.deadline }
++            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
++        }
++        controller.collectionView.layoutIfNeeded()
++    }
++
++    private func readHistory() {
++        controller.scrollViewWillBeginDragging(controller.collectionView)
++        controller.collectionView.setContentOffset(CGPoint(x: 0, y: 430), animated: false)
++        controller.collectionView.layoutIfNeeded()
++    }
++
++    private func assertAnchor(_ before: ChatViewportSnapshot, file: StaticString = #filePath, line: UInt = #line) throws {
++        let anchor = try XCTUnwrap(before.anchors.first, file: file, line: line)
++        let now = controller.captureChatViewport()
++        XCTAssertEqual(now.anchors.first?.dbID, anchor.dbID, file: file, line: line)
++        XCTAssertEqual(try XCTUnwrap(now.anchors.first?.offset), anchor.offset, accuracy: 1, file: file, line: line)
++    }
++
++    func testLargePassiveBatchPreservesHistoryAndBottomFollows() throws {
++        try main {
++            try present(rows(1...40)); readHistory()
++            let anchor = controller.captureChatViewport()
++            try present(rows(1...50)) // >5: actual full-reload branch.
++            try assertAnchor(anchor)
++            controller.goToLastMessage()
++            try present(rows(1...60))
++            XCTAssertEqual(controller.collectionView.contentOffset.y, controller.chatMaximumOffset, accuracy: 1)
++            controller.lastMessageReceived = .distantPast
++            try present(rows(1...61)) // Actual animated insert + neighbor-refresh path at the bottom.
++            XCTAssertEqual(controller.collectionView.contentOffset.y, controller.chatMaximumOffset, accuracy: 1)
++        }
++    }
++
++    func testPrependHeightChangeAndDeletedAnchorUseRealAttributes() throws {
++        try main {
++            try present(rows(20...60)); readHistory()
++            let before = controller.captureChatViewport()
++            controller.lastMessageReceived = .distantPast
++            try present(rows(1...60), .preserve)
++            try assertAnchor(before)
++            let heightAnchor = controller.captureChatViewport()
++            controller.reloadChatLayoutPreservingViewport { self.layout.itemSize.height = 82 }
++            try settled(); try assertAnchor(heightAnchor)
++            let candidates = controller.captureChatViewport()
++            let removed = try XCTUnwrap(candidates.anchors.first).dbID
++            let survivor = try XCTUnwrap(candidates.anchors.dropFirst().first)
++            controller.lastMessageReceived = .distantPast
++            try present(rows(1...60).filter { $0.msgId != removed }, .preserve)
++            let actual = try XCTUnwrap(controller.captureChatViewport().anchors.first(where: { $0.dbID == survivor.dbID }))
++            XCTAssertEqual(actual.offset, survivor.offset, accuracy: 1)
++        }
++    }
++
++    func testOverlappingRealTwoPhaseBatchesDoNotReplaceActiveArray() throws {
++        try main {
++            try present(rows(1...40)); readHistory()
++            let before = controller.captureChatViewport()
++            let source = try XCTUnwrap(controller.chatDisplaySource)
++            controller.lastMessageReceived = .distantPast
++            controller.displayChatMessages(messages: rows(1...41), source: source, intent: .passive)
++            XCTAssertTrue(controller.chatPresentationRunning, "Must overlap an actual unfinished UICollectionView batch")
++            controller.displayChatMessages(messages: rows(1...42), source: source, intent: .passive)
++            XCTAssertEqual(controller.messages.count, 41, "Queued snapshot must not replace active batch data")
++            XCTAssertEqual(controller.chatPresentationQueue.count, 1)
++            try settled()
++            XCTAssertEqual(controller.messages.count, 42)
++            XCTAssertEqual(controller.collectionView.numberOfItems(inSection: 0), 42)
++            try assertAnchor(before)
++        }
++    }
++
++    func testUserMovementBetweenBatchPhasesInvalidatesSubmission() throws {
++        try main {
++            try present(rows(1...40)); readHistory()
++            let ticket = controller.captureChatSubmissionIntent()
++            controller.lastMessageReceived = .distantPast
++            controller.displayChatMessages(messages: rows(1...41), source: try XCTUnwrap(controller.chatDisplaySource), intent: ticket)
++            XCTAssertTrue(controller.chatPresentationRunning)
++            controller.scrollViewWillBeginDragging(controller.collectionView)
++            controller.collectionView.setContentOffset(CGPoint(x: 0, y: 190), animated: false)
++            try settled()
++            XCTAssertEqual(controller.collectionView.contentOffset.y, 190, accuracy: 1)
++            XCTAssertNil(controller.chatConsumedSubmission)
++        }
++    }
++
++    func testNewSubmissionConsumedOnceThenAckAndUnknownScrollPreserve() throws {
++        try main {
++            try present(rows(1...40)); readHistory()
++            let consumer = CaptureOnlyInteractor()
++            controller.interactor = consumer
++            let cases: [PendingMessage?] = [nil,
++                .replyTo(message: Drafty(content: "合成回复"), seqId: 2),
++                .forwarded(message: Drafty(content: "合成转发"), from: "fixture", preview: Drafty(content: "合成预览"))]
++            for pending in cases {
++                consumer.pendingMessage = pending
++                controller.sendMessageBar(sendText: "合成提交")
++                guard case .submission(let value)? = consumer.captured else { return XCTFail("Actual text consumer omitted capture") }
++                XCTAssertFalse(value.editing)
++                XCTAssertEqual(value.submission, controller.chatSubmissionRevision)
++            }
++            let ticket = controller.captureChatSubmissionIntent()
++            try present(rows(1...41), ticket)
++            XCTAssertEqual(controller.collectionView.contentOffset.y, controller.chatMaximumOffset, accuracy: 1)
++            readHistory(); let anchor = controller.captureChatViewport()
++            try present(rows(1...41), .passive) // ACK/ready status refresh is not a new action.
++            try present(rows(1...42), ticket) // Delayed duplicate ticket.
++            try assertAnchor(anchor)
++            let late = controller.captureChatSubmissionIntent()
++            // No pan callback: the real scroll delegate must also reject unknown movement.
++            controller.collectionView.setContentOffset(CGPoint(x: 0, y: 310), animated: false)
++            let current = controller.captureChatViewport()
++            try present(rows(1...43), late)
++            try assertAnchor(current)
++        }
++    }
++
++    func testEditCaptureAndPinnedLocalReloadKeepHistory() throws {
++        try main {
++            try present(rows(1...40)); readHistory()
++            let interactor = MessageInteractor()
++            interactor.pendingMessage = .edit(message: Drafty(content: "合成编辑"), markdown: "合成编辑", seqId: 8)
++            controller.interactor = interactor
++            let captured = controller.captureChatSubmissionIntent()
++            XCTAssertTrue(captured.preservesReadingPosition)
++            interactor.dismissPendingMessage() // Delayed UI must not infer intent from the new pending state.
++            let anchor = controller.captureChatViewport()
++            try present(rows(1...40), captured)
++            let source = try XCTUnwrap(controller.chatDisplaySource)
++            controller.displayPinnedMessages(pins: [8], selected: 0, source: source)
++            controller.reloadPinned(forSeq: 8, source: source)
++            controller.reloadMessages(fromSeqId: 8, toSeqId: 8, source: source)
++            controller.deviceRotated()
++            try settled(); try assertAnchor(anchor)
++            XCTAssertNil(controller.chatConsumedSubmission)
++        }
++    }
++
++    func testQuoteNoOpAndOriginalPageSourceRejectLatePresentation() throws {
++        try main {
++            try present(rows(1...40)); readHistory()
++            let ticket = controller.captureChatSubmissionIntent()
++            let revision = controller.chatInteractionRevision
++            controller.scrollToAndAnimate(seqId: Int.max) // Actual common quote/pin entry, no movement.
++            XCTAssertGreaterThan(controller.chatInteractionRevision, revision)
++            let before = controller.captureChatViewport()
++            try present(rows(1...41), ticket); try assertAnchor(before)
++            let oldSource = try XCTUnwrap(controller.chatDisplaySource)
++            let presenter = MessagePresenter(pageID: controller.chatPageID)
++            presenter.viewController = controller
++            presenter.presentMessages(messages: rows(100...140), source: oldSource, intent: .passive)
++            controller.topic = try XCTUnwrap(Tinode.newTopic(withTinode: nil, forTopic: "grp-scroll-fixture") as? DefaultComTopic)
++            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
++            XCTAssertEqual(controller.messages.first?.msgId, 1)
++            controller.displayChatMessages(messages: rows(200...240), source: ChatDisplaySource(page: UUID(), topic: controller.topic!), intent: .passive)
++            XCTAssertEqual(controller.messages.first?.msgId, 1)
++            // Controlled UIKit appearance callbacks, not an interactive touch gesture.
++            let retainedSource = try XCTUnwrap(controller.chatDisplaySource)
++            let beforeDisappearing = controller.chatInteractionRevision
++            controller.reportedMovingFromParent = true
++            controller.viewWillDisappear(false)
++            controller.reportedMovingFromParent = false
++            controller.viewWillAppear(false) // Cancellation returns to this same contained page.
++            XCTAssertGreaterThan(controller.chatInteractionRevision, beforeDisappearing)
++            XCTAssertEqual(controller.chatDisplaySource, retainedSource)
++            controller.displayChatMessages(messages: rows(1...42), source: retainedSource, intent: .preserve)
++            try settled()
++            XCTAssertEqual(controller.messages.count, 42)
++
++            // Real navigation removal: supply a previous page so pop is not a no-op.
++            let navigation = try XCTUnwrap(controller.navigationController)
++            navigation.setViewControllers([UIViewController(), controller], animated: false)
++            XCTAssertTrue(navigation.popViewController(animated: false) === controller)
++            XCTAssertNil(controller.parent)
++            XCTAssertTrue(controller.chatPageRetired)
++            XCTAssertNil(controller.chatDisplaySource)
++            controller.displayChatMessages(messages: rows(100...150), source: retainedSource, intent: .passive)
++            XCTAssertEqual(controller.messages.count, 42, "Popped page rejects original-source presentation")
++        }
++    }
++
++    func testPreviewButtonCapturesBeforeHandoffAndLateWorkCannotMintTicket() throws {
++        try main {
++            try present(rows(1...40)); readHistory()
++            let preview = NeutralFilePreview()
++            let navigation = try XCTUnwrap(controller.navigationController)
++            navigation.pushViewController(preview, animated: false)
++            // Real original page is offscreen; capture is still allowed for its own top preview.
++            let capture = controller.chatPreviewIntentCapture(for: preview)
++            preview.captureDisplayIntent = capture
++            preview.previewContent = FilePreviewContent(data: Data([1, 2, 3]), refUrl: nil,
++                fileName: "fixture.txt", contentType: "text/plain", size: 3, pendingMessagePreview: nil)
++            let sendButton = UIButton(type: .system)
++            preview.view.addSubview(sendButton); preview.sendButton = sendButton
++            var received: ChatDisplayIntent?
++            let token = NotificationCenter.default.addObserver(forName: Notification.Name(MessageViewController.kNotificationSendAttachment),
++                object: nil, queue: .main) { note in
++                    received = note.userInfo?[ChatDisplayIntent.notificationKey] as? ChatDisplayIntent
++                }
++            defer { NotificationCenter.default.removeObserver(token) }
++            preview.sendFileAttachment(sendButton) // Actual button method captures before notification and pop.
++            let intent = try XCTUnwrap(received)
++            guard case .submission(let ticket) = intent else { return XCTFail("Legitimate offscreen preview lost its ticket") }
++            let serial = controller.chatSubmissionRevision
++            controller.invalidateChatDisplayIntent() // User interaction while thumbnail/data work is pending.
++            let end = ProcessInfo.processInfo.systemUptime + 3
++            while navigation.transitionCoordinator != nil || controller.view.window == nil {
++                guard ProcessInfo.processInfo.systemUptime < end else { throw Failure.deadline }
++                RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
++            }
++            readHistory(); let before = controller.captureChatViewport()
++            try present(rows(1...41), intent)
++            XCTAssertEqual(controller.chatSubmissionRevision, serial)
++            XCTAssertNotEqual(ticket.interaction, controller.chatInteractionRevision)
++            try assertAnchor(before)
++            XCTAssertTrue(capture().preservesReadingPosition, "Popped preview cannot capture another active ticket")
++        }
++    }
++
++    func testFirstNonemptyOnlyOnceAndZeroSequenceDraftsKeepIdentity() throws {
++        try main {
++            try present([]); try present(rows(1...40))
++            XCTAssertTrue(controller.chatPresentedNonempty)
++            XCTAssertEqual(controller.collectionView.contentOffset.y, controller.chatMaximumOffset, accuracy: 1)
++            readHistory(); try present([], .preserve)
++            try present(rows(1...40))
++            XCTAssertLessThan(controller.collectionView.contentOffset.y, controller.chatMaximumOffset - 40)
++            let drafts = rows(1...40)
++            drafts.forEach { $0.seq = 0 }
++            try present(drafts, .preserve); readHistory()
++            let anchor = controller.captureChatViewport()
++            controller.reloadChatLayoutPreservingViewport { self.layout.itemSize.height = 70 }
++            try settled(); try assertAnchor(anchor)
++        }
++    }
++
++    func testLatestButtonIsRealVisibleAdaptiveAndInvalidatesOldRestore() throws {
++        try main {
++            try present(rows(1...40)); readHistory()
++            let button = try XCTUnwrap(controller.view.subviews.compactMap { $0 as? UIButton }
++                .first(where: { $0.currentTitle == "回到最新消息" }))
++            XCTAssertFalse(button.isHidden)
++            XCTAssertEqual(button.accessibilityLabel, "回到最新消息")
++            XCTAssertGreaterThanOrEqual(button.bounds.height, 44)
++            XCTAssertGreaterThan(button.bounds.width, 44)
++            let ticket = controller.captureChatSubmissionIntent()
++            button.sendActions(for: .touchUpInside)
++            XCTAssertTrue(button.isHidden)
++            XCTAssertEqual(controller.collectionView.contentOffset.y, controller.chatMaximumOffset, accuracy: 1)
++            readHistory(); let anchor = controller.captureChatViewport()
++            try present(rows(1...41), ticket); try assertAnchor(anchor)
++            let container = try XCTUnwrap(controller.parent)
++            container.setOverrideTraitCollection(UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge), forChild: controller)
++            controller.view.setNeedsLayout(); controller.view.layoutIfNeeded()
++            XCTAssertEqual(controller.traitCollection.preferredContentSizeCategory, .accessibilityExtraExtraExtraLarge)
++            let frame = button.convert(button.bounds, to: controller.view)
++            XCTAssertGreaterThanOrEqual(frame.height, 44)
++            XCTAssertGreaterThanOrEqual(frame.minX, controller.view.safeAreaInsets.left)
++            XCTAssertLessThanOrEqual(frame.maxX, controller.view.bounds.width - controller.view.safeAreaInsets.right)
++            // Geometry is additionally captured; a complete keyboard/chat journey is not claimed.
++            try evidence("latest-button-history")
++        }
++    }
++
++    private func evidence(_ name: String) throws {
++        let view = controller.view!
++        let image = UIGraphicsImageRenderer(bounds: view.bounds).image { _ in view.drawHierarchy(in: view.bounds, afterScreenUpdates: true) }
++        let png = XCTAttachment(image: image); png.name = "chat-scroll-\(name)"; png.lifetime = .keepAlways; add(png)
++        let viewport = controller.captureChatViewport()
++        let data: [String: Any] = ["scope": "neutral cells, production MessageVC consumer and real UICollectionView",
++            "count": controller.messages.count, "offsetY": viewport.offset.y,
++            "anchorIDs": viewport.anchors.map { $0.dbID }, "anchorOffsets": viewport.anchors.map { $0.offset },
++            "atBottom": viewport.atBottom, "interaction": controller.chatInteractionRevision,
++            "queueCount": controller.chatPresentationQueue.count, "rendering": controller.chatPresentationRunning]
++        let json = XCTAttachment(data: try JSONSerialization.data(withJSONObject: data, options: [.sortedKeys]), uniformTypeIdentifier: "public.json")
++        json.name = "chat-scroll-\(name)-geometry"; json.lifetime = .keepAlways; add(json)
++    }
++}
++
++private final class NeutralChatController: MessageViewController {
++    // Suppress business lifecycle only; inherited loadView and display consumers are actual production methods.
++    override func viewDidLoad() {}
++    override func viewDidAppear(_ animated: Bool) {}
++    override var inputAccessoryView: UIView? { nil }
++    var reportedMovingFromParent = false
++    override var isMovingFromParent: Bool { reportedMovingFromParent || super.isMovingFromParent }
++}
++
++private final class NeutralFilePreview: FilePreviewController {
++    override func viewDidLoad() {} // Only the actual confirm handler is exercised, not storyboard layout.
++}
++
++private final class CaptureOnlyInteractor: MessageInteractor {
++    var captured: ChatDisplayIntent?
++    override func sendMessage(content: Drafty, displayIntent: ChatDisplayIntent) {
++        captured = displayIntent // Consumer port only; no publish or synthetic ACK.
++    }
++}
++
++private final class NeutralCells: NSObject, UICollectionViewDataSource {
++    unowned let controller: MessageViewController
++    init(_ controller: MessageViewController) { self.controller = controller }
++    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int { controller.messages.count }
++    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
++        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "neutral", for: indexPath)
++        cell.backgroundColor = indexPath.item.isMultiple(of: 2) ? .systemGray4 : .systemGray5
++        return cell
++    }
++}

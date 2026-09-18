@@ -1,0 +1,132 @@
+[
+  {
+    "path": "Tinodios/FilePreviewController.swift",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "fb6831a53255b5da84cd04a602d3f074968ac7d75b99dd2fd1d11ba943110168",
+    "git_bytes_sha256": "3462a0c8d1177615858dcbed62e60a23ab5daa5ccc3747f8b22b66cc0fd6dcdf",
+    "crlf_count": 156,
+    "bare_lf_count": 4,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Tinodios/ImagePreviewController.swift",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "f362c12f903a800811849c7745e4cc8e1433f9c0d89fc40f04c9830cbfd38ac1",
+    "git_bytes_sha256": "2f185adf7d24f501e222d9af476cf80c61acc37603ffdb933206a2cf79d1e078",
+    "crlf_count": 304,
+    "bare_lf_count": 4,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Tinodios/MessageInteractor.swift",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "041cc693bae25d2b511f1ecad4e34c28ead59c0646f52aa68e1f9183b27b4ee2",
+    "git_bytes_sha256": "812985deb810ebd6890c399d71f0fd14a4a5ff8cc3a961bc09a1e825f6499789",
+    "crlf_count": 1169,
+    "bare_lf_count": 18,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Tinodios/MessagePresenter.swift",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "937cdca5ee208230ce712cf531c38cf00a1f64688b7e5200e32d5411869a5d50",
+    "git_bytes_sha256": "2205ced0b67b7aadcbd5d26280f87eb2a54529f22107c08615ab79217c675b64",
+    "crlf_count": 121,
+    "bare_lf_count": 0,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "f332e16cba9cf2d3bac4ff5d651cd4cef5b58c663a73299a4ab00d5b783f8c08",
+    "git_bytes_sha256": "0c448f1bac2f35f0ba4c357bc6f8e5ab196ca83760c34bf6ce706c6632a53a30",
+    "crlf_count": 795,
+    "bare_lf_count": 0,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Tinodios/MessageViewController+MessageDisplayLogic.swift",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "3f7a0627cde6c33d8ce178f458b563332525b238c61b6c1af41fd836da002556",
+    "git_bytes_sha256": "8cff056791ff7ea98a40f047ffce8ba1aee075b733930b65e04a70f5dbad964a",
+    "crlf_count": 248,
+    "bare_lf_count": 6,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "fd77fdfdbc78e3505b2408093288690b548403f07603cc5cdb9a2c8665b6651f",
+    "git_bytes_sha256": "d177f1675dbb761527a32a52154156d44e10360e0081a48512d64c7f4c5eb063",
+    "crlf_count": 299,
+    "bare_lf_count": 0,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Tinodios/MessageViewController.swift",
+    "original_report_raw_match": "changed_by_cancelled_pop_fix",
+    "original_report_git_blob_match": true,
+    "raw_sha256": "b082058ca6481a95f6c22b79116590dabbcc9c5b515b78f438f0ab3327d74c30",
+    "git_bytes_sha256": "551e94302200d92031cdf61e93fa0fb2b6251309f63f70411e67fa4f41fcbe8d",
+    "crlf_count": 1750,
+    "bare_lf_count": 54,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Tinodios/VideoPreviewController.swift",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "b65bfdacdd34f45f42edd7402b2faa188f07bab51fe0f770484d7ade5738982f",
+    "git_bytes_sha256": "a4d6ebd927dce41b130891f7d5f77262d4b06126023bc4d6fbfa362aa279d058",
+    "crlf_count": 754,
+    "bare_lf_count": 4,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "TinodiosUITests/ChatScrollTests.swift",
+    "original_report_raw_match": "changed_by_cancelled_pop_fix",
+    "original_report_git_blob_match": true,
+    "raw_sha256": "86d3626ebe997cc4cfc2beef66495b3e4f05de3ae89f6e6f450594da8940eea0",
+    "git_bytes_sha256": "86d3626ebe997cc4cfc2beef66495b3e4f05de3ae89f6e6f450594da8940eea0",
+    "crlf_count": 0,
+    "bare_lf_count": 394,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Tinodios.xcodeproj/project.pbxproj",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "23e2657c09f0f1abf977df359b8cfea633b3b63cd153892935cc6cd5e6cd4dd3",
+    "git_bytes_sha256": "1b754f88d67896563ed7e5dbc3a60cca1b1aed18ec672fc2c2a9131697ff7858",
+    "crlf_count": 1948,
+    "bare_lf_count": 0,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "6566540e4fdcd4cc81f342c34a2675016e42c0714b186d4c61cb589cd9e08d99",
+    "git_bytes_sha256": "055703f8d0f04d6bc6315e168209bb700c8d1bee881dda3f2400c95e274b4f2a",
+    "crlf_count": 421,
+    "bare_lf_count": 0,
+    "lf_normalized_matches_final_blob": true
+  },
+  {
+    "path": "Scripts/ci/test_brand_ui_policy.py",
+    "original_report_raw_match": true,
+    "original_report_git_blob_match": true,
+    "raw_sha256": "360ffbdbfe53689ae616eaf4fe26968fcb4ce4932e67c0d53c10288a037a3972",
+    "git_bytes_sha256": "cb8c36def486aff70882baf1aaa5f3f231beca124338fcb363c04134b65fa7fb",
+    "crlf_count": 147,
+    "bare_lf_count": 0,
+    "lf_normalized_matches_final_blob": true
+  }
+]
