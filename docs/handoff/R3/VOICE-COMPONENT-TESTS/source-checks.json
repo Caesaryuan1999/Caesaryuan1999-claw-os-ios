@@ -1,0 +1,130 @@
+{
+  "base": "4b5ab7398cf70e153eaaf08dd09cb79cefb20ece",
+  "layer": "Source/selector checks only; real Ruby object checks separate; Swift NOT_RUN",
+  "results": [
+    {
+      "name": "six_methods_in_actual_XCTest_class",
+      "pass": true
+    },
+    {
+      "name": "actual_App_module_no_generated_adapter",
+      "pass": true
+    },
+    {
+      "name": "original_nib_asserted_in_App_bundle",
+      "pass": true
+    },
+    {
+      "name": "unknown_host_credential_account_rejected",
+      "pass": true
+    },
+    {
+      "name": "no_data_clearing_or_login_submission",
+      "pass": true
+    },
+    {
+      "name": "real_keyboard_notifications_and_deadline",
+      "pass": true
+    },
+    {
+      "name": "real_traits_font_growth",
+      "pass": true
+    },
+    {
+      "name": "minimum_full_button_hit_and_text_geometry",
+      "pass": true
+    },
+    {
+      "name": "original_XIB_action_connections_checked",
+      "pass": true
+    },
+    {
+      "name": "handler_not_claimed_touch_recognition",
+      "pass": true
+    },
+    {
+      "name": "png_and_geometry_keepAlways",
+      "pass": true
+    },
+    {
+      "name": "evidence_before_teardown_cleanup",
+      "pass": true
+    },
+    {
+      "name": "no_secret_value_in_geometry",
+      "pass": true
+    },
+    {
+      "name": "CI_adds_only_one_selector",
+      "pass": true
+    },
+    {
+      "name": "old_226_and_navigation_selectors_byte_preserved",
+      "pass": true
+    },
+    {
+      "name": "pod_hook_original_bytes_unchanged",
+      "pass": true
+    },
+    {
+      "name": "lock_only_podfile_checksum",
+      "pass": true
+    },
+    {
+      "name": "lock_matches_LF_source_sha1",
+      "pass": true
+    },
+    {
+      "name": "no_production_delta",
+      "pass": true
+    },
+    {
+      "name": "existing_native_source_tests_frozen",
+      "pass": true
+    },
+    {
+      "name": "existing_scheme_test_targets_retained",
+      "pass": true
+    }
+  ],
+  "passed": 21,
+  "total": 21,
+  "methods": [
+    "testOriginalNibLoadsAndResetsWithoutRecording",
+    "testRecordingStatesAndOriginalButtonsForwardActions",
+    "testDynamicTypeDarkLightAndScrollableMinimumTargets",
+    "testInputAccessoryKeyboardAppearsAndDismisses",
+    "testResetAfterGestureDoesNotReusePreviousLayout",
+    "testControlledGestureHandlerUsesSameWindowAndThresholds"
+  ],
+  "expected_native": {
+    "SDK": 44,
+    "existing_UIrunner": 175,
+    "VLC_host": 7,
+    "new_App_component": 6,
+    "total": 232,
+    "navigation_separate": 3
+  },
+  "production_sources": [
+    {
+      "path": "Tinodios/widgets/SendMessageBar.swift",
+      "blob": "ff16003c59810f822e2188a81c577fb718c15333",
+      "sha256_LF": "44ea7ee941926448f2a6b98b1178921b9d9c8a8636d7590cce02681ee5bbb816"
+    },
+    {
+      "path": "Tinodios/widgets/SendMessageBar.xib",
+      "blob": "32774ff2d2cacdfdb1b267b125a1afdb38430795",
+      "sha256_LF": "af3183d157f1b3606433a608b8293aedb62d49aa7ffb90c4dac349fe07622aab"
+    },
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "blob": "1378961103cfbb9ca8676d5759e245b869e836e0",
+      "sha256_LF": "eaa9b3bcb824ddace1af90ea6711adbec2a11dc46335d556cd683de5ddb339f3"
+    },
+    {
+      "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+      "blob": "0051e4f76ba54f606526998e971cd88e82488075",
+      "sha256_LF": "6b6f52eefab42566c78cb339b1c05171d7e6c4a3cf11b6628158b17f3569022e"
+    }
+  ]
+}

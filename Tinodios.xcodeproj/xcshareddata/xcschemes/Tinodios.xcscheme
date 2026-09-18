@@ -48,6 +48,14 @@
                ReferencedContainer = "container:Tinodios.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference skipped = "NO" parallelizable = "NO">
+            <BuildableReference BuildableIdentifier = "primary"
+               BlueprintIdentifier = "C1A048000000000000000004"
+               BuildableName = "TinodiosVoiceLayoutTests.xctest"
+               BlueprintName = "TinodiosVoiceLayoutTests"
+               ReferencedContainer = "container:Tinodios.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

@@ -1,0 +1,71 @@
+{
+  "layer": "Actual local Ruby / actual Xcodeproj Config + exact Podfile hook; project containers adapted; not Mac/CocoaPods install",
+  "ruby": "ruby 3.3.12 (2026-07-16 revision 0581089df9) [x64-mingw-ucrt]",
+  "xcodeproj_gem_version": "1.28.1",
+  "configSourceSHA256": "bbf5040fdc524657a63b21f8663df2d734c7cdab9a2a622133a9d836f01500e7",
+  "hookSHA256": "fd85cb1607affeeeb2d9bc83259901d0c536d43ffbc08900fc488012a3ea6599",
+  "results": [
+    {
+      "name": "old_attributes_fetch_reproduces_KeyError",
+      "result": "PASS"
+    },
+    {
+      "name": "actual_hook_preserves_all_serialized_linker_categories",
+      "result": "PASS"
+    },
+    {
+      "name": "nonempty_search_path_test_keeps_frameworks",
+      "result": "PASS"
+    },
+    {
+      "name": "inherited_only_test_explicitly_clears_parent",
+      "result": "PASS"
+    },
+    {
+      "name": "empty_real_test_config_proves_six_empty_categories",
+      "result": "PASS"
+    },
+    {
+      "name": "empty_host_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "host_required_framework_missing_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "missing_configuration_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "non_Config_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "Firebase_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "test_WebRTC_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "malformed_empty_categories_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "missing_test_target_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "test_concrete_simple_flags_retained",
+      "result": "PASS"
+    },
+    {
+      "name": "both_inherited_spellings_removed",
+      "result": "PASS"
+    }
+  ],
+  "passed": 15,
+  "total": 15
+}

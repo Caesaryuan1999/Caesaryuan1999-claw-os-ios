@@ -201,6 +201,9 @@
 		C1A046022026091800000002 /* MediaRecorderLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A046012026091800000001 /* MediaRecorderLifecycleTests.swift */; };
 		C1A047022026091800000001 /* SendMessageBarResetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A047012026091800000001 /* SendMessageBarResetTests.swift */; };
 		C1A047022026091800000002 /* SendMessageBarResetSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A047012026091800000002 /* SendMessageBarResetSource.swift */; };
+		C1A048000000000000000002 /* VoiceLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A048000000000000000001; };
+		C1A04800000000000000000D /* TinodiosDB.framework in Voice Test Frameworks */ = {isa = PBXBuildFile; fileRef = 0ACE9E7E23814157006BE575; };
+		C1A04800000000000000000E /* TinodeSDK.framework in Voice Test Frameworks */ = {isa = PBXBuildFile; fileRef = 0A431C022244A26200A837F7; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -478,6 +481,8 @@
 		C1A046012026091800000001 /* MediaRecorderLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRecorderLifecycleTests.swift; sourceTree = "<group>"; };
 		C1A047012026091800000001 /* SendMessageBarResetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendMessageBarResetTests.swift; sourceTree = "<group>"; };
 		C1A047012026091800000002 /* SendMessageBarResetSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "build/ci-generated/SendMessageBarResetSource.swift"; sourceTree = SOURCE_ROOT; };
+		C1A048000000000000000001 /* VoiceLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceLayoutTests.swift; sourceTree = "<group>"; };
+		C1A048000000000000000003 /* TinodiosVoiceLayoutTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TinodiosVoiceLayoutTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -520,6 +525,7 @@
 			files = (C1A04400000000000000001B, C1A04400000000000000001C, );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C1A048000000000000000006 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (C1A04800000000000000000D, C1A04800000000000000000E, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -550,6 +556,7 @@
 				0A0380D421B3CC8100A3FA0E /* Tinodios.app */,
 				0ACE9E7223813A1D006BE575 /* TinodiosNSExtension.appex */,
 				0AE21E4B28D21849008F486C /* TinodiosUITests.xctest */,
+				C1A048000000000000000003 /* TinodiosVoiceLayoutTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -669,6 +676,7 @@
 				C1A040012026091800000002 /* SecondaryUIStateTests.swift */,
 				C1A046012026091800000001 /* MediaRecorderLifecycleTests.swift */,
 				C1A047012026091800000001 /* SendMessageBarResetTests.swift */,
+				C1A048000000000000000001 /* VoiceLayoutTests.swift */,
 				C1A047012026091800000002 /* SendMessageBarResetSource.swift */,
 				C1A041012026091800000001 /* OwnedImageTests.swift */,
 				C1A042012026091800000001 /* IdentityNavigationUITests.swift */,
@@ -872,6 +880,17 @@
 			productReference = C1A044000000000000000004;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		C1A048000000000000000004 /* TinodiosVoiceLayoutTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C1A048000000000000000008;
+			buildPhases = (C1A048000000000000000005, C1A048000000000000000006, C1A048000000000000000007, );
+			buildRules = ();
+			dependencies = (C1A04800000000000000000C, );
+			name = TinodiosVoiceLayoutTests;
+			productName = TinodiosVoiceLayoutTests;
+			productReference = C1A048000000000000000003;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -883,6 +902,7 @@
 				LastUpgradeCheck = 1500;
 				ORGANIZATIONNAME = "Tinode LLC";
 				TargetAttributes = {
+					C1A048000000000000000004 = {CreatedOnToolsVersion = 16.4; TestTargetID = 0A0380D321B3CC8100A3FA0E; };
 					C1A044000000000000000006 = {CreatedOnToolsVersion = 16.4; };
 					C1A044000000000000000007 = {CreatedOnToolsVersion = 16.4; TestTargetID = C1A044000000000000000006; };
 					0A0380D321B3CC8100A3FA0E = {
@@ -915,6 +935,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				C1A048000000000000000004 /* TinodiosVoiceLayoutTests */,
 				C1A044000000000000000006,
 				C1A044000000000000000007,
 				0A0380D321B3CC8100A3FA0E /* Tinodios */,
@@ -982,6 +1003,7 @@
 			files = ();
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C1A048000000000000000007 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
@@ -1321,6 +1343,7 @@
 			files = (C1A043022026091800000001, C1A04400000000000000001D, );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1339,6 +1362,7 @@
 			target = C1A044000000000000000006;
 			targetProxy = C1A044000000000000000015;
 		};
+		C1A04800000000000000000C = {isa = PBXTargetDependency; target = 0A0380D321B3CC8100A3FA0E; targetProxy = 0AE21E5128D21849008F486C; };
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
@@ -1825,6 +1849,44 @@
 			};
 			name = "Release";
 		};
+		C1A048000000000000000009 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Tinodios.app/Tinodios";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.clawos.tests.VoiceLayout;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks", );
+			};
+			name = Debug;
+		};
+		C1A04800000000000000000A = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Tinodios.app/Tinodios";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.clawos.tests.VoiceLayout;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks", );
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1876,6 +1938,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = "Release";
 		};
+		C1A048000000000000000008 = {isa = XCConfigurationList; buildConfigurations = (C1A048000000000000000009, C1A04800000000000000000A, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
 /* End XCConfigurationList section */
 	};
 	rootObject = 0A0380CC21B3CC8100A3FA0E /* Project object */;

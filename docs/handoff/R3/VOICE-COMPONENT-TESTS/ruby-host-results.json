@@ -1,0 +1,19 @@
+{
+  "layer": "Actual portable Ruby/Xcodeproj object model and Config hook; not pod install or Xcode compilation",
+  "ruby": "ruby 3.3.12 (2026-07-16 revision 0581089df9) [x64-mingw-ucrt]",
+  "xcodeproj": "1.28.1",
+  "baseline_config_cases": 15,
+  "new_host_ignored_by_vlc_hook": true,
+  "target": "TinodiosVoiceLayoutTests",
+  "source_membership": [
+    "VoiceLayoutTests.swift"
+  ],
+  "original_app_nib_source_preserved": true,
+  "scheme_test_targets": [
+    "TinodiosUITests",
+    "TinodiosVLCProbeTests",
+    "TinodiosVoiceLayoutTests"
+  ],
+  "podfile_sha1": "57fbf886ed7320720a1abe97114973cd500daf67",
+  "status": "PASS"
+}

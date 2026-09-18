@@ -67,6 +67,10 @@ target 'Tinodios' do
     project 'Tinodios'
     db_pods
     app_pods
+    # The real App remains the host; no duplicate production source/resource membership.
+    target 'TinodiosVoiceLayoutTests' do
+        inherit! :search_paths
+    end
 end
 
 post_install do | installer |
