@@ -1,0 +1,19 @@
+{
+  "layer": "Windows source/lock/evidence checks; not Ruby/CocoaPods/Xcode execution",
+  "checks": {
+    "only_bounded_hook_added": true,
+    "lock_only_podfile_checksum": true,
+    "podfile_lock_matches": true,
+    "explicit_two_target_allowlist": true,
+    "generated_own_config_required": true,
+    "parent_inheritance_removed": true,
+    "single_setting_override": true,
+    "host_frameworks_required": true,
+    "foreign_dependency_rejected": true,
+    "both_targets_required": true,
+    "actual_red_link_commands": true,
+    "actual_dyld_failure": true
+  },
+  "passed": 12,
+  "total": 12
+}

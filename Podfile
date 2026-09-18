@@ -84,6 +84,34 @@ post_install do | installer |
     end
   end
 
+  # Only the empty VLC host and its test bundle must not inherit the main App's
+  # project-level Pods-Tinodios linker flags (devel/prod.xcconfig).
+  # Use each aggregate's generated flags, retaining its own required frameworks.
+  probe_targets = %w[TinodiosVLCProbeHost TinodiosVLCProbeTests]
+  configured_probe_targets = []
+  probe_projects = []
+  installer.aggregate_targets.each do |aggregate_target|
+    aggregate_target.user_targets.each do |user_target|
+      next unless probe_targets.include?(user_target.name)
+      user_target.build_configurations.each do |config|
+        generated = aggregate_target.xcconfigs.fetch(config.name).attributes.fetch('OTHER_LDFLAGS')
+        raise 'Missing VLC probe linker flags' unless generated.is_a?(String)
+        flags = generated.gsub('$(inherited)', '').gsub('${inherited}', '').strip
+        raise 'Unexpected application dependency in VLC probe' if flags.match?(/Firebase|FBLPromises|GoogleAppMeasurement|WebRTC/)
+        if user_target.name == 'TinodiosVLCProbeHost'
+          %w[MobileVLCKit Kingfisher SQLite SwiftKeychainWrapper].each do |framework|
+            raise 'Missing VLC host framework' unless flags.include?(%Q[-framework "#{framework}"])
+          end
+        end
+        config.build_settings['OTHER_LDFLAGS'] = flags
+      end
+      configured_probe_targets << user_target.name
+      probe_projects << aggregate_target.user_project
+    end
+  end
+  raise 'VLC probe target configuration incomplete' unless configured_probe_targets.sort == probe_targets.sort
+  probe_projects.uniq.each(&:save)
+
   # See explanation here: https://github.com/firebase/firebase-ios-sdk/issues/6533
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
