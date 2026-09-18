@@ -35,8 +35,8 @@
     },
     {
       "path": "packaging-checks.json",
-      "bytes": 1066,
-      "sha256": "eedf7572948705c7f27329f2fdb547d14af435b6f74e84047cb27b7cdfaf46b6"
+      "bytes": 1170,
+      "sha256": "b816333371d2156d9755cf8bb3daf12634c523ac8da2429a28e83d740f50efeb"
     },
     {
       "path": "paths.tsv",

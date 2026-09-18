@@ -11,7 +11,7 @@
   "production_ci_tests_modified_by_packaging": false,
   "native_inventory": 196,
   "navigation_inventory_separate": 3,
-  "native_execution": "CI17 pending parent evidence",
+  "native_execution": "CI17 exact e6e07aff verified by parent: 196 native + 3 offline navigation PASS; package and cold launch PASS; video runtime NOT_RUN.",
   "raw_patch_artifact_note": "Native Git patch bytes are immutable; blank context lines in a .patch file can trigger text-artifact whitespace warnings. Source range diff --check passed.",
   "lineending_worktree_sha_differences": 79,
   "packaging_files_diffcheck_except_patch": "PASS (11 files)",
