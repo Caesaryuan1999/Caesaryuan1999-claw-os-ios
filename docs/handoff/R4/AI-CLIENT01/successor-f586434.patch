@@ -1,0 +1,106 @@
+diff --git a/Tinodios/ClawAssistantModels.swift b/Tinodios/ClawAssistantModels.swift
+index 992a86e0671ce9a401d3c3e7be7aff72edc46568..893b4f016a7ff01f21cbb1104d4d9013ad2802f6 100644
+--- a/Tinodios/ClawAssistantModels.swift
++++ b/Tinodios/ClawAssistantModels.swift
+@@ -33,7 +33,9 @@ enum ClawAssistantWire {
+                     options: .regularExpression) != nil
+     }
+     static func decimal(_ value: String) -> Bool {
+-        value.range(of: "^(0|[1-9][0-9]*)$", options: .regularExpression) != nil && value.count <= 20
++        let maximum = "9223372036854775807"
++        return value.range(of: "^(0|[1-9][0-9]*)$", options: .regularExpression) != nil &&
++            (value.count < maximum.count || (value.count == maximum.count && value <= maximum))
+     }
+     static func less(_ a: String, _ b: String) -> Bool {
+         a.count == b.count ? a < b : a.count < b.count
+diff --git a/Tinodios/ClawAssistantService.swift b/Tinodios/ClawAssistantService.swift
+index 80ed55547d93ed612722ab6db9cddb18e5aed01a..4757c5cf0c51ecff09dfae6d3b3b1ca7915231b1 100644
+--- a/Tinodios/ClawAssistantService.swift
++++ b/Tinodios/ClawAssistantService.swift
+@@ -179,8 +179,15 @@ final class ClawAssistantHTTPTask: NSObject, URLSessionDataDelegate, ClawAssista
+     }
+     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
+                     completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+-        guard let http = response as? HTTPURLResponse, http.url == request.url,
+-              http.mimeType?.lowercased() == "application/json" else {
++        guard let http = response as? HTTPURLResponse, http.url == request.url else {
++            completionHandler(.cancel); finish(.failure(.invalidResponse)); return
++        }
++        // Authentication failure is authoritative even when a gateway supplies no
++        // JSON envelope. Hide this scope before reading an untrusted error body.
++        if http.statusCode == 401 {
++            completionHandler(.cancel); finish(.failure(.server(401, "authentication_required"))); return
++        }
++        guard http.mimeType?.lowercased() == "application/json" else {
+             completionHandler(.cancel); finish(.failure(.invalidResponse)); return
+         }
+         guard http.expectedContentLength <= Int64(ClawAssistantService.responseLimit) else {
+diff --git a/TinodiosUITests/AssistantHistoryTests.swift b/TinodiosUITests/AssistantHistoryTests.swift
+index 79df7aab88e50a1aa20001272afb6bac44878caf..897c71b6be51301ec24e97acb3e1d420f56af722 100644
+--- a/TinodiosUITests/AssistantHistoryTests.swift
++++ b/TinodiosUITests/AssistantHistoryTests.swift
+@@ -33,6 +33,16 @@ final class AssistantFixtureProtocol: URLProtocol {
+         client?.urlProtocolDidFinishLoading(self)
+     }
+     func fail() { client?.urlProtocol(self, didFailWithError: URLError(.timedOut)) }
++    func replyUnauthorized(contentType: String?) {
++        guard !stopped else { return }
++        var headers = ["Cache-Control": "no-store"]
++        if let contentType = contentType { headers["Content-Type"] = contentType }
++        let response = HTTPURLResponse(url: request.url!, statusCode: 401, httpVersion: "HTTP/1.1",
++                                       headerFields: headers)!
++        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
++        client?.urlProtocol(self, didLoad: Data("<html>synthetic unauthorized gateway</html>".utf8))
++        client?.urlProtocolDidFinishLoading(self)
++    }
+     func redirect() {
+         let response = HTTPURLResponse(url: request.url!, statusCode: 302, httpVersion: "HTTP/1.1",
+                                        headerFields: ["Location": "https://other.invalid/"])!
+@@ -331,6 +341,19 @@ final class AssistantHistoryTests: XCTestCase {
+             model.loadConversations(); try AssistantFixture.until { !model.listLoading }
+             XCTAssertEqual(model.listError, .invalidResponse)
+             XCTAssertFalse(model.hasListSnapshot)
++            let maximum = "9223372036854775807"
++            let overflow = "9223372036854775808"
++            XCTAssertTrue(ClawAssistantWire.decimal(maximum))
++            XCTAssertFalse(ClawAssistantWire.decimal(overflow))
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.messages([AssistantFixture.message(seq: maximum)])) }
++            model.loadMessages(AssistantFixture.first)
++            try AssistantFixture.until { !model.detailLoading.contains(AssistantFixture.first) }
++            XCTAssertEqual(model.details[AssistantFixture.first]?.first?.seq, maximum)
++            AssistantFixtureProtocol.handler = { $0.reply(AssistantFixture.messages([AssistantFixture.message(seq: overflow)])) }
++            model.loadMessages(AssistantFixture.first)
++            try AssistantFixture.until { !model.detailLoading.contains(AssistantFixture.first) }
++            XCTAssertEqual(model.detailErrors[AssistantFixture.first], .invalidResponse)
++            XCTAssertEqual(model.details[AssistantFixture.first]?.first?.seq, maximum)
+         }
+     }
+ 
+@@ -382,6 +405,27 @@ final class AssistantHistoryTests: XCTestCase {
+         }
+     }
+ 
++    func testNonJSONAndMissingMIME401BlockTheActualScopeWithoutOrdinaryLogout() throws {
++        try AssistantFixture.main {
++            for contentType: String? in ["text/html", nil] {
++                let sample = try AssistantFixture()
++                defer { sample.retire() }
++                try sample.prepare()
++                let model = sample.scope.history
++                model.setDraft("仅原账号可见的合成草稿")
++                AssistantFixtureProtocol.handler = { $0.replyUnauthorized(contentType: contentType) }
++                model.loadCapabilities()
++                try AssistantFixture.until { sample.scope.isBlocked }
++                XCTAssertNil(model.capabilities)
++                XCTAssertEqual(model.draft, "")
++                XCTAssertEqual(model.capabilityError, .signInRequired)
++                XCTAssertTrue(sample.owner.isSessionActive)
++                XCTAssertEqual(sample.owner.myUid, "usrSyntheticAssistantA")
++                XCTAssertEqual(sample.owner.store?.myUid, "usrSyntheticAssistantA")
++            }
++        }
++    }
++
+     func testDeleteUnknownRemainsAfterActiveReadAndRetryCannotResurrectFromLateGet() throws {
+         try AssistantFixture.main {
+             try fixture.prepare()

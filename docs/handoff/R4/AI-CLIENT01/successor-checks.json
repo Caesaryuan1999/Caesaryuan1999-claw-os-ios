@@ -1,0 +1,121 @@
+{
+  "base": "f3640f69171490c8278796e8026ae1fdb32058ed",
+  "target": "6a0e8584ff9f135528f4832184eb92b3f0eeb9a3",
+  "level": "source/Git recovery only; native NOT_RUN",
+  "steps": [
+    {
+      "commit": "9a6f8153a6b7b7314a2abb1ee43749beabe6ad11",
+      "paths": [
+        "TinodiosUITests/CoreListLayoutTests.swift"
+      ],
+      "patch": "successor-9a6f815.patch",
+      "bytes": 1133,
+      "sha256": "203bf174f50db3d328fbcd8064fd6d4ef75a06b35e5cbf2e4f0a1caf3897a227",
+      "forward_apply": true
+    },
+    {
+      "commit": "f586434c8d8145db00c623c78028ff48a41a0603",
+      "paths": [
+        "Tinodios/ClawAssistantService.swift",
+        "Tinodios/ClawAssistantModels.swift",
+        "TinodiosUITests/AssistantHistoryTests.swift"
+      ],
+      "patch": "successor-f586434.patch",
+      "bytes": 6452,
+      "sha256": "54c186e1e4495d51764292fa8e64d7a211ea1ae51136f7c00dbe88903611cd82",
+      "forward_apply": true
+    },
+    {
+      "commit": "6a0e8584ff9f135528f4832184eb92b3f0eeb9a3",
+      "paths": [
+        "Tinodios/ClawAssistantHistoryViewController.swift",
+        "TinodiosUITests/AssistantLayoutTests.swift"
+      ],
+      "patch": "successor-6a0e858.patch",
+      "bytes": 4718,
+      "sha256": "50abe0f392a55338ea22c05a97515b8e8320f48c689697c4a11f44d8e020b260",
+      "forward_apply": true
+    }
+  ],
+  "all_selected_mode_blob_match": true,
+  "unselected_base_entries_unchanged": true,
+  "source_overlay_tree": "6f4f5aff79a45c15b9f84fc79717e3969bd98dd9",
+  "original_index_unchanged": true,
+  "original_index_sha256": "a9532dceaec283dc7c9f8c6e7f28900d0e968996fe62f6c2ff2a793e28448907",
+  "method_counts": {
+    "CoreListLayoutTests": 6,
+    "AssistantHistoryTests": 15,
+    "AssistantLayoutTests": 6
+  },
+  "method_names": {
+    "CoreListLayoutTests": [
+      "testConversationNibOptInKeepsDataAndRestoresLegacyReuse",
+      "testContactNibOptInSelectionAndDefaultConsumerRemainDistinct",
+      "testOriginalNibsAt320GrowForAccessibilityInBothAppearances",
+      "testRealFindConsumesContactsAndEmptyStateWithoutDirectoryCalls",
+      "testRealAccountMissingThenPublicAliasUsesOriginalDataConsumer",
+      "testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries"
+    ],
+    "AssistantHistoryTests": [
+      "testRealHeadersAndOriginRejectUnsafeSourcesWithoutPost",
+      "testRedirectIsRejectedByActualSessionDelegate",
+      "testResponseBudgetRejectsAdvertisedOverflowButAcceptsFullLargeText",
+      "testFreshScopeNeedsActualLoginAndExistingScopeSurvivesOnlyUnchangedTokenOffline",
+      "testAccountDraftPersistsAcrossTokenRefreshButRetiresOnLogout",
+      "testSnapshotChangedDiscardsStagingAndReplacesOnlyCompleteAccountList",
+      "testContinuousRevisionChangesEndBoundedlyWithoutDroppingPreviousSnapshot",
+      "testUnknownStateInvalidatesWholeDetailAndPreservesOriginalCompleteMessages",
+      "testDecimalMessageCursorIsNotUUIDAndMalformedPageNeverReplacesSnapshot",
+      "testAccountAndPageGenerationsRejectLateOldResponses",
+      "testCurrent401BlocksOnlyAssistantAndOldToken401CannotBlockRenewedScope",
+      "testNonJSONAndMissingMIME401BlockTheActualScopeWithoutOrdinaryLogout",
+      "testDeleteUnknownRemainsAfterActiveReadAndRetryCannotResurrectFromLateGet",
+      "testDeleteBadReceiptAndUnexpectedSuccessAreUnknownButExplicitRejectionIsSeparate",
+      "testTombstoneReconcilesUnknownAnd503KeepsDraftWithoutAnyPost"
+    ],
+    "AssistantLayoutTests": [
+      "testActualFourTabsKeepMessageContactRoutesAndAssistantSelection",
+      "testFutureCapabilityFieldsNeverEnableGenerationAndDraftReturnsWithinAccount",
+      "testRealTitleTimeRowsAndPartialHistoryGrowAt320AccessibilityWithoutFakePreview",
+      "testConfirmationCancellationAndUnknownDeleteUseActualConsumersWithoutAutoRetry",
+      "testRetiringVisibleScopeImmediatelyHidesDraftAndDoesNotLogoutSDKFor401",
+      "testRealHistoryRowShowsExplicitDeletionRejectionWithoutRemovingConversation"
+    ]
+  },
+  "old_assertion_lines_retained": true,
+  "changed_inputs": [
+    {
+      "path": "Tinodios/ClawAssistantHistoryViewController.swift",
+      "mode_type_blob": "100644 blob 760ec6d7813162ed101563b27652aa80500c74be",
+      "git_bytes_sha256": "4134d6f91eac81951b8f502ead47047c7abd2b1652020a17befdbf2ecf8c7558"
+    },
+    {
+      "path": "Tinodios/ClawAssistantModels.swift",
+      "mode_type_blob": "100644 blob 893b4f016a7ff01f21cbb1104d4d9013ad2802f6",
+      "git_bytes_sha256": "256446ba33ec202a4395b25f5a040bf027ac3a8849f54cf17c2afeb9961f2490"
+    },
+    {
+      "path": "Tinodios/ClawAssistantService.swift",
+      "mode_type_blob": "100644 blob 4757c5cf0c51ecff09dfae6d3b3b1ca7915231b1",
+      "git_bytes_sha256": "e002775db9d052e9f0eff5830dc55b2a24bb899cb97c1acbf9375624b38e81f0"
+    },
+    {
+      "path": "TinodiosUITests/AssistantHistoryTests.swift",
+      "mode_type_blob": "100644 blob 897c71b6be51301ec24e97acb3e1d420f56af722",
+      "git_bytes_sha256": "07069f2b07e453f9eaf157ddcdea44795656a7ab6d1041d627dc1399caa6a13d"
+    },
+    {
+      "path": "TinodiosUITests/AssistantLayoutTests.swift",
+      "mode_type_blob": "100644 blob f3bb028091e3b6301264a461b26baf27db1793e5",
+      "git_bytes_sha256": "3ca130b69fabe1cc24749dd5e34bb99729e078538b3bda1b332fcc995bdfe324"
+    },
+    {
+      "path": "TinodiosUITests/CoreListLayoutTests.swift",
+      "mode_type_blob": "100644 blob 8d0558d405e963e4919e1567d0679bdb8cbdd53e",
+      "git_bytes_sha256": "0fe73c373678da533695ca66abb2618e445d8eb27627f58cb935e59b7de68c71"
+    }
+  ],
+  "new_assistant_methods": 21,
+  "cumulative_native_expected": 269,
+  "navigation_expected": 3
+}
