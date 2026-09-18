@@ -179,17 +179,19 @@ method, relativize = methods[0], relativizers[0]
 # Preserved verbatim from the pre-fix production blob; never synthesized by replacing the new argument.
 legacy_blob = "957739e19a32e8de9f5e5f63b424f78e090cf29e"
 legacy_completion = '                    draft = MessageInteractor.draftyAudio(refurl: ref, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count)\n'
-assert hashlib.sha256(method.encode()).hexdigest() == "d2270520faa79d4a1495740258aa7e0cc5e8ba2d652c3787612281a9caaedcb9", "Audio helper changed; review the adapter"
+assert hashlib.sha256(method.encode()).hexdigest() == "1dfd6e361b02deffbffc446a903c9c670302e52f15221753a2450b26ec434971", "Audio helper changed; review the adapter"
 assert hashlib.sha256(relativize.encode()).hexdigest() == "987674835af293264a48f0dcada3d783e4f0f22780a2b005e5a7f4e22383397f", "URL helper changed; review the adapter"
 assert re.search(r"refurl: (\w+),", initial).group(1) == "ref", "Initial draft must keep its placeholder"
 assert re.search(r"refurl: (\w+),", completion).group(1) == "srvUrl", "Completed upload must use its server result"
 assert legacy_completion.strip().startswith("draft = MessageInteractor.draftyAudio(")
-assert completion.replace("refurl: srvUrl,", "refurl: ref,") == legacy_completion, "Unexpected completion delta"
+assert "baseURL: audioBase" in initial and "baseURL: audioBase" in completion, "Audio must use captured original origin"
+assert completion.replace("refurl: srvUrl,", "refurl: ref,").replace(", baseURL: audioBase)", ")") == legacy_completion, "Unexpected completion delta"
 
 def wrapper(name, body):
     return """
     static func """ + name + """(ref: URL, srvUrl: URL, duration: Int, preview: Data, data: Data) -> Drafty? {
         let mimeType = "audio/aac"
+        let audioBase = Cache.tinode.baseURL(useWebsocketProtocol: false)
         let def = AudioUploadDef(duration: duration, preview: preview, data: data)
         var draft: Drafty?
         var previewData: Data?
@@ -315,6 +317,7 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -only-testing:TinodiosUITests/PublicDirectoryTests \
   -only-testing:TinodiosUITests/SecondaryUIStateTests \
   -only-testing:TinodiosUITests/OwnedImageTests \
+  -only-testing:TinodiosUITests/MediaRecorderLifecycleTests \
   -only-testing:TinodiosVLCProbeTests/VLCPlaybackProbeTests \
   HOST_NAME=127.0.0.1:9 USE_TLS=NO \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$result_dir/storage.log"

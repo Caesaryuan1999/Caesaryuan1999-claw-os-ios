@@ -4,6 +4,7 @@
 //  Copyright © 2019-2025 Tinode LLC. All rights reserved.
 //
 
+import AVFoundation
 import MobileVLCKit
 import UIKit
 import TinodeSDK
@@ -270,6 +271,14 @@ class MessageViewController: UIViewController {
 
     // Currently playing or paused media player.
     internal var currentAudioPlayer: VLCMediaPlayer?
+    var voiceOwner: Tinode?
+    var voiceUID: String?
+    var voiceGeneration: UInt64?
+    var voiceTopicName: String?
+    var voiceRecorder: MediaRecorder?
+    var recordingPlaybackPlayer: VLCMediaPlayer?
+    var voicePageActive = false
+    var voicePausedNotice = false
 
     // Max inband attachment/entity size.
     private var maxInbandSize: Int64 {
@@ -290,6 +299,8 @@ class MessageViewController: UIViewController {
     }
 
     private func addAppStateObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(audioSessionInterrupted(_:)),
+            name: AVAudioSession.interruptionNotification, object: nil)
         // App state observers.
         NotificationCenter.default.addObserver(
             self, selector: #selector(self.appGoingInactive),
@@ -304,6 +315,7 @@ class MessageViewController: UIViewController {
             name: UIDevice.orientationDidChangeNotification, object: nil)
     }
     private func removeAppStateObservers() {
+        NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: nil)
         NotificationCenter.default.removeObserver(
             self,
             name: UIApplication.willResignActiveNotification,
@@ -319,7 +331,11 @@ class MessageViewController: UIViewController {
     }
 
     private func setup() {
-        myUID = Cache.tinode.myUid
+        let owner = Cache.tinode
+        myUID = owner.myUid
+        voiceOwner = owner
+        voiceUID = owner.myUid
+        voiceGeneration = Cache.ifCurrent(owner) { Cache.sessionGeneration }
         self.imagePicker = ImagePicker(presentationController: self, delegate: self, editable: false, allowVideo: true)
 
         let interactor = MessageInteractor()
@@ -337,12 +353,17 @@ class MessageViewController: UIViewController {
 
     @objc
     func appBecameActive() {
+        if voicePausedNotice, voiceScopeIsCurrent(), voiceRecorder?.state == .preview {
+            voicePausedNotice = false
+            UiUtils.showToast(message: "录音已暂停，请试听后再发送")
+        }
         self.interactor?.setup(topicName: topicName, sendReadReceipts: self.sendReadReceipts)
         self.interactor?.attachToTopic(interactively: true)
         self.interactor?.loadMessagesFromCache(scrollToMostRecentMessage: false)
     }
     @objc
     func appGoingInactive() {
+        suspendVoiceRecording()
         self.interactor?.cleanup()
         self.interactor?.leaveTopic()
     }
@@ -361,8 +382,10 @@ class MessageViewController: UIViewController {
     deinit {
         // removeMenuControllerObservers()
         removeAppStateObservers()
-        // Clean up.
-        appGoingInactive()
+        // Discard only this page's unsubmitted take; no preview survives a dead page.
+        discardVoiceRecording()
+        self.interactor?.cleanup()
+        self.interactor?.leaveTopic()
     }
 
     // This makes messageInputBar visible.
@@ -620,6 +643,7 @@ class MessageViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        voicePageActive = true
 
         collectionView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: sendMessageBar.frame.height, right: 0)
 
@@ -745,28 +769,98 @@ class MessageViewController: UIViewController {
         }
     }
 
-    func sendAudioAttachment(url: URL, duration: Int, preview: Data) {
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        voicePageActive = false
+        discardVoiceRecording()
+    }
 
-        if duration < Constants.kMinDuration {
-            return
-        }
-        // Attachment size less base64 expansion and overhead.
-        let maxInbandSize = self.maxInbandSize
+    @objc func audioSessionInterrupted(_ notification: Notification) {
+        guard let value = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+              AVAudioSession.InterruptionType(rawValue: value) == .began else { return }
+        if Thread.isMainThread { suspendVoiceRecording() }
+        else { DispatchQueue.main.async { [weak self] in self?.suspendVoiceRecording() } }
+    }
 
-        let data: Data
-        do {
-            data = try Data(contentsOf: url)
-        } catch {
-            Cache.log.error("MessageVC - failed to read audio record: %@", error.localizedDescription)
-            return
-        }
+    func voiceScopeIsCurrent() -> Bool {
+        guard voicePageActive, let owner = voiceOwner, let uid = voiceUID,
+              let generation = voiceGeneration else { return false }
+        return Cache.ifCurrent(owner) {
+            owner.myUid == uid && owner.store?.myUid == uid && Cache.sessionGeneration == generation
+        } ?? false
+    }
 
-        let mime = Utils.mimeForUrl(url: url, ifMissing: "audio/m4a")
-        if data.count > maxInbandSize {
-            self.interactor?.uploadAudio(UploadDef(mimeType: mime, data: data, duration: duration, preview: preview))
+    func voiceUI(_ recorder: MediaRecorder, _ update: () -> Void) {
+        precondition(Thread.isMainThread)
+        guard voiceRecorder === recorder, recorder.isCurrent,
+              voiceTopicName == topicName, let owner = voiceOwner else { return }
+        guard Cache.isCurrent(owner), voiceScopeIsCurrent() else { return }
+        // Main presentation is outside SDK/Cache locks; it only touches this page.
+        update()
+    }
+
+    func stopRecordingPlayback(discard: Bool) {
+        guard let player = recordingPlaybackPlayer else { return }
+        if discard {
+            recordingPlaybackPlayer = nil
+            if currentAudioPlayer === player { currentAudioPlayer = nil }
+            let stop = { player.delegate = nil; player.stop() }
+            if Thread.isMainThread { stop() } else { DispatchQueue.main.async(execute: stop) }
         } else {
-            if let drafty = try? Drafty(plainText: " ").insertAudio(at: 0, mime: mime, bits: data, preview: preview, duration: duration, fname: nil, refurl: nil, size: data.count) {
-                _ = interactor?.sendMessage(content: drafty)
+            player.pause()
+            sendMessageBar.audioPlaybackAction(.playbackPause)
+            sendMessageBar.showAudioBar(.longPaused)
+        }
+    }
+
+    func suspendVoiceRecording() {
+        guard let recorder = voiceRecorder else { return }
+        guard voiceScopeIsCurrent(), recorder.isCurrent, voiceTopicName == topicName else {
+            discardVoiceRecording(); return
+        }
+        stopRecordingPlayback(discard: false)
+        recorder.cancelPendingIntent()
+        if recorder.stopForPreview() != nil { voicePausedNotice = true }
+    }
+
+    func discardVoiceRecording() {
+        stopRecordingPlayback(discard: true)
+        let recorder = voiceRecorder
+        voiceRecorder = nil
+        voiceTopicName = nil
+        voicePausedNotice = false
+        if let recorder = recorder { Cache.releaseMediaRecorder(recorder) }
+        if Thread.isMainThread, isViewLoaded { sendMessageBar.resetRecordingState() }
+    }
+
+    func sendAudioAttachment(recorder: MediaRecorder) {
+        guard voiceRecorder === recorder, voiceScopeIsCurrent(), voiceTopicName == topicName,
+              UIApplication.shared.applicationState == .active, let owner = voiceOwner,
+              let uid = voiceUID, let generation = voiceGeneration, let name = voiceTopicName else { return }
+        stopRecordingPlayback(discard: true)
+        do {
+            let (recording, data) = try recorder.prepareSubmission(minimumDuration: Constants.kMinDuration)
+            guard recorder.isCurrent, voiceScopeIsCurrent() else { return }
+            let def = UploadDef(mimeType: Utils.mimeForUrl(url: recording.url, ifMissing: "audio/m4a"),
+                                data: data, duration: recording.duration, preview: recording.preview)
+            guard interactor?.submitRecordedAudio(def, owner: owner, uid: uid,
+                    generation: generation, topicName: name) == true else {
+                voiceUI(recorder) { UiUtils.showToast(message: "录音尚未提交，请检查当前账号与会话后重试。") }
+                return
+            }
+            // This is local handoff, not an ACK or a delivery indication.
+            recorder.didSubmit(recording)
+            discardVoiceRecording()
+        } catch {
+            voiceUI(recorder) {
+                switch error as? MediaRecorderError {
+                case .tooShort:
+                    UiUtils.showToast(message: "录音不足 3 秒，请放弃后重新录制。")
+                case .cancelledByUser:
+                    break
+                default:
+                    UiUtils.showToast(message: "无法读取录音，请重试发送，或放弃后重新录制。")
+                }
             }
         }
     }

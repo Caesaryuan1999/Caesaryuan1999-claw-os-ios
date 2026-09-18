@@ -160,8 +160,6 @@ class SendMessageBar: UIView {
 
         if audioLocked {
             self.delegate?.sendMessageBar(recordAudio: .stopAndSend)
-            audioLocked = false
-            showAudioBar(.hidden)
         } else if !msg.isEmpty {
             delegate?.sendMessageBar(sendText: msg)
             inputField.text = nil
@@ -170,57 +168,41 @@ class SendMessageBar: UIView {
     }
 
     @IBAction func deleteRecording(_ sender: Any) {
-        wavePreviewImageView.reset()
-        showAudioBar(.hidden)
-        audioLocked = false
         self.delegate?.sendMessageBar(recordAudio: .stopAndDelete)
     }
 
     @IBAction func stopRecording(_ sender: Any) {
-        showAudioBar(.longPaused)
         self.delegate?.sendMessageBar(recordAudio: .stopRecording)
     }
 
     @IBAction func playRecording(_ sender: Any) {
-        showAudioBar(.longPlayback)
         self.delegate?.sendMessageBar(recordAudio: .playbackStart)
     }
 
     @IBAction func pausePlayback(_ sender: Any) {
-        showAudioBar(.longPaused)
         self.delegate?.sendMessageBar(recordAudio: .playbackPause)
     }
 
     // Handle audio recorder button swipes and presses.
     @IBAction func longPressed(sender: UILongPressGestureRecognizer) {
-        if !inputField.actualText.isEmpty || audioLocked {
-            // Cancel long press.
-            sender.isEnabled = false
-            sender.isEnabled = true
-            return
-        }
+        guard inputField.actualText.isEmpty, !audioLocked else { return }
 
         switch sender.state {
         case .began:
             let loc = sender.location(in: self)
             self.sendButtonConstrains = CGPoint(x: self.sendButtonHorizontal.constant, y: self.sendButtonVertical.constant)
             self.sendButtonLocation = CGPoint(x: loc.x, y: loc.y)
-            UIView.animate(withDuration: 0.2, delay: 0, options: UIView.AnimationOptions.curveEaseIn, animations: {
-                self.showAudioBar(.short)
-                self.updateSendButtonAppearance(sending: false, recording: true)
-                self.verticalSliderView.isHidden = false
-                self.horizontalSliderView.isHidden = false
-                self.layoutIfNeeded()
-            }, completion: nil)
             self.delegate?.sendMessageBar(recordAudio: .start)
         case .ended:
-            if inputField.actualText.isEmpty && !audioLocked {
-                audioBarState(.stopAndDelete)
+            if recordingStarted {
                 self.delegate?.sendMessageBar(recordAudio: .stopAndSend)
+            } else {
+                self.delegate?.sendMessageBar(recordAudio: .pauseRecording)
             }
         case .cancelled:
-            break
+            self.delegate?.sendMessageBar(recordAudio: .pauseRecording)
         case .changed:
+            guard recordingStarted else { return }
             // Constrain movements to either strictly horizontal or strictly vertical.
             let loc = sender.location(in: self)
             // dX and dY are negative: the movement is up and to the left.
@@ -269,6 +251,7 @@ class SendMessageBar: UIView {
 
     // MARK: - Private properties
 
+    private var recordingStarted = false
     private var inputFieldMaxHeight: CGFloat = 120
 
     // MARK: - Initializers
@@ -457,6 +440,39 @@ class SendMessageBar: UIView {
     }
 
     // MARK: - Audio playback and recording
+
+    // State changes are confirmed by the actual recorder/player, not the button.
+    func recordingDidStart() {
+        recordingStarted = true
+        showAudioBar(.short)
+        updateSendButtonAppearance(sending: false, recording: true)
+        verticalSliderView.isHidden = false
+        horizontalSliderView.isHidden = false
+        layoutIfNeeded()
+    }
+
+    func recordingDidStop() {
+        recordingStarted = false
+        audioLocked = true
+        resetRecordingGesture()
+        updateSendButtonAppearance(sending: true)
+        showAudioBar(.longPaused)
+    }
+
+    func resetRecordingState() {
+        recordingStarted = false
+        audioLocked = false
+        resetRecordingGesture()
+        showAudioBar(.hidden)
+    }
+
+    private func resetRecordingGesture() {
+        sendButtonHorizontal.constant = sendButtonConstrains.x
+        sendButtonVertical.constant = sendButtonConstrains.y
+        verticalSliderView.isHidden = true
+        horizontalSliderView.isHidden = true
+        sendButtonSize.constant = Constants.kButtonSizeNormal
+    }
 
     // Un-locked audio recording, show duration label & wave.
     func showAudioBar(_ state: AudioBarState) {

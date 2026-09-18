@@ -1,0 +1,38 @@
+{
+  "Tinodios/MediaRecorder.swift": {
+    "rawSHA256": "0a1b834be8583d5bb58162e46120f0a7c629188cc53b4c5d4bbdb2896b262136",
+    "gitBlobLF": "6cbf09fd629cdbf930810931d543ddd5799bc9ef"
+  },
+  "Tinodios/Cache.swift": {
+    "rawSHA256": "d4da16a98ed7de3c5874d9cc730354928350b6350020641b732bb852036c6c53",
+    "gitBlobLF": "46496fa69b970fad6cfeedcb3dc963df286816f9"
+  },
+  "Tinodios/MessageViewController+SendMessageBarDelegate.swift": {
+    "rawSHA256": "bd0f36de7ef0c770eba5475a5444d8676e4040b573520cbcfed174c64e24ed4a",
+    "gitBlobLF": "0f07f56ba6788d837788b00ab887db7ae8b3ac9e"
+  },
+  "Tinodios/MessageViewController.swift": {
+    "rawSHA256": "83033f8812e9d8836609d4361b99b003f81a14423d6003cc76033aaf701aedf1",
+    "gitBlobLF": "9e4d50e5e16bdf18a8f207a2bae0af65e76afe60"
+  },
+  "Tinodios/widgets/SendMessageBar.swift": {
+    "rawSHA256": "91e570fc4150ed3fbfbe972bf8d9bd9f7cce89aa443df4c41fa761095d99c197",
+    "gitBlobLF": "08257e5af521bd680bd2a927a66f2bb84fa0bdbd"
+  },
+  "Tinodios/MessageInteractor.swift": {
+    "rawSHA256": "650235f46e462aa48e243a2a4b369fc3141bd7ec8e47a68a220ab7a8a141a7e7",
+    "gitBlobLF": "7159b7a34bd31cc44fe6b34f651103bbc5bd5b2f"
+  },
+  "TinodiosUITests/MediaRecorderLifecycleTests.swift": {
+    "rawSHA256": "c6f957ce13b38f076fbe7e7abc5416f82210edbe6c64790bccfd0a1bb8236920",
+    "gitBlobLF": "3eff65b973c02ccd9702b7f66b4ff9e8fbedbf55"
+  },
+  "Tinodios.xcodeproj/project.pbxproj": {
+    "rawSHA256": "e7418014b7058a23c32db49153db6409cd7c2bb9b0157b3085a007bcfed00adf",
+    "gitBlobLF": "abeebcfd7c5349d5a27be170f3fc6246d11f2e11"
+  },
+  "Scripts/ci/verify_publish_outcomes_macos.sh": {
+    "rawSHA256": "1be986688c2719ce4cd2535138491ce659646743db5b8bf4b182a8181989314c",
+    "gitBlobLF": "a9c85841c767a15cec76b43761ea10a461ac0d84"
+  }
+}

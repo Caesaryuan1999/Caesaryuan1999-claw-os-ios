@@ -34,6 +34,8 @@ protocol MessageBusinessLogic: AnyObject {
     func ignoreInvitation()
     func blockTopic()
 
+    func submitRecordedAudio(_ def: UploadDef, owner: Tinode, uid: String,
+                             generation: UInt64, topicName: String) -> Bool
     func uploadAudio(_ def: UploadDef)
     func uploadFile(_ def: UploadDef)
     func uploadImage(_ def: UploadDef)
@@ -71,6 +73,25 @@ struct UploadDef {
     var preview: Data?
     var previewMime: String?
     var previewOutOfBand: Bool = false
+}
+
+private struct RecordedAudioScope {
+    let owner: Tinode
+    let uid: String
+    let generation: UInt64
+    let topic: DefaultComTopic
+    var isCurrent: Bool {
+        Cache.ifCurrent(owner) {
+            owner.myUid == uid && owner.store?.myUid == uid &&
+            Cache.sessionGeneration == generation && owner.getTopic(topicName: topic.name) === topic
+        } ?? false
+    }
+    func present(_ body: @escaping () -> Void) {
+        DispatchQueue.main.async {
+            guard self.isCurrent else { return }
+            body()
+        }
+    }
 }
 
 class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, MessageDataStore {
@@ -667,6 +688,59 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         uploadMessageAttachment(type: .file, def)
     }
 
+    // True means the original local message/upload entry accepted the handoff.
+    // It is never a server-ACK or delivered result.
+    func submitRecordedAudio(_ def: UploadDef, owner: Tinode, uid: String,
+                             generation: UInt64, topicName: String) -> Bool {
+        guard let topic = topic, topic.name == topicName, let duration = def.duration,
+              let preview = def.preview, !def.data.isEmpty else { return false }
+        let scope = RecordedAudioScope(owner: owner, uid: uid, generation: generation, topic: topic)
+        guard scope.isCurrent else { return false }
+        let maxInband = owner.getServerLimit(for: Tinode.kMaxMessageSize,
+            withDefault: MessageViewController.kMaxInbandAttachmentSize) * 3 / 4 - 1024
+        if def.data.count > maxInband {
+            guard let helper = Cache.largeFileHelper(for: owner), scope.isCurrent else { return false }
+            return uploadMessageAttachment(type: .audio, def, audioScope: scope, audioHelper: helper)
+        }
+        guard var content = try? Drafty(plainText: " ").insertAudio(at: 0, mime: def.mimeType,
+                bits: def.data, preview: preview, duration: duration, fname: nil, refurl: nil,
+                size: def.data.count) else { return false }
+        var head: [String: JSONValue]?
+        if let pending = pendingMessage {
+            switch pending {
+            case .replyTo(let reply, let seq):
+                content = reply.copy().append(content)
+                head = ["reply": .string(String(seq))]
+            case .edit(_, _, let seq): head = ["replace": .string(":" + String(seq))]
+            case .forwarded: return false
+            }
+        }
+        guard scope.isCurrent else { return false }
+        let promise = topic.publish(content: content, withExtraHeaders: head)
+        promise.then(onSuccess: { [weak self] _ in
+            scope.present { self?.loadMessagesFromCache() }
+            return nil
+        }, onFailure: { [weak self] error in
+            scope.present {
+                self?.loadMessagesFromCache()
+                if PublishFailureDisposition.forError(error) == .unconfirmed {
+                    UiUtils.showToast(message: "消息可能已发送，请先查看最新聊天记录。")
+                } else if case TinodeError.requestNotSent(let reason) = error {
+                    UiUtils.showToast(message: reason)
+                } else {
+                    UiUtils.showToast(message: "录音暂未发送，请检查连接后重试。")
+                }
+            }
+            return nil
+        })
+        if scope.isCurrent {
+            dismissPendingMessage()
+            presenter?.dismissPendingMessagePreviewBar()
+            loadMessagesFromCache()
+        }
+        return true
+    }
+
     func uploadAudio(_ def: UploadDef) {
         uploadMessageAttachment(type: .audio, def)
     }
@@ -675,9 +749,15 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         uploadMessageAttachment(type: .video, def)
     }
 
-    private func uploadMessageAttachment(type: AttachmentType, _ def: UploadDef) {
-        guard let topic = topic else { return }
-        let owner = Cache.tinode
+    @discardableResult
+    private func uploadMessageAttachment(type: AttachmentType, _ def: UploadDef,
+                                         audioScope: RecordedAudioScope? = nil,
+                                         audioHelper: LargeFileHelper? = nil) -> Bool {
+        guard let topic = topic else { return false }
+        let owner = audioScope?.owner ?? Cache.tinode
+        guard audioScope?.isCurrent ?? true else { return false }
+        guard audioScope == nil || audioHelper != nil else { return false }
+        let audioBase = owner.baseURL(useWebsocketProtocol: false)
         let mimeType = def.mimeType ?? {
             switch type {
             case .video:
@@ -690,11 +770,12 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         let filename = def.filename ?? ""
 
         // Check if the attachment is too big even for out-of-band uploads.
-        if def.data.count > Cache.tinode.getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: MessageViewController.kMaxAttachmentSize) {
+        if def.data.count > (audioScope?.owner ?? Cache.tinode).getServerLimit(for: Tinode.kMaxFileUploadSize, withDefault: MessageViewController.kMaxAttachmentSize) {
             DispatchQueue.main.async {
+                guard audioScope?.isCurrent ?? true else { return }
                 UiUtils.showToast(message: NSLocalizedString("附件超过最大限制", comment: "Error message: attachment too large"))
             }
-            return
+            return false
         }
 
         var replyToCopy: Drafty?
@@ -705,9 +786,10 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         // Giving fake URL to Drafty instead of Data which is not needed in DB anyway.
         guard let urlStr = "mid:uploading/\(filename)".addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) else {
             DispatchQueue.main.async {
+                guard audioScope?.isCurrent ?? true else { return }
                 UiUtils.showToast(message: String(format: NSLocalizedString("无法生成文件链接：%@", comment: "Error message: malformed URL string"), filename))
             }
-            return
+            return false
         }
         let ref = URL(string: urlStr)!
         var draft: Drafty?
@@ -715,7 +797,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         var head: [String: JSONValue]?
         switch type {
         case .audio:
-            draft = MessageInteractor.draftyAudio(refurl: ref, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count)
+            draft = MessageInteractor.draftyAudio(refurl: ref, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count, baseURL: audioBase)
             previewData = nil
         case .file:
             draft = MessageInteractor.draftyFile(filename: filename, refurl: ref, mimeType: mimeType, data: nil, size: def.data.count)
@@ -744,10 +826,12 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             head = ["reply": .string(String(replyToSeq))]
         }
 
-        guard let content = draft else { return }
+        guard let content = draft else { return false }
         // Dismiss reply.
-        self.dismissPendingMessage()
-        self.presenter?.dismissPendingMessagePreviewBar()
+        if audioScope == nil {
+            self.dismissPendingMessage()
+            self.presenter?.dismissPendingMessagePreviewBar()
+        }
 
         if !content.isPlain {
             if head == nil {
@@ -755,8 +839,13 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             }
             head!["mime"] = JSONValue.string(Drafty.kMimeType)
         }
+        guard audioScope?.isCurrent ?? true else { return false }
         if let msg = topic.store?.msgDraft(topic: topic, data: content, head: head) {
-            let helper = Cache.getLargeFileHelper()
+            let helper = audioHelper ?? Cache.getLargeFileHelper()
+            if let scope = audioScope, scope.isCurrent {
+                self.dismissPendingMessage()
+                self.presenter?.dismissPendingMessagePreviewBar()
+            }
             struct UploadResult {
                 var result: ServerMessage?
                 var error: Error?
@@ -768,7 +857,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 dg.enter()
                 helper.startMsgAttachmentUpload(
                     filename: "preview:" + filename, mimetype: def.previewMime!, data: pdata,
-                    topicId: self.topicName!, msgId: msg.msgId, progressCallback: nil,
+                    topicId: audioScope == nil ? self.topicName! : topic.name, msgId: msg.msgId, progressCallback: nil,
                     completionCallback: { (srvMsg, err) in
                         previewResult.result = srvMsg
                         previewResult.error = err
@@ -778,9 +867,13 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
             }
             dg.enter()
             var attachmentResult = UploadResult()
-            helper.startMsgAttachmentUpload(filename: filename, mimetype: mimeType, data: def.data, topicId: self.topicName!, msgId: msg.msgId, progressCallback: { [weak self] progress in
-                    let interactor = self ?? MessageInteractor.existingInteractor(for: topic.name)
-                    interactor?.presenter?.updateProgress(forMsgId: msg.msgId, progress: progress)
+            helper.startMsgAttachmentUpload(filename: filename, mimetype: mimeType, data: def.data, topicId: audioScope == nil ? self.topicName! : topic.name, msgId: msg.msgId, progressCallback: { [weak self] progress in
+                    if let scope = audioScope {
+                        scope.present { self?.presenter?.updateProgress(forMsgId: msg.msgId, progress: progress) }
+                    } else {
+                        let interactor = self ?? MessageInteractor.existingInteractor(for: topic.name)
+                        interactor?.presenter?.updateProgress(forMsgId: msg.msgId, progress: progress)
+                    }
                 },
                 completionCallback: { (srvMsg, err) in
                     attachmentResult.result = srvMsg
@@ -789,10 +882,10 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 })
 
             dg.notify(queue: DispatchQueue.main) { [weak self] in
-                guard Cache.isCurrent(owner) else { return }
+                guard Cache.isCurrent(owner), audioScope?.isCurrent ?? true else { return }
                 let serverMessage = attachmentResult.result
                 let error = attachmentResult.error
-                let interactor = self ?? MessageInteractor.existingInteractor(for: topic.name)
+                let interactor = audioScope == nil ? (self ?? MessageInteractor.existingInteractor(for: topic.name)) : self
                 var success = false
                 var cancelled = false
                 defer {
@@ -809,10 +902,11 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                     switch error! {
                     case Upload.UploadError.cancelledByUser:
                         cancelled = true
-                        Cache.log.info("Upload cancelled by user: file '%@'", filename)
+                        if audioScope == nil { Cache.log.info("Upload cancelled by user: file '%@'", filename) }
                     default:
                         DispatchQueue.main.async {
-                            UiUtils.showToast(message: error!.localizedDescription)
+                            guard audioScope?.isCurrent ?? true else { return }
+                            UiUtils.showToast(message: audioScope == nil ? error!.localizedDescription : "录音上传失败，请在消息中重试。")
                         }
                     }
                     return
@@ -824,7 +918,7 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                 var draft: Drafty?
                 switch type {
                 case .audio:
-                    draft = MessageInteractor.draftyAudio(refurl: srvUrl, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count)
+                    draft = MessageInteractor.draftyAudio(refurl: srvUrl, mimeType: mimeType, data: nil, duration: def.duration!, preview: def.preview!, size: def.data.count, baseURL: audioBase)
                 case .file:
                     draft = try? Drafty().attachFile(mime: mimeType, fname: filename, refurl: srvUrl, size: def.data.count)
                 case .image:
@@ -844,25 +938,30 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
                     guard topic.store?.msgReady(topic: topic, dbMessageId: msg.msgId, data: content) == true else { return }
                     topic.syncOne(msgId: msg.msgId)
                         .thenCatch({ error in
+                            guard audioScope?.isCurrent ?? true else { throw error }
                             if PublishFailureDisposition.forError(error) == .unconfirmed {
                                 DispatchQueue.main.async {
+                                    guard audioScope?.isCurrent ?? true else { return }
                                     UiUtils.showToast(message: "消息可能已发送，请先查看最新聊天记录。")
                                 }
                             } else if case TinodeError.requestNotSent(let reason) = error {
-                                DispatchQueue.main.async { UiUtils.showToast(message: reason) }
+                                DispatchQueue.main.async { if audioScope?.isCurrent ?? true { UiUtils.showToast(message: reason) } }
                             } else {
-                                DispatchQueue.main.async { UiUtils.showToast(message: error.localizedDescription) }
+                                DispatchQueue.main.async { if audioScope?.isCurrent ?? true { UiUtils.showToast(message: audioScope == nil ? error.localizedDescription : "录音暂未发送，请检查连接后重试。") } }
                             }
                             throw error
                         })
                         .thenFinally({
-                            interactor?.loadMessagesFromCache()
+                            if let scope = audioScope { scope.present { interactor?.loadMessagesFromCache() } }
+                            else { interactor?.loadMessagesFromCache() }
                         })
                     success = true
                 }
             }
-            self.loadMessagesFromCache()
+            if audioScope?.isCurrent ?? true { self.loadMessagesFromCache() }
+            return true
         }
+        return false
     }
 
     private static func draftyFile(filename: String?, refurl: URL, mimeType: String?, data: Data?, size: Int) -> Drafty? {
@@ -888,9 +987,9 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         return content
     }
 
-    private static func draftyAudio(refurl: URL?, mimeType: String?, data: Data?, duration: Int, preview: Data, size: Int) -> Drafty? {
+    private static func draftyAudio(refurl: URL?, mimeType: String?, data: Data?, duration: Int, preview: Data, size: Int, baseURL: URL? = Cache.tinode.baseURL(useWebsocketProtocol: false)) -> Drafty? {
         let ref: URL?
-        if let refurl = refurl, let base = Cache.tinode.baseURL(useWebsocketProtocol: false) {
+        if let refurl = refurl, let base = baseURL {
             ref = URL(string: refurl.relativize(from: base))
         } else {
             ref = nil

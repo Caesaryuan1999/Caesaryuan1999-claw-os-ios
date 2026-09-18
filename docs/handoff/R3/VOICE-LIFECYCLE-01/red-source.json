@@ -1,0 +1,13 @@
+{
+  "level": "Source-confirmed counterexamples, not a Windows-executed Swift red test",
+  "base": "63b8fe4ae4092311745a5159ea523e90ed82857d",
+  "oldRecorderBlob": "c9b6676b7131f59b713ffdc3bb6a401d3a75a581",
+  "permissionCallbackAutoStart": true,
+  "nilIUO": [
+    "    private var audioRecorder: AVAudioRecorder!"
+  ],
+  "dynamicPageRecorderUses": 10,
+  "forcedDuration": true,
+  "shortSilentlyReturned": true,
+  "readErrorReturnedWithoutRecovery": true
+}

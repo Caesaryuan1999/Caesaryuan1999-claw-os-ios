@@ -197,6 +197,8 @@
 				ATTRIBUTES = ("CodeSignOnCopy", "RemoveHeadersOnCopy", );
 			};
 		};
+		C1A046022026091800000001 /* MediaRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B091BA49282087D700317CDC /* MediaRecorder.swift */; };
+		C1A046022026091800000002 /* MediaRecorderLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A046012026091800000001 /* MediaRecorderLifecycleTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -471,6 +473,7 @@
 			path = "TinodiosVLCProbeTests.xctest";
 			sourceTree = "BUILT_PRODUCTS_DIR";
 		};
+		C1A046012026091800000001 /* MediaRecorderLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaRecorderLifecycleTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -660,6 +663,7 @@
 				C1A0D0012026091800000001 /* ConversationRemovalTests.swift */,
 				C1A0F0012026091800000001 /* PublicDirectoryTests.swift */,
 				C1A040012026091800000002 /* SecondaryUIStateTests.swift */,
+				C1A046012026091800000001 /* MediaRecorderLifecycleTests.swift */,
 				C1A041012026091800000001 /* OwnedImageTests.swift */,
 				C1A042012026091800000001 /* IdentityNavigationUITests.swift */,
 				C1A043012026091800000001 /* VLCPlaybackProbeTests.swift */,
@@ -1288,6 +1292,8 @@
 				C1A0F0022026091800000002 /* PublicDirectoryTests.swift in Sources */,
 				C1A040022026091800000002 /* ClawSecondaryUIState.swift in Sources */,
 				C1A040022026091800000003 /* SecondaryUIStateTests.swift in Sources */,
+				C1A046022026091800000001 /* MediaRecorder.swift in Sources */,
+				C1A046022026091800000002 /* MediaRecorderLifecycleTests.swift in Sources */,
 				C1A041022026091800000001 /* OwnedImageTests.swift in Sources */,
 				C1A041022026091800000002 /* RoundImageView.swift in Sources */,
 				C1A041022026091800000003 /* AsyncImageTextAttachment.swift in Sources */,

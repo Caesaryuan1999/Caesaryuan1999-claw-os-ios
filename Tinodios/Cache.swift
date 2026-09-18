@@ -59,9 +59,13 @@ class Cache {
     }
     @discardableResult
     public static func invalidate(ifCurrent expected: Tinode? = nil) -> Bool {
+        var retiredRecorder: MediaRecorder?
+        // Physical AV stop and page callbacks must run after both locks are released.
+        defer { retiredRecorder?.finishRetirement() }
         guard let current = shared.locked({ shared.tinodeInstance }) else {
             return shared.locked {
                 guard expected == nil, shared.tinodeInstance == nil else { return false }
+                retiredRecorder = shared.detachRecorderLocked()
                 SharedUtils.removeAuthToken()
                 BaseDb.sharedInstance.sqlStore?.logout()
                 shared.generation &+= 1
@@ -72,6 +76,7 @@ class Cache {
         return current.withSessionLock {
             shared.locked {
                 guard shared.tinodeInstance === current else { return false }
+            retiredRecorder = shared.detachRecorderLocked()
             SharedUtils.removeAuthToken()
             shared.timer.suspend()
             shared.largeFileHelper?.invalidateSession()
@@ -121,6 +126,17 @@ class Cache {
                 }
             }
             return created
+        }
+    }
+
+    // Audio callers already own an SDK lease. Never replace a retired owner.
+    static func largeFileHelper(for owner: Tinode) -> LargeFileHelper? {
+        return ifCurrent(owner) {
+            if let helper = shared.largeFileHelper { return helper }
+            let config = URLSessionConfiguration.background(withIdentifier: "tinode-" + UUID().uuidString)
+            let helper = LargeFileHelper(with: owner, config: config)
+            shared.largeFileHelper = helper
+            return helper
         }
     }
 
@@ -202,16 +218,37 @@ class Cache {
         })
     }
 
-    private func initMediaRecorder() -> MediaRecorder {
-        mediaRecorderInstance = MediaRecorder()
-        mediaRecorderInstance!.maxDuration = 600_000 // 10 min
-        return mediaRecorderInstance!
+    private func detachRecorderLocked() -> MediaRecorder? {
+        let recorder = mediaRecorderInstance
+        mediaRecorderInstance = nil
+        recorder?.markRetired()
+        return recorder
     }
 
-    public static var mediaRecorder: MediaRecorder {
-        if let recorder = Cache.shared.mediaRecorderInstance {
-            return recorder
+    static func makeMediaRecorder(for owner: Tinode) -> MediaRecorder? {
+        guard let uid = owner.myUid, !uid.isEmpty,
+              let generation = ifCurrent(owner, { shared.generation }) else { return nil }
+        let recorder = MediaRecorder(ownerIsCurrent: {
+            Cache.ifCurrent(owner) { shared.generation == generation && owner.myUid == uid } ?? false
+        }, log: { event in Cache.log.error("%@", event) })
+        recorder.maxDuration = 600_000
+        var previous: MediaRecorder?
+        let accepted = ifCurrent(owner) {
+            guard shared.generation == generation, owner.myUid == uid else { return false }
+            previous = shared.detachRecorderLocked()
+            shared.mediaRecorderInstance = recorder
+            return true
+        } ?? false
+        previous?.finishRetirement()
+        guard accepted else { recorder.retire(); return nil }
+        return recorder
+    }
+
+    static func releaseMediaRecorder(_ recorder: MediaRecorder) {
+        shared.locked {
+            if shared.mediaRecorderInstance === recorder { shared.mediaRecorderInstance = nil }
+            recorder.markRetired()
         }
-        return Cache.shared.initMediaRecorder()
+        recorder.finishRetirement()
     }
 }

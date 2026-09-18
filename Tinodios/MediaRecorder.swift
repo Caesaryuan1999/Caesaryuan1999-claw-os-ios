@@ -1,208 +1,358 @@
 //
-//  MediaRecorder.swift
-//  Tinodios
+// Recorder lifecycle is owned by one page/account lease. AV work stays on main;
+// retirement admission is synchronous and never invokes AV or UI under Cache locks.
 //
-//  Copyright © 2022 Tinode LLC. All rights reserved.
-//
-
 import AVFoundation
+
+enum MediaRecorderPermissionEvent: Equatable { case requesting, granted, denied }
 
 protocol MediaRecorderDelegate: AnyObject {
     func didStartRecording(recorder: MediaRecorder)
     func didFinishRecording(recorder: MediaRecorder, url: URL?, duration: TimeInterval)
     func didUpdateRecording(recorder: MediaRecorder, amplitude: Float, atTime: TimeInterval)
     func didFailRecording(recorder: MediaRecorder, _ error: Error)
+    func didUpdateRecordingPermission(recorder: MediaRecorder, event: MediaRecorderPermissionEvent)
 }
 
-enum MediaRecorderError: LocalizedError, CustomStringConvertible {
-    case permissionDenyed
-    case unknownPermission
-    case permissionRequested
-    case cancelledByUser
+enum MediaRecorderError: Error, Equatable {
+    case initializationFailed, recordingFailed, cancelledByUser, tooShort, unreadable
+}
 
-    public var description: String {
-        get {
-            switch self {
-            case .permissionDenyed:
-                return "Permission denyed"
-            case .unknownPermission:
-                return "Unknown permission"
-            case .permissionRequested:
-                return "Permission requested"
-            case .cancelledByUser:
-                return "Cancelled by user"
-            }
-        }
+protocol MediaRecordingSession: AnyObject {
+    var recordPermission: AVAudioSession.RecordPermission { get }
+    func requestRecordPermission(_ callback: @escaping (Bool) -> Void)
+    func activate() throws
+    func deactivate() throws
+}
+
+private final class SystemMediaRecordingSession: MediaRecordingSession {
+    private var session: AVAudioSession { AVAudioSession.sharedInstance() }
+    var recordPermission: AVAudioSession.RecordPermission { session.recordPermission }
+    func requestRecordPermission(_ callback: @escaping (Bool) -> Void) {
+        session.requestRecordPermission(callback)
     }
+    func activate() throws {
+        try session.setCategory(.playAndRecord, options: .defaultToSpeaker)
+        try session.setActive(true)
+    }
+    func deactivate() throws { try session.setActive(false) }
 }
 
-/// MediaRecorder currenly support audio recording only.
-class MediaRecorder: NSObject {
-    private static let kTimerPrecision: TimeInterval = 0.03
-    private static let kSampleRate = 16000
-    private static let kPreviewBars = 96
+protocol MediaRecordingEngine: AnyObject {
+    var delegate: AVAudioRecorderDelegate? { get set }
+    var isRecording: Bool { get }
+    var currentTime: TimeInterval { get }
+    var isMeteringEnabled: Bool { get set }
+    func prepareToRecord() -> Bool
+    func record() -> Bool
+    func record(forDuration duration: TimeInterval) -> Bool
+    func stop()
+    func pause()
+    func updateMeters()
+    func averagePower(forChannel channelNumber: Int) -> Float
+}
+extension AVAudioRecorder: MediaRecordingEngine {}
 
-    private var session = AVAudioSession.sharedInstance()
-    private var audioRecorder: AVAudioRecorder!
+class MediaRecorder: NSObject, AVAudioRecorderDelegate {
+    enum State: Equatable { case idle, requestingPermission, preparing, recording, preview, transferred, retired }
+    struct Recording {
+        let url: URL
+        let duration: Int
+        let preview: Data
+    }
 
-    private var settings = [
-        AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-        AVSampleRateKey: MediaRecorder.kSampleRate,
-        AVNumberOfChannelsKey: 1,
-        AVEncoderAudioQualityKey: AVAudioQuality.medium.rawValue
-    ]
-
-    private var updateTimer: Timer!
-    private var latestRecordName: String?
+    private let admissionLock = NSLock()
+    private var retired = false
+    private let ownerIsCurrent: () -> Bool
+    private let session: MediaRecordingSession
+    private let factory: (URL, [String: Any]) throws -> MediaRecordingEngine
+    private let directory: URL
+    private let log: (String) -> Void
+    private let schedulesTimer: Bool
+    private let readData: (URL) throws -> Data
+    private var engine: MediaRecordingEngine?
+    private var updateTimer: Timer?
+    private var ownedURL: URL?
+    private var completed: Recording?
+    private var permissionRequest: UUID?
+    private var activeSession = false
+    private var lastTime: TimeInterval = 0
     private var audioSampler = AudioSampler()
+    private(set) var state: State = .idle
+    weak var delegate: MediaRecorderDelegate?
+    var onRetired: (() -> Void)?
+    var timerPrecision: TimeInterval = 0.03
+    var maxDuration: Int?
+    var recordFileURL: URL? { completed?.url ?? ownedURL }
+    var duration: Int? { completed?.duration ?? (ownedURL == nil ? nil : Int(lastTime * 1000)) }
+    var preview: Data { completed?.preview ?? audioSampler.obtain(dstCount: 96) }
 
-    public weak var delegate: MediaRecorderDelegate?
-    public var timerPrecision = MediaRecorder.kTimerPrecision
-    public var saveRecordingToPath = FileManager.SearchPathDirectory.cachesDirectory
-    public var duration: Int?
-    public var maxDuration: Int?
-
-    /// URL of the latest record.
-    public var recordFileURL: URL? {
-        guard let name = self.latestRecordName else { return nil }
-        let path = FileManager.default.urls(for: self.saveRecordingToPath, in: .userDomainMask)[0]
-        return path.appendingPathComponent("\(name).m4a")
+    init(ownerIsCurrent: @escaping () -> Bool = { true },
+         session: MediaRecordingSession? = nil,
+         factory: @escaping (URL, [String: Any]) throws -> MediaRecordingEngine = {
+             try AVAudioRecorder(url: $0, settings: $1)
+         },
+         directory: URL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0],
+         schedulesTimer: Bool = true, readData: @escaping (URL) throws -> Data = { try Data(contentsOf: $0) },
+         log: @escaping (String) -> Void = { _ in }) {
+        self.ownerIsCurrent = ownerIsCurrent
+        self.session = session ?? SystemMediaRecordingSession()
+        self.factory = factory
+        self.directory = directory
+        self.schedulesTimer = schedulesTimer
+        self.readData = readData
+        self.log = log
+        super.init()
     }
 
-    public var isRecording: Bool {
-        return self.audioRecorder.isRecording
+    var isCurrent: Bool {
+        admissionLock.lock()
+        let admitted = !retired
+        admissionLock.unlock()
+        return admitted && ownerIsCurrent()
     }
 
-    public func start() {
-        let recordTimeLimit: TimeInterval? = self.maxDuration != nil ? TimeInterval(self.maxDuration!) / 1000 : nil
+    var isRecording: Bool {
+        isCurrent && state == .recording && engine?.isRecording == true
+    }
 
-        switch self.session.recordPermission {
+    // This is the ONLY operation allowed while the SDK/Cache locks are held.
+    // Physical stop, file deletion and callbacks are performed later, outside those locks.
+    func markRetired() {
+        admissionLock.lock()
+        retired = true
+        admissionLock.unlock()
+    }
+
+    func finishRetirement() {
+        let finish = { [self] in
+            discardOwnedRecording()
+            state = .retired
+            delegate = nil
+            let callback = onRetired
+            onRetired = nil
+            callback?()
+        }
+        if Thread.isMainThread { finish() } else { DispatchQueue.main.async(execute: finish) }
+    }
+
+    func retire() { markRetired(); finishRetirement() }
+
+    func start() {
+        precondition(Thread.isMainThread)
+        guard isCurrent, state == .idle else { return }
+        switch session.recordPermission {
         case .undetermined:
-            self.delegate?.didFailRecording(recorder: self, MediaRecorderError.permissionRequested)
-            self.session.requestRecordPermission({response in
+            guard permissionRequest == nil else { return }
+            state = .requestingPermission
+            let request = UUID()
+            permissionRequest = request
+            delegate?.didUpdateRecordingPermission(recorder: self, event: .requesting)
+            session.requestRecordPermission { [weak self] granted in
                 DispatchQueue.main.async {
-                    if response {
-                        self.startRecording(forDuration: recordTimeLimit)
-                    } else {
-                        // Permission denyed.
-                        self.delegate?.didFailRecording(recorder: self, MediaRecorderError.permissionDenyed)
-                    }
+                    guard let self = self, self.isCurrent, self.permissionRequest == request else { return }
+                    self.permissionRequest = nil
+                    if self.state == .requestingPermission { self.state = .idle }
+                    // Permission completion never carries a recording intent.
+                    self.delegate?.didUpdateRecordingPermission(recorder: self, event: granted ? .granted : .denied)
                 }
-            })
-            break
+            }
         case .granted:
-            self.startRecording(forDuration: recordTimeLimit)
+            permissionRequest = nil
+            startRecording()
         case .denied:
-            self.delegate?.didFailRecording(recorder: self, MediaRecorderError.unknownPermission)
+            delegate?.didUpdateRecordingPermission(recorder: self, event: .denied)
         @unknown default:
-            // Ignored: do nothing.
-            break
+            delegate?.didUpdateRecordingPermission(recorder: self, event: .denied)
         }
     }
 
-    private func startRecording(forDuration: TimeInterval?) {
-        self.latestRecordName = NSUUID().uuidString
+    private func startRecording() {
+        state = .preparing
+        let candidate = directory.appendingPathComponent(UUID().uuidString + ".m4a")
+        var prepared: MediaRecordingEngine?
         do {
-            try self.session.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
-            self.audioRecorder = try AVAudioRecorder(url: self.recordFileURL!, settings: settings)
-            self.audioRecorder.delegate = self
-            self.audioRecorder.isMeteringEnabled = true
-            self.audioRecorder.prepareToRecord()
-        } catch {
-            self.delegate?.didFailRecording(recorder: self, error)
-            Cache.log.error("Failed to setup recorder: %@", error.localizedDescription)
-            return
-        }
-
-        if !audioRecorder.isRecording {
-            do {
-                try self.session.setActive(true)
-                self.updateTimer = Timer.scheduledTimer(timeInterval: self.timerPrecision, target: self, selector: #selector(self.recordUpdate), userInfo: nil, repeats: true)
-                self.duration = 0
-                if let maxDuration = forDuration {
-                    self.audioRecorder.record(forDuration: maxDuration)
-                } else {
-                    self.audioRecorder.record()
-                }
-                self.delegate?.didStartRecording(recorder: self)
-            } catch {
-                self.delegate?.didFailRecording(recorder: self, error)
-                Cache.log.error("Failed to start recording: %@", error.localizedDescription)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let settings: [String: Any] = [
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC), AVSampleRateKey: 16000,
+                AVNumberOfChannelsKey: 1, AVEncoderAudioQualityKey: AVAudioQuality.medium.rawValue]
+            let recorder = try factory(candidate, settings)
+            prepared = recorder
+            recorder.delegate = self
+            recorder.isMeteringEnabled = true
+            guard recorder.prepareToRecord() else { throw MediaRecorderError.initializationFailed }
+            guard isCurrent else { throw MediaRecorderError.cancelledByUser }
+            // activate may partially configure AVAudioSession before throwing.
+            activeSession = true
+            try session.activate()
+            guard isCurrent else { throw MediaRecorderError.cancelledByUser }
+            // All AV calls are outside the admission/Cache/SDK locks. Retirement
+            // closes admission immediately; an already-entered AV call is stopped
+            // on main before any result/delegate delivery can be accepted.
+            let started = maxDuration.map { recorder.record(forDuration: TimeInterval($0) / 1000) }
+                ?? recorder.record()
+            guard started else { throw MediaRecorderError.recordingFailed }
+            engine = recorder
+            ownedURL = candidate
+            completed = nil
+            lastTime = 0
+            audioSampler = AudioSampler()
+            state = .recording
+            guard isCurrent else { retire(); return }
+            if schedulesTimer {
+                updateTimer = Timer.scheduledTimer(timeInterval: timerPrecision, target: self,
+                    selector: #selector(recordUpdate), userInfo: nil, repeats: true)
             }
-        }
-    }
-
-    public func stop(discard: Bool = false) {
-        guard let recordURL = self.recordFileURL else { return }
-
-        let duration = self.audioRecorder.currentTime
-        self.audioRecorder.stop()
-        if discard {
-            self.delete()
-            self.delegate?.didFailRecording(recorder: self, MediaRecorderError.cancelledByUser)
-        } else {
-            self.duration = Int(duration * 1000)
-            self.delegate?.didFinishRecording(recorder: self, url: recordURL, duration: duration)
-        }
-        do {
-            try self.session.setActive(false)
+            delegate?.didStartRecording(recorder: self)
         } catch {
-            Cache.log.error("Failed to stop recording: %@", error.localizedDescription)
+            prepared?.delegate = nil
+            prepared?.stop()
+            deactivate()
+            try? FileManager.default.removeItem(at: candidate)
+            engine = nil
+            ownedURL = nil
+            completed = nil
+            state = isCurrent ? .idle : .retired
+            log("recording_initialization_failed")
+            if isCurrent { delegate?.didFailRecording(recorder: self, MediaRecorderError.initializationFailed) }
         }
     }
 
-    public func pause() {
-        guard self.recordFileURL != nil else { return }
-        self.audioRecorder.pause()
+    // Pending authorization is not a pending start operation. Its eventual result
+    // may still inform this same live page, but can never start the microphone.
+    func cancelPendingIntent() {
+        precondition(Thread.isMainThread)
+        if state == .requestingPermission { state = .idle }
     }
 
-    public func delete() {
-        guard let recordURL = self.recordFileURL else { return }
+    @discardableResult
+    func stopForPreview() -> Recording? {
+        precondition(Thread.isMainThread)
+        guard isCurrent else { retire(); return nil }
+        if let completed = completed { return completed }
+        guard let recorder = engine, let url = ownedURL else {
+            cancelPendingIntent()
+            return nil
+        }
+        let elapsed = max(lastTime, recorder.currentTime)
+        updateTimer?.invalidate()
+        updateTimer = nil
+        recorder.delegate = nil
+        recorder.stop()
+        engine = nil
+        deactivate()
+        lastTime = elapsed
+        let recording = Recording(url: url, duration: max(0, Int(elapsed * 1000)),
+                                  preview: audioSampler.obtain(dstCount: 96))
+        completed = recording
+        state = .preview
+        delegate?.didFinishRecording(recorder: self, url: url, duration: elapsed)
+        return recording
+    }
 
-        let manager = FileManager.default
-        if manager.fileExists(atPath: recordURL.path) {
-            do {
-                try manager.removeItem(at: recordURL)
-                self.latestRecordName = nil
-                self.duration = nil
-                self.audioSampler = AudioSampler()
-            } catch {
-                Cache.log.error("Failed to delete recording: %@", error.localizedDescription)
-            }
-        } else {
-            // The recording does not exist.
-            self.latestRecordName = nil
-            self.duration = nil
-            self.audioSampler = AudioSampler()
+    func stop(discard: Bool = false) {
+        if discard { delete() } else { _ = stopForPreview() }
+    }
+
+    func pause() {
+        precondition(Thread.isMainThread)
+        guard isCurrent else { return }
+        engine?.pause()
+    }
+
+    func delete() {
+        precondition(Thread.isMainThread)
+        let hadOwnedRecording = ownedURL != nil || state == .requestingPermission
+        discardOwnedRecording()
+        if isCurrent {
+            state = .idle
+            if hadOwnedRecording { delegate?.didFailRecording(recorder: self, MediaRecorderError.cancelledByUser) }
         }
     }
 
-    public var preview: Data {
-        return audioSampler.obtain(dstCount: MediaRecorder.kPreviewBars)
+    // The same production entry is exercised with real temporary files in tests.
+    // A short/unreadable take remains available for explicit discard or retry.
+    func prepareSubmission(minimumDuration: Int) throws -> (Recording, Data) {
+        precondition(Thread.isMainThread)
+        guard let recording = stopForPreview(), isCurrent else { throw MediaRecorderError.cancelledByUser }
+        guard recording.duration >= minimumDuration else { throw MediaRecorderError.tooShort }
+        let data: Data
+        do { data = try readData(recording.url) } catch { throw MediaRecorderError.unreadable }
+        guard !data.isEmpty else { throw MediaRecorderError.unreadable }
+        guard isCurrent else { retire(); throw MediaRecorderError.cancelledByUser }
+        return (recording, data)
+    }
+
+    // Caller invokes only after handing this recording to the existing message
+    // entry. Retirement must not delete a file whose ownership was transferred.
+    func didSubmit(_ recording: Recording) {
+        precondition(Thread.isMainThread)
+        guard state == .preview, completed?.url == recording.url else { return }
+        ownedURL = nil
+        completed = nil
+        state = .transferred
+    }
+
+    private func discardOwnedRecording() {
+        permissionRequest = nil
+        updateTimer?.invalidate()
+        updateTimer = nil
+        engine?.delegate = nil
+        engine?.stop()
+        engine = nil
+        deactivate()
+        if let url = ownedURL {
+            do { try FileManager.default.removeItem(at: url) }
+            catch { log("recording_cleanup_failed") }
+        }
+        ownedURL = nil
+        completed = nil
+        lastTime = 0
+        audioSampler = AudioSampler()
+    }
+
+    private func deactivate() {
+        guard activeSession else { return }
+        activeSession = false
+        do { try session.deactivate() } catch { log("recording_deactivation_failed") }
     }
 
     @objc func recordUpdate() {
-        if self.audioRecorder.isRecording {
-            self.audioRecorder.updateMeters()
-            let amplitude = pow(10, 0.1 * self.audioRecorder.averagePower(forChannel: 0))
-            self.audioSampler.put(amplitude)
-            self.delegate?.didUpdateRecording(recorder: self, amplitude: amplitude, atTime: self.audioRecorder.currentTime)
-            self.duration = Int(self.audioRecorder.currentTime * 1000)
+        guard isCurrent else { retire(); return }
+        guard let recorder = engine else { return }
+        if recorder.isRecording {
+            recorder.updateMeters()
+            let amplitude = pow(10, 0.1 * recorder.averagePower(forChannel: 0))
+            audioSampler.put(amplitude)
+            lastTime = recorder.currentTime
+            delegate?.didUpdateRecording(recorder: self, amplitude: amplitude, atTime: lastTime)
         } else {
-            self.updateTimer.invalidate()
+            _ = stopForPreview()
         }
     }
-}
 
-
-extension MediaRecorder: AVAudioRecorderDelegate {
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        updateTimer.invalidate()
+        recordingFinished(recorder, successfully: flag)
     }
 
     func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
-        Cache.log.error("Error while recording: %@", error?.localizedDescription ?? "nil")
-        updateTimer.invalidate()
+        recordingFinished(recorder, successfully: false)
+    }
+
+    // Both AV callbacks and the native fake AV boundary enter this exact identity check.
+    func recordingFinished(_ recorder: MediaRecordingEngine, successfully flag: Bool) {
+        let finish = { [weak self] in
+            guard let self = self, self.engine === recorder, self.isCurrent else { return }
+            if flag { _ = self.stopForPreview() } else { self.failRecording() }
+        }
+        if Thread.isMainThread { finish() } else { DispatchQueue.main.async(execute: finish) }
+    }
+
+    private func failRecording() {
+        discardOwnedRecording()
+        state = .idle
+        log("recording_failed")
+        delegate?.didFailRecording(recorder: self, MediaRecorderError.recordingFailed)
     }
 }
 
