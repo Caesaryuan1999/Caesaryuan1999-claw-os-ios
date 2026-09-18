@@ -11,6 +11,31 @@ import XCTest
 // TODO: add tests for Tinode here.
 class TinodeSDKTests: XCTestCase {
 
+    func testCopiedAudioReplyPreservesOriginalQuoteAndAudioMetadata() throws {
+        // Actual Drafty construction/copy/append; not the UIKit submitRecordedAudio callback.
+        let reply = Drafty.quote(quoteHeader: "Synthetic author", authorUid: "usrFixture",
+                                quoteContent: Drafty(plainText: "Quoted body"))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        let original = try encoder.encode(reply)
+        let preview = Data([8, 16, 32])
+        let bits = Data(repeating: 5, count: 128)
+        let audio = try Drafty(plainText: " ").insertAudio(at: 0, mime: "audio/m4a", bits: bits,
+            preview: preview, duration: 4200, fname: nil, refurl: nil, size: bits.count)
+        let replyCopy = try XCTUnwrap(reply.copy())
+        let combined = replyCopy.append(audio)
+        XCTAssertFalse(combined === reply)
+        XCTAssertEqual(try encoder.encode(reply), original)
+        XCTAssertEqual(combined.txt, reply.txt + audio.txt)
+        XCTAssertTrue(combined.fmt?.contains(where: { $0.tp == "QQ" }) == true)
+        let entity = try XCTUnwrap(combined.ent?.first(where: { $0.tp == "AU" })?.data)
+        XCTAssertEqual(entity["val"]?.asData(), bits)
+        XCTAssertEqual(entity["preview"]?.asData(), preview)
+        XCTAssertEqual(entity["duration"]?.asInt(), 4200)
+        XCTAssertEqual(entity["size"]?.asInt(), bits.count)
+        XCTAssertNil(entity["ref"])
+    }
+
     func testUploadedAudioConsumerReplacesPlaceholderWithServerReference() throws {
         let placeholder = try XCTUnwrap(URL(string: "mid:uploading/voice.m4a"))
         let server = try XCTUnwrap(URL(string: "https://audio-fixture.invalid/v0/file/audio-result"))

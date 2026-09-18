@@ -709,7 +709,8 @@ class MessageInteractor: DefaultComTopic.Listener, MessageBusinessLogic, Message
         if let pending = pendingMessage {
             switch pending {
             case .replyTo(let reply, let seq):
-                content = reply.copy().append(content)
+                guard let replyCopy = reply.copy() else { return false }
+                content = replyCopy.append(content)
                 head = ["reply": .string(String(seq))]
             case .edit(_, _, let seq): head = ["replace": .string(":" + String(seq))]
             case .forwarded: return false

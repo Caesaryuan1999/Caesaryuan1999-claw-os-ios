@@ -1,0 +1,10 @@
+{
+  "exact_production_replacement": true,
+  "SDK_methods": 44,
+  "native_added": 1,
+  "native_execution": "NOT_RUN",
+  "source_hashes": {
+    "Tinodios\\MessageInteractor.swift": "3ae645e90aec3a43f287348d517d778cc18c8593f5bb0f3afda1fd10e93ea37d",
+    "TinodeSDKTests\\TinodeSDKTests.swift": "193560f3515f877f1d88558101fc5de0cb6a281b7ccd5028abf3a74704032ae0"
+  }
+}
