@@ -15,6 +15,9 @@ final class VoiceLayoutTests: XCTestCase {
     private var keyboardFrame = CGRect.zero
     private var keyboardShows = 0
     private var keyboardHides = 0
+    private var keyboardSequence = 0
+    private var keyboardSamples = [[String: Any]]()
+    private var lastHitEvidence = [String: Any]()
 
     private func main<T>(_ body: () throws -> T) rethrows -> T {
         if Thread.isMainThread { return try body() }
@@ -37,16 +40,29 @@ final class VoiceLayoutTests: XCTestCase {
             try awaitMain("foreground App", seconds: 3) { UIApplication.shared.applicationState == .active }
             previousWindow = UIApplication.shared.windows.first(where: { $0.isKeyWindow })
             keyboardFrame = .zero; keyboardShows = 0; keyboardHides = 0
-            for name in [UIResponder.keyboardDidShowNotification, UIResponder.keyboardDidHideNotification] {
+            keyboardSequence = 0; keyboardSamples = []; lastHitEvidence = [:]
+            for name in [UIResponder.keyboardDidShowNotification, UIResponder.keyboardDidHideNotification,
+                         UIResponder.keyboardDidChangeFrameNotification] {
                 keyboardTokens.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) {
                     [weak self] note in
                     guard let self = self else { return }
+                    precondition(Thread.isMainThread)
+                    self.keyboardSequence += 1
+                    self.keyboardFrame = (note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue ?? .null
+                    let category: String
                     if note.name == UIResponder.keyboardDidShowNotification {
-                        self.keyboardShows += 1
-                        self.keyboardFrame = (note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue ?? .zero
+                        self.keyboardShows += 1; category = "didShow"
+                    } else if note.name == UIResponder.keyboardDidHideNotification {
+                        self.keyboardHides += 1; category = "didHide"
                     } else {
-                        self.keyboardHides += 1
-                        self.keyboardFrame = .zero
+                        category = "didChangeFrame"
+                    }
+                    if self.keyboardSamples.count < 64 {
+                        let frame = self.keyboardFrame
+                        self.keyboardSamples.append(["sequence": self.keyboardSequence, "event": category,
+                            "hasFrame": !frame.isNull,
+                            "visibleHeight": frame.isNull ? -1 : frame.intersection(UIScreen.main.bounds).height,
+                            "inputFirstResponder": self.fixture?.bar.inputField.isFirstResponder == true])
                     }
                 })
             }
@@ -75,7 +91,7 @@ final class VoiceLayoutTests: XCTestCase {
                 keyboardTokens.removeAll()
             }
             // Preserve the actual current component even when an earlier assertion failed.
-            if let value = fixture { try capture("teardown-current-before-reset", value) }
+            if let value = fixture { try capture("teardown-current-before-reset", value, waitForStability: false) }
         }
     }
 
@@ -91,6 +107,47 @@ final class VoiceLayoutTests: XCTestCase {
 
     private func current() throws -> AccessoryFixture { try XCTUnwrap(fixture) }
 
+    // Sample real UIKit state on main until it remains stable; never suppress animations.
+    private func awaitStable(_ category: String, until deadline: TimeInterval? = nil, _ geometry: () -> [CGFloat]?) throws {
+        var previous: [CGFloat]?
+        var stableSince = ProcessInfo.processInfo.systemUptime
+        let remaining = max(0, (deadline ?? (stableSince + 3)) - stableSince)
+        try awaitMain(category, seconds: remaining) {
+            guard let values = geometry() else { previous = nil; return false }
+            let now = ProcessInfo.processInfo.systemUptime
+            if let old = previous, old.count == values.count,
+               zip(old, values).allSatisfy({ abs($0.0 - $0.1) <= 0.5 }) {
+                return now - stableSince >= 0.1
+            }
+            previous = values; stableSince = now
+            return false
+        }
+    }
+
+    private func presentationViews(_ f: AccessoryFixture) -> [UIView] {
+        // Finite layout/fade transitions only: do not wait for text-view caret or waveform animation.
+        let bar = f.bar
+        let buttons = [bar.sendButton!, bar.stopAudioRecordingButton!, bar.voiceSendButton!,
+                       bar.playAudioButton!, bar.pauseAudioButton!, bar.deleteAudioButton!]
+        var views: [UIView] = [bar, bar.audioView, bar.voiceStackView, bar.voiceScrollView]
+        for button in buttons { views.append(button) }
+        var ancestor = f.bar.superview
+        while let value = ancestor { views.append(value); ancestor = value.superview }
+        return views
+    }
+
+    private func awaitPresentation(_ f: AccessoryFixture, until deadline: TimeInterval? = nil) throws {
+        try awaitStable("component animations and geometry settled", until: deadline) {
+            f.bar.layoutIfNeeded(); f.bar.window?.layoutIfNeeded()
+            let views = self.presentationViews(f)
+            guard views.allSatisfy({ $0.layer.animationKeys()?.isEmpty ?? true }) else { return nil }
+            return views.filter { !$0.isHidden }.flatMap {
+                let frame = $0.convert($0.bounds, to: nil)
+                return [frame.minX, frame.minY, frame.width, frame.height, $0.alpha]
+            }
+        }
+    }
+
     func testOriginalNibLoadsAndResetsWithoutRecording() throws {
         try main {
             let f = try current(), bar = f.bar
@@ -99,9 +156,11 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertTrue(bar.inputField is PlaceholderTextView)
             XCTAssertTrue(bar.previewView is RichTextView)
             XCTAssertTrue(bar.wavePreviewImageView is WaveImageView)
-            let gestures = descendants(bar).flatMap { $0.gestureRecognizers ?? [] }.compactMap { $0 as? UILongPressGestureRecognizer }
+            // UITextView has system selection gestures; only the original send button owns this action.
+            let gestures = (bar.sendButton.gestureRecognizers ?? []).compactMap { $0 as? UILongPressGestureRecognizer }
             XCTAssertEqual(gestures.count, 1)
             XCTAssertEqual(try XCTUnwrap(gestures.first).minimumPressDuration, 0.5)
+            XCTAssertTrue(try XCTUnwrap(gestures.first).view === bar.sendButton)
             let original = CGPoint(x: bar.sendButtonHorizontal.constant, y: bar.sendButtonVertical.constant)
             bar.resetRecordingState(); bar.resetRecordingState(); f.settle()
             XCTAssertEqual(bar.sendButtonHorizontal.constant, original.x)
@@ -110,6 +169,33 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertFalse(bar.inputField.isHidden)
             XCTAssertTrue(f.spy.actions.isEmpty)
             try capture("initial-and-repeat-reset", f)
+            // Exercise the actual XIB button across both existing appearance paths.
+            let originalImage = try XCTUnwrap(bar.sendButton.currentImage)
+            if #available(iOS 15.0, *) { XCTAssertNil(bar.sendButton.configuration) }
+            XCTAssertNil(bar.sendButton.currentTitle)
+            bar.inputField.text = "组件布局测试" // synthetic, never submitted
+            bar.textViewDidChange(bar.inputField); f.settle(); try awaitPresentation(f)
+            XCTAssertNil(bar.sendButton.currentImage)
+            XCTAssertNil(bar.sendButton.imageView?.image)
+            if #available(iOS 15.0, *) { XCTAssertNil(bar.sendButton.configuration) }
+            XCTAssertEqual(bar.sendButton.currentTitle, "发送")
+            let label = try XCTUnwrap(bar.sendButton.titleLabel)
+            XCTAssertEqual(label.numberOfLines, 1)
+            let size = ("发送" as NSString).size(withAttributes: [.font: try XCTUnwrap(label.font)])
+            XCTAssertGreaterThanOrEqual(label.bounds.width + 1, ceil(size.width))
+            XCTAssertLessThanOrEqual(label.bounds.height, ceil(label.font.lineHeight) + 1)
+            XCTAssertGreaterThanOrEqual(bar.sendButton.bounds.width, max(64, ceil(size.width) + 20))
+            XCTAssertGreaterThanOrEqual(bar.sendButton.bounds.height, 48)
+            try capture("send-button-text-single-line", f)
+            bar.inputField.text = ""; bar.textViewDidChange(bar.inputField); f.settle(); try awaitPresentation(f)
+            XCTAssertNil(bar.sendButton.currentTitle)
+            XCTAssertTrue(try XCTUnwrap(bar.sendButton.currentImage).isEqual(originalImage))
+            if #available(iOS 15.0, *) { XCTAssertNil(bar.sendButton.configuration) }
+            XCTAssertEqual(bar.sendButton.bounds.width, 48, accuracy: 0.5)
+            XCTAssertEqual(bar.sendButton.bounds.height, 48, accuracy: 0.5)
+            XCTAssertEqual(bar.sendButton.accessibilityLabel, "录音")
+            XCTAssertTrue(f.spy.actions.isEmpty); XCTAssertTrue(f.spy.sentTexts.isEmpty)
+            try capture("send-button-empty-recording-restored", f)
         }
     }
 
@@ -175,9 +261,16 @@ final class VoiceLayoutTests: XCTestCase {
     func testInputAccessoryKeyboardAppearsAndDismisses() throws {
         try main {
             let f = try current(), bar = f.bar
+            let beforeShow = keyboardSequence
             XCTAssertTrue(bar.inputField.becomeFirstResponder())
-            try awaitMain("software keyboard shown", seconds: 3) {
-                self.keyboardShows > 0 && self.keyboardFrame.height > 0 && bar.inputField.isFirstResponder
+            try awaitStable("software keyboard shown with complete geometry") {
+                let frame = self.keyboardFrame.intersection(UIScreen.main.bounds)
+                guard self.keyboardSequence > beforeShow, !self.keyboardFrame.isNull,
+                      frame.height > 100, bar.inputField.isFirstResponder, bar.window != nil else { return nil }
+                let accessory = bar.convert(bar.bounds, to: nil)
+                // The initial 98pt notification described only the accessory, not a software keyboard.
+                guard frame.height - accessory.intersection(frame).height - f.window.safeAreaInsets.bottom > 100 else { return nil }
+                return [frame.minY, frame.height, accessory.minY, accessory.height]
             }
             bar.inputField.text = "组件布局测试" // synthetic, never submitted
             bar.textViewDidChange(bar.inputField); f.settle()
@@ -188,10 +281,18 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertFalse(bar.inputField.isHidden)
             XCTAssertTrue(f.spy.sentTexts.isEmpty)
             try capture("keyboard-shown", f)
+            let beforeHide = keyboardSequence
             XCTAssertTrue(bar.inputField.resignFirstResponder())
             XCTAssertTrue(f.controller.becomeFirstResponder())
-            try awaitMain("software keyboard hidden", seconds: 3) {
-                self.keyboardHides > 0 && !bar.inputField.isFirstResponder && self.keyboardFrame == .zero
+            try awaitStable("software keyboard hidden with accessory retained") {
+                guard self.keyboardSequence > beforeHide, !self.keyboardFrame.isNull,
+                      !bar.inputField.isFirstResponder, f.controller.isFirstResponder, bar.window != nil else { return nil }
+                let frame = self.keyboardFrame.intersection(UIScreen.main.bounds)
+                let accessory = bar.convert(bar.bounds, to: nil)
+                // This controller intentionally retains its inputAccessoryView. Its frame need not be zero.
+                guard frame.height > 0, accessory.intersection(frame).height >= accessory.height - 1,
+                      frame.height - accessory.height <= f.window.safeAreaInsets.bottom + 1 else { return nil }
+                return [frame.minY, frame.height, accessory.minY, accessory.height]
             }
             f.settle(); try capture("keyboard-dismissed", f)
         }
@@ -267,11 +368,29 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertGreaterThan(button.bounds.width, 0)
             f.bar.voiceScrollView.scrollRectToVisible(button.convert(button.bounds, to: f.bar.voiceScrollView), animated: false)
             f.settle()
+            let readinessDeadline = ProcessInfo.processInfo.systemUptime + 3
+            try awaitPresentation(f, until: readinessDeadline)
             let rectangle = button.convert(button.bounds, to: f.bar.voiceScrollView)
             XCTAssertTrue(f.bar.voiceScrollView.bounds.insetBy(dx: -1, dy: -1).contains(rectangle))
             let actualWindow = try XCTUnwrap(button.window)
-            let center = button.convert(CGPoint(x: button.bounds.midX, y: button.bounds.midY), to: actualWindow)
-            let hit = actualWindow.hitTest(center, with: nil)
+            func hitAtCenter() -> UIView? {
+                let center = button.convert(CGPoint(x: button.bounds.midX, y: button.bounds.midY), to: actualWindow)
+                let hit = actualWindow.hitTest(center, with: nil)
+                lastHitEvidence = ["button": button.accessibilityIdentifier ?? "", "hitClass": hit.map { NSStringFromClass(type(of: $0)) } ?? "none",
+                                   "matches": hit === button || hit?.isDescendant(of: button) == true,
+                                   "buttonInteractive": button.isUserInteractionEnabled,
+                                   "targetWindowPresent": button.window === actualWindow,
+                                   "transitionLayers": presentationViews(f).map { ["class": NSStringFromClass(type(of: $0)),
+                                       "keys": $0.layer.animationKeys() ?? []] as [String: Any] }]
+                return hit
+            }
+            try awaitStable("button center hit after transition", until: readinessDeadline) {
+                let hit = hitAtCenter()
+                guard button.window === actualWindow, hit === button || hit?.isDescendant(of: button) == true else { return nil }
+                let frame = button.convert(button.bounds, to: actualWindow)
+                return [frame.minX, frame.minY, frame.width, frame.height]
+            }
+            let hit = hitAtCenter()
             XCTAssertTrue(hit === button || hit?.isDescendant(of: button) == true)
             let needed = try XCTUnwrap(button.titleLabel).sizeThatFits(CGSize(width: button.bounds.width - button.contentEdgeInsets.left - button.contentEdgeInsets.right,
                                                                             height: .greatestFiniteMagnitude))
@@ -286,8 +405,9 @@ final class VoiceLayoutTests: XCTestCase {
         button.sendActions(for: .touchUpInside) // Actual XIB target/action, not a finger event.
     }
 
-    private func capture(_ name: String, _ f: AccessoryFixture) throws {
+    private func capture(_ name: String, _ f: AccessoryFixture, waitForStability: Bool = true) throws {
         f.settle()
+        if waitForStability { try awaitPresentation(f) }
         let bar = f.bar
         // Draw the loaded UIKit view, not a reconstructed image or fake chat screenshot.
         var drawn = false
@@ -297,7 +417,7 @@ final class VoiceLayoutTests: XCTestCase {
         guard drawn, let data = png, !data.isEmpty else { throw Failure.renderingFailed }
         let image = XCTAttachment(data: data, uniformTypeIdentifier: "public.png")
         image.name = "voice-component-" + name; image.lifetime = .keepAlways; add(image)
-        func rect(_ value: CGRect) -> [CGFloat] { [value.minX, value.minY, value.width, value.height] }
+        func rect(_ value: CGRect) -> [CGFloat] { value.isNull ? [] : [value.minX, value.minY, value.width, value.height] }
         let buttons = [bar.stopAudioRecordingButton!, bar.voiceSendButton!, bar.playAudioButton!, bar.pauseAudioButton!, bar.deleteAudioButton!]
         let evidence: [String: Any] = [
             "scope": "Original SendMessageBar and App XIB in neutral accessory container; not a chat/recording/send test",
@@ -311,6 +431,14 @@ final class VoiceLayoutTests: XCTestCase {
             "scrollEnabled": bar.voiceScrollView.isScrollEnabled, "scrollViewport": rect(bar.voiceScrollView.bounds),
             "contentHeight": bar.voiceScrollView.contentSize.height,
             "keyboardShows": keyboardShows, "keyboardHides": keyboardHides, "keyboardFrame": rect(keyboardFrame),
+            "keyboardSequence": keyboardSequence, "keyboardSamples": keyboardSamples,
+            "lastHit": lastHitEvidence, "waitedForStablePresentation": waitForStability,
+            "transitionLayers": presentationViews(f).map { ["class": NSStringFromClass(type(of: $0)),
+                "keys": $0.layer.animationKeys() ?? []] as [String: Any] },
+            "sendButton": ["hasImage": bar.sendButton.currentImage != nil, "title": bar.sendButton.currentTitle ?? "",
+                           "imageViewHasImage": bar.sendButton.imageView?.image != nil,
+                           "titleLines": bar.sendButton.titleLabel?.numberOfLines ?? -1,
+                           "frame": rect(bar.sendButton.bounds)],
             "inputFirstResponder": bar.inputField.isFirstResponder,
             "buttons": buttons.map { ["id": $0.accessibilityIdentifier ?? "", "hidden": $0.isHidden,
                                        "frame": rect($0.convert($0.bounds, to: bar)), "height": $0.bounds.height] as [String: Any] },

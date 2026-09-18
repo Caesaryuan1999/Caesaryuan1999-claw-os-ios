@@ -335,6 +335,10 @@ class SendMessageBar: UIView {
 
         ClawTheme.styleIconButton(attachButton, symbolName: "plus", pointSize: ClawTheme.iconCompact)
         attachButton.accessibilityLabel = NSLocalizedString("添加附件", comment: "Add attachment")
+        // The XIB configuration image otherwise survives legacy setImage(nil).
+        // Use one appearance API for this button's existing text/recording states.
+        if #available(iOS 15.0, *) { sendButton.configuration = nil }
+        sendButton.titleLabel?.numberOfLines = 1
         sendButton.tintColor = ClawTheme.primary
         sendButton.imageView?.contentMode = .scaleAspectFit
         sendButton.contentHorizontalAlignment = .center

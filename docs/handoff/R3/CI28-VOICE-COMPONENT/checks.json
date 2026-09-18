@@ -1,0 +1,324 @@
+{
+  "base": "13318b374709aa5f160374111a6954477a627a3c",
+  "scope": "Windows exact source checks and original CI evidence hash, not native rerun",
+  "checks": [
+    {
+      "name": "only_four_initialization_lines_in_production",
+      "pass": true
+    },
+    {
+      "name": "configuration_cleared_before_first_legacy_appearance",
+      "pass": true
+    },
+    {
+      "name": "native_methods_same_six",
+      "pass": true
+    },
+    {
+      "name": "every_original_assertion_line_retained",
+      "pass": true
+    },
+    {
+      "name": "software_keyboard_100_threshold_retained",
+      "pass": true
+    },
+    {
+      "name": "new_notification_epoch_and_current_responder",
+      "pass": true
+    },
+    {
+      "name": "real_send_button_recognizer_only",
+      "pass": true
+    },
+    {
+      "name": "finite_wait_no_animation_suppression",
+      "pass": true
+    },
+    {
+      "name": "original_real_hit_retained",
+      "pass": true
+    },
+    {
+      "name": "empty_text_empty_real_button_assertions",
+      "pass": true
+    },
+    {
+      "name": "XIB_unchanged_original_configuration_preserved",
+      "pass": true
+    },
+    {
+      "name": "red_XIB_configuration_image_exists",
+      "pass": true
+    },
+    {
+      "name": "only_two_code_paths_changed",
+      "pass": true
+    },
+    {
+      "name": "CI_target_Pod_and_selector_frozen",
+      "pass": true
+    },
+    {
+      "name": "production_captureRecordingGestureOrigin_unchanged",
+      "pass": true
+    },
+    {
+      "name": "production_resetRecordingGesture_unchanged",
+      "pass": true
+    },
+    {
+      "name": "production_resetRecordingState_unchanged",
+      "pass": true
+    },
+    {
+      "name": "production_audioBarState_unchanged",
+      "pass": true
+    },
+    {
+      "name": "original_zip_hash",
+      "pass": true
+    },
+    {
+      "name": "original_component_attachments_24",
+      "pass": true
+    },
+    {
+      "name": "actual_CI28_result_not_promoted",
+      "pass": true
+    },
+    {
+      "name": "final_additive_imageView_assertion_and_explicit_view_array_only",
+      "pass": true
+    }
+  ],
+  "passed": 22,
+  "total": 22,
+  "original_artifact": {
+    "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence.zip",
+    "bytes": 74830064,
+    "sha256": "3844417c2abd8daf6e379cc6bd0dbb435635ac56a3026c4a9d07e644ae42c094"
+  },
+  "original_attachments": [
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\EEFFF0FE-7FD0-40EB-A974-531838D08505.json",
+      "method": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-teardown-current-before-reset_0_9EBB9276-B4B7-4E59-8B10-CA10368DF86C.json",
+      "bytes": 1948,
+      "sha256": "d4040459f3be303fac9658f1f8e1743ff6b501f298b05b34f1e677ac73676e77",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\1801969A-6B81-44C2-A58E-7308830FE2B5.png",
+      "method": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-teardown-current-before-reset_0_69403AFE-5BCB-4133-AC97-1F42C012CF33.png",
+      "bytes": 187692,
+      "sha256": "d97fc02eb56a7244b6ad1a27a2044451e44fb0ca88e8152ee7cad06abbaeede7",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\A88D174D-4F01-4C8B-97E1-29A0AB5A0E04.json",
+      "method": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-controlled-handler-actions_0_BBA57D6A-BBAA-413F-8B86-676C9B323DF9.json",
+      "bytes": 1945,
+      "sha256": "961d07ad838192d20e896bdd29dd93296578deca9949ccca7b014537e14a0e16",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\81AE1665-EF2E-45D2-A1E6-8A0DE7D1E703.png",
+      "method": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-controlled-handler-actions_0_313805A7-11A6-4B6A-953E-649C415CC020.png",
+      "bytes": 187674,
+      "sha256": "22c85e245919c500e8e141d23f0aa9afa4bb64d6728578f86516e0aacd522785",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\BAC55BD7-97EB-4847-B0D3-49B39C80E81D.json",
+      "method": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-controlled-up-lock_0_E99744A5-E6B9-4CFD-917D-D3248AC39BEC.json",
+      "bytes": 1873,
+      "sha256": "2b5779e39aa422200d976edb523968963b5334e550c2668b75752fd777f985b9",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\13EB074A-60DF-4863-97D7-2CC86E056B5D.png",
+      "method": "VoiceLayoutTests/testControlledGestureHandlerUsesSameWindowAndThresholds()",
+      "name": "voice-component-controlled-up-lock_0_5D4810F9-F5A3-4521-92B0-EF90ECA53254.png",
+      "bytes": 185696,
+      "sha256": "589777100f97b74b13431e2f53a425cea7c337db6a4d1260886bf5ce18488394",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\25B5EDD6-A820-451C-A21D-64621AE47E61.json",
+      "method": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-teardown-current-before-reset_0_18716F1A-D201-4419-88C1-4C014572C92F.json",
+      "bytes": 1857,
+      "sha256": "c4928a122f98a043522676f70985ea60005634eb56d19f5c30d770a8a3e95df1",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\F8B31657-6D0E-44AF-A2D8-8295D3521CF9.png",
+      "method": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-teardown-current-before-reset_0_170BA6D1-819C-40BD-8964-DCAEA6AA1587.png",
+      "bytes": 164108,
+      "sha256": "89afb32262ec700902d650925c64e11e755d5ebc7076cbbb423b2e4042e35f01",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\BCB42458-EE7B-4546-BF5A-4BFF34A087DB.json",
+      "method": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-dark-largest-type-scroll_0_A14079F2-CC55-49C3-881B-08CEE434624A.json",
+      "bytes": 1852,
+      "sha256": "221b45f8f526e03f68b54b43ba7ce4ac68f395b4688bad87f6c25d668cec4d6b",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\D10853B6-5830-48F0-8845-3A36881608E0.png",
+      "method": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-dark-largest-type-scroll_0_9546AA20-F82C-4991-91E6-FE9BF4E1FD90.png",
+      "bytes": 164108,
+      "sha256": "89afb32262ec700902d650925c64e11e755d5ebc7076cbbb423b2e4042e35f01",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\45FD1E21-E125-47A2-8BC4-5E5EC7F419B2.json",
+      "method": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-light-default-type_0_3FA16F53-943F-48EF-9C81-FD272963EF38.json",
+      "bytes": 1727,
+      "sha256": "7f81044d72f378fc1880c7b944f5165fdd4937b454b7bc5056144e4cb64c448b",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\4830FE01-9DF3-4A48-B773-EEBB80AD40B9.png",
+      "method": "VoiceLayoutTests/testDynamicTypeDarkLightAndScrollableMinimumTargets()",
+      "name": "voice-component-light-default-type_0_EC89C9FB-EB6B-4995-93BD-F4EF5F6547DB.png",
+      "bytes": 159009,
+      "sha256": "b74ec94a4227b0069a9eab8514ee426eddb5b1e2141090c7ec6e55d38be6ee90",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\3D162F77-8955-4F37-AC8D-68037CB27623.json",
+      "method": "VoiceLayoutTests/testInputAccessoryKeyboardAppearsAndDismisses()",
+      "name": "voice-component-teardown-current-before-reset_0_6571055D-98CC-48C2-A24C-66F838042280.json",
+      "bytes": 1724,
+      "sha256": "feaaa7717b1e416433deb48c542b158dc095a481057c1788e5cf008389f3807f",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\BA297243-6CFE-4BF0-9614-388921CF04F5.png",
+      "method": "VoiceLayoutTests/testInputAccessoryKeyboardAppearsAndDismisses()",
+      "name": "voice-component-teardown-current-before-reset_0_0777AE4E-666C-48F3-B027-6FA51D701BA2.png",
+      "bytes": 70821,
+      "sha256": "77babd1ace6d070cd432a35d29fda747805da175e69a9580b268dd2d9b4a1437",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\3E524BEB-D7E8-4A44-BA16-7AE365B835D9.json",
+      "method": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-teardown-current-before-reset_0_6457C654-B953-4284-AB81-810DD6A682E2.json",
+      "bytes": 1720,
+      "sha256": "1c818220b8026433d8119338fb43757c9b47098b0abf2b532fe18fa75c8392cd",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\8AD0DBD0-8EE0-475F-A1CA-B2F7E4CDB632.png",
+      "method": "VoiceLayoutTests/testOriginalNibLoadsAndResetsWithoutRecording()",
+      "name": "voice-component-teardown-current-before-reset_0_3AC01632-8851-4350-8A09-82C7CFA68C1A.png",
+      "bytes": 103851,
+      "sha256": "5b5547b10b873b544854565db9ed183b20d1086a7885e67a0445ea0c9744312c",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\46A2E285-7787-4E36-BA8B-9F5EE5E265FB.json",
+      "method": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-teardown-current-before-reset_0_7B315D0F-8919-4C6A-AAD8-EFE657B6C896.json",
+      "bytes": 1873,
+      "sha256": "30d459c9f16be6a68cc15a7fd63b2ece2f6a4a12ae69191431f2fb3bf1a6016b",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\06FBE749-6BDC-4B30-871A-9E41C117C79C.png",
+      "method": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-teardown-current-before-reset_0_352F3CD0-F682-47F7-9F85-46F9388C0376.png",
+      "bytes": 203894,
+      "sha256": "ae0b29d183b5cfc1b5948da49d6d7af12c5ce8afe60dd35c1155c88c2493900b",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\06227E7E-C2A7-4645-BF5C-878C014BC1C7.json",
+      "method": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-holding-controlled-presentation_0_B8CB78AA-CBF8-46F4-934C-4BC647A4E8EF.json",
+      "bytes": 1842,
+      "sha256": "5413d8db8bbc64b0f90130c036850028bca12909f53f205dcf3f82fb9534dff8",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\E4AEC31F-2D79-4D06-BEAC-D303A6A1E9A0.png",
+      "method": "VoiceLayoutTests/testRecordingStatesAndOriginalButtonsForwardActions()",
+      "name": "voice-component-holding-controlled-presentation_0_172E9AF2-6F5D-470C-983A-9FE724842F90.png",
+      "bytes": 179814,
+      "sha256": "1a7189ab1713ad2d78ae0ac7e3e875a1e16f1828928844257438b76a5f6071b4",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\52CCD474-878F-4702-85DA-1D97FB53CA46.json",
+      "method": "VoiceLayoutTests/testResetAfterGestureDoesNotReusePreviousLayout()",
+      "name": "voice-component-teardown-current-before-reset_0_568551FC-6193-4167-9DB5-87D4D0C7058B.json",
+      "bytes": 1845,
+      "sha256": "412901467d98e0eac3c122a82f28f012b77af21e68fb38dbbd2ea18aab2db123",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\5D4631F9-7ABE-4C2B-9F75-B68FAC54F06F.png",
+      "method": "VoiceLayoutTests/testResetAfterGestureDoesNotReusePreviousLayout()",
+      "name": "voice-component-teardown-current-before-reset_0_6579213B-2C3E-4089-B85D-82D08866FD1F.png",
+      "bytes": 102784,
+      "sha256": "65e87e5a2ef0f3070503a86e29ddc760cc0f451d70b6c3941547050721091784",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\AE707262-2606-4BDF-8E5A-7032730C8760.json",
+      "method": "VoiceLayoutTests/testResetAfterGestureDoesNotReusePreviousLayout()",
+      "name": "voice-component-reset-new-layout_0_795536A7-4E91-4AAD-B339-EC6696B18CB5.json",
+      "bytes": 1832,
+      "sha256": "c83df6e69018200a59b574337fc8da343c8152dc312137e38bae1dbb638791fc",
+      "original_zip_equal": true
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\artifacts\\integration\\20260918\\R3-ios-ci28-evidence\\ios-01-a-20260918-140246\\storage-attachments\\D6008ECD-F101-4FB3-9D25-C4F109014650.png",
+      "method": "VoiceLayoutTests/testResetAfterGestureDoesNotReusePreviousLayout()",
+      "name": "voice-component-reset-new-layout_0_923FDEAC-A4F4-498F-BC6B-4AA3766F9405.png",
+      "bytes": 102784,
+      "sha256": "65e87e5a2ef0f3070503a86e29ddc760cc0f451d70b6c3941547050721091784",
+      "original_zip_equal": true
+    }
+  ],
+  "sources": [
+    {
+      "path": "Tinodios/widgets/SendMessageBar.swift",
+      "before_sha256": "44ea7ee941926448f2a6b98b1178921b9d9c8a8636d7590cce02681ee5bbb816",
+      "after_LF_sha256": "dc8e241bfc4eb257b9baa06375004cd8d91662481b2c47388b149b0801c24298"
+    },
+    {
+      "path": "TinodiosUITests/VoiceLayoutTests.swift",
+      "before_sha256": "87a43b656f4198798d60396420428e6a8ba47412ee564524e8bd24f3eeab1a49",
+      "after_LF_sha256": "2e7158967d94c29b7a2e61747223bd6569286a6852a6d39c3353207370418565"
+    }
+  ],
+  "native_methods": [
+    "testOriginalNibLoadsAndResetsWithoutRecording",
+    "testRecordingStatesAndOriginalButtonsForwardActions",
+    "testDynamicTypeDarkLightAndScrollableMinimumTargets",
+    "testInputAccessoryKeyboardAppearsAndDismisses",
+    "testResetAfterGestureDoesNotReusePreviousLayout",
+    "testControlledGestureHandlerUsesSameWindowAndThresholds"
+  ],
+  "expected_next_native": {
+    "SDK": 44,
+    "UIrunner": 175,
+    "VLC": 7,
+    "component": 6,
+    "total": 232,
+    "navigation_separate": 3
+  },
+  "native_fix_run": "NOT_RUN"
+}
