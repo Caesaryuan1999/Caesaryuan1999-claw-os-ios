@@ -64,12 +64,175 @@ struct ClawAssistantCapabilities: ClawAssistantValidated {
     let generation: Feature
     let stream: Feature
     let limits: Limits
+    let run_protocol: String?
+    let message_states: ClawAssistantMessageStates?
+    private enum CodingKeys: String, CodingKey {
+        case version, history, generation, stream, limits, run_protocol, message_states
+    }
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        version = try values.decode(String.self, forKey: .version)
+        history = try values.decode(Feature.self, forKey: .history)
+        generation = try values.decode(Feature.self, forKey: .generation)
+        stream = try values.decode(Feature.self, forKey: .stream)
+        limits = try values.decode(Limits.self, forKey: .limits)
+        // Unknown B fields must not break the original A-only history reader.
+        run_protocol = try? values.decode(String.self, forKey: .run_protocol)
+        message_states = try? values.decode(ClawAssistantMessageStates.self, forKey: .message_states)
+    }
     func validate() throws {
         guard version == "claw-ai-v1", limits.body_bytes == 65536,
               limits.text_bytes == 32000, limits.page_size_max == 100 else {
             throw ClawAssistantError.incompatible
         }
-        // Even a future server advertising generation=true cannot enable B in this client.
+        // A callers do not use the B fields to enable generation.
+    }
+}
+
+// B is explicitly negotiated. A message decoding and the A UI remain unchanged.
+struct ClawAssistantMessageStates: Decodable {
+    let user: [String]
+    let assistant: [String]
+}
+
+extension ClawAssistantCapabilities {
+    func validateRuns() throws {
+        try validate()
+        guard run_protocol == "claw-ai-run-v1",
+              let states = message_states,
+              Set(states.user) == Set(["partial", "interrupted", "completed"]), states.user.count == 3,
+              Set(states.assistant) == Set(["partial", "completed", "stopped", "interrupted", "failed"]),
+              states.assistant.count == 5 else { throw ClawAssistantError.incompatible }
+    }
+}
+
+struct ClawAssistantRunInput: Encodable, Equatable {
+    let request_id: String
+    let text: String
+    let retry_of: String?
+    func body() throws -> Data {
+        guard ClawAssistantWire.uuid(request_id), retry_of.map(ClawAssistantWire.uuid) ?? true,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              text.utf8.count <= 32000 else { throw ClawAssistantError.invalidResponse }
+        // Validate emptiness only: the transmitted/hash input is the original text.
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        let data = try encoder.encode(self)
+        guard data.count <= 65536 else { throw ClawAssistantError.responseTooLarge }
+        return data
+    }
+}
+
+struct ClawAssistantConversationPageValue: ClawAssistantValidated {
+    let value: ClawAssistantConversation
+    init(from decoder: Decoder) throws { value = try ClawAssistantConversation(from: decoder) }
+    func validate() throws { try value.validate() }
+}
+
+enum ClawAssistantRunWire {
+    static let active = Set(["queued", "running"])
+    static let terminal = Set(["completed", "stopped", "interrupted", "failed"])
+    static let reasons = Set(["", "user_stop", "process_lost", "auth_revoked", "provider_error",
+                              "output_limit", "event_limit", "shutdown", "legacy_history"])
+    static let outputLimit = 256 * 1024
+    static func next(_ value: String) -> String? {
+        guard ClawAssistantWire.decimal(value), let number = Int64(value), number < Int64.max else { return nil }
+        return String(number + 1)
+    }
+}
+
+struct ClawAssistantRunReceipt: ClawAssistantValidated, Equatable {
+    let legacy: Bool?
+    let conversation_id: String
+    let run_id: String
+    let request_id: String
+    let question_message_id: String
+    let answer_message_id: String
+    let state: String
+    let last_event: String
+    let revision: String
+    let created_at: String
+    var isLegacy: Bool { legacy == true }
+    var isTerminal: Bool { ClawAssistantRunWire.terminal.contains(state) }
+    func validate() throws {
+        guard ClawAssistantWire.uuid(conversation_id), ClawAssistantWire.uuid(run_id),
+              ClawAssistantWire.uuid(request_id), ClawAssistantWire.decimal(last_event),
+              ClawAssistantWire.decimal(revision), ClawAssistantWire.date(created_at) != nil,
+              ClawAssistantRunWire.active.contains(state) || isTerminal,
+              ClawAssistantWire.uuid(question_message_id) || (isLegacy && question_message_id.isEmpty),
+              ClawAssistantWire.uuid(answer_message_id) || (isLegacy && answer_message_id.isEmpty),
+              !isLegacy || isTerminal else { throw ClawAssistantError.invalidResponse }
+    }
+}
+
+struct ClawAssistantRunSnapshot: ClawAssistantValidated, Equatable {
+    let receipt: ClawAssistantRunReceipt
+    let text: String
+    let updated_at: String
+    let reason: String
+    private enum CodingKeys: String, CodingKey { case text, updated_at, reason }
+    init(from decoder: Decoder) throws {
+        receipt = try ClawAssistantRunReceipt(from: decoder)
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        text = try values.decode(String.self, forKey: .text)
+        updated_at = try values.decode(String.self, forKey: .updated_at)
+        reason = try values.decode(String.self, forKey: .reason)
+    }
+    func validate() throws {
+        try receipt.validate()
+        guard text.utf8.count <= ClawAssistantRunWire.outputLimit,
+              ClawAssistantWire.date(updated_at) != nil, ClawAssistantRunWire.reasons.contains(reason),
+              receipt.isTerminal || reason.isEmpty else { throw ClawAssistantError.invalidResponse }
+    }
+}
+
+struct ClawAssistantRunEvent: ClawAssistantValidated, Equatable {
+    let id: String
+    let kind: String
+    let delta: String?
+    let state: String?
+    let reason: String?
+    let revision: String
+    func validate() throws {
+        guard ClawAssistantWire.decimal(id), id != "0", ClawAssistantWire.decimal(revision) else {
+            throw ClawAssistantError.invalidResponse
+        }
+        switch kind {
+        case "accepted":
+            guard state == "queued", delta == nil, reason == nil else { throw ClawAssistantError.invalidResponse }
+        case "delta":
+            guard let delta = delta, !delta.isEmpty, delta.utf8.count <= 4096,
+                  state == nil, reason == nil else { throw ClawAssistantError.invalidResponse }
+        case "terminal":
+            guard let state = state, ClawAssistantRunWire.terminal.contains(state), delta == nil,
+                  reason.map({ ClawAssistantRunWire.reasons.contains($0) }) ?? true else {
+                throw ClawAssistantError.invalidResponse
+            }
+        default: throw ClawAssistantError.incompatible
+        }
+    }
+}
+
+struct ClawAssistantRunEvents: ClawAssistantValidated {
+    let conversation_id: String
+    let run_id: String
+    let items: [ClawAssistantRunEvent]
+    let next_after_event: String
+    let last_event: String
+    let state: String
+    func validate() throws {
+        guard ClawAssistantWire.uuid(conversation_id), ClawAssistantWire.uuid(run_id), items.count <= 100,
+              ClawAssistantWire.decimal(last_event),
+              ClawAssistantRunWire.active.contains(state) || ClawAssistantRunWire.terminal.contains(state),
+              next_after_event.isEmpty || next_after_event == items.last?.id else { throw ClawAssistantError.invalidResponse }
+        var previous: String?
+        for item in items {
+            try item.validate()
+            guard !ClawAssistantWire.less(last_event, item.id),
+                  previous.map({ ClawAssistantRunWire.next($0) == item.id }) ?? true else {
+                throw ClawAssistantError.invalidResponse
+            }
+            previous = item.id
+        }
     }
 }
 

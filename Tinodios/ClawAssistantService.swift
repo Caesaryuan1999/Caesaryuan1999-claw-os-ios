@@ -3,7 +3,7 @@ import Foundation
 
 protocol ClawAssistantCancellation: AnyObject { func cancel() }
 
-/// Only A read/delete operations exist here. No POST, run, stream or implicit create.
+/// A operations remain unchanged. B entry points require explicit protocol negotiation.
 final class ClawAssistantService {
     static let responseLimit = 24 * 1024 * 1024 // covers 100 * 32000 * 6 + metadata
     private let origin: URL
@@ -13,7 +13,7 @@ final class ClawAssistantService {
     private let isCurrent: () -> Bool
     private let lock = NSLock()
     private var ended = false
-    private var requests: [UUID: ClawAssistantHTTPTask] = [:]
+    private var requests: [UUID: ClawAssistantCancellation] = [:]
 
     static func origin(_ url: URL) throws -> URL {
         guard var c = URLComponents(url: url, resolvingAgainstBaseURL: false),
@@ -95,8 +95,104 @@ final class ClawAssistantService {
         return request("conversations/\(id)", method: "DELETE", completion: completion)
     }
 
+    @discardableResult
+    func createConversation(_ id: String, capabilities: ClawAssistantCapabilities,
+        retrySubmission: Bool = false,
+        completion: @escaping (Result<ClawAssistantConversationPageValue, ClawAssistantError>) -> Void)
+        -> ClawAssistantCancellation? {
+        guard (try? capabilities.validateRuns()) != nil, capabilities.generation.available || retrySubmission,
+              ClawAssistantWire.uuid(id) else { completion(.failure(.unavailable)); return nil }
+        let body = Data(("{\"conversation_id\":\"" + id + "\"}").utf8)
+        return request("conversations", method: "POST", body: body, successCodes: [200, 201], completion: completion)
+    }
+
+    @discardableResult
+    func submitRun(_ id: String, input: ClawAssistantRunInput, capabilities: ClawAssistantCapabilities,
+        retrySubmission: Bool = false,
+        completion: @escaping (Result<ClawAssistantRunReceipt, ClawAssistantError>) -> Void)
+        -> ClawAssistantCancellation? {
+        guard (try? capabilities.validateRuns()) != nil,
+              capabilities.generation.available || retrySubmission, ClawAssistantWire.uuid(id) else {
+            completion(.failure(.unavailable)); return nil
+        }
+        do {
+            return request("conversations/\(id)/runs", method: "POST", body: try input.body(),
+                           successCodes: [200, 202], completion: completion)
+        } catch let error as ClawAssistantError { completion(.failure(error)); return nil }
+          catch { completion(.failure(.invalidResponse)); return nil }
+    }
+
+    @discardableResult
+    func run(_ id: String, runID: String, capabilities: ClawAssistantCapabilities, stop: Bool = false,
+        completion: @escaping (Result<ClawAssistantRunSnapshot, ClawAssistantError>) -> Void)
+        -> ClawAssistantCancellation? {
+        guard (try? capabilities.validateRuns()) != nil, ClawAssistantWire.uuid(id), ClawAssistantWire.uuid(runID) else {
+            completion(.failure(.incompatible)); return nil
+        }
+        return request("conversations/\(id)/runs/\(runID)" + (stop ? "/stop" : ""),
+                       method: stop ? "POST" : "GET", completion: completion)
+    }
+
+    @discardableResult
+    func events(_ id: String, runID: String, after: String, capabilities: ClawAssistantCapabilities,
+        completion: @escaping (Result<ClawAssistantRunEvents, ClawAssistantError>) -> Void)
+        -> ClawAssistantCancellation? {
+        guard (try? capabilities.validateRuns()) != nil, ClawAssistantWire.uuid(id), ClawAssistantWire.uuid(runID),
+              ClawAssistantWire.decimal(after) else { completion(.failure(.invalidResponse)); return nil }
+        return request("conversations/\(id)/runs/\(runID)/events",
+                       query: [URLQueryItem(name: "after_event", value: after), URLQueryItem(name: "limit", value: "100")],
+                       completion: { (result: Result<ClawAssistantRunEvents, ClawAssistantError>) in
+            completion(result.flatMap { value in
+                guard value.conversation_id == id, value.run_id == runID,
+                      value.items.first.map({ ClawAssistantRunWire.next(after) == $0.id }) ?? true else {
+                    return .failure(.invalidResponse)
+                }
+                return .success(value)
+            })
+        })
+    }
+
+    @discardableResult
+    func stream(_ id: String, runID: String, after: String, capabilities: ClawAssistantCapabilities,
+        event: @escaping (ClawAssistantRunEvent) -> Void,
+        completion: @escaping (ClawAssistantStreamEnd) -> Void) -> ClawAssistantCancellation? {
+        guard (try? capabilities.validateRuns()) != nil, ClawAssistantWire.uuid(id), ClawAssistantWire.uuid(runID),
+              ClawAssistantWire.decimal(after) else { completion(.failure(.invalidResponse)); return nil }
+        guard capabilities.stream.available else {
+            completion(.failure(.server(503, "history_unavailable"))); return nil
+        }
+        guard isCurrent() else { completion(.failure(.retired)); return nil }
+        let requestID = UUID()
+        var outgoing = authorizedRequest(origin.appendingPathComponent("v0/ai/conversations/\(id)/runs/\(runID)/stream"),
+                                         method: "GET", body: nil)
+        outgoing.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        outgoing.setValue(after, forHTTPHeaderField: "Last-Event-ID")
+        let task = ClawAssistantStream(request: outgoing, configuration: configuration, isCurrent: isCurrent,
+            event: event, completion: { [weak self] result in
+                guard let self = self else { return }
+                self.lock.lock(); self.requests.removeValue(forKey: requestID); self.lock.unlock()
+                completion(result)
+            })
+        lock.lock()
+        guard !ended else { lock.unlock(); completion(.failure(.retired)); return nil }
+        requests[requestID] = task; lock.unlock()
+        task.start(); return task
+    }
+
+    private func authorizedRequest(_ url: URL, method: String, body: Data?) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = method; request.httpBody = body
+        request.setValue("token " + token, forHTTPHeaderField: "Authorization")
+        request.setValue(apiKey, forHTTPHeaderField: "X-Tinode-APIKey")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+        if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        return request
+    }
+
     private func request<T: ClawAssistantValidated>(_ path: String, method: String = "GET",
-        query: [URLQueryItem] = [], completion: @escaping (Result<T, ClawAssistantError>) -> Void)
+        query: [URLQueryItem] = [], body: Data? = nil, successCodes: Set<Int> = [200],
+        completion: @escaping (Result<T, ClawAssistantError>) -> Void)
         -> ClawAssistantCancellation? {
         guard isCurrent() else { completion(.failure(.retired)); return nil }
         guard var parts = URLComponents(url: origin.appendingPathComponent("v0/ai/" + path), resolvingAgainstBaseURL: false) else {
@@ -104,14 +200,9 @@ final class ClawAssistantService {
         }
         if !query.isEmpty { parts.queryItems = query }
         guard let url = parts.url else { completion(.failure(.invalidResponse)); return nil }
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue("token " + token, forHTTPHeaderField: "Authorization")
-        request.setValue(apiKey, forHTTPHeaderField: "X-Tinode-APIKey")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+        let request = authorizedRequest(url, method: method, body: body)
         let id = UUID()
-        let task = ClawAssistantHTTPTask(request: request, configuration: configuration) { [weak self] result in
+        let task = ClawAssistantHTTPTask(request: request, configuration: configuration, successCodes: successCodes) { [weak self] result in
             guard let self = self else { return }
             self.lock.lock(); self.requests.removeValue(forKey: id); let ended = self.ended; self.lock.unlock()
             guard !ended, self.isCurrent() else { completion(.failure(.retired)); return }
@@ -139,6 +230,7 @@ final class ClawAssistantHTTPTask: NSObject, URLSessionDataDelegate, ClawAssista
     private let lock = NSRecursiveLock()
     private let request: URLRequest
     private let configuration: URLSessionConfiguration
+    private let successCodes: Set<Int>
     private var completion: ((Result<Data, ClawAssistantError>) -> Void)?
     private var session: URLSession?
     private var task: URLSessionDataTask?
@@ -146,9 +238,10 @@ final class ClawAssistantHTTPTask: NSObject, URLSessionDataDelegate, ClawAssista
     private var response: HTTPURLResponse?
     private var finished = false
 
-    init(request: URLRequest, configuration: URLSessionConfiguration,
+    init(request: URLRequest, configuration: URLSessionConfiguration, successCodes: Set<Int> = [200],
          completion: @escaping (Result<Data, ClawAssistantError>) -> Void) {
         self.request = request; self.configuration = configuration; self.completion = completion
+        self.successCodes = successCodes
     }
     func start() {
         lock.lock(); defer { lock.unlock() }
@@ -209,13 +302,14 @@ final class ClawAssistantHTTPTask: NSObject, URLSessionDataDelegate, ClawAssista
         guard !ended else { return }
         guard error == nil else { finish(.failure(.transport)); return }
         guard let response = response else { finish(.failure(.invalidResponse)); return }
-        guard response.statusCode == 200 else {
+        guard successCodes.contains(response.statusCode) else {
             struct Envelope: Decodable { struct Detail: Decodable { let code: String }; let error: Detail }
             let code = (try? JSONDecoder().decode(Envelope.self, from: body))?.error.code ?? ""
             // Do not pass arbitrary server text into logs or UI.
             let allowed = ["invalid_request", "authentication_required", "permission_denied", "not_found",
                            "conversation_deleted", "snapshot_changed", "request_conflict", "body_too_large",
-                           "unsupported_media_type", "history_unavailable", "provider_not_configured", "internal_error"]
+                           "unsupported_media_type", "history_unavailable", "provider_not_configured", "internal_error",
+                           "execution_unavailable", "run_in_progress", "retry_not_allowed", "context_too_large", "cursor_ahead"]
             if response.statusCode == 401 { finish(.failure(.server(401, "authentication_required"))) }
             else if response.statusCode == 409 && code == "snapshot_changed" { finish(.failure(.historyChanged)) }
             else if allowed.contains(code) { finish(.failure(.server(response.statusCode, code))) }

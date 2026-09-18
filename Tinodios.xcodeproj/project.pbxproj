@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C1A080000000000000000002 /* ClawAssistantRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A080000000000000000001; };
+		C1A080000000000000000004 /* ClawAssistantStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A080000000000000000003; };
+		C1A080000000000000000006 /* AssistantRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A080000000000000000005; };
+		C1A080000000000000000008 /* AssistantStreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A080000000000000000007; };
+
 		C1A070000000000000000002 /* ClawAssistantModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000001; };
 		C1A070000000000000000004 /* ClawAssistantService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000003; };
 		C1A070000000000000000006 /* ClawAssistantSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000005; };
@@ -278,6 +283,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C1A080000000000000000001 /* ClawAssistantRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantRun.swift; sourceTree = "<group>"; };
+		C1A080000000000000000003 /* ClawAssistantStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantStream.swift; sourceTree = "<group>"; };
+		C1A080000000000000000005 /* AssistantRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantRunTests.swift; sourceTree = "<group>"; };
+		C1A080000000000000000007 /* AssistantStreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantStreamTests.swift; sourceTree = "<group>"; };
+
 		C1A070000000000000000001 /* ClawAssistantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantModels.swift; sourceTree = "<group>"; };
 		C1A070000000000000000003 /* ClawAssistantService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantService.swift; sourceTree = "<group>"; };
 		C1A070000000000000000005 /* ClawAssistantSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawAssistantSession.swift; sourceTree = "<group>"; };
@@ -652,6 +662,8 @@
 				C1A070000000000000000009 /* ClawAssistantViewController.swift */,
 				C1A07000000000000000000B /* ClawAssistantHistoryViewController.swift */,
 				C1A07000000000000000000D /* ClawAssistantConversationViewController.swift */,
+				C1A080000000000000000001 /* ClawAssistantRun.swift */,
+				C1A080000000000000000003 /* ClawAssistantStream.swift */,
 				C1A0A0012026091800000001 /* ClawIdentityService.swift */,
 				C1A0A0012026091800000002 /* ClawIdentityFlow.swift */,
 				C1A040012026091800000001 /* ClawSecondaryUIState.swift */,
@@ -711,6 +723,8 @@
 				C1A050000000000000000001 /* ChatScrollTests.swift */,
 				C1A07000000000000000000F /* AssistantHistoryTests.swift */,
 				C1A070000000000000000011 /* AssistantLayoutTests.swift */,
+				C1A080000000000000000005 /* AssistantRunTests.swift */,
+				C1A080000000000000000007 /* AssistantStreamTests.swift */,
 				C1A060000000000000000001 /* CoreListLayoutTests.swift */,
 				C1A047012026091800000002 /* SendMessageBarResetSource.swift */,
 				C1A041012026091800000001 /* OwnedImageTests.swift */,
@@ -1310,6 +1324,8 @@
 				C1A07000000000000000000A /* ClawAssistantViewController.swift in Sources */,
 				C1A07000000000000000000C /* ClawAssistantHistoryViewController.swift in Sources */,
 				C1A07000000000000000000E /* ClawAssistantConversationViewController.swift in Sources */,
+				C1A080000000000000000002 /* ClawAssistantRun.swift in Sources */,
+				C1A080000000000000000004 /* ClawAssistantStream.swift in Sources */,
 				C1A0A0022026091800000001 /* ClawIdentityService.swift in Sources */,
 				C1A0A0022026091800000002 /* ClawIdentityFlow.swift in Sources */,
 				C1A040022026091800000001 /* ClawSecondaryUIState.swift in Sources */,
@@ -1385,7 +1401,7 @@
 			files = (C1A043022026091800000001, C1A04400000000000000001D, );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A070000000000000000010, C1A070000000000000000012, ); runOnlyForDeploymentPostprocessing = 0; };
+		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A070000000000000000010, C1A070000000000000000012, C1A080000000000000000006, C1A080000000000000000008, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
