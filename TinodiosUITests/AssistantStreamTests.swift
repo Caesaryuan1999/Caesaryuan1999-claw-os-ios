@@ -110,11 +110,16 @@ private final class AssistantRefusalTrace {
     private let started = ProcessInfo.processInfo.systemUptime
     private var rows: [[String: Any]] = []
     private var dropped = 0
+    private var cleaningUp = false
+
+    func beginCleanup() { lock.lock(); cleaningUp = true; lock.unlock() }
+    var isCleaningUp: Bool { lock.lock(); defer { lock.unlock() }; return cleaningUp }
 
     func record(_ stage: String, ordinal: Int, fixture: Int, values: [String: Any] = [:]) {
         lock.lock(); defer { lock.unlock() }
         guard rows.count < 128 else { dropped += 1; return }
         var row = values
+        row["event_sequence"] = rows.count + 1
         row["stage"] = stage; row["case_ordinal"] = ordinal; row["fixture_case"] = fixture
         row["elapsed_us"] = Int((ProcessInfo.processInfo.systemUptime - started) * 1_000_000)
         rows.append(row)
@@ -123,6 +128,12 @@ private final class AssistantRefusalTrace {
         lock.lock(); let snapshot = rows; let omitted = dropped; lock.unlock()
         return try JSONSerialization.data(withJSONObject: ["events": snapshot, "dropped": omitted],
                                           options: [.prettyPrinted, .sortedKeys])
+    }
+    func sentSuccessfully(ordinal: Int) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        let requests = rows.filter { ($0["case_ordinal"] as? Int) == ordinal && ($0["stage"] as? String) == "request_seen" }
+        let sends = rows.filter { ($0["case_ordinal"] as? Int) == ordinal && ($0["stage"] as? String) == "send_completion" }
+        return requests.count == 1 && sends.count == 1 && (sends.first?["success"] as? Bool) == true
     }
     static func sendResult(bytes: Int, error: NWError?) -> [String: Any] {
         var value: [String: Any] = ["bytes": bytes, "success": error == nil]
@@ -151,6 +162,60 @@ private final class AssistantRefusalTrace {
             default: return "failure.other"
             }
         }
+    }
+}
+
+/// Transport observation only. No application parser, error mapping, or delegate injection.
+private final class AssistantBareResponseProbe: NSObject, URLSessionDataDelegate {
+    let receivedResponse = XCTestExpectation(description: "bare response callback")
+    private let trace: AssistantRefusalTrace
+    private let ordinal: Int
+    private let lock = NSLock()
+    private var session: URLSession?
+    private var responses = 0
+    private var status = 0
+    private var length: Int64 = -1
+    private var bytes = 0
+
+    init(trace: AssistantRefusalTrace, ordinal: Int) { self.trace = trace; self.ordinal = ordinal }
+    func start(_ request: URLRequest) {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 60; config.timeoutIntervalForResource = 60
+        config.httpCookieStorage = nil; config.httpShouldSetCookies = false
+        config.urlCache = nil; config.urlCredentialStorage = nil; config.httpAdditionalHeaders = nil
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        let queue = OperationQueue(); queue.maxConcurrentOperationCount = 1
+        queue.underlyingQueue = DispatchQueue(label: "claw.assistant.test.bare.delegate")
+        let session = URLSession(configuration: config, delegate: self, delegateQueue: queue)
+        self.session = session
+        session.dataTask(with: request).resume()
+    }
+    func cancel() { let session = self.session; self.session = nil; session?.invalidateAndCancel() }
+    func snapshot() -> (responses: Int, status: Int, length: Int64, bytes: Int) {
+        lock.lock(); defer { lock.unlock() }; return (responses, status, length, bytes)
+    }
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
+                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        lock.lock(); responses += 1; let first = responses == 1
+        status = (response as? HTTPURLResponse)?.statusCode ?? 0; length = response.expectedContentLength
+        let code = status; let count = length; lock.unlock()
+        trace.record("bare_response_callback", ordinal: ordinal, fixture: 4410,
+                     values: ["status": code, "expected_length": count, "json_mime": response.mimeType == "application/json",
+                              "on_main_thread": Thread.isMainThread])
+        completionHandler(.allow)
+        if first { receivedResponse.fulfill() }
+    }
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        lock.lock(); bytes += data.count; lock.unlock()
+        trace.record("bare_data_callback", ordinal: ordinal, fixture: 4410, values: ["bytes": data.count])
+    }
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        var values: [String: Any] = ["success": error == nil]
+        if let error = error as NSError? {
+            values["error_category"] = error.domain == NSURLErrorDomain ? "url_error" : "other"
+            values["error_code"] = error.code
+        }
+        trace.record("bare_completion", ordinal: ordinal, fixture: 4410, values: values)
     }
 }
 
@@ -256,14 +321,14 @@ final class AssistantStreamTests: XCTestCase {
 
     func testRealSocketRedirectAndNonJSON401NeverDeliverBody() throws {
         let trace = AssistantRefusalTrace()
-        defer {
+        addTeardownBlock {
             do {
                 let attachment = XCTAttachment(data: try trace.data(), uniformTypeIdentifier: "public.json")
                 attachment.name = "assistant-stream-refusal-stages"; attachment.lifetime = .keepAlways
-                add(attachment)
+                self.add(attachment)
             } catch { XCTFail("Unable to encode fixed refusal fixture evidence") }
         }
-        let server = try AssistantSocketServer(); defer { server.stop() }
+        let server = try AssistantSocketServer(); addTeardownBlock { server.stop() }
         let lock = NSLock(); var redirectedRequests = 0; var mode = 302
         var caseOrdinal = 0; var requestOrdinal = 0
         server.install { request, reply in
@@ -294,7 +359,7 @@ final class AssistantStreamTests: XCTestCase {
             }
         }
         let service = try ClawAssistantService(origin: server.url, apiKey: "synthetic-key", token: AssistantFixture.token, isCurrent: { true })
-        defer { service.cancelAll() }
+        addTeardownBlock { trace.beginCleanup(); service.cancelAll() }
         for (index, status) in [302, 401, 410, 1410, 2410, 3410, 4410].enumerated() {
             let ordinal = index + 1
             try XCTContext.runActivity(named: "refusal case \(ordinal) fixture \(status)") { _ in
@@ -305,6 +370,7 @@ final class AssistantStreamTests: XCTestCase {
                     event: { _ in XCTFail("Refused response leaked a frame") }, completion: { end in
                         trace.record("stream_completion", ordinal: ordinal, fixture: status,
                                      values: ["kind": AssistantRefusalTrace.completionKind(end)])
+                        guard !trace.isCleaningUp else { return } // Teardown cancellation is not a server response.
                         guard case .failure(let error) = end else { XCTFail("Expected refusal"); return }
                         let expected: ClawAssistantError = status == 401 ? .server(401, "authentication_required") :
                             (status == 1410 ? .server(410, "conversation_deleted") : .invalidResponse)
@@ -317,6 +383,103 @@ final class AssistantStreamTests: XCTestCase {
         }
         lock.lock(); let actualRedirects = redirectedRequests; lock.unlock()
         XCTAssertEqual(actualRedirects, 0)
+    }
+
+    func testRealSocketHeaderOnlyAndOneByteTransportControls() throws {
+        let trace = AssistantRefusalTrace()
+        addTeardownBlock {
+            do {
+                let attachment = XCTAttachment(data: try trace.data(), uniformTypeIdentifier: "public.json")
+                attachment.name = "assistant-stream-header-delivery-controls"; attachment.lifetime = .keepAlways
+                self.add(attachment)
+            } catch { XCTFail("Unable to encode fixed header delivery evidence") }
+        }
+        let header = Data("HTTP/1.1 410 Fixture\r\nContent-Type: application/json\r\nContent-Length: 65537\r\nConnection: close\r\n\r\n".utf8)
+        func install(_ server: AssistantSocketServer, ordinal: Int, oneByte: Bool) {
+            server.install { _, reply in
+                trace.record("request_seen", ordinal: ordinal, fixture: 4410)
+                reply.sendObservation = { bytes, error in
+                    trace.record("send_completion", ordinal: ordinal, fixture: 4410,
+                                 values: AssistantRefusalTrace.sendResult(bytes: bytes, error: error))
+                }
+                reply.send(header + (oneByte ? Data([0x7B]) : Data())) // Deliberately no EOF or close.
+            }
+        }
+        func request(_ server: AssistantSocketServer) -> URLRequest {
+            let url = server.url.appendingPathComponent("v0/ai/conversations/\(AssistantBFixture.cid)/runs/\(AssistantBFixture.rid)/stream")
+            var request = URLRequest(url: url); request.httpMethod = "GET"
+            request.setValue("token " + AssistantFixture.token, forHTTPHeaderField: "Authorization")
+            request.setValue("synthetic-key", forHTTPHeaderField: "X-Tinode-APIKey")
+            request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+            request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+            request.setValue("0", forHTTPHeaderField: "Last-Event-ID")
+            return request
+        }
+        var headerOnlyWindowObserved = false
+        var bareOneByteReceived = false
+        var bareOneByteStatus = 0
+        var bareOneByteLength: Int64 = -1
+        for ordinal in 1...2 {
+            try XCTContext.runActivity(named: ordinal == 1 ? "bare header only observation" : "bare header plus one byte control") { _ in
+                let server = try AssistantSocketServer(); addTeardownBlock { server.stop() }
+                install(server, ordinal: ordinal, oneByte: ordinal == 2)
+                let probe = AssistantBareResponseProbe(trace: trace, ordinal: ordinal)
+                addTeardownBlock { probe.cancel() }
+                let start = ProcessInfo.processInfo.systemUptime
+                trace.record("trial_started", ordinal: ordinal, fixture: 4410,
+                             values: ["header_bytes": header.count, "planned_body_bytes": ordinal == 1 ? 0 : 1])
+                probe.start(request(server))
+                if ordinal == 1 {
+                    // Observe the entire original five-second window, even if headers arrive early.
+                    let cutoff = XCTestExpectation(description: "bare header-only observation cutoff")
+                    let result = XCTWaiter.wait(for: [cutoff], timeout: max(0, start + 5 - ProcessInfo.processInfo.systemUptime))
+                    headerOnlyWindowObserved = result == .timedOut
+                    trace.record("bare_observation_window", ordinal: ordinal, fixture: 4410,
+                                 values: ["cutoff_reached": headerOnlyWindowObserved])
+                } else {
+                    let result = XCTWaiter.wait(for: [probe.receivedResponse], timeout: max(0, start + 5 - ProcessInfo.processInfo.systemUptime))
+                    bareOneByteReceived = result == .completed
+                }
+                let snapshot = probe.snapshot()
+                trace.record("observation_cutoff", ordinal: ordinal, fixture: 4410,
+                             values: ["response_count": snapshot.responses, "status": snapshot.status,
+                                      "expected_length": snapshot.length, "data_bytes": snapshot.bytes,
+                                      "trial_elapsed_us": Int((ProcessInfo.processInfo.systemUptime - start) * 1_000_000)])
+                if ordinal == 2 { bareOneByteStatus = snapshot.status; bareOneByteLength = snapshot.length }
+                probe.cancel(); server.stop()
+            }
+        }
+        let server = try AssistantSocketServer(); addTeardownBlock { server.stop() }
+        install(server, ordinal: 3, oneByte: true)
+        let service = try ClawAssistantService(origin: server.url, apiKey: "synthetic-key", token: AssistantFixture.token, isCurrent: { true })
+        addTeardownBlock { service.cancelAll() }
+        let done = XCTestExpectation(description: "production header plus one byte refusal")
+        let lock = NSLock(); var refused = false; var frames = 0
+        let start = ProcessInfo.processInfo.systemUptime
+        trace.record("trial_started", ordinal: 3, fixture: 4410, values: ["header_bytes": header.count, "planned_body_bytes": 1])
+        _ = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "0", capabilities: try AssistantBFixture.capabilities(),
+            event: { _ in lock.lock(); frames += 1; lock.unlock() }, completion: { end in
+                trace.record("stream_completion", ordinal: 3, fixture: 4410, values: ["kind": AssistantRefusalTrace.completionKind(end)])
+                lock.lock(); if case .failure(.invalidResponse) = end { refused = true }; lock.unlock()
+                done.fulfill()
+            })
+        let result = XCTWaiter.wait(for: [done], timeout: max(0, start + 5 - ProcessInfo.processInfo.systemUptime))
+        lock.lock(); let invalidResponse = refused; let deliveredFrames = frames; lock.unlock()
+        trace.record("observation_cutoff", ordinal: 3, fixture: 4410,
+                     values: ["completed": result == .completed, "invalid_response": invalidResponse, "frames": deliveredFrames,
+                              "trial_elapsed_us": Int((ProcessInfo.processInfo.systemUptime - start) * 1_000_000)])
+        service.cancelAll(); server.stop()
+        // Header-only response absence is an observation, never a passing security assertion.
+        XCTAssertTrue(headerOnlyWindowObserved, "Header-only observation was interrupted before its cutoff")
+        XCTAssertTrue(trace.sentSuccessfully(ordinal: 1), "Header-only observation lacks a unique successful request/send")
+        // Positive controls prove receipt in the client. Their early refusal/cancellation may race
+        // the server's local send completion; retain that result without making it a second gate.
+        XCTAssertTrue(bareOneByteReceived, "Bare one-byte positive control did not receive response headers")
+        XCTAssertEqual(bareOneByteStatus, 410)
+        XCTAssertEqual(bareOneByteLength, 65537)
+        XCTAssertEqual(result, .completed)
+        XCTAssertTrue(invalidResponse)
+        XCTAssertEqual(deliveredFrames, 0)
     }
 
     func testRealSocketOldStopIsRetiredBeforeNewConversationSubmission() throws {

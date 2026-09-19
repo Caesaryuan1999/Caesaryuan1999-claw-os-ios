@@ -1,0 +1,50 @@
+{
+  "scope": "Windows exact-source checks only; native NOT_RUN",
+  "baseline": "6d36bd8450ad61dabf5872c7e7709238c3cb85f6",
+  "parent_head": "6707e39677a69234bbcd91f18dc21a5bdd67ac2e",
+  "path": "TinodiosUITests/AssistantStreamTests.swift",
+  "old_blob": "917eb56a0677f42e697131b39851450e756bcf30",
+  "old_sha256": "33d5b1a20dcbbcf8ba00c0e85a44058a8b1ea5eb096edbc2636c27a859246bfb",
+  "new_sha256": "a172a24a3d7207490ac952ccb2b47ba89efc9e6cf69b2a65139a5362dd069ca1",
+  "new_bytes": 35792,
+  "checks": {
+    "only_code_path_changed": true,
+    "original_seven_names_preserved": true,
+    "exactly_one_new_method": true,
+    "six_other_methods_byte_identical": true,
+    "seven_original_wire_constructions_byte_identical": true,
+    "original_assertion_lines_preserved": true,
+    "original_five_second_wait_preserved": true,
+    "original_sixty_second_method_byte_identical": true,
+    "original_listener_initialization_byte_identical": true,
+    "teardown_registered_before_first_throw": true,
+    "bare_task_has_no_completion_handler": true,
+    "fixed_header_same_as_original": true,
+    "single_body_byte_no_EOF": true,
+    "positive_send_results_recorded_not_required": true,
+    "body_or_frames_not_exposed": true,
+    "bounded_trace_128": true,
+    "utf8_lf_only": true
+  },
+  "unchanged_methods": [
+    "testProductionParserHandlesEveryUTF8BoundaryCRLFMultilineAndHeartbeat",
+    "testMalformedIDsUnknownStatesLargeFramesAndTruncatedUTF8FailClosed",
+    "testAccessControlHasNoPersistentIDAndDeadlineNeverSlides",
+    "testRealSocketChunksProduceEventsBeforeEOFAndStopUsesAnotherConnection",
+    "testRealSocketOldStopIsRetiredBeforeNewConversationSubmission",
+    "testRealSocketHeartbeatCannotExtendAbsoluteSixtySecondDeadline"
+  ],
+  "original_ci41": {
+    "run": 35413624631,
+    "job": 105817886283,
+    "zip_sha256": "b9585a55dfd9c656f9123ae624bd47ea7276765033ce59437a42612b725d3046",
+    "native_pass": 292,
+    "native_fail": 1,
+    "failed_case": 7,
+    "fixture": 4410,
+    "refusal_attachment_present": false,
+    "root_cause": "OPEN"
+  },
+  "expected_native": 294,
+  "expected_navigation": 3
+}
