@@ -4,7 +4,6 @@
 //  Copyright © 2019-2025 Tinode. All rights reserved.
 //
 
-import MobileVLCKit
 import UIKit
 import TinodeSDK
 
@@ -22,14 +21,8 @@ protocol MessageCellDelegate: AnyObject {
     func didTapOutsideContent(in cell: MessageCell)
     /// Clicked on cancel upload.
     func didTapCancelUpload(in cell: MessageCell)
-    /// Activated media player.
-    func didActivateMedia(in cell: MessageCell, audioPlayer: VLCMediaPlayer)
-    /// Activated media player.
-    func didPauseMedia(in cell: MessageCell, audioPlayer: VLCMediaPlayer)
-    /// Media playback reached the end of the record.
-    func didEndMediaPlayback(in cell: MessageCell, audioPlayer: VLCMediaPlayer)
-    /// Seek operation completed.
-    func didSeekMedia(in cell: MessageCell, audioPlayer: VLCMediaPlayer, pos: Float)
+    /// Actual state of this cell's owned ordinary-AU attempt.
+    func didChangeAudio(in cell: MessageCell, playback: ClawAudioPlayback)
 }
 
 // Optional date, avatar, sender name, message bubble: content, delivery marker, timestamp.
@@ -40,7 +33,9 @@ class MessageCell: UICollectionViewCell {
     var timeStamp: Date? = nil
 
     // Player for audio messages.
-    var audioPlayer: VLCMediaPlayer?
+    var audioPlayback: ClawAudioPlayback?
+    // Invalidates references even when a recycled cell later has the same seq.
+    var audioBinding = UUID()
     // Which entity is configured in the player: entity key.
     var mediaEntityKey: Int?
 
@@ -72,8 +67,7 @@ class MessageCell: UICollectionViewCell {
     }
 
     deinit {
-        self.audioPlayer?.stop()
-        self.audioPlayer = nil
+        audioPlayback?.retire()
     }
 
     /// The image view with the avatar.
@@ -222,8 +216,8 @@ class MessageCell: UICollectionViewCell {
         containerView.layer.masksToBounds = false
         content.backgroundColor = nil
 
-        audioPlayer?.stop()
-        audioPlayer = nil
+        stopAudio()
+        audioBinding = UUID()
         seqId = 0
         mediaEntityKey = nil
 

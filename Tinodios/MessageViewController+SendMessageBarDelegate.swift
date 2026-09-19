@@ -78,6 +78,7 @@ extension MessageViewController: SendMessageBarDelegate {
                 }
             }
             guard let recorder = voiceRecorder, recorder.isCurrent, voiceTopicName == topicName else { return }
+            retireOrdinaryAudio()
             recorder.start()
         case .stopAndSend:
             guard let recorder = voiceRecorder else { return }
@@ -92,6 +93,7 @@ extension MessageViewController: SendMessageBarDelegate {
             guard let recorder = voiceRecorder, recorder.isCurrent, voiceScopeIsCurrent(),
                   voiceTopicName == topicName, recorder.state == .preview,
                   let url = recorder.recordFileURL, UIApplication.shared.applicationState == .active else { return }
+            retireOrdinaryAudio()
             if let player = recordingPlaybackPlayer,
                player.state == .ended || player.state == .stopped || player.state == .error {
                 stopRecordingPlayback(discard: true)

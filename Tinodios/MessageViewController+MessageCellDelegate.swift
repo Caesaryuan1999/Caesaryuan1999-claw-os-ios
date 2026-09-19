@@ -268,35 +268,65 @@ extension MessageViewController: MessageCellDelegate {
         _ = Cache.getLargeFileHelper().cancelUpload(topicId: topicId, msgId: self.messages[msgIdx].msgId)
     }
 
-    func didEndMediaPlayback(in cell: MessageCell, audioPlayer: VLCMediaPlayer) {
-        if self.currentAudioPlayer == audioPlayer {
-            self.currentAudioPlayer = nil
+    func didChangeAudio(in cell: MessageCell, playback: ClawAudioPlayback) {
+        precondition(Thread.isMainThread)
+        guard currentOrdinaryAudio === playback, cell.audioPlayback === playback,
+              cell.mediaEntityKey == playback.entityKey else { return }
+        // A retired attempt can only reset the still-bound old cell. It cannot
+        // show an error or acquire authority from a later account.
+        if playback.state != .retired, !playback.isCurrent { playback.retire(); return }
+        let action: String
+        switch playback.state {
+        case .playing: action = "play"
+        case .paused: action = "pause"
+        default: action = "reset"
         }
-        attachmentDelegate(from: cell, action: "reset", payload: nil)
+        audioAttachmentAction(in: cell, key: playback.entityKey, action: action)
+        if playback.state == .preparing {
+            UiUtils.showToast(message: "正在加载语音")
+        } else if playback.state == .failed, let failure = playback.failure {
+            presentAudioFailure(failure, playback: playback)
+        }
     }
 
-    func didActivateMedia(in cell: MessageCell, audioPlayer: VLCMediaPlayer) {
-        if let player = self.currentAudioPlayer, player != audioPlayer {
-            player.stop()
+    private func audioAttachmentAction(in cell: MessageCell, key: Int, action: String) {
+        guard let text = cell.content.attributedText else { return }
+        text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, _, _ in
+            guard let attachment = value as? EntityTextAttachment,
+                  attachment.type == "audio/toggle-play", attachment.draftyEntityKey == key else { return }
+            attachment.delegate?.action(action, payload: nil)
         }
-        self.currentAudioPlayer = audioPlayer
-        attachmentDelegate(from: cell, action: "play", payload: nil)
     }
 
-    func didPauseMedia(in cell: MessageCell, audioPlayer: VLCMediaPlayer) {
-        if let player = self.currentAudioPlayer, player != audioPlayer {
-            player.stop()
+    private func presentAudioFailure(_ failure: ClawAudioFailure, playback: ClawAudioPlayback) {
+        guard playback.isCurrent, currentOrdinaryAudio === playback,
+              viewIfLoaded?.window != nil, presentedViewController == nil else { return }
+        let alert = UIAlertController(title: "语音暂时无法播放", message: failure.message, preferredStyle: .alert)
+        if failure.allowsOriginalDownload {
+            alert.addAction(UIAlertAction(title: "下载原文件", style: .default) { [weak self, weak playback] _ in
+                guard let self = self, let playback = playback, playback.isCurrent,
+                      self.currentOrdinaryAudio === playback else { return }
+                let presentation = ClawOwnedFilePresentation(context: playback.context,
+                    attemptIsCurrent: { [weak self, weak playback] in
+                        guard let self = self, let playback = playback else { return false }
+                        return self.currentOrdinaryAudio === playback && playback.isCurrent
+                    })
+                playback.downloadOriginal { [weak self] result in
+                    presentation.complete(result, restore: {}, success: { file in
+                        guard let self = self else { ClawMediaFiles.removeExport(file); return }
+                        UiUtils.presentFileSharingVC(for: file, presentation: presentation, from: self)
+                    }, failure: { error in
+                        let message: String
+                        if let transfer = error as? ClawFileTransferError, case .tooLarge = transfer {
+                            message = "原文件超过本机下载大小限制。"
+                        } else { message = ClawAudioFailure.from(error).message }
+                        UiUtils.showToast(message: message)
+                    })
+                }
+            })
         }
-        self.currentAudioPlayer = audioPlayer
-        attachmentDelegate(from: cell, action: "pause", payload: nil)
-    }
-
-    func didSeekMedia(in cell: MessageCell, audioPlayer: VLCMediaPlayer, pos: Float) {
-        if let player = self.currentAudioPlayer, player != audioPlayer {
-            player.stop()
-        }
-        self.currentAudioPlayer = audioPlayer
-        attachmentDelegate(from: cell, action: "seek", payload: pos)
+        alert.addAction(UIAlertAction(title: "知道了", style: .cancel))
+        present(alert, animated: true)
     }
 
     func createPopupMenu(in cell: MessageCell) {
@@ -693,24 +723,66 @@ extension MessageViewController: MessageCellDelegate {
         }
     }
 
-    private func handleToggleAudioPlay(in cell: MessageCell, draftyEntityKey key: Int?) {
-        guard let entity = extractEntity(from: cell, draftyEntityKey: key) else { return }
+    /// Audio-only extraction: reject stale/reused cells and malformed entity
+    /// indexes without changing the behavior of other attachment actions.
+    func ordinaryAudio(in cell: MessageCell, key: Int) -> ClawAudioPlayback? {
+        precondition(Thread.isMainThread)
+        guard !bulkSelectionMode, !cell.isDeleted, cell.window != nil,
+              UIApplication.shared.applicationState == .active, voiceScopeIsCurrent(),
+              let topic = topicName, let index = messageSeqIdIndex[cell.seqId],
+              messages.indices.contains(index) else { return nil }
+        let message = messages[index]
+        guard !message.isDeleted, !message.isDraft, message.topic == topic,
+              let entities = message.content?.entities, entities.indices.contains(key),
+              entities[key].tp == "AU" else { return nil }
+        if let playback = cell.audioPlayback, currentOrdinaryAudio === playback,
+           cell.mediaEntityKey == key, playback.isCurrent,
+           playback.state != .failed, playback.state != .retired {
+            return playback
+        }
+        guard let context = ordinaryAudioContext() else { return nil }
+        retireOrdinaryAudio()
+        cell.stopAudio()
+        // Pause the user's unsubmitted preview, but never discard their recording.
+        stopRecordingPlayback(discard: false)
+        let entity = Entity(tp: entities[key].tp, data: entities[key].data)
+        let sequence = cell.seqId, row = message.msgId, sender = message.from
+        let binding = cell.audioBinding
+        guard let playback = ClawAudioPlayback(context: context, key: key,
+            reference: entity.data?["ref"]?.asString(), bytes: entity.data?["val"]?.asData(),
+            name: entity.data?["name"]?.asString(), scopeIsCurrent: { [weak self, weak cell] in
+                guard let self = self, let cell = cell, self.voicePageActive, !self.chatPageRetired,
+                      UIApplication.shared.applicationState == .active,
+                      self.topicName == topic, cell.window != nil, cell.audioBinding == binding,
+                      cell.seqId == sequence, !cell.isDeleted, cell.mediaEntityKey == key,
+                      let index = self.messageSeqIdIndex[sequence], self.messages.indices.contains(index) else { return false }
+                let current = self.messages[index]
+                guard current.msgId == row, current.from == sender, current.topic == topic,
+                      !current.isDeleted, !current.isDraft, let entities = current.content?.entities,
+                      entities.indices.contains(key) else { return false }
+                return entities[key] == entity
+            }) else { return nil }
+        cell.audioPlayback = playback
+        cell.mediaEntityKey = key
+        currentOrdinaryAudio = playback
+        playback.changed = { [weak cell] current in
+            guard let cell = cell, cell.audioBinding == binding, cell.seqId == sequence,
+                  cell.audioPlayback === current else { return }
+            cell.delegate?.didChangeAudio(in: cell, playback: current)
+        }
+        return playback
+    }
 
-        let duration = entity.data?["duration"]?.asInt() ?? 0
-        let bits = entity.data?["val"]?.asData()
-        let ref = entity.data?["ref"]?.asString()
-        cell.toggleAudioPlay(url: ref, data: bits, duration: duration, key: key!)
+    private func handleToggleAudioPlay(in cell: MessageCell, draftyEntityKey key: Int?) {
+        guard let key = key else { return }
+        ordinaryAudio(in: cell, key: key)?.toggle()
     }
 
     private func handleAudioSeek(in cell: MessageCell, using url: URL) {
-        let key = Int(url.extractQueryParam(named: "key") ?? "")
-        guard let entity = extractEntity(from: cell, draftyEntityKey: key) else { return }
-
-        let duration = entity.data?["duration"]?.asInt() ?? 0
-        let bits = entity.data?["val"]?.asData()
-        let ref = entity.data?["ref"]?.asString()
-        guard let seekTo = Float(url.extractQueryParam(named: "pos") ?? "0") else { return }
-        cell.audioSeekTo(seekTo, url: ref, data: bits, duration: duration, key: key!)
+        guard let key = Int(url.extractQueryParam(named: "key") ?? ""),
+              let fraction = Double(url.extractQueryParam(named: "pos") ?? ""),
+              fraction.isFinite else { return }
+        ordinaryAudio(in: cell, key: key)?.seek(to: fraction)
     }
 
     private func showImagePreview(in cell: MessageCell, draftyEntityKey: Int?) {

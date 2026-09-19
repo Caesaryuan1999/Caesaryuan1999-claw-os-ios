@@ -334,6 +334,8 @@ class MessageViewController: UIViewController {
 
     // Currently playing or paused media player.
     internal var currentAudioPlayer: VLCMediaPlayer?
+    // Ordinary received/sent AU; never shares an engine with recording preview.
+    var currentOrdinaryAudio: ClawAudioPlayback?
     var voiceOwner: Tinode?
     var voiceUID: String?
     var voiceGeneration: UInt64?
@@ -431,6 +433,7 @@ class MessageViewController: UIViewController {
     }
     @objc
     func appGoingInactive() {
+        retireOrdinaryAudio()
         suspendVoiceRecording()
         self.interactor?.cleanup()
         self.interactor?.leaveTopic()
@@ -450,6 +453,7 @@ class MessageViewController: UIViewController {
     deinit {
         // removeMenuControllerObservers()
         removeAppStateObservers()
+        currentOrdinaryAudio?.retire()
         // Discard only this page's unsubmitted take; no preview survives a dead page.
         discardVoiceRecording()
         self.interactor?.cleanup()
@@ -864,6 +868,7 @@ class MessageViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        retireOrdinaryAudio()
         invalidateChatDisplayIntent()
         voicePageActive = false
         discardVoiceRecording()
@@ -882,8 +887,30 @@ class MessageViewController: UIViewController {
     @objc func audioSessionInterrupted(_ notification: Notification) {
         guard let value = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
               AVAudioSession.InterruptionType(rawValue: value) == .began else { return }
-        if Thread.isMainThread { suspendVoiceRecording() }
-        else { DispatchQueue.main.async { [weak self] in self?.suspendVoiceRecording() } }
+        let stop: () -> Void = { [weak self] in
+            self?.retireOrdinaryAudio()
+            self?.suspendVoiceRecording()
+        }
+        if Thread.isMainThread { stop() }
+        else { DispatchQueue.main.async(execute: stop) }
+    }
+
+    func retireOrdinaryAudio() {
+        precondition(Thread.isMainThread)
+        currentOrdinaryAudio?.retire()
+        currentOrdinaryAudio = nil
+    }
+
+    /// Capture only this page's original owner, never a later Cache.tinode.
+    func ordinaryAudioContext() -> ClawOwnedImageContext? {
+        guard voiceScopeIsCurrent(), !chatPageRetired, let owner = voiceOwner,
+              let generation = voiceGeneration else { return nil }
+        return Cache.ifCurrent(owner) { () -> ClawOwnedImageContext? in
+            guard let service = owner.baseURL(useWebsocketProtocol: false) else { return nil }
+            return ClawOwnedImageContext(owner: owner, serviceURL: service, generation: generation,
+                currentGeneration: { Cache.sessionGeneration },
+                inCurrentSlot: { body in Cache.ifCurrent(owner) { body(); return true } ?? false })
+        } ?? nil
     }
 
     func voiceScopeIsCurrent() -> Bool {
