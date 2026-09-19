@@ -1,0 +1,21 @@
+{
+  "fileKey": "CreMqit00K1MAJju69YoOv",
+  "page": "248:1115",
+  "method": "Original node exportAsync PDF, no canvas mutation",
+  "exports": [
+    {
+      "file": "voice-tail.pdf",
+      "node": "338:1675",
+      "bytes": 5390,
+      "sha256": "d15de7730a7cd4bf4aefe750378bbc4f2d5bb24089b124f3e7b9bb798103b443",
+      "mediaBox": "/MediaBox [ 0.000000 0.000000 6.000000 12.000000 ]"
+    },
+    {
+      "file": "voice-wave.pdf",
+      "node": "338:1674",
+      "bytes": 5902,
+      "sha256": "92f2d322fe650aa7e75e3341d01f7d41cb2c188ef2a8cfccbc9dcb3ad575fac6",
+      "mediaBox": "/MediaBox [ 0.000000 0.000000 18.000000 22.000038 ]"
+    }
+  ]
+}
