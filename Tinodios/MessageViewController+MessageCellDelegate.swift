@@ -229,6 +229,13 @@ extension MessageViewController: MessageCellDelegate {
             case "/attachment/large":
                 handleLargeAttachment(in: cell, using: url)
             case "/image/preview":
+                if let rawBinding = url.extractQueryParam(named: "binding") {
+                    guard let binding = UUID(uuidString: rawBinding),
+                          let key = Int(url.extractQueryParam(named: "key") ?? ""),
+                          let attachment = cell.imageAttachment(binding: binding),
+                          attachment.draftyEntityKey == key,
+                          isImageCurrent(in: cell, attachment: attachment) else { return }
+                }
                 showImagePreview(in: cell, draftyEntityKey: Int(url.extractQueryParam(named: "key") ?? ""))
             case "/image/retry":
                 retryInlineImage(in: cell, using: url)

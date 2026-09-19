@@ -168,7 +168,7 @@ final class ClawImageStateView: UIView {
         backgroundColor = ready ? .clear : ClawTheme.surface.withAlphaComponent(0.94)
         scroll.isHidden = ready
         badge.isHidden = !ready || attachment.imageCanvas?.mode != .longTop
-        status.text = state == .loading ? "正在加载图片…" : "图片未加载"
+        status.text = state == .loading ? "正在加载图片…" : state == .unavailable ? "图片当前不可用" : "图片未加载"
         status.textColor = ClawTheme.muted
         status.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .systemFont(ofSize: 16), compatibleWith: traitCollection)
         retryButton.isHidden = state != .failed || !attachment.canRetryImage
