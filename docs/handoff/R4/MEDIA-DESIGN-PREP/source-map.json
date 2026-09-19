@@ -1,0 +1,198 @@
+{
+  "source": "0ea19847e3b043bc14bfb046d2e1809cf92134e6",
+  "evidence_level": "READ_ONLY_FIXED_GIT_SOURCE_AND_FIGMA_CONTEXT",
+  "native_execution": "NOT_RUN",
+  "figma": {
+    "file_key": "CreMqit00K1MAJju69YoOv",
+    "component": "326:1526",
+    "design_context_read": [
+      "326:1527",
+      "328:1568"
+    ],
+    "later_60s_rule": "parent instruction; no history trim"
+  },
+  "sources": [
+    {
+      "path": "Tinodios/Utils.swift",
+      "git_mode": "100644",
+      "git_blob": "974d9be8974b182169f43e0e9e9317e4e91e8b89",
+      "git_bytes_sha256": "f5ec2c8823f035023bcb37f5d081e81ed4f2b66a92451ca3e3594fdc35ae4853",
+      "git_bytes": 80104
+    },
+    {
+      "path": "Tinodios/format/AbstractFormatter.swift",
+      "git_mode": "100644",
+      "git_blob": "c243a380cf1e67a947f790336b457b57acaa6b8f",
+      "git_bytes_sha256": "aa2e1abeadbd75eaffdbd7ca1377abd42551a0fb9e482c09dda43cdf8aa47892",
+      "git_bytes": 8716
+    },
+    {
+      "path": "Tinodios/format/FullFormatter.swift",
+      "git_mode": "100644",
+      "git_blob": "a3c20d8b3a5ad71eb0eab274beaa0be655c9ab4b",
+      "git_bytes_sha256": "fb5cf570092e15677d4ebc4e1866c6bdee39b8135ebe41aabf5214d428428ab3",
+      "git_bytes": 11436
+    },
+    {
+      "path": "Tinodios/format/FormatNode.swift",
+      "git_mode": "100644",
+      "git_blob": "490a12a636506724f25d45efd34bf27500c4b7a1",
+      "git_bytes_sha256": "618cfe4e22762e09e00be4bacaf2893b94b1b19d81efc69ad043873e8465aa6a",
+      "git_bytes": 40299
+    },
+    {
+      "path": "Tinodios/format/MultiImageTextAttachment.swift",
+      "git_mode": "100644",
+      "git_blob": "9f2d3200b42742d2b90ee405371a5241cafd132c",
+      "git_bytes_sha256": "fdd6de323cfb0aba15ad02a91ffb9b1efa5d06db16f1e10bb03d97ad5cfe14e4",
+      "git_bytes": 1662
+    },
+    {
+      "path": "Tinodios/format/WaveTextAttachment.swift",
+      "git_mode": "100644",
+      "git_blob": "5c83446c536cac66b156850f60f4af3af9930c33",
+      "git_bytes_sha256": "dbeca9e53cc49a7fd1a274684b2e9518870f56583dbe8c7817d0e13e86c365bf",
+      "git_bytes": 3341
+    },
+    {
+      "path": "Tinodios/widgets/WaveImage.swift",
+      "git_mode": "100644",
+      "git_blob": "1b5a909e373bb6535f37db968129dd5bedb01b05",
+      "git_bytes_sha256": "75043773ed8814f9543daf988e1fd6fca112336fcbf82cc36601db94ec503038",
+      "git_bytes": 12290
+    },
+    {
+      "path": "Tinodios/widgets/RichTextView.swift",
+      "git_mode": "100644",
+      "git_blob": "9af9716d8c3f9e70ec782cf1a442403db60f9450",
+      "git_bytes_sha256": "9b83e480f95b200911cad6d6a30d4d204f416d4a6d5d83566bca3aa8a70b8f77",
+      "git_bytes": 3770
+    },
+    {
+      "path": "Tinodios/MessageCell.swift",
+      "git_mode": "100644",
+      "git_blob": "d707d7cddd1a9d853726c66e8f0ccef8868a9d3e",
+      "git_bytes_sha256": "27ce3e285d460cb6d07629523dd88b8060c42547c371a98c025508dbd94ad3fe",
+      "git_bytes": 10421
+    },
+    {
+      "path": "Tinodios/MessageCell+VLCMediaPlayerDelegate.swift",
+      "git_mode": "100644",
+      "git_blob": "669c88e91b5d45121c9e1d8cd080a08a7b28be98",
+      "git_bytes_sha256": "f395e53aa6a003d70c5cead3257da42e1d419d0a9a420fc6f371f5f89343ee86",
+      "git_bytes": 4102
+    },
+    {
+      "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+      "git_mode": "100644",
+      "git_blob": "2fd1a394813b9e4e6358a2ef6849c2236b6eeefc",
+      "git_bytes_sha256": "0c448f1bac2f35f0ba4c357bc6f8e5ab196ca83760c34bf6ce706c6632a53a30",
+      "git_bytes": 35826
+    },
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "git_mode": "100644",
+      "git_blob": "17ff3715883a6975b2f4ab5963e98f991ceb4735",
+      "git_bytes_sha256": "b4c5c344589f871e9c779921ec5941ab5c615a2fca97b63f6de591f66f681537",
+      "git_bytes": 85057
+    },
+    {
+      "path": "Tinodios/MessageBubbleDecorator.swift",
+      "git_mode": "100644",
+      "git_blob": "094b5f9bc0288e4c3112e55ca541a5060aaada03",
+      "git_bytes_sha256": "dfcfc618b6c8f367087480a723e71b52d53b2dbb80290843c29904af9bdfebe1",
+      "git_bytes": 598
+    },
+    {
+      "path": "Tinodios/MessageViewLayout.swift",
+      "git_mode": "100644",
+      "git_blob": "5e5189ed789ee09989038cced9efead62044eec6",
+      "git_bytes_sha256": "4216e861416301dd16dde05bc217a4bb6946f232d60f9272496c3831b400c38e",
+      "git_bytes": 6553
+    },
+    {
+      "path": "Tinodios/ClawSecondaryUIState.swift",
+      "git_mode": "100644",
+      "git_blob": "8327e333ec5bda979d87264a5a4882f4fcb6a0f5",
+      "git_bytes_sha256": "270954fb48415d445e340df785a6387864184771328afcc9e3565f851411a4c8",
+      "git_bytes": 32167
+    },
+    {
+      "path": "Tinodios/LargeFileHelper.swift",
+      "git_mode": "100644",
+      "git_blob": "fe52b14bd711793d44569b909f1b93489bfbe544",
+      "git_bytes_sha256": "b156c553db3c722c4006050e2ad89fc6f17d33c104f3fa3c4b2d320b09b4cd41",
+      "git_bytes": 19950
+    },
+    {
+      "path": "Tinodios/VideoPreviewController.swift",
+      "git_mode": "100644",
+      "git_blob": "42b6b6eb264263c4d5a293409c967a8aaba2b1f1",
+      "git_bytes_sha256": "a4d6ebd927dce41b130891f7d5f77262d4b06126023bc4d6fbfa362aa279d058",
+      "git_bytes": 33585
+    },
+    {
+      "path": "TinodeSDK/Tinode.swift",
+      "git_mode": "100644",
+      "git_blob": "ab854de50c1e1d88af4461d54a6b34d740b5ce0d",
+      "git_bytes_sha256": "3df82aae42260e219d3bbb57380dab34a4440f094cbd5090f1750956977127ef",
+      "git_bytes": 73115
+    },
+    {
+      "path": "TinodeSDK/model/JSONValue.swift",
+      "git_mode": "100644",
+      "git_blob": "3c49fcbfa02f9d8add3520bf92e8878df3a2693c",
+      "git_bytes_sha256": "e8aebe005c90eff58bd615568671a42872c0e6fccff501f20a3fc58b3cd2d575",
+      "git_bytes": 3692
+    },
+    {
+      "path": "Tinodios/MediaRecorder.swift",
+      "git_mode": "100644",
+      "git_blob": "4a5aa81e73390bc47d140e5d1542baeef2b92f90",
+      "git_bytes_sha256": "df47c4c810e1e31f25ead85247cf413cde169f51a88352b98e8b4433a94c6070",
+      "git_bytes": 19730
+    },
+    {
+      "path": "Tinodios/Cache.swift",
+      "git_mode": "100644",
+      "git_blob": "4154c4e96fbcc7a7ee414d4191d44943f29fb1cf",
+      "git_bytes_sha256": "419ebbb6090985f50beef222ecf50a3df6a2f2eac3d3d8ef8a91d907d06fec9e",
+      "git_bytes": 13964
+    },
+    {
+      "path": "Tinodios/widgets/SendMessageBar.swift",
+      "git_mode": "100644",
+      "git_blob": "4c0a4cece862f17fa5d3b9c6b75f02d7bcd84755",
+      "git_bytes_sha256": "dc8e241bfc4eb257b9baa06375004cd8d91662481b2c47388b149b0801c24298",
+      "git_bytes": 40294
+    },
+    {
+      "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+      "git_mode": "100644",
+      "git_blob": "7a186f8cbcb26447c3db7d03bd57044d430f8ffa",
+      "git_bytes_sha256": "d177f1675dbb761527a32a52154156d44e10360e0081a48512d64c7f4c5eb063",
+      "git_bytes": 13248
+    },
+    {
+      "path": "Tinodios/MessageInteractor.swift",
+      "git_mode": "100644",
+      "git_blob": "df66a0f28e14760034fb9c4805adb361b38ee998",
+      "git_bytes_sha256": "812985deb810ebd6890c399d71f0fd14a4a5ff8cc3a961bc09a1e825f6499789",
+      "git_bytes": 54634
+    },
+    {
+      "path": "TinodiosUITests/MediaRecorderLifecycleTests.swift",
+      "git_mode": "100644",
+      "git_blob": "7c12bfd49c453f5a786bb6bc261e1b68fefe27fd",
+      "git_bytes_sha256": "939cae6304bf964414b9aa1869c268234236a375ffd5739d9ea10c5a296bba67",
+      "git_bytes": 15832
+    },
+    {
+      "path": "Podfile.lock",
+      "git_mode": "100644",
+      "git_blob": "f1d1787735b8b831a919640dcc72c59cd1d90dfe",
+      "git_bytes_sha256": "8fa1543054fb3c9b9827176fca30c915717ae4a82e184b981ea41d0dbaa8e2f5",
+      "git_bytes": 7626
+    }
+  ]
+}
