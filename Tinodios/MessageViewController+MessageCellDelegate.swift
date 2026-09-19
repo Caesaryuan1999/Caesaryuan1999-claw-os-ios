@@ -248,10 +248,15 @@ extension MessageViewController: MessageCellDelegate {
         UIApplication.shared.open(url)
     }
 
-    // TODO: remove as unused
     func didTapMessage(in cell: MessageCell) {
         if bulkSelectionMode {
             toggleBulkMessageSelection(seqId: cell.seqId)
+            return
+        }
+        if let key = cell.compactVoiceEntityKey {
+            // A larger visual target grants no new source/owner permission.
+            // The original consumer rechecks the exact current entity and page.
+            handleToggleAudioPlay(in: cell, draftyEntityKey: key)
         }
     }
 
@@ -282,6 +287,7 @@ extension MessageViewController: MessageCellDelegate {
         default: action = "reset"
         }
         audioAttachmentAction(in: cell, key: playback.entityKey, action: action)
+        cell.displayCompactVoice(playback: playback)
         if playback.state == .preparing {
             UiUtils.showToast(message: "正在加载语音")
         } else if playback.state == .failed, let failure = playback.failure {

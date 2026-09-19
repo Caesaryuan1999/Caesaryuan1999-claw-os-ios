@@ -1238,6 +1238,9 @@ extension MessageViewController: UICollectionViewDataSource {
             let text = NSMutableAttributedString(attributedString: attributedText)
             cell.content.attributedText = text
         }
+        let compactVoice = compactVoiceContent(for: message)
+        cell.configureCompactVoice(key: compactVoice?.key, duration: compactVoice?.duration,
+                                   outgoing: isFromCurrentSender(message: message))
 
         if let (image, tint) = deliveryMarker(for: message) {
             cell.deliveryMarker.image = image
@@ -1297,6 +1300,7 @@ extension MessageViewController: UICollectionViewDataSource {
         let isIncoming = !isFromCurrentSender(message: message)
         let isDeleted = message.isDeleted
         let isVisualMedia = (message as? StoredMessage)?.isVisualMedia == true
+        let isCompactVoice = compactVoiceContent(for: message) != nil
 
         let breakBefore = !isPreviousMessageSameSender(at: indexPath) || !isPreviousMessageSameDate(at: indexPath)
         let breakAfter = !isNextMessageSameSender(at: indexPath) || !isNextMessageSameDate(at: indexPath)
@@ -1315,6 +1319,11 @@ extension MessageViewController: UICollectionViewDataSource {
 
         return { view in
             view.layer.mask = nil
+            if isCompactVoice {
+                view.layer.cornerRadius = 8
+                view.layer.masksToBounds = true
+                return
+            }
             if isVisualMedia && !isDeleted {
                 view.layer.cornerRadius = Constants.kMediaCornerRadius
                 view.layer.masksToBounds = true
@@ -1418,7 +1427,12 @@ extension MessageViewController: MessageViewLayoutDelegate {
         let isEdited = message.isEdited
 
         // Insets for the message bubble relative to collectionView: bubble should not touch the sides of the screen.
-        let containerPadding = isOutgoing ? Constants.kOutgoingContainerPadding : Constants.kIncomingContainerPadding
+        var containerPadding = isOutgoing ? Constants.kOutgoingContainerPadding : Constants.kIncomingContainerPadding
+        if compactVoiceContent(for: message) != nil {
+            // The original tail is 6pt wide and overlaps the body by 1pt.
+            // Keep its remaining 5pt inside the cell, outside the body formula.
+            if isOutgoing { containerPadding.right += 5 } else { containerPadding.left += 5 }
+        }
 
         // Size of the message bubble.
         let showUploadProgress = shouldShowProgressBar(for: message)
@@ -1565,6 +1579,13 @@ extension MessageViewController: MessageViewLayoutDelegate {
 
         var size = calcContentSize(for: message, maxWidth: maxWidth)
 
+        if let voice = compactVoiceContent(for: message) {
+            // calcContentSize above still builds the original cached Drafty
+            // representation used by the existing entity/owner consumer.
+            return ClawVoiceBubbleView.bodySize(duration: voice.duration,
+                maximum: maxWidth + insets.left + insets.right, traits: traitCollection)
+        }
+
         size.width += insets.left + insets.right
         if !isVisualMedia {
             size.width = max(size.width,
@@ -1626,6 +1647,22 @@ extension MessageViewController: MessageViewLayoutDelegate {
             desired = max(desired ?? 0, width)
         }
         return desired
+    }
+
+    /// Only an exact standalone AU adopts the compact control. Anything mixed,
+    /// quoted, malformed, or still uploading retains its original formatter.
+    func compactVoiceContent(for message: Message) -> (key: Int, duration: Int?)? {
+        guard !message.isDeleted, !message.isDraft, !shouldShowProgressBar(for: message),
+              let drafty = message.content, !drafty.txt.isEmpty,
+              drafty.txt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let formats = drafty.fmt, formats.count == 1,
+              let entities = drafty.ent, entities.count == 1,
+              formats[0].tp == nil, formats[0].at == 0,
+              formats[0].len == drafty.txt.count, (formats[0].key ?? 0) == 0,
+              entities[0].tp == "AU" else { return nil }
+        if let ref = entities[0].data?["ref"]?.asString(),
+           URL(string: ref)?.scheme?.lowercased() == "mid" { return nil }
+        return (0, entities[0].data?["duration"]?.asInt())
     }
 
     private func contentInsets(for message: Message) -> UIEdgeInsets {
