@@ -25,6 +25,7 @@
 		C1A070000000000000000012 /* AssistantLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000011; };
 
 		C1A060000000000000000002 /* CoreListLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A060000000000000000001; };
+		C1A0B0000000000000000002 /* ImageMessageLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0B0000000000000000001; };
 		C1A050000000000000000002 /* ChatScrollTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A050000000000000000001; };
 		0A0016E721E7236900088188 /* MessageInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0016E621E7236900088188 /* MessageInteractor.swift */; };
 		0A0016E921E736CD00088188 /* MessagePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0016E821E736CD00088188 /* MessagePresenter.swift */; };
@@ -303,6 +304,7 @@
 		C1A070000000000000000011 /* AssistantLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantLayoutTests.swift; sourceTree = "<group>"; };
 
 		C1A060000000000000000001 /* CoreListLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreListLayoutTests.swift; sourceTree = "<group>"; };
+		C1A0B0000000000000000001 /* ImageMessageLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMessageLayoutTests.swift; sourceTree = "<group>"; };
 		C1A050000000000000000001 /* ChatScrollTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatScrollTests.swift; sourceTree = "<group>"; };
 		0A0016E621E7236900088188 /* MessageInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInteractor.swift; sourceTree = "<group>"; };
 		0A0016E821E736CD00088188 /* MessagePresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagePresenter.swift; sourceTree = "<group>"; };
@@ -732,6 +734,7 @@
 				C1A090000000000000000003 /* AssistantKnownRunLayoutTests.swift */,
 				C1A080000000000000000007 /* AssistantStreamTests.swift */,
 				C1A060000000000000000001 /* CoreListLayoutTests.swift */,
+				C1A0B0000000000000000001 /* ImageMessageLayoutTests.swift */,
 				C1A047012026091800000002 /* SendMessageBarResetSource.swift */,
 				C1A041012026091800000001 /* OwnedImageTests.swift */,
 				C1A042012026091800000001 /* IdentityNavigationUITests.swift */,
@@ -1407,7 +1410,7 @@
 			files = (C1A043022026091800000001, C1A04400000000000000001D, );
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A070000000000000000010, C1A070000000000000000012, C1A080000000000000000006, C1A080000000000000000008, C1A090000000000000000002, C1A090000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
+		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A0B0000000000000000002, C1A070000000000000000010, C1A070000000000000000012, C1A080000000000000000006, C1A080000000000000000008, C1A090000000000000000002, C1A090000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */

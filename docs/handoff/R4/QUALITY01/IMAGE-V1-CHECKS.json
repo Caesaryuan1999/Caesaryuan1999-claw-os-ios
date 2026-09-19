@@ -1,0 +1,78 @@
+{
+  "base": "4e2ba386d5b07adfa09806e75bc8914a9fb85604",
+  "production": "446bc538fdbab9d7a2c992e356c4895a73137c25",
+  "production_paths": [
+    "Tinodios/MessageCell.swift",
+    "Tinodios/MessageViewController+MessageCellDelegate.swift",
+    "Tinodios/format/AsyncImageTextAttachment.swift",
+    "Tinodios/format/EntityTextAttachment.swift",
+    "Tinodios/format/FormatNode.swift",
+    "Tinodios/format/FullFormatter.swift",
+    "Tinodios/widgets/RichTextView.swift"
+  ],
+  "old_swift_test_files": 22,
+  "old_tests_LF_equal": true,
+  "new_methods": [
+    "testFullFormatterPreservesOrdinaryGeometryAndUsesDecodedBeforeUnknown",
+    "testLongTopAndUnknownFitRenderActualPixelsWithoutChangingCanvas",
+    "testActualMessageCellLongImageInBothDirectionsAndAccessibilityAppearances",
+    "testOwnedAttachmentRetryKeepsCanvasAndRejectsCancelledAndRetiredCallbacks",
+    "testActualRetryConsumerRechecksEntityPageBulkSelectionAndReuse",
+    "testRealHTTPFailureRetryUsesOriginalOwnerAndShowsClearTextAction"
+  ],
+  "expected_native": 336,
+  "expected_navigation": 3,
+  "native_execution": "NOT_RUN",
+  "inputs": [
+    {
+      "path": "Tinodios/MessageCell.swift",
+      "raw_sha256": "59398094804d2d17eff0f44df2106fce2d6d919a5128fef257ff68596d6c8a78",
+      "clean_blob": "42527343bcfc8c56fb534f3125770cd4b6b45499"
+    },
+    {
+      "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+      "raw_sha256": "f3bd5585b698b27d361383e20eaa1d445f80d2f131b33300f8530423219e0d51",
+      "clean_blob": "5487e01dab2c5117d43b06fceb8eff81875ca62c"
+    },
+    {
+      "path": "Tinodios/format/AsyncImageTextAttachment.swift",
+      "raw_sha256": "425270911ff687a6b6c6e941f952e9d5b4ea5fb7a9415deaddf1f89708986cf1",
+      "clean_blob": "2647107a7406dd91841b6ed632f458bbdb76194a"
+    },
+    {
+      "path": "Tinodios/format/EntityTextAttachment.swift",
+      "raw_sha256": "65062b102940934429e2d6b029e3f0baaa82ae95798a0af935e8f2568de1d4c8",
+      "clean_blob": "3def327e525929525ba13350bed4661544a4a7a4"
+    },
+    {
+      "path": "Tinodios/format/FormatNode.swift",
+      "raw_sha256": "8989df93b9176074fc799fb06adf6092290a8af16ff20557662614cb771ead44",
+      "clean_blob": "2cdcb424272ca7e2fe7524865f59d555b729cdda"
+    },
+    {
+      "path": "Tinodios/format/FullFormatter.swift",
+      "raw_sha256": "c33148d371f685e76822681fcbb36de1d120c9638ed17a5200a08161e1400278",
+      "clean_blob": "5927bb509535bd4526aa63b8815ebfc5f7c37b85"
+    },
+    {
+      "path": "Tinodios/widgets/RichTextView.swift",
+      "raw_sha256": "de3c941c8cc58d7dfeede8759330d34432c712ef057baa8ee8d569f313b6f736",
+      "clean_blob": "5feedfff4cd121050075ae5841b4a8b51b653d74"
+    },
+    {
+      "path": "TinodiosUITests/ImageMessageLayoutTests.swift",
+      "raw_sha256": "e19a9fe9caf6fda9226aaa7328293ef81984308ce2af3493452df72598c6de84",
+      "clean_blob": "cc35d5a084c1dfcbf38e9919d67dbed9b6496115"
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "raw_sha256": "105526a9e0a29a606b7a5e77241e3363eea95b7dc26245190e2eed584e86cf62",
+      "clean_blob": "3253e1a8e79555fc8047ed1d5602b4914333eb83"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "raw_sha256": "975d12e556084ab7084f94a758926e1068d707768b72a0f425e8173163857dfc",
+      "clean_blob": "8ed6e884d3d8eb60a2fb8cfea3efee7ee3aa3994"
+    }
+  ]
+}

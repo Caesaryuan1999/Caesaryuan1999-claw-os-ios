@@ -399,6 +399,7 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
   -only-testing:TinodiosVoiceLayoutTests/VoiceLayoutTests \
   -only-testing:TinodiosVoiceLayoutTests/ChatScrollTests \
   -only-testing:TinodiosVoiceLayoutTests/CoreListLayoutTests \
+  -only-testing:TinodiosVoiceLayoutTests/ImageMessageLayoutTests \
   -only-testing:TinodiosVoiceLayoutTests/AssistantHistoryTests \
   -only-testing:TinodiosVoiceLayoutTests/AssistantLayoutTests \
   -only-testing:TinodiosVoiceLayoutTests/AssistantRunTests \
