@@ -1,0 +1,31 @@
+{
+  "base": "00425c0ed7a322f5e461648a58471453a6e59c1c",
+  "single_code_file": "TinodiosUITests/VoiceLayoutTests.swift",
+  "changed_region": "OrdinaryAudioFinishObserver only",
+  "outside_region_exact_LF": true,
+  "methods": [
+    "testOriginalNibLoadsAndResetsWithoutRecording",
+    "testContinuousAudioWidthsReachRealFormatterAndMessageCells",
+    "testAudioAddressAndPlaybackFramesNeverChangeWidthOrExpandHitTarget",
+    "testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout",
+    "testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry",
+    "testCompactVoiceBodyActionsKeepSelectionLongPressAndMixedFallbackPriority",
+    "testCompactVoiceActualOwnedAVStateAndPositionReachVisibleControl",
+    "testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek",
+    "testOwnedAudioActualCellsBindEntityAndRetireOnReuseAndInactive",
+    "testOwnedAudioRealHTTPRefusalAndExplicitOriginalDownload",
+    "testOwnedAudioPlaylistDataCannotReadSecondaryHTTP",
+    "testOwnedAudioMemoryLimitAndInvalidSourcesPreserveOriginalBytes",
+    "testOwnedAudioRetiredOwnerAndLateAVCallbackCannotAlterNewAttempt",
+    "testLimitFinishAndReleaseOrderingUseOriginalNibAndSubmissionDispatch",
+    "testNormalReleaseAndLockedLimitKeepExplicitSendDistinct",
+    "testRecordingStatesAndOriginalButtonsForwardActions",
+    "testDynamicTypeDarkLightAndScrollableMinimumTargets",
+    "testInputAccessoryKeyboardAppearsAndDismisses",
+    "testResetAfterGestureDoesNotReusePreviousLayout",
+    "testControlledGestureHandlerUsesSameWindowAndThresholds"
+  ],
+  "original_assertions_and_deadlines": "byte-identical all 20 methods",
+  "native": "NOT_RUN",
+  "sha256": "fbad6d42ba0e6739ca64dafb8f9f7b80ecec2f12be9107450cb04f6ec002aa02"
+}

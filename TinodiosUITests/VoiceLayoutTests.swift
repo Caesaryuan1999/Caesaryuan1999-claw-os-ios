@@ -1661,15 +1661,16 @@ private final class OrdinaryAudioFinishObserver: NSObject, AVAudioPlayerDelegate
 
     private func record(_ category: String, player: AVAudioPlayer?, success: Bool? = nil) {
         let duration = player?.duration ?? -1, time = player?.currentTime ?? -1
+        let playing = player?.isPlaying == true, loops = player?.numberOfLoops ?? 0
+        let observedDelegate = player?.delegate === self
         lock.lock(); defer { lock.unlock() }
-        if category == "finish", success == true, player === engine { successfulFinishes += 1 }
         if events.count < 32 {
             var entry: [String: Any] = ["event": category, "main_thread": Thread.isMainThread,
                 "elapsed": ProcessInfo.processInfo.systemUptime - started,
                 "same_engine": player != nil && player === engine,
                 "duration": duration.isFinite ? duration : -1,
-                "current_time": time.isFinite ? time : -1, "is_playing": player?.isPlaying == true,
-                "loops": player?.numberOfLoops ?? 0, "delegate_is_observer": player?.delegate === self]
+                "current_time": time.isFinite ? time : -1, "is_playing": playing,
+                "loops": loops, "delegate_is_observer": observedDelegate]
             if let success = success { entry["success"] = success }
             events.append(entry)
         }
@@ -1682,27 +1683,48 @@ private final class OrdinaryAudioFinishObserver: NSObject, AVAudioPlayerDelegate
 
     func recordEngine(_ category: String) { record(category, player: engine) }
 
+    // First evidence cannot wait for an AV getter. This observes a real delegate
+    // invocation; it never manufactures a finish from the playback clock.
+    private func recordEntry(_ category: String, player: AVAudioPlayer, success: Bool? = nil) {
+        let same = player === engine
+        let elapsed = ProcessInfo.processInfo.systemUptime - started
+        let onMain = Thread.isMainThread
+        lock.lock(); defer { lock.unlock() }
+        if category == "finish", success == true, same { successfulFinishes += 1 }
+        if events.count < 32 {
+            var entry: [String: Any] = ["event": category, "main_thread": onMain,
+                "elapsed": elapsed, "same_engine": same, "getter_free_entry": true]
+            if let success = success { entry["success"] = success }
+            events.append(entry)
+        }
+    }
+
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        record("finish", player: player, success: flag)
+        recordEntry("finish", player: player, success: flag)
         receiver?.audioPlayerDidFinishPlaying(player, successfully: flag)
         if flag, player === engine { finished?() }
+        DispatchQueue.main.async { [weak self] in self?.record("finish_details", player: player, success: flag) }
     }
 
     func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
-        record("decode_error", player: player)
+        recordEntry("decode_error", player: player)
         receiver?.audioPlayerDecodeErrorDidOccur(player, error: error)
+        DispatchQueue.main.async { [weak self] in self?.record("decode_error_details", player: player) }
     }
 
     func evidence(playback: ClawAudioPlayback? = nil) -> [String: Any] {
         if let playback = playback { recordState(playback) }
         let session = AVAudioSession.sharedInstance()
+        let category = session.category.rawValue, mode = session.mode.rawValue
+        let outputs = session.currentRoute.outputs.map { $0.portType.rawValue }
+        let sampleRate = session.sampleRate, channels = session.outputNumberOfChannels
+        let current = playback?.isCurrent ?? false
         lock.lock(); defer { lock.unlock() }
         return ["scope": "real AV delegate forwarding and production state; no synthetic callback",
                 "events": events, "successful_same_engine_finishes": successfulFinishes,
-                "session_category": session.category.rawValue, "session_mode": session.mode.rawValue,
-                "output_port_types": session.currentRoute.outputs.map { $0.portType.rawValue },
-                "sample_rate": session.sampleRate, "output_channels": session.outputNumberOfChannels,
-                "production_scope_current": playback?.isCurrent ?? false]
+                "session_category": category, "session_mode": mode,
+                "output_port_types": outputs, "sample_rate": sampleRate, "output_channels": channels,
+                "production_scope_current": current]
     }
 }
 

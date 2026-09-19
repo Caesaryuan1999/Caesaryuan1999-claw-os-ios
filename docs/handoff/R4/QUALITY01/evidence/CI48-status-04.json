@@ -1,0 +1,80 @@
+{
+  "time": "2026-09-20T07:29:34.350358+08:00",
+  "repository": "Caesaryuan1999/Caesaryuan1999-claw-os-ios",
+  "ref": "codex/verify-r2-ios02-20260918",
+  "sha": "00425c0ed7a322f5e461648a58471453a6e59c1c",
+  "signing": false,
+  "release": false,
+  "runs": [
+    {
+      "id": 35475312263,
+      "html_url": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios/actions/runs/35475312263",
+      "head_sha": "00425c0ed7a322f5e461648a58471453a6e59c1c",
+      "head_branch": "codex/verify-r2-ios02-20260918",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-09-19T23:09:16Z",
+      "run_attempt": 1
+    }
+  ],
+  "jobs": [
+    {
+      "id": 105983445715,
+      "name": "simulator",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Inspect Xcode and simulator availability",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install CocoaPods if absent",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run SDK and production SQLite migration tests without signing",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Package tested unsigned simulator app",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Cold launch tested app on the same simulator",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve test evidence",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "source": "00425c0ed7a322f5e461648a58471453a6e59c1c",
+  "run": 35475312263,
+  "job": 105983445715,
+  "attempt": 1,
+  "artifact": 10593109482,
+  "artifact_bytes": 105348502,
+  "artifact_sha256": "bd8aa5a1b119ebf83dab5347789c4374320d59a11f17274c6e8f6941174fbe35",
+  "passed": 329,
+  "failed": 1,
+  "skipped": 0,
+  "navigation": "NOT_RUN",
+  "package": "NOT_RUN",
+  "cold_launch": "NOT_RUN",
+  "entities": [
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI48-original\\ios-01-a-20260919-230946\\sdk-summary.json",
+      "bytes": 1262,
+      "sha256": "15d8e313fadfdf6608967132b98ca01af79778f1e68a10df42c2ddd32b52d306"
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI48-original\\ios-01-a-20260919-230946\\storage-summary.json",
+      "bytes": 1978,
+      "sha256": "127ff509f7d64c681aabda7bfb2e8321add2d81244927c4d6a1119b3d2cb0505"
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI48-original\\ios-01-a-20260919-230946\\storage-attachments\\A3F732C2-F4D5-435E-AD5D-5178E784312A.json",
+      "bytes": 2918,
+      "sha256": "4abaebf7bf844a35496f5a88a6d0ae98b2a5f816995165f02bf1acf5e37f1c02"
+    },
+    {
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI48-original\\ios-01-a-20260919-230946\\storage-attachments\\8C78CC62-3C45-4645-95B8-9E47B328CCBA.json",
+      "bytes": 3495,
+      "sha256": "c5b1ff6ca8faae101486f008745295edf24c824a424b2c0cd3deb327b32bc280"
+    }
+  ]
+}
