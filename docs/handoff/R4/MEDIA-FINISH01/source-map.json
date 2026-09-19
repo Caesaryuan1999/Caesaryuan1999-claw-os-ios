@@ -1,0 +1,93 @@
+{
+  "base": "86cf0fa87a28946c56a87e1e3eb67a51e4dbaa84",
+  "branch": "codex/r3-20260918-ios",
+  "origin": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios.git",
+  "tracked_dirty_before_docs": [],
+  "kind": "read-only plan; five production paths proposed, zero production modified",
+  "sources": [
+    {
+      "path": "Tinodios/MessageCell+VLCMediaPlayerDelegate.swift",
+      "role": "proposed_production",
+      "git_blob": "669c88e91b5d45121c9e1d8cd080a08a7b28be98",
+      "git_sha256": "f395e53aa6a003d70c5cead3257da42e1d419d0a9a420fc6f371f5f89343ee86",
+      "raw_sha256": "9520a0516b0eba089f26c32675279446e03b36a83d83c60e0a06d9e388b2667e"
+    },
+    {
+      "path": "Tinodios/MessageCell.swift",
+      "role": "proposed_production",
+      "git_blob": "d707d7cddd1a9d853726c66e8f0ccef8868a9d3e",
+      "git_sha256": "27ce3e285d460cb6d07629523dd88b8060c42547c371a98c025508dbd94ad3fe",
+      "raw_sha256": "2fcab656d71fa37e5718891d6dc7d741cdbe83b6cabff1e62cf58bb682f93dcf"
+    },
+    {
+      "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+      "role": "proposed_production",
+      "git_blob": "2fd1a394813b9e4e6358a2ef6849c2236b6eeefc",
+      "git_sha256": "0c448f1bac2f35f0ba4c357bc6f8e5ab196ca83760c34bf6ce706c6632a53a30",
+      "raw_sha256": "f332e16cba9cf2d3bac4ff5d651cd4cef5b58c663a73299a4ab00d5b783f8c08"
+    },
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "role": "proposed_production",
+      "git_blob": "9b2d1ef353a6820b0699662374e5239318a3c445",
+      "git_sha256": "75cc87d69579f2de38489c13cbe402056aeb1adc44f6025efac80f39b6c8f0f4",
+      "raw_sha256": "de14e631de59b56c4ae1f9fcc145a155093d1d663f8f0e4a7d426937a255e544"
+    },
+    {
+      "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+      "role": "proposed_production",
+      "git_blob": "bd0993cedb0a1369edbad85d2ec1f292e0071c12",
+      "git_sha256": "ae82d33f8c4c8d4aed2b3da3858360939314b93e1bc2ec63139930a26d07235a",
+      "raw_sha256": "478f04eb7971c7f3ce7a3ffc0b915c80d290a9a0d7eb2a22963c27747725d494"
+    },
+    {
+      "path": "Tinodios/ClawSecondaryUIState.swift",
+      "role": "read_only_dependency",
+      "git_blob": "8327e333ec5bda979d87264a5a4882f4fcb6a0f5",
+      "git_sha256": "270954fb48415d445e340df785a6387864184771328afcc9e3565f851411a4c8",
+      "raw_sha256": "d62f89fcc93d61f4b198f8ecc61bf513ba73b0a2d5f7ba892350e649d5ec6c01"
+    },
+    {
+      "path": "Tinodios/MediaRecorder.swift",
+      "role": "read_only_dependency",
+      "git_blob": "024fe745b5aa4bac0dc976e45fa09d258cc6bc82",
+      "git_sha256": "30e81e44ed8c52d55a053fe324bebb1c4c157b18374b12cdb247baf399bddee7",
+      "raw_sha256": "30e81e44ed8c52d55a053fe324bebb1c4c157b18374b12cdb247baf399bddee7"
+    },
+    {
+      "path": "Tinodios/UiUtils.swift",
+      "role": "read_only_dependency",
+      "git_blob": "039e5093a4e14d408179e565e8240acc7a123f6d",
+      "git_sha256": "9ab72967d2fb8e9e1a7e6122563f6f01e9f126f0a1506461a4acbfe95e1bfb00",
+      "raw_sha256": "6d3fcc180ca191bb81dc293db5138657df851fb6a4b777b654955f6e9c4176bc"
+    },
+    {
+      "path": "TinodiosUITests/VoiceLayoutTests.swift",
+      "role": "read_only_dependency",
+      "git_blob": "7c1d2ef1fa7e9c408483fd08879b15c0c10e54bf",
+      "git_sha256": "2459554a670d587ae0af3d4d03a352c90aee4982f6066b63af101318a1328f14",
+      "raw_sha256": "2459554a670d587ae0af3d4d03a352c90aee4982f6066b63af101318a1328f14"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "role": "read_only_dependency",
+      "git_blob": "cc0724723a796cd6135bad167111b0209ed45098",
+      "git_sha256": "30f14e87d387c245556a5e5bd5cd87e4524eef2a96a1da61112fdb6a49f75bf9",
+      "raw_sha256": "30f14e87d387c245556a5e5bd5cd87e4524eef2a96a1da61112fdb6a49f75bf9"
+    },
+    {
+      "path": "Podfile.lock",
+      "role": "read_only_dependency",
+      "git_blob": "f1d1787735b8b831a919640dcc72c59cd1d90dfe",
+      "git_sha256": "8fa1543054fb3c9b9827176fca30c915717ae4a82e184b981ea41d0dbaa8e2f5",
+      "raw_sha256": "8fa1543054fb3c9b9827176fca30c915717ae4a82e184b981ea41d0dbaa8e2f5"
+    }
+  ],
+  "test_target": "TinodiosVoiceLayoutTests/VoiceLayoutTests",
+  "existing_test_methods": 11,
+  "existing_cumulative_native_expected_not_run": 321,
+  "existing_navigation_expected_not_run": 3,
+  "new_native_methods": "Not yet fixed; implementation has not started",
+  "native_execution": "NOT_RUN",
+  "official_archive_probe": "vlc-availability.json; one HEAD exit 28; no body or downloaded hash verification"
+}

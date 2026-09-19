@@ -1,0 +1,9 @@
+{
+  "utc": "2026-09-19T06:24:32.179532+00:00",
+  "operation": "one HEAD; no redirect follow; no body download; no TLS override; no retry",
+  "url": "https://download.videolan.org/pub/cocoapods/prod/MobileVLCKit-3.6.0-c73b779f-dd8bfdba.tar.xz",
+  "exit_code": 28,
+  "stdout": "",
+  "stderr": "curl: (28) Connection timed out after 9983 milliseconds\n",
+  "scope": "This Windows route only; not GitHub macOS runner availability"
+}
