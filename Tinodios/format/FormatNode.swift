@@ -467,10 +467,12 @@ class FormatNode: CustomStringConvertible {
         // Normal known images keep the complete original path below, including
         // its natural-size cap, rounding, download postprocess and hit behavior.
         guard canvas.mode != .proportional else { return nil }
-        let url = attachment.ref.flatMap { Utils.tinodeResourceUrl(from: $0) }
+        let context = Utils.ownedImageContext()
+        let url = attachment.ref.flatMap { context?.resourceURL(from: $0) }
         let wrapper: EntityTextAttachment
         if let url = url, url.scheme != "mid", url.scheme != "tinode" {
-            wrapper = AsyncImageTextAttachment(url: url, afterDownloaded: { canvas.rendered($0) })
+            wrapper = AsyncImageTextAttachment(url: url, afterDownloaded: { canvas.rendered($0) },
+                                               context: context, loader: .shared)
         } else {
             wrapper = EntityTextAttachment()
         }
@@ -480,6 +482,7 @@ class FormatNode: CustomStringConvertible {
         wrapper.imageSourceEntity = attachment.imageSourceEntity
         wrapper.image = canvas.rendered(decoded)
         wrapper.bounds = CGRect(origin: attachment.offset ?? .zero, size: canvas.size)
+        wrapper.displayImageState(wrapper is AsyncImageTextAttachment ? .loading : decoded == nil ? .unavailable : .ready)
         (wrapper as? AsyncImageTextAttachment)?.startDownload(onError: canvas.rendered(nil))
         return NSAttributedString(attachment: wrapper)
     }

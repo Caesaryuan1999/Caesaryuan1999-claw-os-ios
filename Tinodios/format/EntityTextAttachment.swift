@@ -20,6 +20,50 @@ public class EntityTextAttachment: NSTextAttachment {
     // Full-message IM only. Quotes, video covers and other attachments opt out.
     var imageCanvas: ClawImageCanvas?
     var imageSourceEntity: Entity?
+    enum ImageState { case loading, ready, failed, unavailable }
+    let imageBinding = UUID()
+    private(set) var imageState: ImageState = .loading
+    private var imageConsumer: UUID?
+    private var hadImageConsumer = false
+    private var imageConsumerCurrent: (() -> Bool)?
+    private var imageChanged: (() -> Void)?
+
+    var canRetryImage: Bool { false }
+    var imageConsumerIsCurrent: Bool {
+        if imageConsumer == nil { return !hadImageConsumer }
+        return imageConsumerCurrent?() == true
+    }
+
+    func bindImageConsumer(_ id: UUID, isCurrent: @escaping () -> Bool, changed: @escaping () -> Void) {
+        imageConsumer = id
+        hadImageConsumer = true
+        imageConsumerCurrent = isCurrent
+        imageChanged = changed
+    }
+
+    func unbindImageConsumer(_ id: UUID) {
+        guard imageConsumer == id else { return }
+        imageConsumer = nil
+        imageConsumerCurrent = nil
+        imageChanged = nil
+        cancelImageLoad()
+    }
+
+    func cancelImageLoad() {}
+
+    func displayImageState(_ state: ImageState) {
+        imageState = state
+        if imageConsumerIsCurrent { imageChanged?() }
+    }
+
+    var imageActionURL: URL? {
+        guard type == "image", let key = draftyEntityKey else { return nil }
+        var parts = URLComponents(string: "tinode://")!
+        parts.path = imageState == .failed && canRetryImage ? "/image/retry" : "/image/preview"
+        parts.queryItems = [URLQueryItem(name: "key", value: String(key)),
+                            URLQueryItem(name: "binding", value: imageBinding.uuidString)]
+        return parts.url
+    }
 }
 
 /// Immutable display geometry. It never changes the original entity or pixels.

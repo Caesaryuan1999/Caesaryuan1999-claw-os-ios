@@ -77,6 +77,8 @@ class RichTextView: UITextView {
 
         guard let att = attachment as? EntityTextAttachment else { return URL(string: "tinode:///attachment/generic") }
 
+        if att.imageCanvas != nil { return att.imageActionURL }
+
         var urlComps = URLComponents(string: "tinode://")!
         if att.type == "image" {
             urlComps.path = "/image/preview"

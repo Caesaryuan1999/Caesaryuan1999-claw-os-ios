@@ -230,6 +230,8 @@ extension MessageViewController: MessageCellDelegate {
                 handleLargeAttachment(in: cell, using: url)
             case "/image/preview":
                 showImagePreview(in: cell, draftyEntityKey: Int(url.extractQueryParam(named: "key") ?? ""))
+            case "/image/retry":
+                retryInlineImage(in: cell, using: url)
             case "/quote":
                 handleQuoteClick(in: cell)
             case "/audio/seek":
@@ -246,6 +248,27 @@ extension MessageViewController: MessageCellDelegate {
         }
 
         UIApplication.shared.open(url)
+    }
+
+    func isImageCurrent(in cell: MessageCell, attachment: EntityTextAttachment) -> Bool {
+        guard !chatPageRetired, voiceScopeIsCurrent(), view.window != nil, cell.window != nil,
+              !cell.isDeleted, let topic = topicName, let index = messageSeqIdIndex[cell.seqId],
+              messages.indices.contains(index), let key = attachment.draftyEntityKey,
+              cell.imageAttachment(binding: attachment.imageBinding) === attachment else { return false }
+        let message = messages[index]
+        guard message.topic == topic, !message.isDeleted, !message.isDraft,
+              let entities = message.content?.entities, entities.indices.contains(key),
+              entities[key].tp == "IM", let expected = attachment.imageSourceEntity else { return false }
+        return entities[key] == expected
+    }
+
+    func retryInlineImage(in cell: MessageCell, using url: URL) {
+        guard !bulkSelectionMode, UIApplication.shared.applicationState == .active,
+              let key = Int(url.extractQueryParam(named: "key") ?? ""),
+              let binding = UUID(uuidString: url.extractQueryParam(named: "binding") ?? ""),
+              let attachment = cell.imageAttachment(binding: binding) as? AsyncImageTextAttachment,
+              attachment.draftyEntityKey == key, isImageCurrent(in: cell, attachment: attachment) else { return }
+        _ = attachment.retryImage()
     }
 
     func didTapMessage(in cell: MessageCell) {

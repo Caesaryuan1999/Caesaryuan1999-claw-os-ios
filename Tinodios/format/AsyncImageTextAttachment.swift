@@ -20,6 +20,7 @@ public class AsyncImageTextAttachment: EntityTextAttachment {
     private let imageLoader: ClawOwnedImageLoader
     private let imageSlot = ClawOwnedImageSlot()
     private var imageLoad: ClawOwnedImageLoad?
+    private var imageError: UIImage?
 
     /// Postprocessing callback after the image's been downloaded
     private var postprocessing: ((UIImage) -> UIImage?)?
@@ -47,6 +48,18 @@ public class AsyncImageTextAttachment: EntityTextAttachment {
     deinit { imageLoad?.cancel() }
 
     public func startDownload(onError errorImage: UIImage) {
+        if imageCanvas != nil {
+            if !Thread.isMainThread {
+                let ticket = imageSlot.invalidate()
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self, self.imageSlot.accepts(ticket) else { return }
+                    self.startFullImageDownload(onError: errorImage)
+                }
+            } else {
+                startFullImageDownload(onError: errorImage)
+            }
+            return
+        }
         let ticket = imageSlot.invalidate()
         imageLoad?.cancel()
         let requestURL = url
@@ -69,6 +82,69 @@ public class AsyncImageTextAttachment: EntityTextAttachment {
                 let length = self.textContainer?.layoutManager?.textStorage?.length
                 self.textContainer?.layoutManager?.invalidateDisplay(
                     forCharacterRange: NSRange(location: 0, length: length ?? 1))
+            }
+        }
+    }
+
+    override var canRetryImage: Bool {
+        imageCanvas != nil && imageState == .failed && imageError != nil && originalImageSourceIsCurrent
+    }
+
+    private var originalImageSourceIsCurrent: Bool {
+        guard let context = imageContext, context.isCurrent,
+              let reference = imageSourceEntity?.data?["ref"]?.asString() else { return false }
+        return context.resourceURL(from: reference) == url
+    }
+
+    /// Explicit retry keeps this attachment's original context and URL. The page
+    /// validates the entity and consumer binding again before entering here.
+    @discardableResult
+    func retryImage() -> Bool {
+        guard Thread.isMainThread, canRetryImage, imageConsumerIsCurrent,
+              let error = imageError else { return false }
+        startFullImageDownload(onError: error)
+        return true
+    }
+
+    override func cancelImageLoad() {
+        imageSlot.invalidate()
+        imageLoad?.cancel(); imageLoad = nil
+        if imageState == .loading { displayImageState(.failed) }
+    }
+
+    private func startFullImageDownload(onError errorImage: UIImage) {
+        precondition(Thread.isMainThread)
+        imageError = errorImage
+        let ticket = imageSlot.invalidate()
+        imageLoad?.cancel(); imageLoad = nil
+        guard let context = imageContext, originalImageSourceIsCurrent, imageConsumerIsCurrent else {
+            displayImageState(.unavailable)
+            return
+        }
+        displayImageState(.loading)
+        guard imageSlot.accepts(ticket), context.isCurrent, imageConsumerIsCurrent else { return }
+        let requestURL = url
+        imageLoad = imageLoader.load(from: requestURL, context: context) { [weak self] result in
+            guard let self = self, self.imageSlot.accepts(ticket), self.url == requestURL,
+                  self.imageConsumerIsCurrent else { return }
+            // Drawing and UI callbacks stay outside the SDK/Cache gate.
+            guard context.isCurrent else { self.displayImageState(.unavailable); return }
+            let rendered: UIImage?
+            switch result {
+            case .success(let image): rendered = self.postprocessing?(image) ?? image
+            case .failure: rendered = nil
+            }
+            let applied = context.withCurrent { () -> Bool in
+                guard self.imageSlot.accepts(ticket), self.url == requestURL else { return false }
+                self.image = rendered ?? errorImage
+                return true
+            } ?? false
+            guard applied, self.imageConsumerIsCurrent, context.isCurrent else { return }
+            self.imageLoad = nil
+            self.displayImageState(rendered == nil ? .failed : .ready)
+            let length = self.textContainer?.layoutManager?.textStorage?.length ?? 0
+            if length > 0 {
+                self.textContainer?.layoutManager?.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: length))
             }
         }
     }

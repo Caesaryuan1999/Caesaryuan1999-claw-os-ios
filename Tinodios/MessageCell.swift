@@ -135,6 +135,94 @@ final class ClawVoiceBubbleView: UIView {
     }
 }
 
+/// State overlay in the attachment's fixed canvas. Large text scrolls inside
+/// that canvas instead of changing a received message's height after download.
+final class ClawImageStateView: UIView {
+    let status = UILabel()
+    let retryButton = UIButton(type: .system)
+    let badge = UILabel()
+    private let scroll = UIScrollView()
+    var activate: (() -> Bool)?
+    private var state: EntityTextAttachment.ImageState = .loading
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        layer.cornerRadius = 12; clipsToBounds = true
+        status.numberOfLines = 0; status.textAlignment = .center
+        retryButton.setTitle("重新加载", for: .normal)
+        retryButton.titleLabel?.numberOfLines = 0
+        retryButton.titleLabel?.textAlignment = .center
+        retryButton.layer.cornerRadius = 10
+        retryButton.addTarget(self, action: #selector(retryPressed), for: .touchUpInside)
+        badge.text = "长图"; badge.textAlignment = .center; badge.numberOfLines = 0
+        badge.layer.cornerRadius = 4; badge.clipsToBounds = true
+        scroll.addSubview(status); scroll.addSubview(retryButton)
+        addSubview(scroll); addSubview(badge)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func display(_ attachment: EntityTextAttachment) {
+        state = attachment.imageState
+        let ready = state == .ready
+        backgroundColor = ready ? .clear : ClawTheme.surface.withAlphaComponent(0.94)
+        scroll.isHidden = ready
+        badge.isHidden = !ready || attachment.imageCanvas?.mode != .longTop
+        status.text = state == .loading ? "正在加载图片…" : "图片未加载"
+        status.textColor = ClawTheme.muted
+        status.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .systemFont(ofSize: 16), compatibleWith: traitCollection)
+        retryButton.isHidden = state != .failed || !attachment.canRetryImage
+        retryButton.setTitleColor(ClawTheme.primary, for: .normal); retryButton.backgroundColor = .clear
+        retryButton.titleLabel?.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .systemFont(ofSize: 16, weight: .semibold), compatibleWith: traitCollection)
+        badge.textColor = .white; badge.backgroundColor = UIColor.black.withAlphaComponent(0.55)
+        badge.font = UIFontMetrics(forTextStyle: .caption1).scaledFont(for: .systemFont(ofSize: 12), compatibleWith: traitCollection)
+        isAccessibilityElement = ready
+        accessibilityTraits = [.image, .button]
+        accessibilityLabel = attachment.imageCanvas?.mode == .longTop ? "长图，查看原图" : "图片，查看原图"
+        badge.isAccessibilityElement = false
+        setNeedsLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        scroll.frame = bounds
+        let width = max(0, bounds.width - 16)
+        retryButton.setTitle("重新加载", for: .normal)
+        retryButton.accessibilityLabel = "重新加载"
+        retryButton.accessibilityHint = "图片未加载"
+        let natural = retryButton.titleLabel?.sizeThatFits(CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)) ?? .zero
+        var buttonWidth = min(width, max(112, ceil(natural.width) + 24))
+        var buttonHeight = max(48, ceil(retryButton.titleLabel?.sizeThatFits(CGSize(width: max(1, buttonWidth - 24), height: .greatestFiniteMagnitude)).height ?? 0) + 16)
+        // Preserve the system font and a readable action in the fixed canvas.
+        // Accessibility retains the complete action and reason.
+        if buttonHeight + 16 > bounds.height {
+            retryButton.setTitle("重试", for: .normal)
+            let short = retryButton.titleLabel?.sizeThatFits(CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)) ?? .zero
+            buttonWidth = min(width, max(112, ceil(short.width) + 24))
+            buttonHeight = max(48, ceil(retryButton.titleLabel?.sizeThatFits(CGSize(width: max(1, buttonWidth - 24), height: .greatestFiniteMagnitude)).height ?? 0) + 16)
+        }
+        let labelHeight = ceil(status.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height)
+        status.isHidden = !retryButton.isHidden && labelHeight + 12 + buttonHeight + 16 > bounds.height
+        let shownLabelHeight = status.isHidden ? 0 : labelHeight
+        let gap: CGFloat = status.isHidden || retryButton.isHidden ? 0 : 12
+        let height = shownLabelHeight + (retryButton.isHidden ? 0 : gap + buttonHeight)
+        let top = max(8, (bounds.height - height) / 2)
+        status.frame = CGRect(x: 8, y: top, width: width, height: labelHeight)
+        retryButton.frame = CGRect(x: (bounds.width - buttonWidth) / 2, y: top + shownLabelHeight + gap, width: buttonWidth, height: buttonHeight)
+        scroll.contentSize = CGSize(width: bounds.width, height: max(bounds.height, top + height + 8))
+        let badgeSize = badge.sizeThatFits(CGSize(width: max(1, bounds.width - 28), height: .greatestFiniteMagnitude))
+        let badgeWidth = min(bounds.width, ceil(badgeSize.width) + 12), badgeHeight = ceil(badgeSize.height) + 8
+        badge.frame = CGRect(x: max(0, bounds.width - badgeWidth - 8), y: max(0, bounds.height - badgeHeight - 8), width: badgeWidth, height: badgeHeight)
+    }
+
+    // Ready content uses the original collection-view/glyph tap route.
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        state == .ready ? nil : super.hitTest(point, with: event)
+    }
+    override func accessibilityActivate() -> Bool { activate?() ?? false }
+    @objc private func retryPressed() { _ = activate?() }
+}
+
 /// A protocol used to detect events in the chat message.
 protocol MessageCellDelegate: AnyObject {
     /// Long tap anywhere in massage cell.
@@ -151,6 +239,11 @@ protocol MessageCellDelegate: AnyObject {
     func didTapCancelUpload(in cell: MessageCell)
     /// Actual state of this cell's owned ordinary-AU attempt.
     func didChangeAudio(in cell: MessageCell, playback: ClawAudioPlayback)
+    func isImageCurrent(in cell: MessageCell, attachment: EntityTextAttachment) -> Bool
+}
+
+extension MessageCellDelegate {
+    func isImageCurrent(in cell: MessageCell, attachment: EntityTextAttachment) -> Bool { false }
 }
 
 // Optional date, avatar, sender name, message bubble: content, delivery marker, timestamp.
@@ -171,6 +264,8 @@ class MessageCell: UICollectionViewCell {
     let voiceTail = UIImageView()
     private var bulkSelectionEnabled = false
     private var bulkMessageSelected = false
+    private var imageConsumer = UUID()
+    private var imageStates = [UUID: (attachment: EntityTextAttachment, view: ClawImageStateView)]()
 
     // MARK: - Initializers
 
@@ -196,6 +291,7 @@ class MessageCell: UICollectionViewCell {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle { applyThemeBackground() }
+        setNeedsLayout()
         if compactVoiceEntityKey != nil {
             applyCompactVoiceAppearance()
             voiceBubble.display(state: voiceBubble.playbackState, position: voiceBubble.playbackPosition)
@@ -205,6 +301,7 @@ class MessageCell: UICollectionViewCell {
 
     deinit {
         audioPlayback?.retire()
+        for item in imageStates.values { item.attachment.unbindImageConsumer(imageConsumer) }
     }
 
     /// The image view with the avatar.
@@ -384,6 +481,7 @@ class MessageCell: UICollectionViewCell {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        layoutImageStates()
         guard compactVoiceEntityKey != nil else { return }
         voiceBubble.frame = containerView.frame
         // Original six-point tail overlaps the body by one point: five points
@@ -400,6 +498,8 @@ class MessageCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+
+        clearImageStates()
 
         content.text = nil
         content.attributedText = nil
@@ -426,6 +526,78 @@ class MessageCell: UICollectionViewCell {
 
         timeStamp = nil
         setBulkSelectionMode(false, selected: false)
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil { clearImageStates() } else { setNeedsLayout() }
+    }
+
+    func imageAttachment(binding: UUID) -> EntityTextAttachment? {
+        var found: EntityTextAttachment?
+        content.textStorage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: content.textStorage.length)) { value, _, stop in
+            if let attachment = value as? EntityTextAttachment, attachment.imageBinding == binding, attachment.imageCanvas != nil {
+                found = attachment; stop.pointee = true
+            }
+        }
+        return found
+    }
+
+    private func clearImageStates() {
+        let previous = imageStates
+        imageStates.removeAll()
+        for item in previous.values {
+            item.attachment.unbindImageConsumer(imageConsumer)
+            item.view.removeFromSuperview()
+        }
+        imageConsumer = UUID()
+    }
+
+    private func layoutImageStates() {
+        guard window != nil, !content.isHidden else { clearImageStates(); return }
+        content.layoutManager.ensureLayout(for: content.textContainer)
+        var seen = Set<UUID>()
+        content.textStorage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: content.textStorage.length)) { [weak self] value, range, _ in
+            guard let self = self, let attachment = value as? EntityTextAttachment,
+                  let canvas = attachment.imageCanvas else { return }
+            let binding = attachment.imageBinding
+            seen.insert(binding)
+            let overlay = self.imageStates[binding]?.view ?? ClawImageStateView()
+            // The legacy bubble UIImageView disables interaction. Keep the
+            // explicit retry control as a sibling, without changing old taps.
+            if overlay.superview == nil { self.contentView.addSubview(overlay) }
+            self.imageStates[binding] = (attachment, overlay)
+            let token = self.imageConsumer, sequence = self.seqId
+            attachment.bindImageConsumer(token, isCurrent: { [weak self, weak attachment] in
+                guard let self = self, let attachment = attachment, self.imageConsumer == token,
+                      self.seqId == sequence, self.window != nil, !self.isDeleted,
+                      self.imageAttachment(binding: binding) === attachment else { return false }
+                return self.delegate?.isImageCurrent(in: self, attachment: attachment) == true
+            }, changed: { [weak self, weak attachment, weak overlay] in
+                guard let self = self, let attachment = attachment, let overlay = overlay,
+                      self.imageConsumer == token, self.imageStates[binding]?.view === overlay else { return }
+                overlay.display(attachment)
+            })
+            overlay.activate = { [weak self, weak attachment] in
+                guard let self = self, let attachment = attachment, self.imageConsumer == token,
+                      self.window != nil, self.imageAttachment(binding: binding) === attachment else { return false }
+                if self.bulkSelectionEnabled { self.delegate?.didTapMessage(in: self); return true }
+                guard attachment.imageConsumerIsCurrent, let url = attachment.imageActionURL else { return false }
+                self.delegate?.didTapContent(in: self, url: url)
+                return true
+            }
+            let glyphs = self.content.layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+            let glyph = self.content.layoutManager.boundingRect(forGlyphRange: glyphs, in: self.content.textContainer)
+            let rect = CGRect(x: glyph.minX, y: glyph.maxY - canvas.size.height, width: canvas.size.width, height: canvas.size.height)
+            overlay.frame = self.content.convert(rect, to: self.contentView)
+            overlay.display(attachment)
+        }
+        for binding in imageStates.keys.filter({ !seen.contains($0) }) {
+            let item = imageStates.removeValue(forKey: binding)
+            item?.attachment.unbindImageConsumer(imageConsumer)
+            item?.view.removeFromSuperview()
+        }
+        if !progressView.isHidden { containerView.bringSubviewToFront(progressView) }
     }
 
     /// Handle tap gesture on contentView and its subviews.
