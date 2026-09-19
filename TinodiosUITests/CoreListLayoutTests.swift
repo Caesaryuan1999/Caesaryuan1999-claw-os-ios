@@ -447,8 +447,9 @@ final class CoreListLayoutTests: XCTestCase {
             })
             XCTAssertFalse(appearance is UIControl)
             XCTAssertTrue(allViews(appearance).contains { ($0 as? UILabel)?.text == "跟随系统" })
-            XCTAssertFalse(allViews(loaded.view).contains { ($0 as? UILabel)?.text == "帮助与客服" })
+            XCTAssertTrue(allViews(loaded.view).contains { ($0 as? UILabel)?.text == "帮助与客服" })
             try evidence("account-public-alias", view: loaded.view)
+            try closedHelp(from: loaded, name: "help-closed-standard", checkLicenses: true)
         }
     }
 
@@ -508,6 +509,67 @@ final class CoreListLayoutTests: XCTestCase {
             XCTAssertNotNil(lastAction.window)
             readable(try XCTUnwrap(lastAction.titleLabel))
             try evidence("account-ax-end-reachable", view: controller.view)
+            try closedHelp(from: controller, name: "help-closed-ax-dark", checkLicenses: false)
+        }
+    }
+
+    private func closedHelp(from account: AccountSettingsViewController, name: String, checkLicenses: Bool) throws {
+        let entry = try XCTUnwrap(allViews(account.view).first {
+            $0 is UIControl && $0.accessibilityLabel == "帮助与客服"
+        } as? UIControl)
+        let navigation = try XCTUnwrap(account.navigationController)
+        entry.sendActions(for: .touchUpInside) // Original AccountSettings2Help segue and storyboard.
+        try until {
+            navigation.view.layoutIfNeeded()
+            return navigation.topViewController is SettingsHelpViewController && navigation.transitionCoordinator == nil
+        }
+        let help = try XCTUnwrap(navigation.topViewController as? SettingsHelpViewController)
+        XCTAssertEqual(help.title, "帮助与客服")
+        XCTAssertEqual(help.traitCollection.preferredContentSizeCategory, account.traitCollection.preferredContentSizeCategory)
+        XCTAssertFalse(help.tableView.allowsSelection)
+        XCTAssertEqual(help.serviceNameLabel.text, "CLAW OS")
+        XCTAssertNotNil(help.logoView.image)
+        XCTAssertFalse((help.appVersion.text ?? "").isEmpty)
+        XCTAssertEqual(help.serviceLinkLabel.text, "连接信息仅用于诊断")
+        XCTAssertFalse(help.serviceLinkLabel.accessibilityTraits.contains(.link))
+        XCTAssertFalse((help.serverAddressLabel.text ?? "").isEmpty)
+        XCTAssertFalse(allViews(help.view).contains { $0 is UITextField || $0 is UITextView })
+        let texts = ["客服服务暂未开通\n客服将协助处理账号使用问题。服务开通前，暂不接收留言。",
+                     "服务条款未配置", "隐私政策未配置"]
+        for (offset, cell) in [help.contactUs, help.termsOfUse, help.privacyPolicy].enumerated() {
+            let cell = try XCTUnwrap(cell)
+            help.tableView.scrollToRow(at: IndexPath(row: offset + 1, section: 0), at: .middle, animated: false)
+            try until { help.tableView.layoutIfNeeded(); cell.layoutIfNeeded(); return cell.window != nil && cell.bounds.height > 0 }
+            let label = try XCTUnwrap(cell.textLabel)
+            XCTAssertEqual(label.text, texts[offset])
+            XCTAssertEqual(cell.accessibilityLabel, texts[offset])
+            XCTAssertTrue(cell.accessibilityTraits.contains(.staticText))
+            XCTAssertFalse(cell.accessibilityTraits.contains(.button))
+            XCTAssertFalse(cell.accessibilityTraits.contains(.link))
+            XCTAssertEqual(cell.selectionStyle, .none)
+            XCTAssertEqual(cell.accessoryType, .none)
+            XCTAssertFalse((cell.gestureRecognizers ?? []).contains { $0 is UITapGestureRecognizer && $0.isEnabled })
+            XCTAssertFalse(allViews(cell).contains { $0 is UIControl })
+            XCTAssertEqual(label.numberOfLines, 0)
+            XCTAssertTrue(label.adjustsFontForContentSizeCategory)
+            readable(label); contained(label, in: cell.contentView)
+            if offset == 0 {
+                XCTAssertGreaterThan(cell.bounds.height, 52)
+                try evidence(name, view: help.view)
+            }
+        }
+        let licenses = try XCTUnwrap(help.navigationItem.rightBarButtonItem)
+        XCTAssertEqual(licenses.title, "开源许可")
+        XCTAssertTrue(licenses.isEnabled)
+        if checkLicenses {
+            XCTAssertTrue(UIApplication.shared.sendAction(try XCTUnwrap(licenses.action), to: licenses.target, from: licenses, for: nil))
+            try until { navigation.topViewController !== help && navigation.transitionCoordinator == nil }
+            let page = try XCTUnwrap(navigation.topViewController)
+            XCTAssertEqual(page.title, "开源许可")
+            let notices = try XCTUnwrap(allViews(page.view).first { $0 is UITextView } as? UITextView)
+            XCTAssertFalse(notices.isEditable)
+            XCTAssertFalse(notices.text.isEmpty)
+            try evidence("help-licenses", view: page.view)
         }
     }
 

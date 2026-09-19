@@ -1,0 +1,56 @@
+{
+  "scope": "Windows source checks; native layout/navigation NOT_RUN",
+  "base": "1cb083b150717d48c6b515300db2a831414eabb0",
+  "checks": {
+    "only_three_code_paths_changed": true,
+    "account_only_label_delta": true,
+    "six_test_names_unchanged": true,
+    "first_four_methods_byte_identical": true,
+    "all_old_assertion_lines_except_authorized_label_preserved": true,
+    "licenses_implementation_byte_identical": true,
+    "no_help_tap_or_external_action": true,
+    "disabled_rows_static_traits": true,
+    "dynamic_copy_exact": true,
+    "original_three_second_test_deadline_preserved": true,
+    "CI42_diagnostic_unchanged": true
+  },
+  "paths": [
+    {
+      "path": "Tinodios/AccountSettingsViewController.swift",
+      "base_blob": "846096eb1fdd3114ea3f683340abe6bd2fb6a216",
+      "new_raw_sha256": "ac29fd38d32690b075aa936e657cdd14d6d32ff4cccf161c20dddd5e15f34e29",
+      "new_git_sha256": "ac29fd38d32690b075aa936e657cdd14d6d32ff4cccf161c20dddd5e15f34e29"
+    },
+    {
+      "path": "Tinodios/SettingsHelpViewController.swift",
+      "base_blob": "a16a9ca7166a760ba42b8d8d1de0dbe00e6ffee0",
+      "new_raw_sha256": "59743b53b2ddd25189dfb5616f6c46ebc38a86a4ef3e9f0806068049a5eeacaf",
+      "new_git_sha256": "59743b53b2ddd25189dfb5616f6c46ebc38a86a4ef3e9f0806068049a5eeacaf"
+    },
+    {
+      "path": "TinodiosUITests/CoreListLayoutTests.swift",
+      "base_blob": "13727a1d06385410eb203b426f7717516efe4d81",
+      "new_raw_sha256": "b0c8f5b1697f3ffcc838a5d3c20ff14a7f623cf99f516e64a942650b99d312df",
+      "new_git_sha256": "b0c8f5b1697f3ffcc838a5d3c20ff14a7f623cf99f516e64a942650b99d312df"
+    }
+  ],
+  "policies": [
+    {
+      "file": "Scripts/ci/test_brand_ui_policy.py",
+      "exit_code": 0
+    },
+    {
+      "file": "Scripts/ci/test_premium_secondary_ui_policy.py",
+      "exit_code": 0
+    },
+    {
+      "file": "Scripts/ci/test_secondary_ui_policy.py",
+      "exit_code": 0
+    }
+  ],
+  "native_methods_same": 6,
+  "expected_cumulative_native": 294,
+  "expected_navigation": 3,
+  "ci42_source": "1cb083b150717d48c6b515300db2a831414eabb0",
+  "ci42_result": "PENDING_ROOT"
+}

@@ -24,6 +24,7 @@ class SettingsHelpViewController: UITableViewController {
 
     private var isUsingCustomBranding = false
     private var contentHeight: CGFloat = 0
+    private var measuredWidth: CGFloat = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -31,43 +32,40 @@ class SettingsHelpViewController: UITableViewController {
     }
 
     private func setup() {
-        title = NSLocalizedString("帮助", comment: "Help settings title")
+        title = NSLocalizedString("帮助与客服", comment: "Help settings title")
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: NSLocalizedString("开源许可", comment: "Open source licenses"),
             style: .plain, target: self, action: #selector(showLicenses))
         view.accessibilityIdentifier = "claw.settings.help.screen"
         view.backgroundColor = ClawTheme.background
         ClawTheme.styleList(tableView, rowHeight: SettingsHelpViewController.kDefaultRowHeight)
+        tableView.allowsSelection = false
         let helpCells: [UITableViewCell] = [contactUs, termsOfUse, privacyPolicy]
         helpCells.forEach { cell in
             ClawTheme.styleTableCell(cell)
             cell.accessoryType = .none
-            cell.textLabel?.font = ClawTheme.font(16)
+            cell.selectionStyle = .none
+            cell.imageView?.image = nil
+            cell.isAccessibilityElement = true
+            cell.accessibilityTraits = .staticText
             cell.textLabel?.adjustsFontForContentSizeCategory = true
             cell.textLabel?.numberOfLines = 0
+            cell.textLabel?.lineBreakMode = .byWordWrapping
         }
-        contactUs.textLabel?.text = NSLocalizedString("支持方式未配置", comment: "Support unavailable")
+        contactUs.textLabel?.text = NSLocalizedString("客服服务暂未开通", comment: "Support unavailable") + "\n" +
+            NSLocalizedString("客服将协助处理账号使用问题。服务开通前，暂不接收留言。", comment: "Support unavailable explanation")
         termsOfUse.textLabel?.text = NSLocalizedString("服务条款未配置", comment: "Terms unavailable")
         privacyPolicy.textLabel?.text = NSLocalizedString("隐私政策未配置", comment: "Privacy policy unavailable")
+        helpCells.forEach { $0.accessibilityLabel = $0.textLabel?.text }
+        updateExplanationFonts()
         appVersion.textColor = ClawTheme.muted
         serviceNameLabel.textColor = ClawTheme.muted
         serviceLinkLabel.textColor = ClawTheme.muted
+        serviceLinkLabel.accessibilityTraits = .staticText
         serverAddressLabel.textColor = ClawTheme.muted
         logoView.layer.cornerRadius = 16
         logoView.layer.cornerCurve = .continuous
         logoView.clipsToBounds = true
-        UiUtils.setupTapRecognizer(
-            forView: privacyPolicy,
-            action: #selector(SettingsHelpViewController.privacyPolicyClicked),
-            actionTarget: self)
-        UiUtils.setupTapRecognizer(
-            forView: contactUs,
-            action: #selector(SettingsHelpViewController.contactUsClicked),
-            actionTarget: self)
-        UiUtils.setupTapRecognizer(
-            forView: termsOfUse,
-            action: #selector(SettingsHelpViewController.termsOfUseClicked),
-            actionTarget: self)
 
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
         let versionCode = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
@@ -104,14 +102,45 @@ class SettingsHelpViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         if indexPath.section == 0 && indexPath.row == 0 { return 230 }
+        if indexPath.section == 0, (1...3).contains(indexPath.row) {
+            let cells: [UITableViewCell?] = [contactUs, termsOfUse, privacyPolicy]
+            let width = max(1, tableView.bounds.width - tableView.safeAreaInsets.left - tableView.safeAreaInsets.right - 40)
+            let height = cells[indexPath.row - 1]?.textLabel?.sizeThatFits(
+                CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)).height ?? 0
+            return max(SettingsHelpViewController.kDefaultRowHeight, ceil(height) + 24)
+        }
         return max(SettingsHelpViewController.kDefaultRowHeight, ceil(ClawTheme.font(16).lineHeight) + 24)
+    }
+
+    private func updateExplanationFonts() {
+        let font = UIFontMetrics(forTextStyle: .body).scaledFont(
+            for: UIFont.systemFont(ofSize: 16), compatibleWith: traitCollection)
+        [contactUs, termsOfUse, privacyPolicy].forEach { $0?.textLabel?.font = font }
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard isViewLoaded, previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory else { return }
+        updateExplanationFonts()
+        tableView.reloadData()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
+        let width = tableView.bounds.width - tableView.safeAreaInsets.left - tableView.safeAreaInsets.right
+        if width != measuredWidth {
+            measuredWidth = width
+            tableView.beginUpdates(); tableView.endUpdates()
+        }
+
         if isUsingCustomBranding {
             // Adjust "Powered by" view position.
+            contentHeight = (0..<tableView.numberOfSections).reduce(CGFloat(0)) { total, section in
+                total + (0..<tableView.numberOfRows(inSection: section)).reduce(CGFloat(0)) {
+                    $0 + tableView.rectForRow(at: IndexPath(row: $1, section: section)).height
+                }
+            }
             let topPadding = self.tableView.safeAreaInsets.top
             let bottomPadding = self.tableView.safeAreaInsets.bottom
             // Total space available below table content and the bottom.
@@ -122,18 +151,6 @@ class SettingsHelpViewController: UITableViewController {
                 poweredByView.frame.size.height = h
             }
         }
-    }
-
-    @objc func termsOfUseClicked(sender: UITapGestureRecognizer) {
-        UiUtils.showToast(message: NSLocalizedString("尚未提供已核实的服务条款，当前无法查看。", comment: "Terms unavailable"))
-    }
-
-    @objc func privacyPolicyClicked(sender: UITapGestureRecognizer) {
-        UiUtils.showToast(message: NSLocalizedString("尚未提供已核实的隐私政策，当前无法查看。", comment: "Privacy policy unavailable"))
-    }
-
-    @objc func contactUsClicked(sender: UITapGestureRecognizer) {
-        UiUtils.showToast(message: NSLocalizedString("支持方式尚未配置，请联系为你提供此应用的管理员。", comment: "Support unavailable"))
     }
 
     @objc private func showLicenses() {

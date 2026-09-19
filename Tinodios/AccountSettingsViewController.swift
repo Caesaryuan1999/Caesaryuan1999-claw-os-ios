@@ -117,7 +117,7 @@ class AccountSettingsViewController: UITableViewController {
 
         let notificationsRow = makeSettingsMenuRow(title: "消息通知", symbolName: "bell", action: #selector(openNotifications))
         let securityRow = makeSettingsMenuRow(title: "账号安全", symbolName: "shield", action: #selector(openSecurity))
-        let helpRow = makeSettingsMenuRow(title: "关于 CLAW OS", symbolName: "questionmark.circle", action: #selector(openHelp))
+        let helpRow = makeSettingsMenuRow(title: "帮助与客服", symbolName: "questionmark.circle", action: #selector(openHelp))
         let appearance = UILabel()
         appearance.text = "跟随系统"
         let appearanceRow = ClawProfileLayout.valueRow(title: "外观", value: appearance)
