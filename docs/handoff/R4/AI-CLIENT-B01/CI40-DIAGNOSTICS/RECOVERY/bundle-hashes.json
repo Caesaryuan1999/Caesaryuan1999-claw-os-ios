@@ -1,0 +1,19 @@
+{
+  "entities": [
+    {
+      "path": "test-only.patch",
+      "bytes": 8379,
+      "sha256": "2ae09bd4348360ca9ee6f6a16d2f9bf55d52b8ab66003ec2b11af64c2fcf6b42"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 2820,
+      "sha256": "98f4bb8906b178d6aeecf9584deb904cab077d8a7d0a83fa799d59635d11c12b"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3610,
+      "sha256": "f7957580c7d491840c1e1a3bb92e8b906a193dceb7999956fe28be83788b20d4"
+    }
+  ]
+}

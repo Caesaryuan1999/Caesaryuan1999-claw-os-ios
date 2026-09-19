@@ -1,0 +1,66 @@
+{
+  "scope": "Sixth recovery segment; test-only source restoration, not native execution",
+  "baseline": "34b675e7f1db76c90ca112e0f2588f1ddfb97696",
+  "target_source": "6d36bd8450ad61dabf5872c7e7709238c3cb85f6",
+  "path": "TinodiosUITests/AssistantStreamTests.swift",
+  "before": {
+    "mode": "100644",
+    "kind": "blob",
+    "blob": "279f5699f5c7b9d1fc095841469921add7ac2ff3",
+    "bytes": 20538,
+    "sha256": "944c08471fdd5889584b0f064a38c4a2bc05c3c4211ea9c2bb3a6c38af76e221"
+  },
+  "after": {
+    "mode": "100644",
+    "kind": "blob",
+    "blob": "917eb56a0677f42e697131b39851450e756bcf30",
+    "bytes": 24664,
+    "sha256": "33d5b1a20dcbbcf8ba00c0e85a44058a8b1ea5eb096edbc2636c27a859246bfb"
+  },
+  "patch": {
+    "path": "test-only.patch",
+    "bytes": 8379,
+    "sha256": "2ae09bd4348360ca9ee6f6a16d2f9bf55d52b8ab66003ec2b11af64c2fcf6b42"
+  },
+  "forward_apply": {
+    "new_private_index_directory": "C:\\Users\\12287\\AppData\\Local\\Temp\\claw-ios-ci40-diagnostics-forward-xhsu3lk9",
+    "result_tree": "cfc5202cf0c8a68897b965a7bcb99b2baa4e88b3",
+    "base_entries": 975,
+    "result_entries": 975,
+    "non_docs_entries": 553,
+    "whole_tree_equals_base_with_only_target_test_replaced": true,
+    "all_non_docs_mode_kind_blob_equal_target": true,
+    "all_unselected_entries_unchanged": true,
+    "original_index_unchanged": true,
+    "original_index_sha256": "fb5474a1fdb808830f833158e6f27f5cb3fb5c39d8bf4b8d201d3f62c7e43232"
+  },
+  "preserved_prior_entities_sha256": {
+    "unit.patch": "4717ccc07b572cda7ca51f8811824da8400421cd66147fb3678038bd37d148ab",
+    "a-page-order.patch": "74d2acafbc9e727c1555b1e60cebfe32ef7a1aae4de05f55231d2f926441321c",
+    "b-successor.patch": "d5c231f8b5c6ee32a8c43cb2e0eb9d15cc95f4c246de87be5160fcd7e4ef1085",
+    "core-title.patch": "98431f19e8ed0a346c7f282d3e20d8d6336df2c41e765c6f9f707af6adcd680f",
+    "CI39-FIXTURE/RECOVERY/test-only.patch": "05f48b74e0288cc3683c7f0f2afbf6ab6d0a3b37e4fed73fafd5e1de9c37e9bf",
+    "bundle-hashes.json": "fb935e5f761a7bdb20cc110c9421b93e4ef11d052e277bab5578721c44bf7750",
+    "CI39-FIXTURE/RECOVERY/bundle-hashes.json": "86474ef75473e686ba2b4188005586a5ada9d4b7d1c201f584c8a405ea5d0b1d"
+  },
+  "ci40": {
+    "run": "35403779991",
+    "job": "105789172452",
+    "source": "34b675e7f1db76c90ca112e0f2588f1ddfb97696",
+    "status": "FAILED",
+    "native_passed": 292,
+    "native_failed": 1,
+    "native_skipped": 0,
+    "navigation_package_cold": "NOT_RUN",
+    "raw_zip_sha256": "dc40962c88da1604ae6d7361e2e80980226e13a91e5cb91bd687b72c9dac1b07",
+    "root_cause": "OPEN; original failure lacks per-case transport stages"
+  },
+  "ci41": {
+    "run": "35413624631",
+    "job": "105817886283",
+    "source": "6d36bd8450ad61dabf5872c7e7709238c3cb85f6",
+    "status": "PENDING",
+    "expected_native": 293,
+    "expected_navigation": 3
+  }
+}
