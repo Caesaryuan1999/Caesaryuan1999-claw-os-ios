@@ -117,6 +117,7 @@ final class ClawAudioPlayback: NSObject, AVAudioPlayerDelegate {
         } else if state == .preparing {
             pendingSeek = fraction
         } else if let player = player, player.duration.isFinite, player.duration > 0 {
+            if state == .ended { state = .paused }
             player.currentTime = fraction * player.duration
             notify()
         }
