@@ -1,0 +1,237 @@
+{
+  "source": "db514ff4284aed249b4a073425c8379cce4d1943",
+  "run": 35473782593,
+  "job": 105979374086,
+  "artifact": 10593129262,
+  "artifact_sha256": "9da9932939b56ad2c69383b5eefb2a8e03b027099e9ad219ffed8580f36501fc",
+  "native": {
+    "passed": 329,
+    "failed": 1,
+    "sdk": 44,
+    "storage_passed": 285,
+    "storage_failed": 1
+  },
+  "navigation": "NOT_RUN",
+  "package": "NOT_RUN",
+  "cold": "NOT_RUN",
+  "images_are": "original XCTest App-hosted synthetic component fixtures; not authenticated chat or device",
+  "attachments": [
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "name": "core-list-help-closed-ax-dark-shrunk-geometry_0_923FFB8B-700B-4505-B03D-DEDF61286AC4.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\0E475B52-E9BD-4975-9DCE-3CA942752892.json",
+      "sha256": "cdd6cae14c9f7c20d2fe1b8cd409ad63314f23889d08e8e402fb3d3193d7d907",
+      "bytes": 7030
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "name": "core-list-help-closed-ax-dark-shrunk_0_4423A4C1-B668-4AE8-BCE0-D62C1F7DE96F.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\D4397E58-E0B3-4C10-A3B1-A26CF6A95AC4.png",
+      "sha256": "7ef611c65d6ab6a82aec9c28a44f5d657b2aeed759850adce9af56cbe60d737f",
+      "bytes": 233981
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "name": "core-list-help-closed-ax-dark-regrown-geometry_0_A39171A9-2325-4018-8A61-DD57630ED5EB.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\2F4C0110-705F-4937-8443-027C80D4A697.json",
+      "sha256": "e789bbb5b69cd13d8ee120a97deac7ec420cfbc53649c083f4f6a632686100c4",
+      "bytes": 3471
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "name": "core-list-help-closed-ax-dark-regrown_0_D853D1A7-2DED-4543-B26C-C681306D8C4C.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\7732B67B-4FAE-4B8C-84CD-7D1FFE7330BA.png",
+      "sha256": "5f4d0fee35389a97de78015a386c7a7a3c550d9c1a3b67aad7ca6f854de07010",
+      "bytes": 304220
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "name": "core-list-help-closed-ax-dark-large-geometry_0_1237D318-CFFB-4AA3-A133-AB93C68007D7.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\AC43A62B-1D43-4C1B-979E-DB38A9255D49.json",
+      "sha256": "6776800cbb66b11cdcd8cf65d7b2981d0237b548c2cb6b31e7102ec2f4a5b414",
+      "bytes": 5778
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "name": "core-list-help-closed-ax-dark-large_0_10D68038-BDE3-43D0-AEE6-17D522DCD266.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\09AF76C3-AC25-45F5-B9DB-8DAA84CF9950.png",
+      "sha256": "b272c1d6ec421f8d64262d91414720cc999a721452294861b99980b93b9d63e3",
+      "bytes": 234238
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "name": "core-list-help-closed-ax-dark-geometry_0_5FB0A096-DC58-4DB8-85A3-E5FFEE4979CB.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\43B01E1E-DF63-4E86-8A01-EB05BDD97174.json",
+      "sha256": "cdf9df22237807c48d952f036ea89dcb1fdb683b2704b2a673227e59d7613aaf",
+      "bytes": 2807
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "name": "core-list-help-closed-ax-dark_0_01DC89D4-F1EE-47A8-BD14-E2CDD006BE16.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\19CAE701-AF24-4D25-899E-5CCB414A8A7A.png",
+      "sha256": "4a9e703c8b33e98a4d8d024e6ad927f2b344e548cf21900176485395059fc50b",
+      "bytes": 286216
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountMissingThenPublicAliasUsesOriginalDataConsumer()",
+      "name": "core-list-help-closed-standard-geometry_0_E66CEE80-E376-4926-8792-56D6A943AD2A.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\088672DF-5617-4BA6-AE97-4D60585D26AF.json",
+      "sha256": "20b30e4d837144cb4efbce78b37c6c3cd0de608bb810aba00df781e29573f357",
+      "bytes": 5164
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountMissingThenPublicAliasUsesOriginalDataConsumer()",
+      "name": "core-list-help-closed-standard_0_65B77DD5-B193-4BE4-B3F6-AC23DA9438B9.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\519FC128-69BB-4CE8-96FD-2E058A75B3CF.png",
+      "sha256": "a660db0fa9e659196df07ec9568c7eec196d6cc678ba273accf186c6cef63c52",
+      "bytes": 282065
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceActualOwnedAVStateAndPositionReachVisibleControl()",
+      "name": "ordinary-audio-compact-actual-paused_0_EE0438A6-506C-4C4B-B048-C65B47E149BF.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\690C7672-AE22-4D68-AC1F-C3204BDA1C8E.json",
+      "sha256": "21bf7142e0d925d836cd3eacc46433edfa11bab9804707343a45bf43910f4bfc",
+      "bytes": 486
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceActualOwnedAVStateAndPositionReachVisibleControl()",
+      "name": "compact-voice-actual-paused_0_ACFCBE6B-0A33-44F8-92B1-86482127D0D2.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\8B2C26E0-E497-4990-B0B6-CBBB794A3EA8.png",
+      "sha256": "8ba692d5f48d3427c60c0cc2975dd07b350c987add9f55c5f5f068fa016e03e7",
+      "bytes": 69522
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceActualOwnedAVStateAndPositionReachVisibleControl()",
+      "name": "ordinary-audio-compact-actual-playing_0_458E71E9-DCD8-4C36-B044-29EFCC3C9FAC.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\969672A3-1B0C-4A63-B02D-548B2EAB93BE.json",
+      "sha256": "6ccd56e23c3ba09552ae3b8423b9ed5a54807cf83ac1a0aafcb222fc7d21d75e",
+      "bytes": 489
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceActualOwnedAVStateAndPositionReachVisibleControl()",
+      "name": "compact-voice-actual-playing_0_53F626D5-DC94-4682-AB8A-F0A69239A1D5.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\CA9E7083-D28A-4003-AA7F-6F3BA1DA43A9.png",
+      "sha256": "ac22a34617ffbdacb5ce274caab05312f3a233825d4ff409009cd786b12ea382",
+      "bytes": 71606
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "ordinary-audio-compact-layout-UICTContentSizeCategoryAccessibilityXXXL-2-true_0_C8D3481E-2E11-4418-B6E7-4A0185F67E2E.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\43E28F0D-BFCC-4E7B-A9A3-A398D892B3DE.json",
+      "sha256": "e970a50c9022a6656239910230913f44bd92c23a53ae4fcb095c0e83cdd6feb9",
+      "bytes": 531
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "compact-voice-layout-UICTContentSizeCategoryAccessibilityXXXL-2-true_0_181BAAC3-2497-4DD4-805D-C31AD8404A75.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\1975BC3D-44C0-4005-8832-763911235A8F.png",
+      "sha256": "182e848acfc786f5e66f74335ae51f924351dc8edc220636a8e052b792ca4daf",
+      "bytes": 54559
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "ordinary-audio-compact-layout-UICTContentSizeCategoryAccessibilityXXXL-2-false_0_23A26817-1453-42DE-AF6A-EB35500B6EED.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\7D22960B-5E93-4C19-9DA5-68DCB6D989B4.json",
+      "sha256": "c459da6e5a04ace1f10bd916c73fd11817dae2266a663d6c19ebf5051fd2c53d",
+      "bytes": 463
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "compact-voice-layout-UICTContentSizeCategoryAccessibilityXXXL-2-false_0_17A7D4AB-9B3B-44DC-8E8B-9DA1D9140CE0.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\267F918F-1980-4376-A91E-94269B55A3F1.png",
+      "sha256": "3d8a78eee554082161fd047ea8b8e84de5c1b7385f435357fd10e10928439aa6",
+      "bytes": 54936
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "ordinary-audio-compact-layout-UICTContentSizeCategoryAccessibilityXXXL-1-true_0_7EC25C65-F418-44F4-9187-35473FF785A1.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\6ECE4717-2EAA-45A1-A1C6-C4807453F4F8.json",
+      "sha256": "d879deb7a5808d53ad5102cba8de91aea8d625dcad5ca95cabdbac5554fecb1f",
+      "bytes": 532
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "compact-voice-layout-UICTContentSizeCategoryAccessibilityXXXL-1-true_0_3BB56AA2-666F-4CBB-A9A1-78A6FD027496.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\E147BA52-2EA5-40F9-9639-382BEB273E90.png",
+      "sha256": "318ea73376082603a8f2b0901222f7b739886c0d85e0dc4c22c7792754cc4f0d",
+      "bytes": 54209
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "ordinary-audio-compact-layout-UICTContentSizeCategoryAccessibilityXXXL-1-false_0_4668FE7A-2B60-46CC-95BA-D09114329389.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\180487C3-3D7B-4584-B3F4-9AD4C910382D.json",
+      "sha256": "c882f3cd41873e76ae0e9b997c3c766f835b56f307433482d7632de9dfc0f47b",
+      "bytes": 464
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "compact-voice-layout-UICTContentSizeCategoryAccessibilityXXXL-1-false_0_CE40F045-1FE8-4DAD-AAEA-F7BFB4BFAFD0.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\6BCC8BA9-CB3B-4C90-AF23-FB3CA73663FA.png",
+      "sha256": "ba95ebcaf83dd162f6c2508e1f01240a977b6c778b38eab2743b401fd54aad01",
+      "bytes": 52352
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "ordinary-audio-compact-layout-UICTContentSizeCategoryL-2-true_0_D6F38D48-0750-4F6B-9515-ACBA4D904C3E.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\D5B6AA86-A964-4BB5-B930-0C2217A3210D.json",
+      "sha256": "9c88d695d63902ba0bb276630f241f3213ff793100f82debf52099ce86fc4387",
+      "bytes": 484
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "compact-voice-layout-UICTContentSizeCategoryL-2-true_0_EAD55462-07B6-4DE1-9A19-D084305F5137.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\15B558AB-BAC4-40FE-B7A4-4D2F508812EB.png",
+      "sha256": "e72b05212f82555e0ad4e0143283d6461c364501ffd37857f19df420a7424ef6",
+      "bytes": 52794
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "ordinary-audio-compact-layout-UICTContentSizeCategoryL-2-false_0_66EC8180-C487-4D04-A0F6-618106864B7D.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\21908CBD-E96E-4D8D-889B-F74DDB8B67A3.json",
+      "sha256": "012b39ca2846e6ab932385c4e29e97676c09eaf35e00e13304e1632a39efca81",
+      "bytes": 447
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "compact-voice-layout-UICTContentSizeCategoryL-2-false_0_4F9B1352-AECA-4748-A419-B53BDDAE59B8.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\56B3EE4C-F10A-4521-A145-B94F12E2CD08.png",
+      "sha256": "c22340721d8084b3302304876587b2ff8138b5d6feede5c933311169ac0076db",
+      "bytes": 53231
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "ordinary-audio-compact-layout-UICTContentSizeCategoryL-1-true_0_C4574E60-E522-4B96-B698-30D3E112487D.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\56C7155F-04FD-417C-BE48-8920D305D8F7.json",
+      "sha256": "efa99744f4edab6c7c8f6d18227b303ef23c12d5847393a2c948e582838ae336",
+      "bytes": 485
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "compact-voice-layout-UICTContentSizeCategoryL-1-true_0_DA509C44-67FF-42AE-8FDC-9FB5B6DD4D33.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\573C88A7-B67E-4419-873D-BB14FEC228FD.png",
+      "sha256": "ea40d4d8762fe251f085de7d503504b9e720ff51ede9b2a770151bf1e71b236a",
+      "bytes": 52171
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "ordinary-audio-compact-layout-UICTContentSizeCategoryL-1-false_0_987A2F66-FEF7-4B56-8CD0-2BFABF57C0EB.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\493C92FF-562E-4F06-93B5-499122253DA7.json",
+      "sha256": "b907ec64f9e7dbc64abba5eee044239efde32dafdbe57614a855afdb7dc18ccc",
+      "bytes": 448
+    },
+    {
+      "method": "VoiceLayoutTests/testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry()",
+      "name": "compact-voice-layout-UICTContentSizeCategoryL-1-false_0_59E77612-A692-4D03-A649-85A804F92941.png",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\E4E81012-8F62-4AB7-ACCA-1B524D6932D0.png",
+      "sha256": "9d1b86f49a2724c30a76c517975263b288189a06fd6f9ac0708e261881ec157e",
+      "bytes": 50263
+    },
+    {
+      "method": "VoiceLayoutTests/testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek()",
+      "name": "ordinary-audio-finish-callback_0_6F3D1560-B837-420F-A9FE-F22AE796FBC5.json",
+      "path": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI47-original\\ios-01-a-20260919-223620\\storage-attachments\\2F511865-3E39-4998-977A-A53A995B4FE7.json",
+      "sha256": "2a10c522fceeefb0f05c654ca71ef88b6ec7353abc54423d3918abf4af206b45",
+      "bytes": 2465
+    }
+  ]
+}

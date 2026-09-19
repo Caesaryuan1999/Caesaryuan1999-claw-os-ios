@@ -622,7 +622,7 @@ final class VoiceLayoutTests: XCTestCase {
             try OrdinaryAudioOwner(origin: URL(string: "https://audio-fixture.invalid/")!)
         }
         addTeardownBlock { self.main { owner.retire() } }
-        let initial = try await MainActor.run { () -> (ClawAudioPlayback, AVAudioPlayer, Data, TimeInterval) in
+        let initial = try await MainActor.run { () -> (AVAudioPlayer, Data, TimeInterval, Bool) in
             let context = try owner.context()
             let bytes = try ordinaryAAC()
             let source = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.mpeg-4-audio")
@@ -652,12 +652,55 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(playback.position, 0)
             playback.seek(to: 2)
             XCTAssertLessThanOrEqual(playback.position, 1)
-            return (playback, engine, bytes, actual)
+            let sameEngine = playback.player === engine
+            XCTAssertTrue(sameEngine)
+            // The actual page retires the previous player before starting another.
+            playback.retire()
+            XCTAssertEqual(playback.state, .retired)
+            XCTAssertNil(playback.player)
+            XCTAssertFalse(engine.isPlaying)
+            return (engine, bytes, actual, sameEngine)
+        }
+        let endBytes = try await MainActor.run { try ordinaryAAC(seconds: 1) }
+        let bareEnded = expectation(description: "bare AAC finish delegate")
+        let bare = try await MainActor.run { () -> (AVAudioPlayer, OrdinaryAudioFinishObserver, Timer) in
+            let engine = try AVAudioPlayer(data: endBytes)
+            let observer = OrdinaryAudioFinishObserver(receiver: nil)
+            observer.engine = engine
+            observer.finished = { bareEnded.fulfill() }
+            engine.delegate = observer
+            let timer = Timer(timeInterval: 0.25, repeats: true) { _ in observer.recordEngine("bare_sample") }
+            RunLoop.main.add(timer, forMode: .common)
+            addTeardownBlock {
+                try self.main {
+                    defer { timer.invalidate(); engine.delegate = nil; engine.stop() }
+                    try self.audioPlaybackEvidence("bare-finish-callback", observer.evidence())
+                }
+            }
+            XCTAssertTrue(engine.prepareToPlay())
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback)
+            try session.setActive(true)
+            let accepted = engine.play()
+            observer.recordEngine(accepted ? "bare_play_accepted" : "bare_play_rejected")
+            XCTAssertTrue(accepted)
+            XCTAssertTrue(engine.isPlaying)
+            return (engine, observer, timer)
+        }
+        // Save the control outcome, then run the production case even if this
+        // independent control timed out. Both outcomes remain strict assertions.
+        let bareResult = await XCTWaiter.fulfillment(of: [bareEnded], timeout: 3)
+        try await MainActor.run {
+            bare.1.recordEngine("bare_wait_" + String(describing: bareResult))
+            try audioPlaybackEvidence("bare-finish-at-deadline", bare.1.evidence())
+            bare.2.invalidate()
+            bare.0.delegate = nil
+            bare.0.stop()
+            XCTAssertFalse(bare.0.isPlaying)
         }
         let ended = expectation(description: "actual AAC finish delegate")
         let ending = try await MainActor.run { () -> (ClawAudioPlayback, AVAudioPlayer, OrdinaryAudioFinishObserver) in
             let context = try owner.context()
-            let endBytes = try ordinaryAAC(seconds: 1)
             let source = XCTAttachment(data: endBytes, uniformTypeIdentifier: "public.mpeg-4-audio")
             source.name = "ordinary-audio-one-second-finish-source"; source.lifetime = .keepAlways; add(source)
             let finished = try XCTUnwrap(ClawAudioPlayback(context: context, key: 0, reference: nil,
@@ -678,14 +721,20 @@ final class VoiceLayoutTests: XCTestCase {
             let finishedEngine = try XCTUnwrap(finished.player)
             observer.engine = finishedEngine
             finishedEngine.delegate = observer
+            observer.recordEngine("production_delegate_installed")
             return (finished, finishedEngine, observer)
         }
         // Leave the MainActor block so the production main.async finish handler can run.
         // Do not nest RunLoop pumping inside a synchronous main-queue dispatch here.
-        await fulfillment(of: [ended], timeout: 3)
+        let productionResult = await XCTWaiter.fulfillment(of: [ended], timeout: 3)
         try await MainActor.run {
             let (finished, finishedEngine, observer) = ending
-            let (playback, engine, bytes, actual) = initial
+            observer.recordEngine("production_wait_" + String(describing: productionResult))
+            try audioPlaybackEvidence("finish-at-deadline", observer.evidence(playback: finished))
+            XCTAssertEqual(productionResult, .completed, "actual AAC finish delegate within 3 seconds")
+            XCTAssertEqual(bareResult, .completed, "bare AAC finish delegate within 3 seconds")
+            XCTAssertEqual(bare.1.successfulSameEngineFinishes, 1)
+            let (engine, bytes, actual, sameEngineBeforeRetirement) = initial
             let context = try owner.context()
             XCTAssertEqual(finished.state, .ended)
             XCTAssertEqual(observer.successfulSameEngineFinishes, 1)
@@ -710,7 +759,9 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertGreaterThan(try XCTUnwrap(legacy.player).currentTime, 60)
             try audioPlaybackEvidence("actual-aac", ["encoded_bytes": bytes.count,
                 "observed_current_time": actual, "decoded_duration": engine.duration,
-                "same_engine": playback.player === engine, "scope": "real AVAudioPlayer; no microphone"])
+                "same_engine": sameEngineBeforeRetirement,
+                "same_engine_captured_before_initial_retirement": true,
+                "scope": "real AVAudioPlayer; no microphone"])
         }
     }
 
@@ -1594,13 +1645,14 @@ private final class LimitRecordingEngine: MediaRecordingEngine {
 // the unchanged callback to its original production receiver. No synthetic finish.
 private final class OrdinaryAudioFinishObserver: NSObject, AVAudioPlayerDelegate {
     weak var engine: AVAudioPlayer?
+    var finished: (() -> Void)?
     private weak var receiver: ClawAudioPlayback?
     private let lock = NSLock()
     private let started = ProcessInfo.processInfo.systemUptime
     private var events = [[String: Any]]()
     private var successfulFinishes = 0
 
-    init(receiver: ClawAudioPlayback) { self.receiver = receiver; super.init() }
+    init(receiver: ClawAudioPlayback?) { self.receiver = receiver; super.init() }
 
     var successfulSameEngineFinishes: Int {
         lock.lock(); defer { lock.unlock() }
@@ -1616,7 +1668,8 @@ private final class OrdinaryAudioFinishObserver: NSObject, AVAudioPlayerDelegate
                 "elapsed": ProcessInfo.processInfo.systemUptime - started,
                 "same_engine": player != nil && player === engine,
                 "duration": duration.isFinite ? duration : -1,
-                "current_time": time.isFinite ? time : -1, "is_playing": player?.isPlaying == true]
+                "current_time": time.isFinite ? time : -1, "is_playing": player?.isPlaying == true,
+                "loops": player?.numberOfLoops ?? 0, "delegate_is_observer": player?.delegate === self]
             if let success = success { entry["success"] = success }
             events.append(entry)
         }
@@ -1627,9 +1680,12 @@ private final class OrdinaryAudioFinishObserver: NSObject, AVAudioPlayerDelegate
         record("state_" + String(describing: playback.state), player: playback.player)
     }
 
+    func recordEngine(_ category: String) { record(category, player: engine) }
+
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         record("finish", player: player, success: flag)
         receiver?.audioPlayerDidFinishPlaying(player, successfully: flag)
+        if flag, player === engine { finished?() }
     }
 
     func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
@@ -1637,11 +1693,16 @@ private final class OrdinaryAudioFinishObserver: NSObject, AVAudioPlayerDelegate
         receiver?.audioPlayerDecodeErrorDidOccur(player, error: error)
     }
 
-    func evidence(playback: ClawAudioPlayback) -> [String: Any] {
-        recordState(playback)
+    func evidence(playback: ClawAudioPlayback? = nil) -> [String: Any] {
+        if let playback = playback { recordState(playback) }
+        let session = AVAudioSession.sharedInstance()
         lock.lock(); defer { lock.unlock() }
         return ["scope": "real AV delegate forwarding and production state; no synthetic callback",
-                "events": events, "successful_same_engine_finishes": successfulFinishes]
+                "events": events, "successful_same_engine_finishes": successfulFinishes,
+                "session_category": session.category.rawValue, "session_mode": session.mode.rawValue,
+                "output_port_types": session.currentRoute.outputs.map { $0.portType.rawValue },
+                "sample_rate": session.sampleRate, "output_channels": session.outputNumberOfChannels,
+                "production_scope_current": playback?.isCurrent ?? false]
     }
 }
 

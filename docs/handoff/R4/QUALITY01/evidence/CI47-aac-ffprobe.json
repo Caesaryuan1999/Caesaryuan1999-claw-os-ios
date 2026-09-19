@@ -1,0 +1,22 @@
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "aac",
+            "profile": "LC",
+            "sample_rate": "16000",
+            "channels": 1,
+            "duration": "1.152000",
+            "nb_frames": "18"
+        }
+    ],
+    "format": {
+        "duration": "1.152000",
+        "size": "25433"
+    }
+}

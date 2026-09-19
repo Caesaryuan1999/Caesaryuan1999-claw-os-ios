@@ -1,0 +1,13 @@
+{
+  "base": "db514ff4284aed249b4a073425c8379cce4d1943",
+  "only_code_path": "TinodiosUITests/VoiceLayoutTests.swift",
+  "original_19_methods_and_all_other_helpers_byte_equal_lf": true,
+  "original_assertion_lines_retained": 18,
+  "methods": 20,
+  "production_unchanged": true,
+  "deadline_each_seconds": 3,
+  "native": "NOT_RUN",
+  "lf_sha256": "11ada4d216d48bf1208ecdb862c53d701ad0e098a2766664c13596dbecf83b28",
+  "xctwaiter_official": "https://developer.apple.com/documentation/xctest/xctwaiter/fulfillment(of:timeout:enforceorder:)-swift.type.method",
+  "availability_ios": "13.0; runner18.5"
+}
