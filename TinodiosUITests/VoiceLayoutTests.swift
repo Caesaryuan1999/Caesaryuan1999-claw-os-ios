@@ -6,6 +6,7 @@ import AVFoundation
 import UIKit
 import UIKit.UIGestureRecognizerSubclass
 import TinodiosDB
+import TinodeSDK
 @testable import Tinodios
 
 final class VoiceLayoutTests: XCTestCase {
@@ -255,6 +256,236 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertTrue(f.spy.actions.isEmpty); XCTAssertTrue(f.spy.sentTexts.isEmpty)
             try capture("send-button-empty-recording-restored", f)
         }
+    }
+
+    func testContinuousAudioWidthsReachRealFormatterAndMessageCells() throws {
+        try main {
+            try withAudioRenderer(width: 390) { controller in
+                let samples: [(Int, CGFloat)] = [(1000, 128), (1500, 128.813559), (4000, 132.881356),
+                    (10000, 142.644068), (20000, 158.915254), (30000, 175.186441),
+                    (45000, 199.593220), (59000, 222.372881), (60000, 224)]
+                var measured: [[String: Any]] = []
+                for outgoing in [false, true] {
+                    for (duration, expected) in samples {
+                        let message = try audioMessage(duration: duration, outgoing: outgoing)
+                        let cell = try showAudio(message, on: controller)
+                        let play = try audioAttachment(in: cell)
+                        XCTAssertEqual(play.0.audioDurationMilliseconds, duration)
+                        XCTAssertEqual(play.0.bounds.width, 24)
+                        XCTAssertEqual(cell.containerView.frame.width, expected, accuracy: 0.51)
+                        XCTAssertEqual(cell.containerView.frame.width - cell.content.frame.width, 28, accuracy: 0.01)
+                        let attributes = try XCTUnwrap(controller.collectionView.layoutAttributesForItem(at: IndexPath(item: 0, section: 0)) as? MessageViewLayoutAttributes)
+                        XCTAssertEqual(attributes.containerFrame.width, cell.containerView.frame.width, accuracy: 0.01)
+                        XCTAssertEqual(attributes.contentFrame.width, cell.content.frame.width, accuracy: 0.01)
+                        measured.append(["durationMs": duration, "outgoing": outgoing,
+                            "body": cell.containerView.frame.width, "content": cell.content.frame.width])
+                    }
+                }
+                try captureAudioRenderer("continuous-width", controller, measured)
+            }
+        }
+    }
+
+    func testAudioAddressAndPlaybackFramesNeverChangeWidthOrExpandHitTarget() throws {
+        try main {
+            try withAudioRenderer(width: 390) { controller in
+                var width: CGFloat?
+                var measured: [[String: Any]] = []
+                for source in [nil, URL(string: "mid:uploading/synthetic.m4a"), URL(string: "/v0/file/synthetic.m4a")] {
+                    let message = try audioMessage(duration: 20_000, ref: source)
+                    let cell = try showAudio(message, on: controller)
+                    let (play, range) = try audioAttachment(in: cell)
+                    if let previous = width { XCTAssertEqual(cell.containerView.frame.width, previous, accuracy: 0.01) }
+                    width = cell.containerView.frame.width
+                    cell.content.layoutManager.ensureLayout(for: cell.content.textContainer)
+                    let glyphs = cell.content.layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+                    let rect = cell.content.layoutManager.boundingRect(forGlyphRange: glyphs, in: cell.content.textContainer)
+                    let hit = cell.content.getURLForTap(CGPoint(x: rect.midX, y: rect.midY))
+                    XCTAssertEqual(hit?.path, "/audio/toggle-play")
+                    let blank = cell.content.getURLForTap(CGPoint(x: cell.content.bounds.maxX - 1, y: rect.midY))
+                    XCTAssertNotEqual(blank?.path, "/audio/toggle-play", "Width must not enlarge the playback hit")
+                    for action in ["play", "pause", "reset"] {
+                        play.delegate?.action(action, payload: nil) // Attachment frame only, no VLC/network.
+                        let size = controller.calcContainerSize(for: message, avatarsVisible: false, progressVisible: false)
+                        XCTAssertEqual(size.width, try XCTUnwrap(width), accuracy: 0.01)
+                        XCTAssertEqual(play.bounds.width, 24)
+                        XCTAssertEqual(play.audioDurationMilliseconds, 20_000)
+                    }
+                    measured.append(["body": cell.containerView.frame.width, "audioGlyphWidth": play.bounds.width,
+                                     "sourceKind": source == nil ? "inline" : source!.scheme == "mid" ? "pending" : "server"])
+                }
+                try captureAudioRenderer("stable-width-and-hit", controller, measured)
+            }
+        }
+    }
+
+    func testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout() throws {
+        try main {
+            // Policy's invalid-budget guard only: the pre-existing generic
+            // maxContentWidth fallback at a nonpositive viewport is not changed.
+            let invalidBudgets: [CGFloat] = [0, -1, .infinity, .nan]
+            for budget in invalidBudgets {
+                XCTAssertEqual(MessageBubbleLayoutPolicy.voiceWidth(durationMs: Int.max, maxWidth: budget), 0)
+            }
+            try withAudioRenderer(width: 320) { controller in
+                var measured: [[String: Any]] = []
+                for category in [UIContentSizeCategory.large, .accessibilityExtraExtraExtraLarge] {
+                    for style in [UIUserInterfaceStyle.light, .dark] {
+                        let traits = UITraitCollection(traitsFrom: [
+                            UITraitCollection(preferredContentSizeCategory: category),
+                            UITraitCollection(userInterfaceStyle: style)])
+                        controller.parent?.setOverrideTraitCollection(traits, forChild: controller)
+                        controller.overrideUserInterfaceStyle = style
+                        try withCurrentTraits(traits) {
+                            let durations: [Int?] = [nil, 0, -1000, 1000, 60_000, 120_000, Int.max, Int.min]
+                            for duration in durations {
+                                let message = try audioMessage(duration: duration)
+                                let cell = try showAudio(message, on: controller)
+                                let limit = controller.calcMaxContentWidth(for: message, avatarsVisible: false) + 28
+                                let play = try audioAttachment(in: cell)
+                                XCTAssertEqual(play.0.audioDurationMilliseconds, duration)
+                                XCTAssertGreaterThanOrEqual(cell.containerView.frame.width + 0.51, min(128, limit))
+                                XCTAssertLessThanOrEqual(cell.containerView.frame.width, limit + 0.51)
+                                XCTAssertGreaterThan(cell.containerView.frame.height, 0)
+                                if duration == nil || duration! <= 0 {
+                                    XCTAssertTrue(cell.content.attributedText.string.contains("-:--"))
+                                    XCTAssertFalse(cell.content.attributedText.string.contains("0:01"))
+                                    if category == .large {
+                                        XCTAssertEqual(cell.containerView.frame.width, min(128, limit), accuracy: 0.51)
+                                    }
+                                }
+                                if duration == 120_000 {
+                                    XCTAssertTrue(cell.content.attributedText.string.contains("2:00"))
+                                }
+                                if category == .large, duration == 60_000 || duration == 120_000 {
+                                    XCTAssertEqual(cell.containerView.frame.width, min(224, limit), accuracy: 0.51)
+                                }
+                                measured.append(["durationKind": duration == nil ? "unknown" : String(duration!),
+                                    "category": category.rawValue, "dark": style == .dark,
+                                    "body": cell.containerView.frame.width, "height": cell.containerView.frame.height,
+                                    "maximum": limit])
+                            }
+                            let first = try audioMessage(duration: 4000)
+                            let second = try audioMessage(duration: 45_000)
+                            first.content = Drafty(content: "真实混合正文保持并自然换行。").append(try XCTUnwrap(first.content))
+                                .append(Drafty(content: " 两段之间的正文 ")).append(try XCTUnwrap(second.content))
+                            let cell = try showAudio(first, on: controller)
+                            XCTAssertTrue(cell.content.attributedText.string.contains("真实混合正文"))
+                            XCTAssertTrue(cell.content.attributedText.string.contains("两段之间的正文"))
+                            var audioCount = 0
+                            cell.content.attributedText.enumerateAttribute(.attachment, in: NSRange(location: 0, length: cell.content.attributedText.length)) { value, _, _ in
+                                if (value as? MultiImageTextAttachment)?.type == "audio/toggle-play" { audioCount += 1 }
+                            }
+                            XCTAssertEqual(audioCount, 2)
+                            let contentLimit = controller.calcMaxContentWidth(for: first, avatarsVisible: false)
+                            let natural = controller.textSizeHelper.computeSize(for: cell.content.attributedText,
+                                within: contentLimit)
+                            XCTAssertGreaterThanOrEqual(cell.containerView.frame.width + 0.51, min(natural.width, contentLimit) + 28)
+                            XCTAssertLessThanOrEqual(cell.containerView.frame.width,
+                                controller.calcMaxContentWidth(for: first, avatarsVisible: false) + 28.51)
+                            let quote = Drafty.quote(quoteHeader: "合成引用", authorUid: "fixture-peer",
+                                                    quoteContent: Drafty(content: "引用文字保持"))
+                            let replied = try audioMessage(duration: 20_000)
+                            replied.content = quote.append(try XCTUnwrap(replied.content))
+                            let replyCell = try showAudio(replied, on: controller)
+                            var renderedQuote: QuotedAttachment?
+                            replyCell.content.attributedText.enumerateAttribute(.attachment,
+                                in: NSRange(location: 0, length: replyCell.content.attributedText.length)) { value, _, _ in
+                                if let quoted = value as? QuotedAttachment { renderedQuote = quoted }
+                            }
+                            XCTAssertTrue(try XCTUnwrap(renderedQuote).attributedString.string.contains("引用文字保持"))
+                            XCTAssertNotNil(try XCTUnwrap(renderedQuote).image)
+                            _ = try audioAttachment(in: replyCell)
+                            try captureAudioRenderer("small-\(category.rawValue)-\(style.rawValue)", controller, measured)
+                            let plain = StoredMessage()
+                            plain.msgId = 2; plain.seq = 2; plain.from = "fixture-peer"
+                            plain.content = Drafty(content: "字")
+                            let plainCell = try showAudio(plain, on: controller)
+                            if category == .large { XCTAssertLessThan(plainCell.containerView.frame.width, 128) }
+                            XCTAssertEqual(plainCell.content.attributedText.string, "字")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func withCurrentTraits(_ traits: UITraitCollection, _ body: () throws -> Void) throws {
+        var result: Result<Void, Error>?
+        traits.performAsCurrent { result = Result { try body() } }
+        try XCTUnwrap(result).get()
+    }
+
+    private func withAudioRenderer(width: CGFloat, _ body: (AudioWidthController) throws -> Void) throws {
+        let f = try current()
+        f.controller.resignFirstResponder()
+        let controller = AudioWidthController()
+        controller.interactor = nil
+        controller.myUID = "fixture-local" // Local direction input only; SDK remains anonymous.
+        f.root.addChild(controller)
+        f.root.setOverrideTraitCollection(UITraitCollection(traitsFrom: [
+            UITraitCollection(preferredContentSizeCategory: .large),
+            UITraitCollection(userInterfaceStyle: .light)]), forChild: controller)
+        controller.loadViewIfNeeded()
+        controller.view.frame = CGRect(x: 0, y: 0, width: width, height: 640)
+        f.root.view.addSubview(controller.view)
+        controller.didMove(toParent: f.root)
+        defer {
+            controller.collectionView.dataSource = nil
+            controller.willMove(toParent: nil); controller.view.removeFromSuperview()
+            controller.removeFromParent()
+        }
+        controller.view.layoutIfNeeded()
+        XCTAssertTrue(controller.collectionView.collectionViewLayout is MessageViewLayout)
+        try body(controller)
+    }
+
+    private func audioMessage(duration: Int?, outgoing: Bool = false, ref: URL? = nil) throws -> StoredMessage {
+        let message = StoredMessage()
+        message.msgId = 1; message.seq = 1; message.from = outgoing ? "fixture-local" : "fixture-peer"
+        message.ts = Date(timeIntervalSince1970: 1_700_000_000)
+        message.content = try Drafty(plainText: " ").insertAudio(at: 0, mime: "audio/m4a",
+            bits: ref == nil ? Data([1, 2, 3, 4]) : nil, preview: Data([12, 25, 50, 25]),
+            duration: duration ?? 0, fname: nil, refurl: ref, size: 4)
+        if duration == nil { message.content?.entities?.first?.data?.removeValue(forKey: "duration") }
+        return message
+    }
+
+    private func showAudio(_ message: StoredMessage, on controller: AudioWidthController) throws -> MessageCell {
+        controller.messages = [message]
+        controller.messageSeqIdIndex = [message.seqId: 0]
+        controller.collectionView.collectionViewLayout.invalidateLayout()
+        controller.collectionView.reloadData()
+        controller.view.layoutIfNeeded(); controller.collectionView.layoutIfNeeded()
+        let cell = try XCTUnwrap(controller.collectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? MessageCell)
+        cell.layoutIfNeeded(); cell.content.layoutIfNeeded()
+        XCTAssertNotNil(cell.window)
+        XCTAssertNotNil(message.cachedContent)
+        return cell
+    }
+
+    private func audioAttachment(in cell: MessageCell) throws -> (MultiImageTextAttachment, NSRange) {
+        let content = try XCTUnwrap(cell.content.attributedText)
+        var found: (MultiImageTextAttachment, NSRange)?
+        content.enumerateAttribute(.attachment, in: NSRange(location: 0, length: content.length)) { value, range, _ in
+            if let play = value as? MultiImageTextAttachment, play.type == "audio/toggle-play", found == nil {
+                found = (play, range)
+            }
+        }
+        return try XCTUnwrap(found)
+    }
+
+    private func captureAudioRenderer(_ name: String, _ controller: AudioWidthController, _ values: [[String: Any]]) throws {
+        let view = controller.view!
+        var drawn = false
+        let image = UIGraphicsImageRenderer(bounds: view.bounds).image { _ in
+            drawn = view.drawHierarchy(in: view.bounds, afterScreenUpdates: true)
+        }
+        guard drawn else { throw Failure.renderingFailed }
+        let png = XCTAttachment(image: image); png.name = "audio-width-" + name; png.lifetime = .keepAlways; add(png)
+        let data = try JSONSerialization.data(withJSONObject: ["scope": "actual formatter, MessageCell and MessageViewLayout; no playback", "measurements": values], options: [.sortedKeys])
+        let json = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+        json.name = "audio-width-" + name + "-geometry"; json.lifetime = .keepAlways; add(json)
     }
 
     func testLimitFinishAndReleaseOrderingUseOriginalNibAndSubmissionDispatch() throws {
@@ -702,6 +933,17 @@ private final class VoiceDelegateSpy: SendMessageBarDelegate, PendingMessagePrev
     }
     func pendingPreviewMessageSize(forMessage msg: NSAttributedString) -> CGSize { .zero }
     func dismissPendingMessagePreview() {}
+}
+
+private final class AudioWidthController: MessageViewController {
+    // Original loadView/cell configuration/layout consumers; business lifecycle
+    // alone is disabled. No neutral cells or alternate flow layout.
+    override func viewDidLoad() {
+        (collectionView.collectionViewLayout as? MessageViewLayout)?.delegate = self
+        collectionView.dataSource = self
+    }
+    override func viewDidAppear(_ animated: Bool) {}
+    override var inputAccessoryView: UIView? { nil }
 }
 
 // Actual MessageViewController.sendMessageBar(recordAudio:) is inherited. Only

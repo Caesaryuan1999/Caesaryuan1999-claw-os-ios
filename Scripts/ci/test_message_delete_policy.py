@@ -50,7 +50,13 @@ def main() -> None:
     assert "enum MessageBubbleLayoutPolicy" in message_view
     assert "maxContentWidth(availableWidth:" in message_view
     assert "voiceWidth(durationMs:" in message_view
-    assert "MessageBubbleLayoutPolicy.voiceWidth" in format_node
+    # AU width now belongs to the real message measurement, not a formatter guard.
+    assert "play.audioDurationMilliseconds = attachment.duration" in format_node
+    content_size = message_view.split("func calcContentSize(for message: Message, maxWidth: CGFloat) -> CGSize {", 1)[1]
+    content_size = content_size.split("private func contentInsets", 1)[0]
+    assert "audioBodyWidth(in: attributedText, maximum: maxWidth + padding)" in content_size
+    assert "bodyWidth - padding" in content_size
+    assert "MessageBubbleLayoutPolicy.voiceWidth(durationMs: audio.audioDurationMilliseconds" in content_size
 
 
 if __name__ == "__main__":

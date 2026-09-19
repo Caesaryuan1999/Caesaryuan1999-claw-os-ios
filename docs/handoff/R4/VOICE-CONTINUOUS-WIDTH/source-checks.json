@@ -1,0 +1,53 @@
+{
+  "base": "cb296b0f6c0f0571fc0d70f590ef916365c0dd0d",
+  "production_commit": "1fa8c6b4abd993fc10ced1acc7e153e9fba162d0",
+  "level": "Windows fixed source predicates; Swift/UIKit NOT_RUN",
+  "red": "old voiceWidth was only a formatter guard; no container consumer",
+  "old_voice_methods_preserved": 8,
+  "new_voice_methods": [
+    "testAudioAddressAndPlaybackFramesNeverChangeWidthOrExpandHitTarget",
+    "testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout",
+    "testContinuousAudioWidthsReachRealFormatterAndMessageCells"
+  ],
+  "native_before": 318,
+  "native_candidate_expected": 321,
+  "navigation_expected": 3,
+  "native_execution": "NOT_RUN",
+  "paths": [
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "base_blob": "bf42353bf1970019556c32fd6f8002515494818b",
+      "working_clean_blob": "9b2d1ef353a6820b0699662374e5239318a3c445",
+      "raw_sha256": "de14e631de59b56c4ae1f9fcc145a155093d1d663f8f0e4a7d426937a255e544",
+      "lf_sha256": "75cc87d69579f2de38489c13cbe402056aeb1adc44f6025efac80f39b6c8f0f4"
+    },
+    {
+      "path": "Tinodios/format/FormatNode.swift",
+      "base_blob": "490a12a636506724f25d45efd34bf27500c4b7a1",
+      "working_clean_blob": "38013a1f1513d0988ac6541456ffc0844a38c733",
+      "raw_sha256": "b76cfc15b969e986fdd10cce55e3f261c8842ce0fa5c9d6c8a3167b3cd4f953e",
+      "lf_sha256": "43d57af968e8a56d7dcc288f0ba879b5c26daf576e38290cb7a032945f09d8f8"
+    },
+    {
+      "path": "Tinodios/format/MultiImageTextAttachment.swift",
+      "base_blob": "9f2d3200b42742d2b90ee405371a5241cafd132c",
+      "working_clean_blob": "befb63b4cc96ec24abc2c4d6e628f8bdfc565889",
+      "raw_sha256": "27c38eabe11ea1cf4eed64f74add23c502da3974253e65fd709426b2a0cbe9ec",
+      "lf_sha256": "d7bd976a6db3e61aa6f2ef1982f33e0399da75c89921ccdd8f7268d5fda01ba5"
+    },
+    {
+      "path": "TinodiosUITests/VoiceLayoutTests.swift",
+      "base_blob": "1c8f732c3822cce2e24840905231f9ba75829590",
+      "working_clean_blob": "7c1d2ef1fa7e9c408483fd08879b15c0c10e54bf",
+      "raw_sha256": "2459554a670d587ae0af3d4d03a352c90aee4982f6066b63af101318a1328f14",
+      "lf_sha256": "2459554a670d587ae0af3d4d03a352c90aee4982f6066b63af101318a1328f14"
+    },
+    {
+      "path": "Scripts/ci/test_message_delete_policy.py",
+      "base_blob": "1af2481ccab348ec0922e07339de17f087fb5ae5",
+      "working_clean_blob": "340662762aa0cf160d4dd20ff3fe5c0bbb0332af",
+      "raw_sha256": "8fdb211254b85571b2111f846e70b6c0b7e3563811554b6f1c5766f5e26a33c0",
+      "lf_sha256": "19f1ce2f9e2b3833eb1d57cec9952ac97bb995838e1694095472ccf0fb8f0847"
+    }
+  ]
+}
