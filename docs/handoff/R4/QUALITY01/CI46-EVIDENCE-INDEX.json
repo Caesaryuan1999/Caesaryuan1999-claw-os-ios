@@ -1,0 +1,273 @@
+{
+  "source": "aaeab1b1b8527606107393aeb11d795072e76718",
+  "run": 35470676087,
+  "job": 105970951872,
+  "artifact": 10592579074,
+  "artifact_bytes": 113507782,
+  "artifact_sha256": "8da31e1621bf45d1e015bd79e6a3baf76a8578ced99ca3969690f5b9e617de02",
+  "sdk": {
+    "passed": 44,
+    "failed": 0
+  },
+  "storage": {
+    "passed": 281,
+    "failed": 2,
+    "skipped": 0
+  },
+  "total": {
+    "passed": 325,
+    "failed": 2
+  },
+  "navigation_package_cold": "NOT_RUN",
+  "environment": {
+    "macOS": "15.7.9",
+    "simulator": "iPhone 16 Pro",
+    "os": "iOS18.5",
+    "udid": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+  },
+  "scope": "Original PNG/JSON from existing real UIKit renderer, not full authenticated chat or new compact voice design. Generic VoiceBar teardown images are not AU playback images. Source AAC attachment is 4 seconds; failing one-second end fixture was not separately attached.",
+  "six_au_terminal_lines": [
+    "Test Case '-[TinodiosVoiceLayoutTests.VoiceLayoutTests testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek]' failed (4.025 seconds).",
+    "Test Case '-[TinodiosVoiceLayoutTests.VoiceLayoutTests testOwnedAudioActualCellsBindEntityAndRetireOnReuseAndInactive]' passed (0.391 seconds).",
+    "Test Case '-[TinodiosVoiceLayoutTests.VoiceLayoutTests testOwnedAudioMemoryLimitAndInvalidSourcesPreserveOriginalBytes]' passed (0.245 seconds).",
+    "Test Case '-[TinodiosVoiceLayoutTests.VoiceLayoutTests testOwnedAudioPlaylistDataCannotReadSecondaryHTTP]' passed (1.187 seconds).",
+    "Test Case '-[TinodiosVoiceLayoutTests.VoiceLayoutTests testOwnedAudioRealHTTPRefusalAndExplicitOriginalDownload]' passed (0.386 seconds).",
+    "Test Case '-[TinodiosVoiceLayoutTests.VoiceLayoutTests testOwnedAudioRetiredOwnerAndLateAVCallbackCannotAlterNewAttempt]' passed (0.333 seconds)."
+  ],
+  "selected_original_assets": [
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\1667D8D3-D1A3-42A7-8639-A2B8C66D65AD.json",
+      "original_name": "core-list-final-geometry_0_D53B60A9-CA46-465D-86F1-BAA9A1EF00D7.json",
+      "bytes": 5214,
+      "sha256": "938bfe0c535d5c04a6fd260ef01c589e61db5d6288f6779d1a6d5cce87dc905c",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\5B18AB10-A946-4876-A002-6FD7E21C2CAC.png",
+      "original_name": "core-list-final_0_C34DD6F7-8E40-4826-90F0-72853B47D272.png",
+      "bytes": 278435,
+      "sha256": "2717e2d2e2ac98bced4365e5a2faccc0cb86fddb59b5f3ac107c4edc74449cce",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\81BC235F-04AE-4859-A518-CB28D0AFBEB1.json",
+      "original_name": "core-list-account-ax-end-reachable-geometry_0_224E94BA-2489-478D-973E-94C93FF2D70F.json",
+      "bytes": 13097,
+      "sha256": "9baa14a26b9d6e8e9babf1da4e6cf9692a2eb85a510428f84026a6e409967797",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\52543A4A-20D9-40C4-B990-74EA3ABEECB5.png",
+      "original_name": "core-list-account-ax-end-reachable_0_73CD853F-C1D5-4FCC-A771-F4B7E5FE1A7F.png",
+      "bytes": 168911,
+      "sha256": "bf9eeffc47cf9a9a9c825913f907e0649ce8b79ea953ca351c6962d58f9eae3a",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\4980AD73-F5B5-4993-85AC-F4041BC0C0C1.json",
+      "original_name": "core-list-account-ax-dark-geometry_0_29BE3855-E40F-4015-B032-189328A1B024.json",
+      "bytes": 5381,
+      "sha256": "e5228566937898d5db220462accc2eb3713318570992f82f4938266e4a2a81a0",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\6724C061-A3C2-4796-844F-2F3A1C6BE5E7.png",
+      "original_name": "core-list-account-ax-dark_0_1CB9B898-B8CF-49AB-81FF-A56191D074FB.png",
+      "bytes": 178808,
+      "sha256": "27b97df6a6a582f1340ca0aaa2df21b1dc6a7f32f391a1f39112c30a1a77de97",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\CEA369D1-8A9A-437B-888B-80872A5BF48B.json",
+      "original_name": "core-list-account-standard-dark-geometry_0_1ECC4974-EE0C-4C06-8873-5D7FAE7D3807.json",
+      "bytes": 13639,
+      "sha256": "0c162a873d10599118f10aba1606dd11dc16a70b23705c74690b7a4fb54f8f71",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "CoreListLayoutTests/testRealAccountAt320AccessibilityGrowsWithoutClippingOrInventedEntries()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\6426A5D5-A10D-448A-9022-7CBFE2D91C86.png",
+      "original_name": "core-list-account-standard-dark_0_D13A4547-B3CA-4337-AC28-9D8B10E77F34.png",
+      "bytes": 145513,
+      "sha256": "adda96667e6e8705493f766156b4aacb459d69c01d62d56efc3552808e582c3f",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioAddressAndPlaybackFramesNeverChangeWidthOrExpandHitTarget()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\C5576CF6-3234-4673-B6CF-C45D4C14D665.json",
+      "original_name": "audio-width-stable-width-and-hit-geometry_0_3DC6A1D8-2E02-4237-A9B3-0EA6A26AC99A.json",
+      "bytes": 307,
+      "sha256": "c3f3c1a2d1231215c19f2fd4b0208cbad0f1ed8298fab9267f00ce249b90b128",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioAddressAndPlaybackFramesNeverChangeWidthOrExpandHitTarget()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\CD104E54-A835-45BE-AFF7-E275EC4DA0A6.png",
+      "original_name": "audio-width-stable-width-and-hit_0_C5D0CA13-272F-4D4B-94F6-165C9F57D4AB.png",
+      "bytes": 63800,
+      "sha256": "6fa35e40145c0bf8047e309da3bcb8c7727c088f94fb3c27a0eee7df748ae078",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\8A58BA96-326A-4C47-941A-4B5060A9E808.json",
+      "original_name": "audio-width-small-UICTContentSizeCategoryAccessibilityXXXL-2-geometry_0_17D0CB4F-F132-4887-9FF0-C7AF0FB33E2E.json",
+      "bytes": 4189,
+      "sha256": "eaa08def20befff8edfaae708d2256c82cbffab27c9f1e68703016e444e3e761",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\E3EA2247-F82F-46DF-A9F2-7E6CF53CDC21.png",
+      "original_name": "audio-width-small-UICTContentSizeCategoryAccessibilityXXXL-2_0_9D6D8577-BD9B-4150-87AA-22FCCB558C74.png",
+      "bytes": 65714,
+      "sha256": "97358747c96b2149ab1327d8763a20f255b330510564740897c902e86e22ccdf",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\BD2C47C3-5E17-45E2-BFDA-58DA633CB780.json",
+      "original_name": "audio-width-small-UICTContentSizeCategoryAccessibilityXXXL-1-geometry_0_869B1098-C042-4B38-BB1D-47615DF49CD7.json",
+      "bytes": 3105,
+      "sha256": "06f3e03cebed64a8285f93bf966b7133c59c84893a41c1223586179f5ef16c26",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\F594109E-31EB-427F-BC50-5A6D11A118E7.png",
+      "original_name": "audio-width-small-UICTContentSizeCategoryAccessibilityXXXL-1_0_E400DE65-029D-4813-BF50-6E9720D86020.png",
+      "bytes": 66926,
+      "sha256": "5edd365df8334d09ba89ccab5bb2a21a3aa835c911f50cbac84fbbcafffbff49",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\5625597C-EF93-4F67-BE26-B6991465BA7C.json",
+      "original_name": "audio-width-small-UICTContentSizeCategoryL-2-geometry_0_368581C5-C48E-4730-BCA1-FC22918FA441.json",
+      "bytes": 2013,
+      "sha256": "58b1be601e6529167db976f95eb02c621ebd3a5f2a0009a01fac3507e59f8901",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\7447C1A6-FC60-4D83-92EB-958AB12B3E75.png",
+      "original_name": "audio-width-small-UICTContentSizeCategoryL-2_0_18082C61-D1E6-467B-8AD3-9E58958920A1.png",
+      "bytes": 65714,
+      "sha256": "97358747c96b2149ab1327d8763a20f255b330510564740897c902e86e22ccdf",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\F5EF5946-66F3-4B13-8CE3-9C74DE4689AF.json",
+      "original_name": "audio-width-small-UICTContentSizeCategoryL-1-geometry_0_0F59396D-8E75-4673-A917-B90AF0BD21C3.json",
+      "bytes": 1057,
+      "sha256": "ca9ce81faf23a4915896b2cedc7dcc7d7f718e25453d668982f1f3759c6b9369",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\FD67C647-1CD7-4D15-BB73-19E6F8B6941C.png",
+      "original_name": "audio-width-small-UICTContentSizeCategoryL-1_0_2413CD2F-C2CC-4035-A73F-ED04275A93C5.png",
+      "bytes": 68228,
+      "sha256": "b3c6ccebea043efdd84ce301d69f9a29732070f77c36b4248e9ed4e1e6cc6309",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testContinuousAudioWidthsReachRealFormatterAndMessageCells()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\86763BFD-26C2-40BD-AE5A-A034A03A8390.json",
+      "original_name": "audio-width-continuous-width-geometry_0_4412BE04-2AF8-4B86-BCDF-6881615ED756.json",
+      "bytes": 1632,
+      "sha256": "17ef1b2df5d1892f139b64f9827d98aad1b7896b5c2c7ffef67defcf751d26b6",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testContinuousAudioWidthsReachRealFormatterAndMessageCells()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\9A506ACA-D25A-4C7B-9A8F-FC05B1EDEA3A.png",
+      "original_name": "audio-width-continuous-width_0_75D847E0-A983-45C8-8F56-A1BD0A1DD5AE.png",
+      "bytes": 62079,
+      "sha256": "a54a7c254ed76911e6a9b5ef884bb66d2b12b80a80d77e1b427a29c0de439a7b",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\BDCFA01C-F0C1-45C2-9691-BBAF7B3DEB3F.mp4",
+      "original_name": "ordinary-audio-source-aac_0_5A5111DB-371C-4E87-AF48-5B0F6B538C66.mp4",
+      "bytes": 27253,
+      "sha256": "e17c2dc6cedc68fb78d862fef294d203b56c21930a773c04eb71930a646d945d",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testOwnedAudioActualCellsBindEntityAndRetireOnReuseAndInactive()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\911EA539-1120-4C55-8DF6-7B178DEC9BE0.json",
+      "original_name": "ordinary-audio-real-cell-lifetime_0_2443321A-6059-4763-807C-2C0F98EE63D9.json",
+      "bytes": 163,
+      "sha256": "ee08c3a224457af32e2219cc68cf94820e095d3d3d535e9830e350f8b50ec9ca",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testOwnedAudioPlaylistDataCannotReadSecondaryHTTP()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\DE86108C-D214-4D09-A3F7-8131E704D76F.json",
+      "original_name": "ordinary-audio-playlist-data_0_09CB3775-591C-4CBE-9D39-EE549467D5EE.json",
+      "bytes": 113,
+      "sha256": "9f9fce20924177b14670b6fc3314685ce0da976335f9dbb5c665f27d45047cb8",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testOwnedAudioPlaylistDataCannotReadSecondaryHTTP()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\37D23880-EA2E-4A8E-807A-861F9E43DB4D",
+      "original_name": "ordinary-audio-playlist-source-1_0_B92AAA60-B5FE-4DC4-895A-32D446A5AEB1",
+      "bytes": 88,
+      "sha256": "32ff9b37bcbb224dfd34198e2110f29f8e5c3403956510c3d78f85f70e438882",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testOwnedAudioPlaylistDataCannotReadSecondaryHTTP()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\201B77D6-EC53-408D-8EA6-D8BF164F0060",
+      "original_name": "ordinary-audio-playlist-source-0_0_3FA54BB5-A0FC-4599-9AFB-47F8D088EE8A",
+      "bytes": 59,
+      "sha256": "3a0b9329aa6c18ba1510d212a63d9623e7e2d94ad65dc9b2524d744a47517a98",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    },
+    {
+      "method": "VoiceLayoutTests/testOwnedAudioRealHTTPRefusalAndExplicitOriginalDownload()",
+      "file": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios\\docs\\handoff\\R4\\QUALITY01\\evidence\\CI46-original\\ios-01-a-20260919-213231\\storage-attachments\\D23877AC-D0E4-4D71-A16F-F3388973BEBB.json",
+      "original_name": "ordinary-audio-real-http_0_D29516DB-7680-4A25-8BFB-6DB3EBE421D6.json",
+      "bytes": 266,
+      "sha256": "dec713e9a02fb6419c3d9d6d3d8fdb1778efb8516398d8ea086688825c4e87ae",
+      "device": "iPhone 16 Pro",
+      "device_id": "DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9"
+    }
+  ]
+}

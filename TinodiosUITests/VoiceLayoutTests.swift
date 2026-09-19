@@ -412,16 +412,19 @@ final class VoiceLayoutTests: XCTestCase {
     }
 
 
-    func testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek() throws {
-        try main {
-            let owner = try OrdinaryAudioOwner(origin: URL(string: "https://audio-fixture.invalid/")!)
+    func testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek() async throws {
+        let owner = try await MainActor.run {
+            try OrdinaryAudioOwner(origin: URL(string: "https://audio-fixture.invalid/")!)
+        }
+        addTeardownBlock { self.main { owner.retire() } }
+        let initial = try await MainActor.run { () -> (ClawAudioPlayback, AVAudioPlayer, Data, TimeInterval) in
             let context = try owner.context()
             let bytes = try ordinaryAAC()
             let source = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.mpeg-4-audio")
             source.name = "ordinary-audio-source-aac"; source.lifetime = .keepAlways; add(source)
             let playback = try XCTUnwrap(ClawAudioPlayback(context: context, key: 0, reference: nil,
                 bytes: bytes, name: "voice.m4a", scopeIsCurrent: { true }))
-            defer { playback.retire(); owner.retire() }
+            addTeardownBlock { self.main { playback.retire() } }
             playback.toggle()
             XCTAssertEqual(playback.state, .playing)
             let engine = try XCTUnwrap(playback.player)
@@ -444,12 +447,44 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(playback.position, 0)
             playback.seek(to: 2)
             XCTAssertLessThanOrEqual(playback.position, 1)
+            return (playback, engine, bytes, actual)
+        }
+        let ended = expectation(description: "actual AAC finish delegate")
+        let ending = try await MainActor.run { () -> (ClawAudioPlayback, AVAudioPlayer, OrdinaryAudioFinishObserver) in
+            let context = try owner.context()
+            let endBytes = try ordinaryAAC(seconds: 1)
+            let source = XCTAttachment(data: endBytes, uniformTypeIdentifier: "public.mpeg-4-audio")
+            source.name = "ordinary-audio-one-second-finish-source"; source.lifetime = .keepAlways; add(source)
             let finished = try XCTUnwrap(ClawAudioPlayback(context: context, key: 0, reference: nil,
-                bytes: ordinaryAAC(seconds: 1), name: "finished.m4a", scopeIsCurrent: { true }))
-            defer { finished.retire() }
+                bytes: endBytes, name: "finished.m4a", scopeIsCurrent: { true }))
+            let observer = OrdinaryAudioFinishObserver(receiver: finished)
+            // Register before any assertion: a timeout must retain real AV and state observations.
+            addTeardownBlock {
+                try self.main {
+                    defer { finished.changed = nil; finished.retire() }
+                    try self.audioPlaybackEvidence("finish-callback", observer.evidence(playback: finished))
+                }
+            }
+            finished.changed = { value in
+                observer.recordState(value)
+                if value.state == .ended { ended.fulfill() }
+            }
             finished.toggle()
             let finishedEngine = try XCTUnwrap(finished.player)
-            try awaitMain("actual AAC finish delegate", seconds: 3) { finished.state == .ended }
+            observer.engine = finishedEngine
+            finishedEngine.delegate = observer
+            return (finished, finishedEngine, observer)
+        }
+        // Leave the MainActor block so the production main.async finish handler can run.
+        // Do not nest RunLoop pumping inside a synchronous main-queue dispatch here.
+        await fulfillment(of: [ended], timeout: 3)
+        try await MainActor.run {
+            let (finished, finishedEngine, observer) = ending
+            let (playback, engine, bytes, actual) = initial
+            let context = try owner.context()
+            XCTAssertEqual(finished.state, .ended)
+            XCTAssertEqual(observer.successfulSameEngineFinishes, 1)
+            finished.changed = nil
             finished.seek(to: 0.5)
             XCTAssertEqual(finished.state, .paused)
             XCTAssertFalse(finishedEngine.isPlaying)
@@ -1331,6 +1366,61 @@ private final class LimitRecordingEngine: MediaRecordingEngine {
 
 // Isolated real SDK/SQLite. The current-slot callback is controlled; this is
 // not login, a real account, or the global App Cache.
+// Observation only: the actual AV engine invokes this delegate, which forwards
+// the unchanged callback to its original production receiver. No synthetic finish.
+private final class OrdinaryAudioFinishObserver: NSObject, AVAudioPlayerDelegate {
+    weak var engine: AVAudioPlayer?
+    private weak var receiver: ClawAudioPlayback?
+    private let lock = NSLock()
+    private let started = ProcessInfo.processInfo.systemUptime
+    private var events = [[String: Any]]()
+    private var successfulFinishes = 0
+
+    init(receiver: ClawAudioPlayback) { self.receiver = receiver; super.init() }
+
+    var successfulSameEngineFinishes: Int {
+        lock.lock(); defer { lock.unlock() }
+        return successfulFinishes
+    }
+
+    private func record(_ category: String, player: AVAudioPlayer?, success: Bool? = nil) {
+        let duration = player?.duration ?? -1, time = player?.currentTime ?? -1
+        lock.lock(); defer { lock.unlock() }
+        if category == "finish", success == true, player === engine { successfulFinishes += 1 }
+        if events.count < 32 {
+            var entry: [String: Any] = ["event": category, "main_thread": Thread.isMainThread,
+                "elapsed": ProcessInfo.processInfo.systemUptime - started,
+                "same_engine": player != nil && player === engine,
+                "duration": duration.isFinite ? duration : -1,
+                "current_time": time.isFinite ? time : -1, "is_playing": player?.isPlaying == true]
+            if let success = success { entry["success"] = success }
+            events.append(entry)
+        }
+    }
+
+    func recordState(_ playback: ClawAudioPlayback) {
+        precondition(Thread.isMainThread)
+        record("state_" + String(describing: playback.state), player: playback.player)
+    }
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        record("finish", player: player, success: flag)
+        receiver?.audioPlayerDidFinishPlaying(player, successfully: flag)
+    }
+
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        record("decode_error", player: player)
+        receiver?.audioPlayerDecodeErrorDidOccur(player, error: error)
+    }
+
+    func evidence(playback: ClawAudioPlayback) -> [String: Any] {
+        recordState(playback)
+        lock.lock(); defer { lock.unlock() }
+        return ["scope": "real AV delegate forwarding and production state; no synthetic callback",
+                "events": events, "successful_same_engine_finishes": successfulFinishes]
+    }
+}
+
 private final class OrdinaryAudioOwner {
     let base: BaseDb
     let store: SqlStore

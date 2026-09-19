@@ -1,0 +1,17 @@
+{
+  "base": "aaeab1b1b8527606107393aeb11d795072e76718",
+  "code_paths": [
+    "TinodiosUITests/VoiceLayoutTests.swift"
+  ],
+  "original_assertions_retained": 17,
+  "method_count": 17,
+  "other_16_methods_and_existing_helpers_byte_equal_lf": true,
+  "production_changes": 0,
+  "api_deployment": {
+    "target_iOS": "14.0",
+    "swift_language": "5.0",
+    "Apple_DocC_fulfillment_iOS": "13.0"
+  },
+  "native_result": "NOT_RUN",
+  "old_failure": "CI46 actual finish delegate condition after 3 seconds; callback and stopped-state absent from original evidence; main queue nested wait candidate, not proven production defect"
+}
