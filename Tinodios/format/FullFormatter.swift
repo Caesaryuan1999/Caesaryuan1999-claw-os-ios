@@ -73,6 +73,8 @@ class FullFormatter: AbstractFormatter {
 
     override func handleImage(using data: [String: JSONValue]?, draftyKey: Int?) -> FormatNode {
         var attachment = Attachment(content: .image)
+        attachment.fullImagePresentation = true
+        attachment.imageSourceEntity = Entity(tp: "IM", data: data)
         let node = FormatNode()
         if let attr = data {
             attachment.bits = attr["val"]?.asData()

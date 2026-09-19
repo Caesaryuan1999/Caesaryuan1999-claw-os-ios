@@ -77,6 +77,9 @@ struct Attachment {
     var fullWidth: Bool?
     // Index of the entity in the original Drafty object.
     var draftyEntityKey: Int?
+    // Explicit full-message IM opt-in; legacy quote/video formatters stay nil.
+    var fullImagePresentation: Bool?
+    var imageSourceEntity: Entity?
 }
 
 // Class representing Drafty as a tree of nodes with content and styles attached.
@@ -403,6 +406,11 @@ class FormatNode: CustomStringConvertible {
     }
 
     private func createImageAttachmentString(_ attachment: Attachment, maxSize size: CGSize) -> NSAttributedString {
+        if attachment.fullImagePresentation == true,
+           attachment.ref?.hasPrefix("mid:") != true, attachment.ref?.hasPrefix("tinode:") != true,
+           let result = createFullImageAttachmentString(attachment, maxSize: size) {
+            return result
+        }
         // Image handling is easy.
 
         let url: URL?
@@ -447,6 +455,32 @@ class FormatNode: CustomStringConvertible {
 
         (wrapper as? AsyncImageTextAttachment)?.startDownload(onError: UiUtils.placeholderImage(named: "image-broken", withBackground: image, width: scaledSize.width, height: scaledSize.height))
 
+        return NSAttributedString(attachment: wrapper)
+    }
+
+    private func createFullImageAttachmentString(_ attachment: Attachment, maxSize size: CGSize) -> NSAttributedString? {
+        let decoded = attachment.bits.flatMap { UIImage(data: $0) }
+        guard let canvas = ClawImageCanvas(width: attachment.width, height: attachment.height,
+                                          decoded: decoded, maximum: size) else {
+            return NSAttributedString(string: "")
+        }
+        // Normal known images keep the complete original path below, including
+        // its natural-size cap, rounding, download postprocess and hit behavior.
+        guard canvas.mode != .proportional else { return nil }
+        let url = attachment.ref.flatMap { Utils.tinodeResourceUrl(from: $0) }
+        let wrapper: EntityTextAttachment
+        if let url = url, url.scheme != "mid", url.scheme != "tinode" {
+            wrapper = AsyncImageTextAttachment(url: url, afterDownloaded: { canvas.rendered($0) })
+        } else {
+            wrapper = EntityTextAttachment()
+        }
+        wrapper.type = "image"
+        wrapper.draftyEntityKey = attachment.draftyEntityKey
+        wrapper.imageCanvas = canvas
+        wrapper.imageSourceEntity = attachment.imageSourceEntity
+        wrapper.image = canvas.rendered(decoded)
+        wrapper.bounds = CGRect(origin: attachment.offset ?? .zero, size: canvas.size)
+        (wrapper as? AsyncImageTextAttachment)?.startDownload(onError: canvas.rendered(nil))
         return NSAttributedString(attachment: wrapper)
     }
 
