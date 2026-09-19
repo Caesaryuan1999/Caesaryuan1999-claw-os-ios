@@ -1,0 +1,1120 @@
+diff --git a/Scripts/ci/verify_publish_outcomes_macos.sh b/Scripts/ci/verify_publish_outcomes_macos.sh
+index cc07247..8ed6e88 100644
+--- a/Scripts/ci/verify_publish_outcomes_macos.sh
++++ b/Scripts/ci/verify_publish_outcomes_macos.sh
+@@ -399,6 +399,7 @@ xcodebuild test -workspace Tinodios.xcworkspace -scheme Tinodios \
+   -only-testing:TinodiosVoiceLayoutTests/VoiceLayoutTests \
+   -only-testing:TinodiosVoiceLayoutTests/ChatScrollTests \
+   -only-testing:TinodiosVoiceLayoutTests/CoreListLayoutTests \
++  -only-testing:TinodiosVoiceLayoutTests/ImageMessageLayoutTests \
+   -only-testing:TinodiosVoiceLayoutTests/AssistantHistoryTests \
+   -only-testing:TinodiosVoiceLayoutTests/AssistantLayoutTests \
+   -only-testing:TinodiosVoiceLayoutTests/AssistantRunTests \
+diff --git a/Tinodios.xcodeproj/project.pbxproj b/Tinodios.xcodeproj/project.pbxproj
+index 87eeb29..3253e1a 100644
+--- a/Tinodios.xcodeproj/project.pbxproj
++++ b/Tinodios.xcodeproj/project.pbxproj
+@@ -25,6 +25,7 @@
+ 		C1A070000000000000000012 /* AssistantLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A070000000000000000011; };
+ 
+ 		C1A060000000000000000002 /* CoreListLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A060000000000000000001; };
++		C1A0B0000000000000000002 /* ImageMessageLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A0B0000000000000000001; };
+ 		C1A050000000000000000002 /* ChatScrollTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A050000000000000000001; };
+ 		0A0016E721E7236900088188 /* MessageInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0016E621E7236900088188 /* MessageInteractor.swift */; };
+ 		0A0016E921E736CD00088188 /* MessagePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0016E821E736CD00088188 /* MessagePresenter.swift */; };
+@@ -303,6 +304,7 @@
+ 		C1A070000000000000000011 /* AssistantLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantLayoutTests.swift; sourceTree = "<group>"; };
+ 
+ 		C1A060000000000000000001 /* CoreListLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreListLayoutTests.swift; sourceTree = "<group>"; };
++		C1A0B0000000000000000001 /* ImageMessageLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMessageLayoutTests.swift; sourceTree = "<group>"; };
+ 		C1A050000000000000000001 /* ChatScrollTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatScrollTests.swift; sourceTree = "<group>"; };
+ 		0A0016E621E7236900088188 /* MessageInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInteractor.swift; sourceTree = "<group>"; };
+ 		0A0016E821E736CD00088188 /* MessagePresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagePresenter.swift; sourceTree = "<group>"; };
+@@ -732,6 +734,7 @@
+ 				C1A090000000000000000003 /* AssistantKnownRunLayoutTests.swift */,
+ 				C1A080000000000000000007 /* AssistantStreamTests.swift */,
+ 				C1A060000000000000000001 /* CoreListLayoutTests.swift */,
++				C1A0B0000000000000000001 /* ImageMessageLayoutTests.swift */,
+ 				C1A047012026091800000002 /* SendMessageBarResetSource.swift */,
+ 				C1A041012026091800000001 /* OwnedImageTests.swift */,
+ 				C1A042012026091800000001 /* IdentityNavigationUITests.swift */,
+@@ -1407,7 +1410,7 @@
+ 			files = (C1A043022026091800000001, C1A04400000000000000001D, );
+ 			runOnlyForDeploymentPostprocessing = 0;
+ 		};
+-		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A070000000000000000010, C1A070000000000000000012, C1A080000000000000000006, C1A080000000000000000008, C1A090000000000000000002, C1A090000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
++		C1A048000000000000000005 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C1A048000000000000000002, C1A050000000000000000002, C1A060000000000000000002, C1A0B0000000000000000002, C1A070000000000000000010, C1A070000000000000000012, C1A080000000000000000006, C1A080000000000000000008, C1A090000000000000000002, C1A090000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
+ /* End PBXSourcesBuildPhase section */
+ 
+ /* Begin PBXTargetDependency section */
+diff --git a/Tinodios/MessageCell.swift b/Tinodios/MessageCell.swift
+index fe41642..4252734 100644
+--- a/Tinodios/MessageCell.swift
++++ b/Tinodios/MessageCell.swift
+@@ -135,6 +135,94 @@ final class ClawVoiceBubbleView: UIView {
+     }
+ }
+ 
++/// State overlay in the attachment's fixed canvas. Large text scrolls inside
++/// that canvas instead of changing a received message's height after download.
++final class ClawImageStateView: UIView {
++    let status = UILabel()
++    let retryButton = UIButton(type: .system)
++    let badge = UILabel()
++    private let scroll = UIScrollView()
++    var activate: (() -> Bool)?
++    private var state: EntityTextAttachment.ImageState = .loading
++
++    override init(frame: CGRect) {
++        super.init(frame: frame)
++        layer.cornerRadius = 12; clipsToBounds = true
++        status.numberOfLines = 0; status.textAlignment = .center
++        retryButton.setTitle("重新加载", for: .normal)
++        retryButton.titleLabel?.numberOfLines = 0
++        retryButton.titleLabel?.textAlignment = .center
++        retryButton.layer.cornerRadius = 10
++        retryButton.addTarget(self, action: #selector(retryPressed), for: .touchUpInside)
++        badge.text = "长图"; badge.textAlignment = .center; badge.numberOfLines = 0
++        badge.layer.cornerRadius = 4; badge.clipsToBounds = true
++        scroll.addSubview(status); scroll.addSubview(retryButton)
++        addSubview(scroll); addSubview(badge)
++    }
++
++    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
++
++    func display(_ attachment: EntityTextAttachment) {
++        state = attachment.imageState
++        let ready = state == .ready
++        backgroundColor = ready ? .clear : ClawTheme.surface.withAlphaComponent(0.94)
++        scroll.isHidden = ready
++        badge.isHidden = !ready || attachment.imageCanvas?.mode != .longTop
++        status.text = state == .loading ? "正在加载图片…" : state == .unavailable ? "图片当前不可用" : "图片未加载"
++        status.textColor = ClawTheme.muted
++        status.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .systemFont(ofSize: 16), compatibleWith: traitCollection)
++        retryButton.isHidden = state != .failed || !attachment.canRetryImage
++        retryButton.setTitleColor(ClawTheme.primary, for: .normal); retryButton.backgroundColor = .clear
++        retryButton.titleLabel?.font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .systemFont(ofSize: 16, weight: .semibold), compatibleWith: traitCollection)
++        badge.textColor = .white; badge.backgroundColor = UIColor.black.withAlphaComponent(0.55)
++        badge.font = UIFontMetrics(forTextStyle: .caption1).scaledFont(for: .systemFont(ofSize: 12), compatibleWith: traitCollection)
++        isAccessibilityElement = ready
++        accessibilityTraits = [.image, .button]
++        accessibilityLabel = attachment.imageCanvas?.mode == .longTop ? "长图，查看原图" : "图片，查看原图"
++        badge.isAccessibilityElement = false
++        setNeedsLayout()
++    }
++
++    override func layoutSubviews() {
++        super.layoutSubviews()
++        scroll.frame = bounds
++        let width = max(0, bounds.width - 16)
++        retryButton.setTitle("重新加载", for: .normal)
++        retryButton.accessibilityLabel = "重新加载"
++        retryButton.accessibilityHint = "图片未加载"
++        let natural = retryButton.titleLabel?.sizeThatFits(CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)) ?? .zero
++        var buttonWidth = min(width, max(112, ceil(natural.width) + 24))
++        var buttonHeight = max(48, ceil(retryButton.titleLabel?.sizeThatFits(CGSize(width: max(1, buttonWidth - 24), height: .greatestFiniteMagnitude)).height ?? 0) + 16)
++        // Preserve the system font and a readable action in the fixed canvas.
++        // Accessibility retains the complete action and reason.
++        if buttonHeight + 16 > bounds.height {
++            retryButton.setTitle("重试", for: .normal)
++            let short = retryButton.titleLabel?.sizeThatFits(CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)) ?? .zero
++            buttonWidth = min(width, max(112, ceil(short.width) + 24))
++            buttonHeight = max(48, ceil(retryButton.titleLabel?.sizeThatFits(CGSize(width: max(1, buttonWidth - 24), height: .greatestFiniteMagnitude)).height ?? 0) + 16)
++        }
++        let labelHeight = ceil(status.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height)
++        status.isHidden = !retryButton.isHidden && labelHeight + 12 + buttonHeight + 16 > bounds.height
++        let shownLabelHeight = status.isHidden ? 0 : labelHeight
++        let gap: CGFloat = status.isHidden || retryButton.isHidden ? 0 : 12
++        let height = shownLabelHeight + (retryButton.isHidden ? 0 : gap + buttonHeight)
++        let top = max(8, (bounds.height - height) / 2)
++        status.frame = CGRect(x: 8, y: top, width: width, height: labelHeight)
++        retryButton.frame = CGRect(x: (bounds.width - buttonWidth) / 2, y: top + shownLabelHeight + gap, width: buttonWidth, height: buttonHeight)
++        scroll.contentSize = CGSize(width: bounds.width, height: max(bounds.height, top + height + 8))
++        let badgeSize = badge.sizeThatFits(CGSize(width: max(1, bounds.width - 28), height: .greatestFiniteMagnitude))
++        let badgeWidth = min(bounds.width, ceil(badgeSize.width) + 12), badgeHeight = ceil(badgeSize.height) + 8
++        badge.frame = CGRect(x: max(0, bounds.width - badgeWidth - 8), y: max(0, bounds.height - badgeHeight - 8), width: badgeWidth, height: badgeHeight)
++    }
++
++    // Ready content uses the original collection-view/glyph tap route.
++    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
++        state == .ready ? nil : super.hitTest(point, with: event)
++    }
++    override func accessibilityActivate() -> Bool { activate?() ?? false }
++    @objc private func retryPressed() { _ = activate?() }
++}
++
+ /// A protocol used to detect events in the chat message.
+ protocol MessageCellDelegate: AnyObject {
+     /// Long tap anywhere in massage cell.
+@@ -151,6 +239,11 @@ protocol MessageCellDelegate: AnyObject {
+     func didTapCancelUpload(in cell: MessageCell)
+     /// Actual state of this cell's owned ordinary-AU attempt.
+     func didChangeAudio(in cell: MessageCell, playback: ClawAudioPlayback)
++    func isImageCurrent(in cell: MessageCell, attachment: EntityTextAttachment) -> Bool
++}
++
++extension MessageCellDelegate {
++    func isImageCurrent(in cell: MessageCell, attachment: EntityTextAttachment) -> Bool { false }
+ }
+ 
+ // Optional date, avatar, sender name, message bubble: content, delivery marker, timestamp.
+@@ -171,6 +264,8 @@ class MessageCell: UICollectionViewCell {
+     let voiceTail = UIImageView()
+     private var bulkSelectionEnabled = false
+     private var bulkMessageSelected = false
++    private var imageConsumer = UUID()
++    private var imageStates = [UUID: (attachment: EntityTextAttachment, view: ClawImageStateView)]()
+ 
+     // MARK: - Initializers
+ 
+@@ -196,6 +291,7 @@ class MessageCell: UICollectionViewCell {
+     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+         super.traitCollectionDidChange(previousTraitCollection)
+         if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle { applyThemeBackground() }
++        setNeedsLayout()
+         if compactVoiceEntityKey != nil {
+             applyCompactVoiceAppearance()
+             voiceBubble.display(state: voiceBubble.playbackState, position: voiceBubble.playbackPosition)
+@@ -205,6 +301,7 @@ class MessageCell: UICollectionViewCell {
+ 
+     deinit {
+         audioPlayback?.retire()
++        for item in imageStates.values { item.attachment.unbindImageConsumer(imageConsumer) }
+     }
+ 
+     /// The image view with the avatar.
+@@ -384,6 +481,7 @@ class MessageCell: UICollectionViewCell {
+ 
+     override func layoutSubviews() {
+         super.layoutSubviews()
++        layoutImageStates()
+         guard compactVoiceEntityKey != nil else { return }
+         voiceBubble.frame = containerView.frame
+         // Original six-point tail overlaps the body by one point: five points
+@@ -401,6 +499,8 @@ class MessageCell: UICollectionViewCell {
+     override func prepareForReuse() {
+         super.prepareForReuse()
+ 
++        clearImageStates()
++
+         content.text = nil
+         content.attributedText = nil
+         newDateLabel.text = nil
+@@ -428,6 +528,78 @@ class MessageCell: UICollectionViewCell {
+         setBulkSelectionMode(false, selected: false)
+     }
+ 
++    override func didMoveToWindow() {
++        super.didMoveToWindow()
++        if window == nil { clearImageStates() } else { setNeedsLayout() }
++    }
++
++    func imageAttachment(binding: UUID) -> EntityTextAttachment? {
++        var found: EntityTextAttachment?
++        content.textStorage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: content.textStorage.length)) { value, _, stop in
++            if let attachment = value as? EntityTextAttachment, attachment.imageBinding == binding, attachment.imageCanvas != nil {
++                found = attachment; stop.pointee = true
++            }
++        }
++        return found
++    }
++
++    private func clearImageStates() {
++        let previous = imageStates
++        imageStates.removeAll()
++        for item in previous.values {
++            item.attachment.unbindImageConsumer(imageConsumer)
++            item.view.removeFromSuperview()
++        }
++        imageConsumer = UUID()
++    }
++
++    private func layoutImageStates() {
++        guard window != nil, !content.isHidden else { clearImageStates(); return }
++        content.layoutManager.ensureLayout(for: content.textContainer)
++        var seen = Set<UUID>()
++        content.textStorage.enumerateAttribute(.attachment, in: NSRange(location: 0, length: content.textStorage.length)) { [weak self] value, range, _ in
++            guard let self = self, let attachment = value as? EntityTextAttachment,
++                  let canvas = attachment.imageCanvas else { return }
++            let binding = attachment.imageBinding
++            seen.insert(binding)
++            let overlay = self.imageStates[binding]?.view ?? ClawImageStateView()
++            // The legacy bubble UIImageView disables interaction. Keep the
++            // explicit retry control as a sibling, without changing old taps.
++            if overlay.superview == nil { self.contentView.addSubview(overlay) }
++            self.imageStates[binding] = (attachment, overlay)
++            let token = self.imageConsumer, sequence = self.seqId
++            attachment.bindImageConsumer(token, isCurrent: { [weak self, weak attachment] in
++                guard let self = self, let attachment = attachment, self.imageConsumer == token,
++                      self.seqId == sequence, self.window != nil, !self.isDeleted,
++                      self.imageAttachment(binding: binding) === attachment else { return false }
++                return self.delegate?.isImageCurrent(in: self, attachment: attachment) == true
++            }, changed: { [weak self, weak attachment, weak overlay] in
++                guard let self = self, let attachment = attachment, let overlay = overlay,
++                      self.imageConsumer == token, self.imageStates[binding]?.view === overlay else { return }
++                overlay.display(attachment)
++            })
++            overlay.activate = { [weak self, weak attachment] in
++                guard let self = self, let attachment = attachment, self.imageConsumer == token,
++                      self.window != nil, self.imageAttachment(binding: binding) === attachment else { return false }
++                if self.bulkSelectionEnabled { self.delegate?.didTapMessage(in: self); return true }
++                guard attachment.imageConsumerIsCurrent, let url = attachment.imageActionURL else { return false }
++                self.delegate?.didTapContent(in: self, url: url)
++                return true
++            }
++            let glyphs = self.content.layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
++            let glyph = self.content.layoutManager.boundingRect(forGlyphRange: glyphs, in: self.content.textContainer)
++            let rect = CGRect(x: glyph.minX, y: glyph.maxY - canvas.size.height, width: canvas.size.width, height: canvas.size.height)
++            overlay.frame = self.content.convert(rect, to: self.contentView)
++            overlay.display(attachment)
++        }
++        for binding in imageStates.keys.filter({ !seen.contains($0) }) {
++            let item = imageStates.removeValue(forKey: binding)
++            item?.attachment.unbindImageConsumer(imageConsumer)
++            item?.view.removeFromSuperview()
++        }
++        if !progressView.isHidden { containerView.bringSubviewToFront(progressView) }
++    }
++
+     /// Handle tap gesture on contentView and its subviews.
+     func handleTapGesture(_ gesture: UIGestureRecognizer) {
+         if gesture.isKind(of: UILongPressGestureRecognizer.self) {
+diff --git a/Tinodios/MessageViewController+MessageCellDelegate.swift b/Tinodios/MessageViewController+MessageCellDelegate.swift
+index 9a95eb0..5487e01 100644
+--- a/Tinodios/MessageViewController+MessageCellDelegate.swift
++++ b/Tinodios/MessageViewController+MessageCellDelegate.swift
+@@ -229,7 +229,16 @@ extension MessageViewController: MessageCellDelegate {
+             case "/attachment/large":
+                 handleLargeAttachment(in: cell, using: url)
+             case "/image/preview":
++                if let rawBinding = url.extractQueryParam(named: "binding") {
++                    guard let binding = UUID(uuidString: rawBinding),
++                          let key = Int(url.extractQueryParam(named: "key") ?? ""),
++                          let attachment = cell.imageAttachment(binding: binding),
++                          attachment.draftyEntityKey == key,
++                          isImageCurrent(in: cell, attachment: attachment) else { return }
++                }
+                 showImagePreview(in: cell, draftyEntityKey: Int(url.extractQueryParam(named: "key") ?? ""))
++            case "/image/retry":
++                retryInlineImage(in: cell, using: url)
+             case "/quote":
+                 handleQuoteClick(in: cell)
+             case "/audio/seek":
+@@ -248,6 +257,27 @@ extension MessageViewController: MessageCellDelegate {
+         UIApplication.shared.open(url)
+     }
+ 
++    func isImageCurrent(in cell: MessageCell, attachment: EntityTextAttachment) -> Bool {
++        guard !chatPageRetired, voiceScopeIsCurrent(), view.window != nil, cell.window != nil,
++              !cell.isDeleted, let topic = topicName, let index = messageSeqIdIndex[cell.seqId],
++              messages.indices.contains(index), let key = attachment.draftyEntityKey,
++              cell.imageAttachment(binding: attachment.imageBinding) === attachment else { return false }
++        let message = messages[index]
++        guard message.topic == topic, !message.isDeleted, !message.isDraft,
++              let entities = message.content?.entities, entities.indices.contains(key),
++              entities[key].tp == "IM", let expected = attachment.imageSourceEntity else { return false }
++        return entities[key] == expected
++    }
++
++    func retryInlineImage(in cell: MessageCell, using url: URL) {
++        guard !bulkSelectionMode, UIApplication.shared.applicationState == .active,
++              let key = Int(url.extractQueryParam(named: "key") ?? ""),
++              let binding = UUID(uuidString: url.extractQueryParam(named: "binding") ?? ""),
++              let attachment = cell.imageAttachment(binding: binding) as? AsyncImageTextAttachment,
++              attachment.draftyEntityKey == key, isImageCurrent(in: cell, attachment: attachment) else { return }
++        _ = attachment.retryImage()
++    }
++
+     func didTapMessage(in cell: MessageCell) {
+         if bulkSelectionMode {
+             toggleBulkMessageSelection(seqId: cell.seqId)
+diff --git a/Tinodios/format/AsyncImageTextAttachment.swift b/Tinodios/format/AsyncImageTextAttachment.swift
+index 6df7e91..2647107 100644
+--- a/Tinodios/format/AsyncImageTextAttachment.swift
++++ b/Tinodios/format/AsyncImageTextAttachment.swift
+@@ -20,6 +20,7 @@ public class AsyncImageTextAttachment: EntityTextAttachment {
+     private let imageLoader: ClawOwnedImageLoader
+     private let imageSlot = ClawOwnedImageSlot()
+     private var imageLoad: ClawOwnedImageLoad?
++    private var imageError: UIImage?
+ 
+     /// Postprocessing callback after the image's been downloaded
+     private var postprocessing: ((UIImage) -> UIImage?)?
+@@ -47,6 +48,18 @@ public class AsyncImageTextAttachment: EntityTextAttachment {
+     deinit { imageLoad?.cancel() }
+ 
+     public func startDownload(onError errorImage: UIImage) {
++        if imageCanvas != nil {
++            if !Thread.isMainThread {
++                let ticket = imageSlot.invalidate()
++                DispatchQueue.main.async { [weak self] in
++                    guard let self = self, self.imageSlot.accepts(ticket) else { return }
++                    self.startFullImageDownload(onError: errorImage)
++                }
++            } else {
++                startFullImageDownload(onError: errorImage)
++            }
++            return
++        }
+         let ticket = imageSlot.invalidate()
+         imageLoad?.cancel()
+         let requestURL = url
+@@ -73,6 +86,69 @@ public class AsyncImageTextAttachment: EntityTextAttachment {
+         }
+     }
+ 
++    override var canRetryImage: Bool {
++        imageCanvas != nil && imageState == .failed && imageError != nil && originalImageSourceIsCurrent
++    }
++
++    private var originalImageSourceIsCurrent: Bool {
++        guard let context = imageContext, context.isCurrent,
++              let reference = imageSourceEntity?.data?["ref"]?.asString() else { return false }
++        return context.resourceURL(from: reference) == url
++    }
++
++    /// Explicit retry keeps this attachment's original context and URL. The page
++    /// validates the entity and consumer binding again before entering here.
++    @discardableResult
++    func retryImage() -> Bool {
++        guard Thread.isMainThread, canRetryImage, imageConsumerIsCurrent,
++              let error = imageError else { return false }
++        startFullImageDownload(onError: error)
++        return true
++    }
++
++    override func cancelImageLoad() {
++        imageSlot.invalidate()
++        imageLoad?.cancel(); imageLoad = nil
++        if imageState == .loading { displayImageState(.failed) }
++    }
++
++    private func startFullImageDownload(onError errorImage: UIImage) {
++        precondition(Thread.isMainThread)
++        imageError = errorImage
++        let ticket = imageSlot.invalidate()
++        imageLoad?.cancel(); imageLoad = nil
++        guard let context = imageContext, originalImageSourceIsCurrent, imageConsumerIsCurrent else {
++            displayImageState(.unavailable)
++            return
++        }
++        displayImageState(.loading)
++        guard imageSlot.accepts(ticket), context.isCurrent, imageConsumerIsCurrent else { return }
++        let requestURL = url
++        imageLoad = imageLoader.load(from: requestURL, context: context) { [weak self] result in
++            guard let self = self, self.imageSlot.accepts(ticket), self.url == requestURL,
++                  self.imageConsumerIsCurrent else { return }
++            // Drawing and UI callbacks stay outside the SDK/Cache gate.
++            guard context.isCurrent else { self.displayImageState(.unavailable); return }
++            let rendered: UIImage?
++            switch result {
++            case .success(let image): rendered = self.postprocessing?(image) ?? image
++            case .failure: rendered = nil
++            }
++            let applied = context.withCurrent { () -> Bool in
++                guard self.imageSlot.accepts(ticket), self.url == requestURL else { return false }
++                self.image = rendered ?? errorImage
++                return true
++            } ?? false
++            guard applied, self.imageConsumerIsCurrent, context.isCurrent else { return }
++            self.imageLoad = nil
++            self.displayImageState(rendered == nil ? .failed : .ready)
++            let length = self.textContainer?.layoutManager?.textStorage?.length ?? 0
++            if length > 0 {
++                self.textContainer?.layoutManager?.invalidateDisplay(forCharacterRange: NSRange(location: 0, length: length))
++            }
++        }
++    }
++
+     public override func image(forBounds imageBounds: CGRect, textContainer: NSTextContainer?, characterIndex charIndex: Int) -> UIImage? {
+         // Keep reference to text container. It will be updated if image changes.
+         self.textContainer = textContainer
+diff --git a/Tinodios/format/EntityTextAttachment.swift b/Tinodios/format/EntityTextAttachment.swift
+index f559f0c..3def327 100644
+--- a/Tinodios/format/EntityTextAttachment.swift
++++ b/Tinodios/format/EntityTextAttachment.swift
+@@ -16,4 +16,110 @@ public class EntityTextAttachment: NSTextAttachment {
+     public var draftyEntityKey: Int?
+     public var type: String?
+     public var delegate: EntityTextAttachmentDelegate?
++
++    // Full-message IM only. Quotes, video covers and other attachments opt out.
++    var imageCanvas: ClawImageCanvas?
++    var imageSourceEntity: Entity?
++    enum ImageState { case loading, ready, failed, unavailable }
++    let imageBinding = UUID()
++    private(set) var imageState: ImageState = .loading
++    private var imageConsumer: UUID?
++    private var hadImageConsumer = false
++    private var imageConsumerCurrent: (() -> Bool)?
++    private var imageChanged: (() -> Void)?
++
++    var canRetryImage: Bool { false }
++    var imageConsumerIsCurrent: Bool {
++        if imageConsumer == nil { return !hadImageConsumer }
++        return imageConsumerCurrent?() == true
++    }
++
++    func bindImageConsumer(_ id: UUID, isCurrent: @escaping () -> Bool, changed: @escaping () -> Void) {
++        imageConsumer = id
++        hadImageConsumer = true
++        imageConsumerCurrent = isCurrent
++        imageChanged = changed
++    }
++
++    func unbindImageConsumer(_ id: UUID) {
++        guard imageConsumer == id else { return }
++        imageConsumer = nil
++        imageConsumerCurrent = nil
++        imageChanged = nil
++        cancelImageLoad()
++    }
++
++    func cancelImageLoad() {}
++
++    func displayImageState(_ state: ImageState) {
++        imageState = state
++        if imageConsumerIsCurrent { imageChanged?() }
++    }
++
++    var imageActionURL: URL? {
++        guard type == "image", let key = draftyEntityKey else { return nil }
++        var parts = URLComponents(string: "tinode://")!
++        parts.path = imageState == .failed && canRetryImage ? "/image/retry" : "/image/preview"
++        parts.queryItems = [URLQueryItem(name: "key", value: String(key)),
++                            URLQueryItem(name: "binding", value: imageBinding.uuidString)]
++        return parts.url
++    }
++}
++
++/// Immutable display geometry. It never changes the original entity or pixels.
++struct ClawImageCanvas {
++    enum Mode: Equatable { case proportional, longTop, unknownFit }
++    let mode: Mode
++    let size: CGSize
++
++    init?(width: Int?, height: Int?, decoded: UIImage?, maximum: CGSize) {
++        guard maximum.width.isFinite, maximum.height.isFinite,
++              maximum.width >= 1, maximum.height >= 1 else { return nil }
++        let original: CGSize?
++        if let width = width, let height = height, width > 0, height > 0 {
++            original = CGSize(width: width, height: height)
++        } else if let decoded = decoded, decoded.size.width.isFinite, decoded.size.height.isFinite,
++                  decoded.size.width > 0, decoded.size.height > 0 {
++            original = decoded.size
++        } else {
++            original = nil
++        }
++        if let original = original {
++            if original.height / original.width >= 3 {
++                mode = .longTop
++                let width = min(240, maximum.width, maximum.height * 0.75)
++                size = CGSize(width: width, height: width * 4 / 3)
++            } else {
++                mode = .proportional
++                let scale = min(1, maximum.width / original.width, maximum.height / original.height)
++                size = CGSize(width: original.width * scale, height: original.height * scale)
++            }
++        } else {
++            mode = .unknownFit
++            let width = min(240, maximum.width, maximum.height * 1.5)
++            size = CGSize(width: width, height: width * 2 / 3)
++        }
++        guard size.width.isFinite, size.height.isFinite, size.width > 0, size.height > 0 else { return nil }
++    }
++
++    /// UIImage.draw handles orientation. Long images crop from y=0; other modes
++    /// show the entire image with transparent, theme-inheriting letterboxing.
++    func rendered(_ image: UIImage?) -> UIImage {
++        UIGraphicsImageRenderer(size: size).image { context in
++            let canvas = CGRect(origin: .zero, size: size)
++            UIBezierPath(roundedRect: canvas, cornerRadius: min(12, size.width / 2)).addClip()
++            guard let image = image, image.size.width > 0, image.size.height > 0,
++                  image.size.width.isFinite, image.size.height.isFinite else {
++                UIColor.secondarySystemFill.setFill()
++                context.fill(canvas)
++                return
++            }
++            let sx = size.width / image.size.width, sy = size.height / image.size.height
++            let scale = mode == .longTop ? max(sx, sy) : min(sx, sy)
++            let drawn = CGSize(width: image.size.width * scale, height: image.size.height * scale)
++            image.draw(in: CGRect(x: (size.width - drawn.width) / 2,
++                                  y: mode == .longTop ? 0 : (size.height - drawn.height) / 2,
++                                  width: drawn.width, height: drawn.height))
++        }
++    }
+ }
+diff --git a/Tinodios/format/FormatNode.swift b/Tinodios/format/FormatNode.swift
+index 38013a1..2cdcb42 100644
+--- a/Tinodios/format/FormatNode.swift
++++ b/Tinodios/format/FormatNode.swift
+@@ -77,6 +77,9 @@ struct Attachment {
+     var fullWidth: Bool?
+     // Index of the entity in the original Drafty object.
+     var draftyEntityKey: Int?
++    // Explicit full-message IM opt-in; legacy quote/video formatters stay nil.
++    var fullImagePresentation: Bool?
++    var imageSourceEntity: Entity?
+ }
+ 
+ // Class representing Drafty as a tree of nodes with content and styles attached.
+@@ -403,6 +406,11 @@ class FormatNode: CustomStringConvertible {
+     }
+ 
+     private func createImageAttachmentString(_ attachment: Attachment, maxSize size: CGSize) -> NSAttributedString {
++        if attachment.fullImagePresentation == true,
++           attachment.ref?.hasPrefix("mid:") != true, attachment.ref?.hasPrefix("tinode:") != true,
++           let result = createFullImageAttachmentString(attachment, maxSize: size) {
++            return result
++        }
+         // Image handling is easy.
+ 
+         let url: URL?
+@@ -450,6 +458,35 @@ class FormatNode: CustomStringConvertible {
+         return NSAttributedString(attachment: wrapper)
+     }
+ 
++    private func createFullImageAttachmentString(_ attachment: Attachment, maxSize size: CGSize) -> NSAttributedString? {
++        let decoded = attachment.bits.flatMap { UIImage(data: $0) }
++        guard let canvas = ClawImageCanvas(width: attachment.width, height: attachment.height,
++                                          decoded: decoded, maximum: size) else {
++            return NSAttributedString(string: "")
++        }
++        // Normal known images keep the complete original path below, including
++        // its natural-size cap, rounding, download postprocess and hit behavior.
++        guard canvas.mode != .proportional else { return nil }
++        let context = Utils.ownedImageContext()
++        let url = attachment.ref.flatMap { context?.resourceURL(from: $0) }
++        let wrapper: EntityTextAttachment
++        if let url = url, url.scheme != "mid", url.scheme != "tinode" {
++            wrapper = AsyncImageTextAttachment(url: url, afterDownloaded: { canvas.rendered($0) },
++                                               context: context, loader: .shared)
++        } else {
++            wrapper = EntityTextAttachment()
++        }
++        wrapper.type = "image"
++        wrapper.draftyEntityKey = attachment.draftyEntityKey
++        wrapper.imageCanvas = canvas
++        wrapper.imageSourceEntity = attachment.imageSourceEntity
++        wrapper.image = canvas.rendered(decoded)
++        wrapper.bounds = CGRect(origin: attachment.offset ?? .zero, size: canvas.size)
++        wrapper.displayImageState(wrapper is AsyncImageTextAttachment ? .loading : decoded == nil ? .unavailable : .ready)
++        (wrapper as? AsyncImageTextAttachment)?.startDownload(onError: canvas.rendered(nil))
++        return NSAttributedString(attachment: wrapper)
++    }
++
+     private func createVideoAttachmentString(_ attachment: Attachment, maxSize size: CGSize) -> NSAttributedString {
+         let url: URL?
+         if let ref = attachment.previewRef {
+diff --git a/Tinodios/format/FullFormatter.swift b/Tinodios/format/FullFormatter.swift
+index a3c20d8..5927bb5 100644
+--- a/Tinodios/format/FullFormatter.swift
++++ b/Tinodios/format/FullFormatter.swift
+@@ -73,6 +73,8 @@ class FullFormatter: AbstractFormatter {
+ 
+     override func handleImage(using data: [String: JSONValue]?, draftyKey: Int?) -> FormatNode {
+         var attachment = Attachment(content: .image)
++        attachment.fullImagePresentation = true
++        attachment.imageSourceEntity = Entity(tp: "IM", data: data)
+         let node = FormatNode()
+         if let attr = data {
+             attachment.bits = attr["val"]?.asData()
+diff --git a/Tinodios/widgets/RichTextView.swift b/Tinodios/widgets/RichTextView.swift
+index 9af9716..5feedff 100644
+--- a/Tinodios/widgets/RichTextView.swift
++++ b/Tinodios/widgets/RichTextView.swift
+@@ -77,6 +77,8 @@ class RichTextView: UITextView {
+ 
+         guard let att = attachment as? EntityTextAttachment else { return URL(string: "tinode:///attachment/generic") }
+ 
++        if att.imageCanvas != nil { return att.imageActionURL }
++
+         var urlComps = URLComponents(string: "tinode://")!
+         if att.type == "image" {
+             urlComps.path = "/image/preview"
+diff --git a/TinodiosUITests/ImageMessageLayoutTests.swift b/TinodiosUITests/ImageMessageLayoutTests.swift
+new file mode 100644
+index 0000000..cc35d5a
+--- /dev/null
++++ b/TinodiosUITests/ImageMessageLayoutTests.swift
+@@ -0,0 +1,480 @@
++// Copyright (c) 2026 CLAW OS contributors.
++// Actual formatter, cell, layout and owned image consumers. Synthetic messages
++// and an isolated SDK/SQLite slot are not login or a live chat journey.
++import XCTest
++import UIKit
++import Network
++import TinodeSDK
++@testable import TinodiosDB
++@testable import Tinodios
++
++final class ImageMessageLayoutTests: XCTestCase {
++    private enum Failure: Error { case initialState, deadline, drawing }
++    private var window: UIWindow?
++    private var previousWindow: UIWindow?
++    private var root: UIViewController?
++
++    private func main<T>(_ body: () throws -> T) rethrows -> T {
++        if Thread.isMainThread { return try body() }
++        return try DispatchQueue.main.sync(execute: body)
++    }
++
++    override func setUpWithError() throws {
++        continueAfterFailure = false
++        try main {
++            guard Bundle.main.bundleIdentifier == "app.veilping.clawoschat",
++                  Bundle.main.object(forInfoDictionaryKey: "HOST_NAME") as? String == "127.0.0.1:9",
++                  Bundle.main.object(forInfoDictionaryKey: "USE_TLS") as? String == "NO",
++                  SharedUtils.getAuthToken() == nil, Cache.tinode.myUid == nil,
++                  Cache.tinode.store?.myUid == nil, !Cache.tinode.isConnectionAuthenticated else {
++                throw Failure.initialState
++            }
++            previousWindow = UIApplication.shared.windows.first(where: { $0.isKeyWindow })
++            let host = UIViewController()
++            host.view.backgroundColor = ClawTheme.background
++            let value: UIWindow
++            if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene })
++                .first(where: { $0.activationState == .foregroundActive }) {
++                value = UIWindow(windowScene: scene)
++            } else { throw Failure.initialState }
++            value.frame = UIScreen.main.bounds; value.rootViewController = host
++            root = host; window = value; value.makeKeyAndVisible()
++        }
++    }
++
++    override func tearDownWithError() throws {
++        main {
++            window?.isHidden = true; window = nil; root = nil
++            previousWindow?.makeKey(); previousWindow = nil
++        }
++    }
++
++    func testFullFormatterPreservesOrdinaryGeometryAndUsesDecodedBeforeUnknown() throws {
++        try main {
++            let decoded = pattern(width: 80, height: 40)
++            let bytes = try XCTUnwrap(decoded.pngData())
++            let formatter = FullFormatter(defaultAttributes: [.font: UIFont.systemFont(ofSize: 16)])
++            let maximum = CGSize(width: 400, height: 500)
++            for (w, h) in [(800, 400), (32, 64), (0, 0)] {
++                let draft = try self.draft(width: w, height: h, bits: bytes)
++                let actual = try attachment(formatter.toAttributed(draft, fitIn: maximum))
++                let original = w > 0 ? CGSize(width: w, height: h) : decoded.size
++                XCTAssertNil(actual.imageCanvas)
++                XCTAssertEqual(actual.bounds.size, UiUtils.sizeUnder(original: original, fitUnder: maximum, scale: 1, clip: false).dst)
++            }
++            let metadataWins = try attachment(formatter.toAttributed(try draft(width: 100, height: 400, bits: bytes), fitIn: maximum))
++            XCTAssertEqual(metadataWins.imageCanvas?.mode, .longTop)
++            XCTAssertEqual(metadataWins.bounds.size, CGSize(width: 240, height: 320))
++            let decodedLong = try attachment(formatter.toAttributed(try draft(width: 0, height: 0,
++                bits: XCTUnwrap(pattern(width: 40, height: 160).pngData())), fitIn: maximum))
++            XCTAssertEqual(decodedLong.imageCanvas?.mode, .longTop)
++            let unknown = try attachment(formatter.toAttributed(try draft(width: 0, height: 0, bits: Data([1])), fitIn: maximum))
++            XCTAssertEqual(unknown.imageCanvas?.mode, .unknownFit)
++            XCTAssertEqual(unknown.bounds.size, CGSize(width: 240, height: 160))
++            for width in [CGFloat.zero, -1, .infinity, .nan] {
++                XCTAssertEqual(formatter.toAttributed(try draft(width: 100, height: 400, bits: bytes),
++                    fitIn: CGSize(width: width, height: 400)).length, 0)
++            }
++            let narrow = try attachment(formatter.toAttributed(try draft(width: 100, height: 400, bits: bytes),
++                fitIn: CGSize(width: 120, height: 400)))
++            XCTAssertEqual(narrow.bounds.size, CGSize(width: 120, height: 160))
++            let quote = QuoteFormatter(defaultAttributes: [.font: UIFont.systemFont(ofSize: 16)], defaultFont: .systemFont(ofSize: 16))
++            let quoted = try attachment(quote.toAttributed(try draft(width: 100, height: 400, bits: bytes), fitIn: maximum))
++            XCTAssertNil(quoted.imageCanvas)
++            var video = Attachment(content: .video)
++            video.width = 80; video.height = 40; video.preview = bytes
++            let node = FormatNode(); node.attachment(video)
++            let videoAttachment = try attachment(node.toAttributed(withAttributes: [.font: UIFont.systemFont(ofSize: 16)], fontTraits: nil, fitIn: maximum))
++            XCTAssertNil(videoAttachment.imageCanvas)
++        }
++    }
++
++    func testLongTopAndUnknownFitRenderActualPixelsWithoutChangingCanvas() throws {
++        try main {
++            let source = pattern(width: 100, height: 400)
++            let long = try XCTUnwrap(ClawImageCanvas(width: 100, height: 400, decoded: source, maximum: CGSize(width: 240, height: 400)))
++            let top = long.rendered(source)
++            XCTAssertEqual(top.size, CGSize(width: 240, height: 320))
++            XCTAssertGreaterThan(try pixel(top, x: 0.5, y: 0.15)[0], 200)
++            XCTAssertLessThan(try pixel(top, x: 0.5, y: 0.15)[2], 30)
++            let unknown = try XCTUnwrap(ClawImageCanvas(width: nil, height: nil, decoded: nil, maximum: CGSize(width: 240, height: 400)))
++            let fit = unknown.rendered(source)
++            XCTAssertEqual(fit.size, CGSize(width: 240, height: 160))
++            XCTAssertEqual(try pixel(fit, x: 0.1, y: 0.5)[3], 0)
++            XCTAssertGreaterThan(try pixel(fit, x: 0.5, y: 0.85)[2], 200)
++            XCTAssertEqual(unknown.size, CGSize(width: 240, height: 160))
++            for (name, image) in [("long-top-pixels", top), ("unknown-fit-pixels", fit)] {
++                let item = XCTAttachment(image: image); item.name = "image-v1-" + name; item.lifetime = .keepAlways; add(item)
++            }
++        }
++    }
++
++    func testActualMessageCellLongImageInBothDirectionsAndAccessibilityAppearances() throws {
++        try main {
++            let bytes = try XCTUnwrap(pattern(width: 100, height: 400).pngData())
++            for dark in [false, true] {
++                for outgoing in [false, true] {
++                    for category in [UIContentSizeCategory.large, .accessibilityExtraExtraExtraLarge] {
++                        let controller = try mount(width: 320, context: nil, category: category, dark: dark)
++                        defer { unmount(controller) }
++                        let message = try self.message(width: 100, height: 400, bits: bytes, outgoing: outgoing)
++                        let cell = try show(message, on: controller)
++                        let image = try attachment(cell.content.attributedText)
++                        let overlay = try XCTUnwrap(descendants(cell).compactMap { $0 as? ClawImageStateView }.first)
++                        XCTAssertEqual(image.imageCanvas?.mode, .longTop)
++                        XCTAssertLessThanOrEqual(image.bounds.width, 240)
++                        XCTAssertEqual(image.bounds.height / image.bounds.width, 4.0 / 3.0, accuracy: 0.001)
++                        XCTAssertEqual(overlay.bounds.size, image.bounds.size)
++                        XCTAssertEqual(overlay.badge.text, "长图"); XCTAssertFalse(overlay.badge.isHidden)
++                        XCTAssertTrue(overlay.retryButton.isHidden)
++                        XCTAssertNil(overlay.hitTest(CGPoint(x: 20, y: 20), with: nil))
++                        XCTAssertTrue(cell.contentView.bounds.insetBy(dx: -1, dy: -1).contains(overlay.frame))
++                        XCTAssertTrue(controller.collectionView.collectionViewLayout is MessageViewLayout)
++                        try capture("long-\(outgoing ? "out" : "in")-\(dark ? "dark" : "light")-\(category == .large ? "standard" : "ax")", controller: controller, attachment: image, overlay: overlay)
++                    }
++                }
++            }
++        }
++    }
++
++    func testOwnedAttachmentRetryKeepsCanvasAndRejectsCancelledAndRetiredCallbacks() throws {
++        let owner = try ImageOwner(origin: URL(string: "http://127.0.0.1:9/")!)
++        defer { owner.retire() }
++        var completions = [ClawOwnedImageLoader.Completion]()
++        let loader = ClawOwnedImageLoader { _, _, callback in completions.append(callback); return nil }
++        let value = try main { try asyncAttachment(owner: owner, loader: loader) }
++        let consumer = UUID()
++        main {
++            value.bindImageConsumer(consumer, isCurrent: { true }, changed: {})
++            value.startDownload(onError: value.imageCanvas!.rendered(nil))
++            XCTAssertEqual(completions.count, 1)
++            completions[0](.failure(Failure.drawing))
++        }
++        try until("first failure") { value.imageState == .failed }
++        main { XCTAssertTrue(value.retryImage()); XCTAssertEqual(completions.count, 2) }
++        let fixed = main { value.bounds }
++        main { completions[1](.success(self.pattern(width: 60, height: 180))) }
++        try until("fixed fit success") { value.imageState == .ready }
++        main { XCTAssertEqual(value.bounds, fixed); XCTAssertEqual(value.image?.size, fixed.size) }
++        main {
++            value.startDownload(onError: value.imageCanvas!.rendered(nil))
++            XCTAssertEqual(completions.count, 3)
++            value.unbindImageConsumer(consumer)
++            completions[2](.success(self.pattern(width: 10, height: 10)))
++        }
++        try drainMain()
++        main { XCTAssertEqual(value.imageState, .failed); XCTAssertFalse(value.retryImage()) }
++        main {
++            value.bindImageConsumer(UUID(), isCurrent: { true }, changed: {})
++            XCTAssertTrue(value.retryImage()); XCTAssertEqual(completions.count, 4)
++            completions[3](.success(self.pattern(width: 10, height: 10)))
++        }
++        try until("explicit rebind retry") { value.imageState == .ready }
++        owner.retire()
++        main {
++            value.bindImageConsumer(UUID(), isCurrent: { true }, changed: {})
++            XCTAssertFalse(value.retryImage()); XCTAssertEqual(completions.count, 4)
++        }
++    }
++
++    func testActualRetryConsumerRechecksEntityPageBulkSelectionAndReuse() throws {
++        let owner = try ImageOwner(origin: URL(string: "http://127.0.0.1:9/")!)
++        defer { owner.retire() }
++        var callbacks = [ClawOwnedImageLoader.Completion]()
++        let loader = ClawOwnedImageLoader { _, _, callback in callbacks.append(callback); return nil }
++        let controller = try main { try mount(width: 320, context: owner.context()) }
++        defer { main { unmount(controller) } }
++        let value = try main { try asyncAttachment(owner: owner, loader: loader) }
++        let model = try main { try message(width: 0, height: 0, bits: Data([1]), ref: value.url) }
++        let cell = try main { () -> MessageCell in
++            model.cachedContent = NSAttributedString(attachment: value)
++            let cell = try show(model, on: controller)
++            value.startDownload(onError: value.imageCanvas!.rendered(nil))
++            callbacks[0](.failure(Failure.drawing))
++            return cell
++        }
++        try until("retry available") { value.imageState == .failed }
++        try main {
++            let action = try XCTUnwrap(value.imageActionURL)
++            controller.voicePageActive = false
++            controller.didTapContent(in: cell, url: action); XCTAssertEqual(callbacks.count, 1)
++            controller.voicePageActive = true
++            model.content?.entities?.first?.data?["width"] = .int(12)
++            controller.didTapContent(in: cell, url: action); XCTAssertEqual(callbacks.count, 1)
++            model.content?.entities?.first?.data?["width"] = .int(0)
++            controller.bulkSelectionMode = true
++            controller.didTapContent(in: cell, url: action); XCTAssertEqual(callbacks.count, 1)
++            controller.bulkSelectionMode = false
++            XCTAssertTrue(controller.isImageCurrent(in: cell, attachment: value))
++            // The same production URL consumer also guards the new ready path.
++            value.displayImageState(.ready)
++            let preview = try XCTUnwrap(value.imageActionURL)
++            controller.didTapContent(in: cell, url: preview)
++            XCTAssertEqual(controller.previews.count, 1)
++            if case .rawdata(let bits, let ref) = controller.previews[0].imgContent {
++                XCTAssertEqual(bits, Data([1])); XCTAssertEqual(ref, value.url.absoluteString)
++            } else { XCTFail("Original image source changed") }
++            controller.voicePageActive = false
++            controller.didTapContent(in: cell, url: preview); XCTAssertEqual(controller.previews.count, 1)
++            controller.voicePageActive = true
++            model.content?.entities?.first?.data?["width"] = .int(12)
++            controller.didTapContent(in: cell, url: preview); XCTAssertEqual(controller.previews.count, 1)
++            model.content?.entities?.first?.data?["width"] = .int(0)
++            controller.didTapContent(in: cell, url: URL(string: "tinode:///image/preview?key=0&binding=invalid"))
++            XCTAssertEqual(controller.previews.count, 1)
++            value.displayImageState(.failed)
++            controller.didTapContent(in: cell, url: action); XCTAssertEqual(callbacks.count, 2)
++            // A real window detach cancels this in-flight binding. Reattach and
++            // layout alone must never restart it; only the explicit action can.
++            controller.view.removeFromSuperview()
++            XCTAssertEqual(value.imageState, .failed)
++            root?.view.addSubview(controller.view)
++            cell.setNeedsLayout(); cell.layoutIfNeeded()
++            cell.setNeedsLayout(); cell.layoutIfNeeded()
++            XCTAssertEqual(callbacks.count, 2)
++            controller.didTapContent(in: cell, url: action); XCTAssertEqual(callbacks.count, 3)
++            cell.prepareForReuse()
++            callbacks[1](.success(pattern(width: 20, height: 20)))
++            callbacks[2](.success(pattern(width: 20, height: 20)))
++            controller.didTapContent(in: cell, url: action); XCTAssertEqual(callbacks.count, 3)
++            controller.didTapContent(in: cell, url: preview); XCTAssertEqual(controller.previews.count, 1)
++        }
++        try drainMain()
++        main { XCTAssertNotEqual(value.imageState, .ready) }
++    }
++
++    func testRealHTTPFailureRetryUsesOriginalOwnerAndShowsClearTextAction() throws {
++        let server = try ImageHTTP(bytes: main { pattern(width: 40, height: 120).pngData()! })
++        defer { server.stop() }
++        let owner = try ImageOwner(origin: server.origin)
++        defer { owner.retire() }
++        let controller = try main { try mount(width: 320, context: owner.context(), category: .accessibilityExtraExtraExtraLarge, dark: true) }
++        defer { main { unmount(controller) } }
++        let value = try main { try asyncAttachment(owner: owner, loader: .shared) }
++        let cell = try main { () -> MessageCell in
++            let item = try message(width: 0, height: 0, bits: Data([1]), ref: value.url)
++            item.cachedContent = NSAttributedString(attachment: value)
++            let cell = try show(item, on: controller)
++            value.startDownload(onError: value.imageCanvas!.rendered(nil))
++            return cell
++        }
++        try until("real HTTP 403") { value.imageState == .failed }
++        let before = main { value.bounds }
++        try main {
++            cell.setNeedsLayout(); cell.layoutIfNeeded()
++            let overlay = try XCTUnwrap(descendants(cell).compactMap { $0 as? ClawImageStateView }.first)
++            overlay.layoutIfNeeded()
++            XCTAssertFalse(overlay.retryButton.isHidden)
++            XCTAssertGreaterThanOrEqual(overlay.retryButton.bounds.height, 48)
++            XCTAssertEqual(overlay.retryButton.backgroundColor, .clear)
++            XCTAssertEqual(overlay.retryButton.accessibilityLabel, "重新加载")
++            let rect = overlay.retryButton.convert(overlay.retryButton.bounds, to: overlay)
++            XCTAssertTrue(overlay.bounds.insetBy(dx: -1, dy: -1).contains(rect))
++            let hit = cell.contentView.hitTest(overlay.retryButton.convert(CGPoint(x: overlay.retryButton.bounds.midX, y: overlay.retryButton.bounds.midY), to: cell.contentView), with: nil)
++            XCTAssertTrue(hit === overlay.retryButton || hit?.isDescendant(of: overlay.retryButton) == true)
++            try capture("unknown-failed-ax-dark", controller: controller, attachment: value, overlay: overlay)
++            overlay.retryButton.sendActions(for: .touchUpInside)
++        }
++        try until("real HTTP retry image") { value.imageState == .ready }
++        try main {
++            XCTAssertEqual(value.bounds, before)
++            XCTAssertEqual(server.requestCount, 2); XCTAssertTrue(server.allRequestsAuthenticated)
++            let overlay = try XCTUnwrap(descendants(cell).compactMap { $0 as? ClawImageStateView }.first)
++            try capture("unknown-ready-fit-ax-dark", controller: controller, attachment: value, overlay: overlay)
++        }
++    }
++
++    private func until(_ stage: String, _ condition: @escaping () -> Bool) throws {
++        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in self.main(condition) }, object: nil)
++        guard XCTWaiter.wait(for: [expectation], timeout: 3) == .completed else {
++            XCTFail("Bounded image stage: " + stage); throw Failure.deadline
++        }
++    }
++    private func drainMain() throws {
++        let done = expectation(description: "owned completion FIFO")
++        DispatchQueue.main.async { DispatchQueue.main.async { done.fulfill() } }
++        XCTAssertEqual(XCTWaiter.wait(for: [done], timeout: 3), .completed)
++    }
++    private func draft(width: Int, height: Int, bits: Data?, ref: URL? = nil) throws -> Drafty {
++        try Drafty(plainText: " ").insertImage(at: 0, mime: "image/png", bits: bits, width: width, height: height, fname: nil, refurl: ref, size: bits?.count ?? 0)
++    }
++    private func message(width: Int, height: Int, bits: Data?, outgoing: Bool = false, ref: URL? = nil) throws -> StoredMessage {
++        let item = StoredMessage(); item.msgId = 1; item.seq = 1; item.topic = "grpImageFixture"
++        item.from = outgoing ? "fixture-local" : "fixture-peer"; item.dbStatus = .synced
++        item.ts = Date(timeIntervalSince1970: 1_700_000_000)
++        item.content = try draft(width: width, height: height, bits: bits, ref: ref)
++        return item
++    }
++    private func attachment(_ text: NSAttributedString) throws -> EntityTextAttachment {
++        var result: EntityTextAttachment?
++        text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, _, stop in
++            if let image = value as? EntityTextAttachment { result = image; stop.pointee = true }
++        }
++        return try XCTUnwrap(result)
++    }
++    private func asyncAttachment(owner: ImageOwner, loader: ClawOwnedImageLoader) throws -> AsyncImageTextAttachment {
++        let url = owner.origin.appendingPathComponent(UUID().uuidString + ".png")
++        let canvas = try XCTUnwrap(ClawImageCanvas(width: nil, height: nil, decoded: nil, maximum: CGSize(width: 200, height: 400)))
++        let value = AsyncImageTextAttachment(url: url, afterDownloaded: { canvas.rendered($0) }, context: try owner.context(), loader: loader)
++        value.type = "image"; value.draftyEntityKey = 0; value.imageCanvas = canvas
++        value.imageSourceEntity = try draft(width: 0, height: 0, bits: Data([1]), ref: url).entities?.first
++        value.bounds = CGRect(origin: .zero, size: canvas.size); value.image = canvas.rendered(nil)
++        return value
++    }
++    private func mount(width: CGFloat, context: ClawOwnedImageContext?, category: UIContentSizeCategory = .large, dark: Bool = false) throws -> ImageController {
++        let parent = try XCTUnwrap(root)
++        let controller = ImageController(context: context); controller.interactor = nil
++        controller.topicName = "grpImageFixture"; controller.myUID = "fixture-local"
++        parent.addChild(controller)
++        parent.setOverrideTraitCollection(UITraitCollection(traitsFrom: [UITraitCollection(preferredContentSizeCategory: category), UITraitCollection(userInterfaceStyle: dark ? .dark : .light)]), forChild: controller)
++        controller.loadViewIfNeeded(); controller.view.frame = CGRect(x: 0, y: 0, width: width, height: 640)
++        parent.view.addSubview(controller.view); controller.didMove(toParent: parent)
++        controller.voicePageActive = true; controller.view.layoutIfNeeded()
++        return controller
++    }
++    private func unmount(_ controller: ImageController) {
++        controller.voicePageActive = false; controller.collectionView.dataSource = nil
++        controller.willMove(toParent: nil); controller.view.removeFromSuperview(); controller.removeFromParent()
++    }
++    private func show(_ message: StoredMessage, on controller: ImageController) throws -> MessageCell {
++        controller.messages = [message]; controller.messageSeqIdIndex = [message.seqId: 0]
++        controller.collectionView.collectionViewLayout.invalidateLayout(); controller.collectionView.reloadData()
++        controller.view.layoutIfNeeded(); controller.collectionView.layoutIfNeeded()
++        let cell = try XCTUnwrap(controller.collectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? MessageCell)
++        cell.setNeedsLayout(); cell.layoutIfNeeded(); cell.content.layoutIfNeeded()
++        return cell
++    }
++    private func descendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap { descendants($0) } }
++    private func pattern(width: CGFloat, height: CGFloat) -> UIImage {
++        UIGraphicsImageRenderer(size: CGSize(width: width, height: height)).image { ctx in
++            UIColor.red.setFill(); ctx.fill(CGRect(x: 0, y: 0, width: width, height: height / 2))
++            UIColor.blue.setFill(); ctx.fill(CGRect(x: 0, y: height / 2, width: width, height: height / 2))
++        }
++    }
++    private func pixel(_ image: UIImage, x: CGFloat, y: CGFloat) throws -> [UInt8] {
++        let cg = try XCTUnwrap(image.cgImage)
++        let crop = try XCTUnwrap(cg.cropping(to: CGRect(x: CGFloat(cg.width) * x, y: CGFloat(cg.height) * y, width: 1, height: 1)))
++        var bytes = [UInt8](repeating: 0, count: 4)
++        try bytes.withUnsafeMutableBytes { ptr in
++            let ctx = try XCTUnwrap(CGContext(data: ptr.baseAddress, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
++            ctx.draw(crop, in: CGRect(x: 0, y: 0, width: 1, height: 1))
++        }
++        return bytes
++    }
++    private func capture(_ name: String, controller: ImageController, attachment: EntityTextAttachment, overlay: ClawImageStateView) throws {
++        controller.view.layoutIfNeeded(); overlay.layoutIfNeeded()
++        var drawn = false
++        let image = UIGraphicsImageRenderer(bounds: controller.view.bounds).image { _ in
++            drawn = controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
++        }
++        guard drawn else { throw Failure.drawing }
++        let png = XCTAttachment(image: image); png.name = "image-v1-" + name; png.lifetime = .keepAlways; add(png)
++        let fields: [String: Any] = ["scope": "actual formatter/cell/layout with synthetic message, not authenticated chat",
++            "width": attachment.bounds.width, "height": attachment.bounds.height,
++            "overlayWidth": overlay.bounds.width, "overlayHeight": overlay.bounds.height,
++            "retryVisible": !overlay.retryButton.isHidden, "retryWidth": overlay.retryButton.bounds.width,
++            "retryHeight": overlay.retryButton.bounds.height, "font": overlay.retryButton.titleLabel?.font.pointSize ?? 0,
++            "badgeVisible": !overlay.badge.isHidden,
++            "sourceWidth": attachment.imageSourceEntity?.data?["width"]?.asInt() ?? -1,
++            "sourceHeight": attachment.imageSourceEntity?.data?["height"]?.asInt() ?? -1]
++        let item = XCTAttachment(data: try JSONSerialization.data(withJSONObject: fields, options: [.sortedKeys]), uniformTypeIdentifier: "public.json")
++        item.name = "image-v1-" + name + "-geometry"; item.lifetime = .keepAlways; add(item)
++    }
++}
++
++private final class ImageController: MessageViewController {
++    let context: ClawOwnedImageContext?
++    var previews = [ImagePreviewContent]()
++    init(context: ClawOwnedImageContext?) { self.context = context; super.init() }
++    required init?(coder: NSCoder) { fatalError("Programmatic fixture") }
++    override func viewDidLoad() {
++        (collectionView.collectionViewLayout as? MessageViewLayout)?.delegate = self
++        collectionView.dataSource = self
++    }
++    override func viewDidAppear(_ animated: Bool) {}
++    override var inputAccessoryView: UIView? { nil }
++    override func performSegue(withIdentifier identifier: String, sender: Any?) {
++        XCTAssertEqual(identifier, "ShowImagePreview")
++        if let value = sender as? ImagePreviewContent { previews.append(value) }
++        else { XCTFail("Missing original preview payload") }
++    }
++    // Only the existing current-slot boundary is controlled. The production
++    // retry handler and entity/page/cell checks above it execute unchanged.
++    override func voiceScopeIsCurrent() -> Bool { voicePageActive && context?.isCurrent == true }
++}
++
++private final class ImageOwner {
++    let origin: URL
++    let base: BaseDb
++    let store: SqlStore
++    let owner: Tinode
++    private let lock = NSRecursiveLock()
++    private var active = true
++    init(origin: URL) throws {
++        self.origin = origin
++        base = BaseDb(databasePath: FileManager.default.temporaryDirectory.appendingPathComponent("image-v1-" + UUID().uuidString + ".sqlite").path)
++        store = try XCTUnwrap(base.sqlStore); XCTAssertTrue(base.isStoreAvailable)
++        store.myUid = "usrImageFixture"
++        owner = Tinode(for: "image-fixture", authenticateWith: "synthetic-key", persistDataIn: store)
++        owner.authToken = "synthetic-token"
++    }
++    func context() throws -> ClawOwnedImageContext {
++        try XCTUnwrap(ClawOwnedImageContext(owner: owner, serviceURL: origin, generation: 1,
++            currentGeneration: { 1 }, inCurrentSlot: { body in
++                self.lock.lock(); defer { self.lock.unlock() }
++                guard self.active else { return false }; body(); return true
++            }))
++    }
++    func retire() { owner.logout(); lock.lock(); active = false; lock.unlock() }
++}
++
++private final class ImageHTTP {
++    private let queue = DispatchQueue(label: "image-v1-loopback")
++    private let lock = NSLock()
++    private let listener: NWListener
++    private var connections = [NWConnection]()
++    private var auth = [Bool]()
++    private var ready = false
++    var requestCount: Int { lock.lock(); defer { lock.unlock() }; return auth.count }
++    var allRequestsAuthenticated: Bool { lock.lock(); defer { lock.unlock() }; return !auth.isEmpty && auth.allSatisfy { $0 } }
++    var origin: URL { URL(string: "http://127.0.0.1:\(listener.port!.rawValue)/")! }
++    init(bytes: Data) throws {
++        let config = NWParameters.tcp; config.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
++        listener = try NWListener(using: config)
++        let gate = DispatchSemaphore(value: 0)
++        listener.stateUpdateHandler = { [weak self] state in
++            switch state {
++            case .ready: self?.lock.lock(); self?.ready = true; self?.lock.unlock(); gate.signal()
++            case .failed: gate.signal()
++            default: break
++            }
++        }
++        listener.newConnectionHandler = { [weak self] connection in
++            guard let self = self else { connection.cancel(); return }
++            self.lock.lock(); self.connections.append(connection); self.lock.unlock()
++            connection.start(queue: self.queue); self.receive(connection, prefix: Data(), bytes: bytes)
++        }
++        listener.start(queue: queue)
++        guard gate.wait(timeout: .now() + 3) == .success else { listener.cancel(); throw NSError(domain: "fixture", code: 1) }
++        lock.lock(); let valid = ready; lock.unlock()
++        guard valid else { throw NSError(domain: "fixture", code: 2) }
++    }
++    private func receive(_ connection: NWConnection, prefix: Data, bytes: Data) {
++        connection.receive(minimumIncompleteLength: 1, maximumLength: 32768) { [weak self] data, _, ended, error in
++            guard let self = self else { return }
++            let total = prefix + (data ?? Data())
++            guard total.count <= 32768 else { connection.cancel(); return }
++            guard total.range(of: Data("\r\n\r\n".utf8)) != nil else {
++                if !ended && error == nil { self.receive(connection, prefix: total, bytes: bytes) }
++                return
++            }
++            let text = String(decoding: total, as: UTF8.self).lowercased()
++            self.lock.lock(); self.auth.append(text.contains("x-tinode-auth:")); let ordinal = self.auth.count; self.lock.unlock()
++            let body = ordinal == 1 ? Data() : bytes
++            let header = "HTTP/1.1 \(ordinal == 1 ? 403 : 200) Fixture\r\nContent-Type: image/png\r\nContent-Length: \(body.count)\r\nConnection: close\r\n\r\n"
++            connection.send(content: Data(header.utf8) + body, contentContext: .finalMessage, isComplete: true,
++                completion: .contentProcessed { error in if error != nil { connection.cancel() } })
++        }
++    }
++    func stop() { listener.cancel(); lock.lock(); let pending = connections; connections = []; lock.unlock(); pending.forEach { $0.cancel() } }
++}

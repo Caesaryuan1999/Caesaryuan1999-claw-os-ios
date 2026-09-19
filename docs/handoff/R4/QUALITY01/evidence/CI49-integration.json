@@ -1,0 +1,67 @@
+{
+  "base": "5adb0673a79410eaa2204871a3627c6f4efd5be4",
+  "child": "86c775318eb9d8819e08c4c52377140de4be1489",
+  "candidate": "8c3c7515ab49a98fa46c0b6bebf03665ee97a976",
+  "branch": "codex/r3-20260918-ios",
+  "tracked_dirty": 0,
+  "untracked_count": 20666,
+  "source_paths": [
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "mode_type_blob": "100644 blob 8ed6e884d3d8eb60a2fb8cfea3efee7ee3aa3994",
+      "child_equal": true
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "mode_type_blob": "100644 blob 3253e1a8e79555fc8047ed1d5602b4914333eb83",
+      "child_equal": true
+    },
+    {
+      "path": "Tinodios/MessageCell.swift",
+      "mode_type_blob": "100644 blob 42527343bcfc8c56fb534f3125770cd4b6b45499",
+      "child_equal": true
+    },
+    {
+      "path": "Tinodios/MessageViewController+MessageCellDelegate.swift",
+      "mode_type_blob": "100644 blob 5487e01dab2c5117d43b06fceb8eff81875ca62c",
+      "child_equal": true
+    },
+    {
+      "path": "Tinodios/format/AsyncImageTextAttachment.swift",
+      "mode_type_blob": "100644 blob 2647107a7406dd91841b6ed632f458bbdb76194a",
+      "child_equal": true
+    },
+    {
+      "path": "Tinodios/format/EntityTextAttachment.swift",
+      "mode_type_blob": "100644 blob 3def327e525929525ba13350bed4661544a4a7a4",
+      "child_equal": true
+    },
+    {
+      "path": "Tinodios/format/FormatNode.swift",
+      "mode_type_blob": "100644 blob 2cdcb424272ca7e2fe7524865f59d555b729cdda",
+      "child_equal": true
+    },
+    {
+      "path": "Tinodios/format/FullFormatter.swift",
+      "mode_type_blob": "100644 blob 5927bb509535bd4526aa63b8815ebfc5f7c37b85",
+      "child_equal": true
+    },
+    {
+      "path": "Tinodios/widgets/RichTextView.swift",
+      "mode_type_blob": "100644 blob 5feedfff4cd121050075ae5841b4a8b51b653d74",
+      "child_equal": true
+    },
+    {
+      "path": "TinodiosUITests/ImageMessageLayoutTests.swift",
+      "mode_type_blob": "100644 blob cc35d5a084c1dfcbf38e9919d67dbed9b6496115",
+      "child_equal": true
+    }
+  ],
+  "all_other_non_docs_unchanged": true,
+  "voice_from_5adb": "100644 blob 04dea444880f8f4b37edd4e483fa4c4b2d318309",
+  "patch_sha256": "d730fd1018cf2a9b56975f9e26b46761ab1eb86f7d4c917dfe7d227d9b0a0146",
+  "patch_bytes": 65919,
+  "expected_native": 336,
+  "expected_navigation": 3,
+  "native": "NOT_RUN at integration"
+}
