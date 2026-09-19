@@ -353,7 +353,7 @@ final class AssistantStreamTests: XCTestCase {
             } else if status == 3410 {
                 reply.send(Data("HTTP/1.1 410 Fixture\r\nContent-Type: application/json\r\nContent-Length: 1\r\nConnection: close\r\n\r\n".utf8) + Data([0xFF])) { reply.close() }
             } else if status == 4410 {
-                reply.send(Data("HTTP/1.1 410 Fixture\r\nContent-Type: application/json\r\nContent-Length: 65537\r\nConnection: close\r\n\r\n".utf8))
+                reply.send(Data("HTTP/1.1 410 Fixture\r\nContent-Type: application/json\r\nContent-Length: 65537\r\nConnection: close\r\n\r\n".utf8) + Data([0x7B]))
             } else {
                 let actualStatus = status == 410 ? 410 : 401
                 reply.send(Data("HTTP/1.1 \(actualStatus) Fixture\r\nContent-Type: text/html\r\nContent-Length: 4\r\nConnection: close\r\n\r\nnope".utf8)) { reply.close() }
@@ -533,6 +533,61 @@ final class AssistantStreamTests: XCTestCase {
             XCTAssertEqual(model?.receipt?.conversation_id, AssistantFixture.second)
             XCTAssertEqual(model?.stopping, .idle)
         }
+    }
+
+    func testRealSocketHeaderOnlyEndsAtAbsoluteSixtySecondBudget() throws {
+        let trace = AssistantRefusalTrace()
+        let lock = NSLock(); var completions = 0; var frames = 0
+        var terminalKind = "not_completed"; var terminalElapsed: TimeInterval = -1
+        addTeardownBlock {
+            lock.lock(); let count = completions; let events = frames; lock.unlock()
+            trace.record("final_counts", ordinal: 1, fixture: 4410,
+                         values: ["completions": count, "frames": events])
+            do {
+                let attachment = XCTAttachment(data: try trace.data(), uniformTypeIdentifier: "public.json")
+                attachment.name = "assistant-stream-header-only-deadline"; attachment.lifetime = .keepAlways
+                self.add(attachment)
+            } catch { XCTFail("Unable to encode fixed header-only deadline evidence") }
+        }
+        let server = try AssistantSocketServer(); addTeardownBlock { server.stop() }
+        let header = Data("HTTP/1.1 410 Fixture\r\nContent-Type: application/json\r\nContent-Length: 65537\r\nConnection: close\r\n\r\n".utf8)
+        server.install { _, reply in
+            trace.record("request_seen", ordinal: 1, fixture: 4410)
+            reply.sendObservation = { bytes, error in
+                trace.record("send_completion", ordinal: 1, fixture: 4410,
+                             values: AssistantRefusalTrace.sendResult(bytes: bytes, error: error))
+            }
+            reply.send(header) // Original header-only bytes, deliberately no body, EOF or close.
+        }
+        let service = try ClawAssistantService(origin: server.url, apiKey: "synthetic-key", token: AssistantFixture.token, isCurrent: { true })
+        addTeardownBlock { service.cancelAll() }
+        let capabilities = try AssistantBFixture.capabilities()
+        let done = expectation(description: "header-only absolute stream budget")
+        let started = ProcessInfo.processInfo.systemUptime
+        trace.record("trial_started", ordinal: 1, fixture: 4410,
+                     values: ["header_bytes": header.count, "planned_body_bytes": 0, "budget_seconds": 60])
+        _ = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "0", capabilities: capabilities,
+            event: { _ in lock.lock(); frames += 1; lock.unlock() }, completion: { end in
+                let elapsed = ProcessInfo.processInfo.systemUptime - started
+                let kind = AssistantRefusalTrace.completionKind(end)
+                lock.lock(); completions += 1; let first = completions == 1
+                if first { terminalKind = kind; terminalElapsed = elapsed }
+                lock.unlock()
+                trace.record("stream_completion", ordinal: 1, fixture: 4410,
+                             values: ["kind": kind, "trial_elapsed_us": Int(elapsed * 1_000_000)])
+                if first { done.fulfill() }
+            })
+        wait(for: [done], timeout: 65)
+        service.cancelAll(); server.stop()
+        lock.lock(); let count = completions; let events = frames
+        let kind = terminalKind; let elapsed = terminalElapsed; lock.unlock()
+        XCTAssertTrue(trace.sentSuccessfully(ordinal: 1), "Header-only deadline lacks a unique successful request/send")
+        XCTAssertEqual(count, 1)
+        XCTAssertEqual(events, 0)
+        XCTAssertGreaterThanOrEqual(elapsed, 60)
+        XCTAssertLessThan(elapsed, 64)
+        // Preserve which mechanism won; a URLSession transport timeout is not relabelled deadline.
+        XCTAssertTrue(kind == "deadline" || kind == "failure.transport", "Unexpected header-only termination")
     }
 
     func testRealSocketHeartbeatCannotExtendAbsoluteSixtySecondDeadline() throws {

@@ -1,0 +1,45 @@
+{
+  "scope": "Windows source preservation only; native NOT_RUN",
+  "base": "fb85298c5cd9cb503221b2fee350ba2a7fa4294a",
+  "path": "TinodiosUITests/AssistantStreamTests.swift",
+  "old_blob": "d623c5f8691b997d7b1b01f6621177bccf1d0129",
+  "old_sha256": "dfa47d7daa979aa9ff0b95d7d5afee51f8661a3366ce0078bfbfbd5177bca447",
+  "new_sha256": "0157be739e46d755e8f0db6d0d0bc7d39bfdd0a46f516c42e83d807b22c3a292",
+  "checks": {
+    "single_changed_code_file": true,
+    "one_new_ninth_method": true,
+    "other_seven_original_methods_byte_identical": true,
+    "refusal_method_only_single_added_byte": true,
+    "all_test_helpers_byte_identical": true,
+    "heartbeat_sixty_second_test_byte_identical": true,
+    "bare_controls_with_strong_queue_preserved": true,
+    "header_only_original_wire_preserved": true,
+    "complete_real_time_bounds": true,
+    "once_and_zero_event_checks": true,
+    "terminal_classes_distinct": true,
+    "failure_attachment_teardown_before_first_throw": true,
+    "no_clock_injection": true
+  },
+  "original_methods": [
+    "testProductionParserHandlesEveryUTF8BoundaryCRLFMultilineAndHeartbeat",
+    "testMalformedIDsUnknownStatesLargeFramesAndTruncatedUTF8FailClosed",
+    "testAccessControlHasNoPersistentIDAndDeadlineNeverSlides",
+    "testRealSocketChunksProduceEventsBeforeEOFAndStopUsesAnotherConnection",
+    "testRealSocketRedirectAndNonJSON401NeverDeliverBody",
+    "testRealSocketHeaderOnlyAndOneByteTransportControls",
+    "testRealSocketOldStopIsRetiredBeforeNewConversationSubmission",
+    "testRealSocketHeartbeatCannotExtendAbsoluteSixtySecondDeadline"
+  ],
+  "added_method": "testRealSocketHeaderOnlyEndsAtAbsoluteSixtySecondBudget",
+  "CI42": {
+    "source": "1cb083b150717d48c6b515300db2a831414eabb0",
+    "run": 35415602665,
+    "passed": 293,
+    "failed": 1,
+    "zip_bytes": 95493395,
+    "zip_sha256": "69190f0507b085f2ad252548ffea2c202d71612e16a56decbb56b51d054a89a4",
+    "source_of_results": "parent verified original artifact; preserved as historical red"
+  },
+  "expected_native": 295,
+  "expected_navigation": 3
+}
