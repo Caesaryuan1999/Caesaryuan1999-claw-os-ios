@@ -1,0 +1,12 @@
+{
+  "base": "600be3abd889fe2a2957e48129759e933fc407d6",
+  "test_path": "TinodiosUITests/VoiceLayoutTests.swift",
+  "exact_two_argument_inverse": true,
+  "production_changed": false,
+  "methods": 17,
+  "native": "NOT_RUN",
+  "original_errors": [
+    "/Users/runner/work/Caesaryuan1999-claw-os-ios/Caesaryuan1999-claw-os-ios/TinodiosUITests/VoiceLayoutTests.swift:487:30: error: 'nil' is not compatible with expected argument type 'Data'"
+  ],
+  "test_raw_sha256": "0d099b1447dd4ad0b03e0bd44ec8653fd8f374e8209c2e8f40621dc986354ce2"
+}

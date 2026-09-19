@@ -484,9 +484,9 @@ final class VoiceLayoutTests: XCTestCase {
                 message.msgId = 31; message.seq = 31; message.topic = "grpAudioFixture"; message.from = "fixture-peer"
                 message.ts = Date(timeIntervalSince1970: 1_700_000_000)
                 let one = try Drafty(plainText: " ").insertAudio(at: 0, mime: "audio/m4a", bits: bytes,
-                    preview: nil, duration: Int.max, fname: "one.m4a", refurl: nil, size: bytes.count)
+                    preview: Data(), duration: Int.max, fname: "one.m4a", refurl: nil, size: bytes.count)
                 let two = try Drafty(plainText: " ").insertAudio(at: 0, mime: "audio/m4a", bits: bytes,
-                    preview: nil, duration: 0, fname: "two.m4a", refurl: nil, size: bytes.count)
+                    preview: Data(), duration: 0, fname: "two.m4a", refurl: nil, size: bytes.count)
                 message.content = one.append(Drafty(content: " 中间正文 ")).append(two)
                 controller.messages = [message]; controller.messageSeqIdIndex = [31: 0]
                 controller.collectionView.reloadData()
