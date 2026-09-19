@@ -1,0 +1,75 @@
+{
+  "time": "2026-09-20T06:43:20.514751+08:00",
+  "repository": "Caesaryuan1999/Caesaryuan1999-claw-os-ios",
+  "ref": "codex/verify-r2-ios02-20260918",
+  "sha": "db514ff4284aed249b4a073425c8379cce4d1943",
+  "signing": false,
+  "release": false,
+  "runs": [
+    {
+      "id": 35473782593,
+      "html_url": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios/actions/runs/35473782593",
+      "head_sha": "db514ff4284aed249b4a073425c8379cce4d1943",
+      "head_branch": "codex/verify-r2-ios02-20260918",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-09-19T22:35:50Z",
+      "run_attempt": 1
+    }
+  ],
+  "jobs": [
+    {
+      "id": 105979374086,
+      "name": "simulator",
+      "status": "in_progress",
+      "conclusion": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Inspect Xcode and simulator availability",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install CocoaPods if absent",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run SDK and production SQLite migration tests without signing",
+          "status": "in_progress",
+          "conclusion": null
+        },
+        {
+          "name": "Package tested unsigned simulator app",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Cold launch tested app on the same simulator",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Preserve test evidence",
+          "status": "pending",
+          "conclusion": null
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "pending",
+          "conclusion": null
+        }
+      ]
+    }
+  ]
+}
