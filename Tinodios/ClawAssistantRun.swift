@@ -181,6 +181,18 @@ final class ClawAssistantRun {
 
     /// Recovered authoritative history supplies rid after process death. Never guesses it from text.
     @discardableResult
+    func registerKnownAddress(conversationID: String, runID: String) -> Bool {
+        precondition(Thread.isMainThread)
+        guard knownRunsOnly, current, let session = session,
+              ClawAssistantWire.uuid(conversationID), ClawAssistantWire.uuid(runID),
+              session.history.bSnapshotTokens[conversationID] != nil,
+              session.history.bDetails[conversationID]?.last(where: { !$0.run_id.isEmpty })?.run_id == runID,
+              ticket == nil, receipt == nil,
+              readAddress.map({ $0.conversationID == conversationID && $0.runID == runID }) ?? true else { return false }
+        readAddress = (conversationID, runID) // Registration is not a request and does not notify observers.
+        return true
+    }
+    @discardableResult
     func recover(conversationID: String, runID: String) -> Bool {
         precondition(Thread.isMainThread)
         guard current, !deletionPaused, !capabilityPaused, ClawAssistantWire.uuid(conversationID), ClawAssistantWire.uuid(runID),

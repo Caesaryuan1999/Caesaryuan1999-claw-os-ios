@@ -243,6 +243,13 @@ final class AssistantKnownRunTests: XCTestCase {
             XCTAssertTrue(fixture.scope.acquireReader(conversationID: otherCID, lease: UUID()))
             XCTAssertNil(fixture.scope.knownRun)
             held!.reply(AssistantBFixture.snapshot(text: "晚停止", cursor: "4", revision: "4", state: "stopped"))
+            // acquireReader retired the old Run: HTTPTask.cancel synchronously invokes
+            // completion, which enqueues Run.receive on main before acquireReader returns.
+            // This FIFO barrier drains that real cancellation completion; the late transport
+            // reply cannot finish HTTPTask a second time. It is not a decoded late-success test.
+            var completionDrained = false
+            DispatchQueue.main.async { completionDrained = true }
+            try AssistantFixture.until { completionDrained }
             XCTAssertEqual(fixture.scope.selectedConversationID, otherCID)
             XCTAssertNil(fixture.scope.knownRun); XCTAssertNil(old.projection)
         }
@@ -434,6 +441,44 @@ final class AssistantKnownRunTests: XCTestCase {
             XCTAssertNoThrow(try fixture.scope.history.capabilities!.validateRuns())
             XCTAssertEqual(run.stopping, .unknown); XCTAssertEqual(run.projection?.text, "前缀")
             XCTAssertEqual(AssistantFixtureProtocol.requests.filter { $0.httpMethod == "POST" }.count, 1)
+        }
+    }
+
+    func testHiddenHistoryCompletionRegistersAddressAndNextLeaseStartsExactlyOneGet() throws {
+        try AssistantFixture.main {
+            try prepare()
+            var held: AssistantFixtureProtocol?
+            var gets = 0
+            AssistantFixtureProtocol.handler = { transport in
+                if transport.request.url!.path.hasSuffix("/messages") { held = transport }
+                else { gets += 1; transport.reply(AssistantBFixture.snapshot()) }
+            }
+            let oldLease = UUID()
+            XCTAssertTrue(fixture.scope.acquireReader(conversationID: cid, lease: oldLease))
+            fixture.scope.history.loadMessages(cid)
+            try AssistantFixture.until { held != nil }
+            fixture.scope.releaseReader(lease: oldLease)
+            held!.reply(page(pair()))
+            try AssistantFixture.until { !self.fixture.scope.history.detailLoading.contains(self.cid) }
+            let run = try XCTUnwrap(fixture.scope.knownRun)
+            XCTAssertEqual(fixture.scope.knownAddress?.runID, rid)
+            XCTAssertEqual(gets, 0); XCTAssertNil(run.projection)
+            let newLease = UUID()
+            XCTAssertTrue(fixture.scope.acquireReader(conversationID: cid, lease: newLease))
+            fixture.scope.releaseReader(lease: oldLease)
+            try AssistantFixture.until { run.projection != nil && run.lastError == .server(503, "history_unavailable") }
+            XCTAssertEqual(gets, 1)
+            fixture.scope.releaseReader(lease: newLease)
+            var returned = false
+            let observer = NotificationCenter.default.addObserver(forName: ClawAssistantSession.knownRunChanged,
+                object: nil, queue: .main) { _ in
+                    if gets == 2 && run.lastError == .server(503, "history_unavailable") { returned = true }
+                }
+            defer { NotificationCenter.default.removeObserver(observer) }
+            XCTAssertTrue(fixture.scope.acquireReader(conversationID: cid, lease: UUID()))
+            try AssistantFixture.until { returned }
+            XCTAssertEqual(gets, 2)
+            XCTAssertFalse(AssistantFixtureProtocol.requests.contains { $0.httpMethod == "POST" })
         }
     }
 }

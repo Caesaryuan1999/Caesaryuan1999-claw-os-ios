@@ -197,12 +197,14 @@ final class ClawAssistantSession {
                     self.history.acceptKnownCapabilities(capabilities)
                 })
             knownRun = run; knownAddress = address
+            guard run.registerKnownAddress(conversationID: cid, runID: address.runID) else {
+                clearKnownRun(); return
+            }
             run.changed = { [weak self, weak run] in
                 guard let self = self, let run = run, self.knownRun === run else { return }
                 self.runDidChange(run, address: address)
             }
             run.setVisible(readerVisible)
-            if readerVisible { _ = run.recover(conversationID: cid, runID: address.runID) }
         } catch { clearKnownRun() }
         publishKnownChange()
     }

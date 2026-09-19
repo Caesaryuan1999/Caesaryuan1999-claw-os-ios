@@ -1,0 +1,24 @@
+{
+  "base": "2d0feec40530e04688694539ed23823df7bd4419",
+  "old_methods": 12,
+  "unchanged_old_methods": [
+    "testExplicitBServiceRoleByteBoundariesAndMaximumEscapedPage",
+    "testAllPagesStageAtomicallyRejectDuplicatesAndBoundSnapshotRestarts",
+    "testLatestRealRunReusesEarlierQuestionAndHardRejectsAllGenerationEntrypoints",
+    "testAccountGlobalRevisionDoesNotRequireOldTerminalOverlayAndAlignmentIsFinite",
+    "testReaderLeaseHandoverAndStopUnknownSurviveLeavingAndBlockAnotherConversation",
+    "testDeletionPausesCurrentReaderAndTombstoneOfOtherConversationDoesNotClearIt",
+    "testMissingBindingRereadsOnceInvalidIdentityRejectsAndLegacyStaysHistoryOnly",
+    "testStreamPrefixUpdatesExistingAnswerAndReconnectNeverDoubleAppends",
+    "test401AndSynchronousRetirementHideKnownContentWithoutLogoutOrNewRequest",
+    "testNewHistoryTokenWaitsForUnknownStopThenBindsLatestRealRun",
+    "testCapabilityDowngradePausesReadAndStopButManualNegotiationPreservesUnknown"
+  ],
+  "changed_old_method": "testLateStopCannotOverwriteReplacementRunAndCompletedIsNotStopped",
+  "new_method": [
+    "testHiddenHistoryCompletionRegistersAddressAndNextLeaseStartsExactlyOneGet"
+  ],
+  "native_execution": "NOT_RUN",
+  "expected_native": 308,
+  "navigation": 3
+}
