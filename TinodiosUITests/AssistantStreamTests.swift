@@ -539,6 +539,7 @@ final class AssistantStreamTests: XCTestCase {
         let trace = AssistantRefusalTrace()
         let lock = NSLock(); var completions = 0; var frames = 0
         var terminalKind = "not_completed"; var terminalElapsed: TimeInterval = -1
+        var terminalSent = false
         addTeardownBlock {
             lock.lock(); let count = completions; let events = frames; lock.unlock()
             trace.record("final_counts", ordinal: 1, fixture: 4410,
@@ -569,18 +570,21 @@ final class AssistantStreamTests: XCTestCase {
         _ = service.stream(AssistantBFixture.cid, runID: AssistantBFixture.rid, after: "0", capabilities: capabilities,
             event: { _ in lock.lock(); frames += 1; lock.unlock() }, completion: { end in
                 let elapsed = ProcessInfo.processInfo.systemUptime - started
+                let sentAtCompletion = trace.sentSuccessfully(ordinal: 1)
                 let kind = AssistantRefusalTrace.completionKind(end)
                 lock.lock(); completions += 1; let first = completions == 1
-                if first { terminalKind = kind; terminalElapsed = elapsed }
+                if first { terminalKind = kind; terminalElapsed = elapsed; terminalSent = sentAtCompletion }
                 lock.unlock()
                 trace.record("stream_completion", ordinal: 1, fixture: 4410,
-                             values: ["kind": kind, "trial_elapsed_us": Int(elapsed * 1_000_000)])
+                             values: ["kind": kind, "trial_elapsed_us": Int(elapsed * 1_000_000),
+                                      "request_send_observed_at_callback": sentAtCompletion])
                 if first { done.fulfill() }
             })
         wait(for: [done], timeout: 65)
         service.cancelAll(); server.stop()
         lock.lock(); let count = completions; let events = frames
-        let kind = terminalKind; let elapsed = terminalElapsed; lock.unlock()
+        let kind = terminalKind; let elapsed = terminalElapsed; let sent = terminalSent; lock.unlock()
+        XCTAssertTrue(sent, "First completion preceded the unique successful request/send evidence")
         XCTAssertTrue(trace.sentSuccessfully(ordinal: 1), "Header-only deadline lacks a unique successful request/send")
         XCTAssertEqual(count, 1)
         XCTAssertEqual(events, 0)
