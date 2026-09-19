@@ -25,6 +25,7 @@ private final class RecordingEngineFixture: MediaRecordingEngine {
     var prepareSucceeds = true
     var recordSucceeds = true
     var records = 0
+    var requestedDurations: [TimeInterval] = []
     var stops = 0
     var onPrepare: (() -> Void)?
     let url: URL
@@ -35,7 +36,10 @@ private final class RecordingEngineFixture: MediaRecordingEngine {
         return prepareSucceeds
     }
     func record() -> Bool { records += 1; isRecording = recordSucceeds; return recordSucceeds }
-    func record(forDuration duration: TimeInterval) -> Bool { record() }
+    func record(forDuration duration: TimeInterval) -> Bool {
+        requestedDurations.append(duration)
+        return record()
+    }
     func stop() { stops += 1; isRecording = false; currentTime = 0 }
     func pause() { isRecording = false }
     func updateMeters() {}
@@ -62,6 +66,120 @@ final class MediaRecorderLifecycleTests: XCTestCase {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("recorder-fixture-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         return url
+    }
+
+    func testEngineLimitUsesSixtySecondsAndFreshTakeResetsBudget() throws {
+        let dir = try directory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try onMain {
+            var engines: [RecordingEngineFixture] = []
+            let recorder = MediaRecorder(session: RecordingSessionFixture(), factory: { url, _ in
+                let engine = RecordingEngineFixture(url: url); engines.append(engine); return engine
+            }, directory: dir, schedulesTimer: false)
+            recorder.start()
+            let firstURL = try XCTUnwrap(recorder.recordFileURL)
+            XCTAssertEqual(MediaRecorder.recordingLimitMilliseconds, 60_000)
+            XCTAssertEqual(engines[0].requestedDurations, [60])
+            engines[0].currentTime = 60
+            XCTAssertTrue(recorder.deferSubmissionForRecordingCompletion())
+            XCTAssertTrue(recorder.reachedDurationLimit)
+            recorder.delete()
+            recorder.start()
+            XCTAssertNotEqual(recorder.recordFileURL, firstURL)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: firstURL.path))
+            XCTAssertEqual(engines[1].requestedDurations, [60])
+            XCTAssertFalse(recorder.reachedDurationLimit)
+            XCTAssertEqual(recorder.duration, 0)
+            recorder.recordingFinished(engines[0], successfully: true)
+            XCTAssertEqual(recorder.state, .recording)
+            XCTAssertTrue(recorder.isRecording)
+            recorder.retire()
+        }
+    }
+
+    func testStoppedEngineWaitsForAuthoritativeSuccessOrFailure() throws {
+        let dir = try directory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try onMain {
+            for succeeded in [true, false] {
+                var engine: RecordingEngineFixture!
+                let delegate = RecordingDelegateFixture()
+                let recorder = MediaRecorder(session: RecordingSessionFixture(), factory: { url, _ in
+                    engine = RecordingEngineFixture(url: url); return engine
+                }, directory: dir, schedulesTimer: false)
+                recorder.delegate = delegate
+                recorder.start()
+                engine.currentTime = 59.875
+                recorder.recordUpdate()
+                let takeURL = try XCTUnwrap(recorder.recordFileURL)
+                // AVAudioRecorder.currentTime is zero after the engine stops;
+                // its delegate has deliberately not been delivered yet.
+                engine.isRecording = false; engine.currentTime = 0
+                XCTAssertTrue(recorder.deferSubmissionForRecordingCompletion())
+                recorder.recordUpdate()
+                XCTAssertTrue(recorder.deferSubmissionForRecordingCompletion())
+                XCTAssertEqual(recorder.state, .recording)
+                XCTAssertEqual(delegate.finishes, 0)
+                XCTAssertEqual(delegate.failures, 0)
+                XCTAssertTrue(engine.delegate === recorder)
+                XCTAssertFalse(recorder.reachedDurationLimit)
+                recorder.recordingFinished(engine, successfully: succeeded)
+                XCTAssertEqual(delegate.finishes, succeeded ? 1 : 0)
+                XCTAssertEqual(delegate.failures, succeeded ? 0 : 1)
+                XCTAssertFalse(recorder.reachedDurationLimit, "Success alone does not prove the limit")
+                if succeeded {
+                    XCTAssertEqual(recorder.state, .preview)
+                    XCTAssertFalse(recorder.deferSubmissionForRecordingCompletion())
+                    let (take, bits) = try recorder.prepareSubmission(minimumDuration: 3000)
+                    XCTAssertEqual(take.duration, 59_875, "Do not fabricate a 60-second duration")
+                    XCTAssertEqual(take.url, takeURL)
+                    XCTAssertEqual(bits, Data([1, 2, 3, 4]))
+                } else {
+                    XCTAssertEqual(recorder.state, .idle)
+                    XCTAssertNil(recorder.recordFileURL)
+                    XCTAssertFalse(FileManager.default.fileExists(atPath: takeURL.path))
+                }
+                recorder.recordingFinished(engine, successfully: succeeded)
+                XCTAssertEqual(delegate.finishes, succeeded ? 1 : 0)
+                XCTAssertEqual(delegate.failures, succeeded ? 0 : 1)
+                recorder.retire()
+            }
+        }
+    }
+
+    func testActiveEngineAtLimitStopsOnceAndAllowsExplicitPreviewSubmission() throws {
+        let dir = try directory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try onMain {
+            var engine: RecordingEngineFixture!
+            let delegate = RecordingDelegateFixture()
+            let recorder = MediaRecorder(session: RecordingSessionFixture(), factory: { url, _ in
+                engine = RecordingEngineFixture(url: url); return engine
+            }, directory: dir, schedulesTimer: false)
+            recorder.delegate = delegate
+            recorder.start()
+            engine.currentTime = 59
+            XCTAssertFalse(recorder.deferSubmissionForRecordingCompletion())
+            XCTAssertEqual(engine.stops, 0)
+            engine.currentTime = 60
+            XCTAssertTrue(recorder.deferSubmissionForRecordingCompletion())
+            XCTAssertEqual(recorder.state, .preview)
+            XCTAssertTrue(recorder.reachedDurationLimit)
+            XCTAssertEqual(delegate.finishes, 1)
+            XCTAssertEqual(engine.stops, 1)
+            recorder.recordingFinished(engine, successfully: true)
+            _ = recorder.stopForPreview()
+            XCTAssertEqual(delegate.finishes, 1)
+            XCTAssertEqual(engine.stops, 1)
+            XCTAssertFalse(recorder.deferSubmissionForRecordingCompletion())
+            let (take, bits) = try recorder.prepareSubmission(minimumDuration: 3000)
+            XCTAssertEqual(take.duration, 60_000)
+            XCTAssertEqual(bits, Data([1, 2, 3, 4]))
+            recorder.didSubmit(take)
+            XCTAssertEqual(recorder.state, .transferred)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: take.url.path))
+            recorder.retire()
+        }
     }
 
     func testPermissionCompletionNeverStartsRecordingOrRevivesRetiredIntent() throws {

@@ -282,7 +282,7 @@ class Cache {
         let recorder = MediaRecorder(ownerIsCurrent: {
             Cache.ifCurrent(owner) { shared.generation == generation && owner.myUid == uid } ?? false
         }, log: { event in Cache.log.error("%@", event) })
-        recorder.maxDuration = 600_000
+        recorder.maxDuration = MediaRecorder.recordingLimitMilliseconds
         var previous: MediaRecorder?
         let accepted = ifCurrent(owner) {
             guard shared.generation == generation, owner.myUid == uid else { return false }

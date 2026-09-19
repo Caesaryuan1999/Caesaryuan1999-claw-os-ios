@@ -60,6 +60,7 @@ protocol MediaRecordingEngine: AnyObject {
 extension AVAudioRecorder: MediaRecordingEngine {}
 
 class MediaRecorder: NSObject, AVAudioRecorderDelegate {
+    static let recordingLimitMilliseconds = 60_000
     enum State: Equatable { case idle, requestingPermission, preparing, recording, preview, transferred, retired }
     struct Recording {
         let url: URL
@@ -84,12 +85,14 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
     private var permissionRequest: UUID?
     private var activeSession = false
     private var lastTime: TimeInterval = 0
+    private var activeDurationLimit: TimeInterval?
     private var audioSampler = AudioSampler()
     private(set) var state: State = .idle
     weak var delegate: MediaRecorderDelegate?
     var onRetired: (() -> Void)?
     var timerPrecision: TimeInterval = 0.03
-    var maxDuration: Int?
+    var maxDuration: Int? = MediaRecorder.recordingLimitMilliseconds
+    private(set) var reachedDurationLimit = false
     var recordFileURL: URL? { completed?.url ?? ownedURL }
     var duration: Int? { completed?.duration ?? (ownedURL == nil ? nil : Int(lastTime * 1000)) }
     var preview: Data { completed?.preview ?? audioSampler.obtain(dstCount: 96) }
@@ -198,13 +201,15 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
             // All AV calls are outside the admission/Cache/SDK locks. Retirement
             // closes admission immediately; an already-entered AV call is stopped
             // on main before any result/delegate delivery can be accepted.
-            let started = maxDuration.map { recorder.record(forDuration: TimeInterval($0) / 1000) }
+            activeDurationLimit = maxDuration.map { TimeInterval($0) / 1000 }
+            let started = activeDurationLimit.map { recorder.record(forDuration: $0) }
                 ?? recorder.record()
             guard started else { throw MediaRecorderError.recordingFailed }
             engine = recorder
             ownedURL = candidate
             completed = nil
             lastTime = 0
+            reachedDurationLimit = false
             audioSampler = AudioSampler()
             state = .recording
             guard isCurrent else { retire(); return }
@@ -234,6 +239,27 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
         if state == .requestingPermission { state = .idle }
     }
 
+    // The recording engine may finish before its delegate reaches main. In that
+    // interval currentTime can already be zero and the old gesture still looks
+    // active. Keep the engine/delegate so its success/failure remains authoritative.
+    // A later, explicit send from an established preview is still allowed.
+    func deferSubmissionForRecordingCompletion() -> Bool {
+        precondition(Thread.isMainThread)
+        guard isCurrent else { retire(); return true }
+        guard state == .recording else { return false }
+        guard let recorder = engine else { return true }
+        guard recorder.isRecording else {
+            updateTimer?.invalidate()
+            updateTimer = nil
+            return true
+        }
+        if let limit = activeDurationLimit, max(lastTime, recorder.currentTime) >= limit {
+            _ = stopForPreview()
+            return true
+        }
+        return false
+    }
+
     @discardableResult
     func stopForPreview() -> Recording? {
         precondition(Thread.isMainThread)
@@ -244,6 +270,7 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
             return nil
         }
         let elapsed = max(lastTime, recorder.currentTime)
+        reachedDurationLimit = activeDurationLimit.map { elapsed >= $0 } ?? false
         updateTimer?.invalidate()
         updateTimer = nil
         recorder.delegate = nil
@@ -330,6 +357,8 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
         removeOwnedFile()
         completed = nil
         lastTime = 0
+        activeDurationLimit = nil
+        reachedDurationLimit = false
         audioSampler = AudioSampler()
     }
 
@@ -349,7 +378,10 @@ class MediaRecorder: NSObject, AVAudioRecorderDelegate {
             lastTime = recorder.currentTime
             delegate?.didUpdateRecording(recorder: self, amplitude: amplitude, atTime: lastTime)
         } else {
-            _ = stopForPreview()
+            // Do not turn a pending failed completion into a successful preview.
+            // recordingFinished keeps the original engine identity and flag.
+            updateTimer?.invalidate()
+            updateTimer = nil
         }
     }
 

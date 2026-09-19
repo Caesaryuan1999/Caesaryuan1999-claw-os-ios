@@ -1,0 +1,79 @@
+{
+  "base": "0ea19847e3b043bc14bfb046d2e1809cf92134e6",
+  "evidence_level": "Windows fixed-source predicates and unchanged assertions; no Swift or AV execution",
+  "red_source_predicates": {
+    "actual_factory_uses_unified_limit": false,
+    "engine_limit_is_sixty_seconds": false,
+    "submission_admission_before_handoff": false,
+    "meter_does_not_invent_success_before_finish_flag": false
+  },
+  "green_source_predicates": {
+    "actual_factory_uses_unified_limit": true,
+    "engine_limit_is_sixty_seconds": true,
+    "submission_admission_before_handoff": true,
+    "meter_does_not_invent_success_before_finish_flag": true
+  },
+  "old_test_method_bodies_preserved": {
+    "TinodiosUITests/MediaRecorderLifecycleTests.swift": 8,
+    "TinodiosUITests/VoiceLayoutTests.swift": 6
+  },
+  "new_methods": {
+    "TinodiosUITests/MediaRecorderLifecycleTests.swift": [
+      "testActiveEngineAtLimitStopsOnceAndAllowsExplicitPreviewSubmission",
+      "testEngineLimitUsesSixtySecondsAndFreshTakeResetsBudget",
+      "testStoppedEngineWaitsForAuthoritativeSuccessOrFailure"
+    ],
+    "TinodiosUITests/VoiceLayoutTests.swift": [
+      "testLimitFinishAndReleaseOrderingUseOriginalNibAndSubmissionDispatch",
+      "testNormalReleaseAndLockedLimitKeepExplicitSendDistinct"
+    ]
+  },
+  "previous_native_expected": 313,
+  "candidate_native_expected": 318,
+  "navigation_expected": 3,
+  "native_execution": "NOT_RUN",
+  "paths": [
+    {
+      "path": "Tinodios/Cache.swift",
+      "base_blob": "4154c4e96fbcc7a7ee414d4191d44943f29fb1cf",
+      "working_git_clean_blob": "a2887499c36462c6379fa0a93656cdc485a443bf",
+      "raw_sha256": "a859399d09b2985bb51ddee775e0c7c631feeb988271806db895208515de047a",
+      "lf_sha256": "a859399d09b2985bb51ddee775e0c7c631feeb988271806db895208515de047a"
+    },
+    {
+      "path": "Tinodios/MediaRecorder.swift",
+      "base_blob": "4a5aa81e73390bc47d140e5d1542baeef2b92f90",
+      "working_git_clean_blob": "024fe745b5aa4bac0dc976e45fa09d258cc6bc82",
+      "raw_sha256": "30e81e44ed8c52d55a053fe324bebb1c4c157b18374b12cdb247baf399bddee7",
+      "lf_sha256": "30e81e44ed8c52d55a053fe324bebb1c4c157b18374b12cdb247baf399bddee7"
+    },
+    {
+      "path": "Tinodios/MessageViewController+SendMessageBarDelegate.swift",
+      "base_blob": "7a186f8cbcb26447c3db7d03bd57044d430f8ffa",
+      "working_git_clean_blob": "bd0993cedb0a1369edbad85d2ec1f292e0071c12",
+      "raw_sha256": "478f04eb7971c7f3ce7a3ffc0b915c80d290a9a0d7eb2a22963c27747725d494",
+      "lf_sha256": "ae82d33f8c4c8d4aed2b3da3858360939314b93e1bc2ec63139930a26d07235a"
+    },
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "base_blob": "17ff3715883a6975b2f4ab5963e98f991ceb4735",
+      "working_git_clean_blob": "bf42353bf1970019556c32fd6f8002515494818b",
+      "raw_sha256": "705768ea0168622727773b50262bd2fef2bec5008b9f30343dcb5313f7e4342d",
+      "lf_sha256": "5b409d03199da601ca7fdb3b9cb1a2578235392a16a297ee6a44f0837c02ef1b"
+    },
+    {
+      "path": "TinodiosUITests/MediaRecorderLifecycleTests.swift",
+      "base_blob": "7c12bfd49c453f5a786bb6bc261e1b68fefe27fd",
+      "working_git_clean_blob": "079bb629de4ca5fb7d46fa43c1fe2649d87f6e2b",
+      "raw_sha256": "9be2d3ad94dccb93a46fed45c0f22d6a859a95db835d9b86452dc30dd8876906",
+      "lf_sha256": "9be2d3ad94dccb93a46fed45c0f22d6a859a95db835d9b86452dc30dd8876906"
+    },
+    {
+      "path": "TinodiosUITests/VoiceLayoutTests.swift",
+      "base_blob": "a2dfe1565eb79e2f022e12afbb6f12223a4e44ae",
+      "working_git_clean_blob": "1c8f732c3822cce2e24840905231f9ba75829590",
+      "raw_sha256": "436bae6cdcb3e235cd6ea8188a85ea007b31dc643563a735f7746ecca16fca2b",
+      "lf_sha256": "436bae6cdcb3e235cd6ea8188a85ea007b31dc643563a735f7746ecca16fca2b"
+    }
+  ]
+}

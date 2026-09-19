@@ -81,6 +81,7 @@ extension MessageViewController: SendMessageBarDelegate {
             recorder.start()
         case .stopAndSend:
             guard let recorder = voiceRecorder else { return }
+            guard !recorder.deferSubmissionForRecordingCompletion() else { return }
             sendAudioAttachment(recorder: recorder)
         case .stopRecording, .pauseRecording:
             guard let recorder = voiceRecorder, voiceScopeIsCurrent() else { return }
@@ -232,6 +233,9 @@ extension MessageViewController: MediaRecorderDelegate {
             sendMessageBar.recordingDidStop()
             sendMessageBar.audioPlaybackPreview(recorder.preview, duration: duration)
             if voicePausedNotice { sendMessageBar.showInterruptedRecordingPreview() }
+            if recorder.reachedDurationLimit {
+                UiUtils.showToast(message: "已达60秒，试听后发送")
+            }
         }
     }
 

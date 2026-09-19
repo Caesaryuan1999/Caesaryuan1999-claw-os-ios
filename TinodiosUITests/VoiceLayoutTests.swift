@@ -2,6 +2,7 @@
 // Original App class + original bundled XIB. Component presentation only:
 // no chat route, credentials, microphone, recording, upload, or synthetic login.
 import XCTest
+import AVFoundation
 import UIKit
 import UIKit.UIGestureRecognizerSubclass
 import TinodiosDB
@@ -253,6 +254,114 @@ final class VoiceLayoutTests: XCTestCase {
             XCTAssertEqual(bar.sendButton.accessibilityLabel, "录音")
             XCTAssertTrue(f.spy.actions.isEmpty); XCTAssertTrue(f.spy.sentTexts.isEmpty)
             try capture("send-button-empty-recording-restored", f)
+        }
+    }
+
+    func testLimitFinishAndReleaseOrderingUseOriginalNibAndSubmissionDispatch() throws {
+        try main {
+            let f = try current(), bar = f.bar
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("voice-limit-" + UUID().uuidString)
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: dir); bar.delegate = f.spy }
+            for finishFirst in [true, false] {
+                for locked in [false, true] {
+                    bar.resetRecordingState()
+                    let controller = LimitSubmissionController(bar: bar)
+                    let bridge = LimitRecordingUIBridge(bar: bar)
+                    var engine: LimitRecordingEngine!
+                    let recorder = MediaRecorder(session: LimitRecordingSession(), factory: { url, _ in
+                        engine = LimitRecordingEngine(url: url); return engine
+                    }, directory: dir, schedulesTimer: false)
+                    defer { recorder.retire(); controller.voiceRecorder = nil }
+                    recorder.delegate = bridge
+                    controller.voiceRecorder = recorder
+                    bar.delegate = controller
+                    let gesture = ControlledLongPress()
+                    gesture.phase = .began; gesture.point = CGPoint(x: 210, y: 650)
+                    // Real handler; the anonymous controller cannot acquire a real
+                    // account recorder. Start only the injected AV-boundary recorder.
+                    bar.longPressed(sender: gesture)
+                    recorder.start()
+                    XCTAssertEqual(engine.requestedDurations, [60])
+                    if locked {
+                        gesture.phase = .changed; gesture.point.y -= 61
+                        bar.longPressed(sender: gesture)
+                    }
+                    engine.currentTime = 59.875
+                    recorder.recordUpdate()
+                    engine.isRecording = false; engine.currentTime = 0
+                    if finishFirst { recorder.recordingFinished(engine, successfully: true) }
+                    gesture.phase = .ended
+                    bar.longPressed(sender: gesture)
+                    XCTAssertEqual(controller.acceptedDurations, [], "The old release must never submit")
+                    if !finishFirst {
+                        XCTAssertEqual(recorder.state, .recording)
+                        XCTAssertEqual(bridge.finishes, 0)
+                        recorder.recordingFinished(engine, successfully: true)
+                    }
+                    XCTAssertEqual(recorder.state, .preview)
+                    XCTAssertEqual(bridge.finishes, 1)
+                    XCTAssertFalse(recorder.reachedDurationLimit)
+                    // A repeated old release is still blocked by the real Bar flag.
+                    bar.longPressed(sender: gesture)
+                    XCTAssertTrue(controller.acceptedDurations.isEmpty)
+                    recorder.recordingFinished(engine, successfully: true)
+                    XCTAssertEqual(bridge.finishes, 1)
+                    bar.sendRecording(bar.voiceSendButton as Any)
+                    XCTAssertEqual(controller.acceptedDurations, [59_875])
+                    XCTAssertEqual(controller.acceptedBytes, [Data([1, 2, 3, 4])])
+                    XCTAssertEqual(recorder.state, .transferred)
+                    XCTAssertNil(recorder.recordFileURL)
+                }
+            }
+        }
+    }
+
+    func testNormalReleaseAndLockedLimitKeepExplicitSendDistinct() throws {
+        try main {
+            let f = try current(), bar = f.bar
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("voice-limit-" + UUID().uuidString)
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: dir); bar.delegate = f.spy }
+            for lockedLimit in [false, true] {
+                bar.resetRecordingState()
+                let controller = LimitSubmissionController(bar: bar)
+                let bridge = LimitRecordingUIBridge(bar: bar)
+                var engine: LimitRecordingEngine!
+                let recorder = MediaRecorder(session: LimitRecordingSession(), factory: { url, _ in
+                    engine = LimitRecordingEngine(url: url); return engine
+                }, directory: dir, schedulesTimer: false)
+                defer { recorder.retire(); controller.voiceRecorder = nil }
+                controller.voiceRecorder = recorder
+                recorder.delegate = bridge; bar.delegate = controller
+                let gesture = ControlledLongPress()
+                gesture.phase = .began; gesture.point = CGPoint(x: 210, y: 650)
+                bar.longPressed(sender: gesture); recorder.start()
+                if lockedLimit {
+                    gesture.phase = .changed; gesture.point.y -= 61
+                    bar.longPressed(sender: gesture)
+                    engine.currentTime = 60
+                    recorder.recordUpdate()
+                    engine.isRecording = false; engine.currentTime = 0
+                    recorder.recordingFinished(engine, successfully: true)
+                    XCTAssertTrue(recorder.reachedDurationLimit)
+                    XCTAssertEqual(recorder.state, .preview)
+                } else {
+                    engine.currentTime = 59
+                }
+                gesture.phase = .ended; bar.longPressed(sender: gesture)
+                if lockedLimit {
+                    XCTAssertTrue(controller.acceptedDurations.isEmpty)
+                    XCTAssertEqual(bridge.finishes, 1)
+                    bar.sendRecording(bar.voiceSendButton as Any)
+                    XCTAssertEqual(controller.acceptedDurations, [60_000])
+                } else {
+                    XCTAssertEqual(controller.acceptedDurations, [59_000])
+                    XCTAssertEqual(bridge.finishes, 1)
+                }
+                XCTAssertEqual(engine.stops, 1)
+                XCTAssertEqual(recorder.state, .transferred)
+            }
         }
     }
 
@@ -593,4 +702,66 @@ private final class VoiceDelegateSpy: SendMessageBarDelegate, PendingMessagePrev
     }
     func pendingPreviewMessageSize(forMessage msg: NSAttributedString) -> CGSize { .zero }
     func dismissPendingMessagePreview() {}
+}
+
+// Actual MessageViewController.sendMessageBar(recordAudio:) is inherited. Only
+// its existing handoff boundary is spied; no auth, SDK publish or upload occurs.
+private final class LimitSubmissionController: MessageViewController {
+    let testedBar: SendMessageBar
+    var acceptedDurations: [Int] = []
+    var acceptedBytes: [Data] = []
+    init(bar: SendMessageBar) { testedBar = bar; super.init() }
+    required init?(coder: NSCoder) { fatalError("Test fixture is programmatic") }
+    override func sendAudioAttachment(recorder: MediaRecorder) {
+        do {
+            let (take, data) = try recorder.prepareSubmission(minimumDuration: 3000)
+            acceptedDurations.append(take.duration); acceptedBytes.append(data)
+            recorder.didSubmit(take)
+            testedBar.resetRecordingState()
+        } catch { XCTFail("Controlled local Data handoff failed") }
+    }
+}
+
+// The real recorder callback drives the real bundled Bar; the page's owner gate
+// and microphone are outside this component test, not replaced by fake login.
+private final class LimitRecordingUIBridge: MediaRecorderDelegate {
+    let bar: SendMessageBar
+    var finishes = 0
+    init(bar: SendMessageBar) { self.bar = bar }
+    func didStartRecording(recorder: MediaRecorder) { bar.recordingDidStart() }
+    func didFinishRecording(recorder: MediaRecorder, url: URL?, duration: TimeInterval) {
+        finishes += 1
+        bar.recordingDidStop()
+        bar.audioPlaybackPreview(recorder.preview, duration: duration)
+    }
+    func didUpdateRecording(recorder: MediaRecorder, amplitude: Float, atTime: TimeInterval) {
+        bar.audioUpdateAmplitude(amplitude: amplitude, atTime: atTime)
+    }
+    func didFailRecording(recorder: MediaRecorder, _ error: Error) { bar.resetRecordingState() }
+    func didUpdateRecordingPermission(recorder: MediaRecorder, event: MediaRecorderPermissionEvent) {}
+}
+
+private final class LimitRecordingSession: MediaRecordingSession {
+    var recordPermission: AVAudioSession.RecordPermission { .granted }
+    func requestRecordPermission(_ callback: @escaping (Bool) -> Void) { XCTFail("Unexpected permission request") }
+    func activate() throws {}
+    func deactivate() throws {}
+}
+
+private final class LimitRecordingEngine: MediaRecordingEngine {
+    weak var delegate: AVAudioRecorderDelegate?
+    var isRecording = false
+    var currentTime: TimeInterval = 0
+    var isMeteringEnabled = false
+    var requestedDurations: [TimeInterval] = []
+    var stops = 0
+    let url: URL
+    init(url: URL) { self.url = url }
+    func prepareToRecord() -> Bool { (try? Data([1, 2, 3, 4]).write(to: url)) != nil }
+    func record() -> Bool { isRecording = true; return true }
+    func record(forDuration duration: TimeInterval) -> Bool { requestedDurations.append(duration); return record() }
+    func stop() { stops += 1; isRecording = false; currentTime = 0 }
+    func pause() { isRecording = false }
+    func updateMeters() {}
+    func averagePower(forChannel channelNumber: Int) -> Float { -12 }
 }
