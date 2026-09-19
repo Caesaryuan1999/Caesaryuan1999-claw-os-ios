@@ -535,7 +535,7 @@ final class CoreListLayoutTests: XCTestCase {
         XCTAssertFalse((help.serverAddressLabel.text ?? "").isEmpty)
         XCTAssertFalse(allViews(help.view).contains { $0 is UITextField || $0 is UITextView })
         let texts = ["客服服务暂未开通\n客服将协助处理账号使用问题。服务开通前，暂不接收留言。",
-                     "服务条款未配置", "隐私政策未配置"]
+                     "服务条款暂不可用", "隐私政策暂不可用"]
         for (offset, cell) in [help.contactUs, help.termsOfUse, help.privacyPolicy].enumerated() {
             let cell = try XCTUnwrap(cell)
             help.tableView.scrollToRow(at: IndexPath(row: offset + 1, section: 0), at: .middle, animated: false)

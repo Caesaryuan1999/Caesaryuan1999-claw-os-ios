@@ -54,8 +54,8 @@ class SettingsHelpViewController: UITableViewController {
         }
         contactUs.textLabel?.text = NSLocalizedString("客服服务暂未开通", comment: "Support unavailable") + "\n" +
             NSLocalizedString("客服将协助处理账号使用问题。服务开通前，暂不接收留言。", comment: "Support unavailable explanation")
-        termsOfUse.textLabel?.text = NSLocalizedString("服务条款未配置", comment: "Terms unavailable")
-        privacyPolicy.textLabel?.text = NSLocalizedString("隐私政策未配置", comment: "Privacy policy unavailable")
+        termsOfUse.textLabel?.text = NSLocalizedString("服务条款暂不可用", comment: "Terms unavailable")
+        privacyPolicy.textLabel?.text = NSLocalizedString("隐私政策暂不可用", comment: "Privacy policy unavailable")
         helpCells.forEach { $0.accessibilityLabel = $0.textLabel?.text }
         updateExplanationFonts()
         appVersion.textColor = ClawTheme.muted
