@@ -168,6 +168,7 @@ private final class AssistantRefusalTrace {
 /// Transport observation only. No application parser, error mapping, or delegate injection.
 private final class AssistantBareResponseProbe: NSObject, URLSessionDataDelegate {
     let receivedResponse = XCTestExpectation(description: "bare response callback")
+    private let delegateQueue = DispatchQueue(label: "claw.assistant.test.bare.delegate")
     private let trace: AssistantRefusalTrace
     private let ordinal: Int
     private let lock = NSLock()
@@ -185,7 +186,7 @@ private final class AssistantBareResponseProbe: NSObject, URLSessionDataDelegate
         config.urlCache = nil; config.urlCredentialStorage = nil; config.httpAdditionalHeaders = nil
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         let queue = OperationQueue(); queue.maxConcurrentOperationCount = 1
-        queue.underlyingQueue = DispatchQueue(label: "claw.assistant.test.bare.delegate")
+        queue.underlyingQueue = delegateQueue
         let session = URLSession(configuration: config, delegate: self, delegateQueue: queue)
         self.session = session
         session.dataTask(with: request).resume()
