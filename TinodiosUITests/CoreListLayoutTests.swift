@@ -17,6 +17,7 @@ final class CoreListLayoutTests: XCTestCase {
     private var priorPermissionsCallback: ((CNAuthorizationStatus) -> Void)?
     private var owner: Tinode!
     private var capturedView: UIView?
+    private var helpSizingSamples = [[String: Any]]()
 
     private func main<T>(_ work: () throws -> T) rethrows -> T {
         if Thread.isMainThread { return try work() }
@@ -34,6 +35,7 @@ final class CoreListLayoutTests: XCTestCase {
                   ContactsSynchronizer.default.authStatus != .authorized else {
                 XCTFail("Unexpected host/account state"); throw Failure.initialState
             }
+            helpSizingSamples = []
             owner = Cache.tinode
             previousWindow = UIApplication.shared.windows.first(where: { $0.isKeyWindow })
             priorContactStatus = ContactsSynchronizer.default.authStatus
@@ -536,26 +538,48 @@ final class CoreListLayoutTests: XCTestCase {
         XCTAssertFalse(allViews(help.view).contains { $0 is UITextField || $0 is UITextView })
         let texts = ["客服服务暂未开通\n客服将协助处理账号使用问题。服务开通前，暂不接收留言。",
                      "服务条款暂不可用", "隐私政策暂不可用"]
-        for (offset, cell) in [help.contactUs, help.termsOfUse, help.privacyPolicy].enumerated() {
-            let cell = try XCTUnwrap(cell)
-            help.tableView.scrollToRow(at: IndexPath(row: offset + 1, section: 0), at: .middle, animated: false)
-            try until { help.tableView.layoutIfNeeded(); cell.layoutIfNeeded(); return cell.window != nil && cell.bounds.height > 0 }
-            let label = try XCTUnwrap(cell.textLabel)
-            XCTAssertEqual(label.text, texts[offset])
-            XCTAssertEqual(cell.accessibilityLabel, texts[offset])
-            XCTAssertTrue(cell.accessibilityTraits.contains(.staticText))
-            XCTAssertFalse(cell.accessibilityTraits.contains(.button))
-            XCTAssertFalse(cell.accessibilityTraits.contains(.link))
-            XCTAssertEqual(cell.selectionStyle, .none)
-            XCTAssertEqual(cell.accessoryType, .none)
-            XCTAssertFalse((cell.gestureRecognizers ?? []).contains { $0 is UITapGestureRecognizer && $0.isEnabled })
-            XCTAssertFalse(allViews(cell).contains { $0 is UIControl })
-            XCTAssertEqual(label.numberOfLines, 0)
-            XCTAssertTrue(label.adjustsFontForContentSizeCategory)
-            readable(label); contained(label, in: cell.contentView)
-            if offset == 0 {
-                XCTAssertGreaterThan(cell.bounds.height, 52)
-                try evidence(name, view: help.view)
+        let originalCategory = help.traitCollection.preferredContentSizeCategory
+        let phases: [(String, UIContentSizeCategory)] = checkLicenses ? [(name, originalCategory)] : [
+            (name, originalCategory), (name + "-large", .large),
+            (name + "-regrown", .accessibilityExtraExtraExtraLarge), (name + "-shrunk", .large)]
+        let traitHost = try XCTUnwrap(navigation.parent)
+        for (phase, category) in phases {
+            traitHost.setOverrideTraitCollection(UITraitCollection(preferredContentSizeCategory: category), forChild: navigation)
+            let expectedFont = UIFontMetrics(forTextStyle: .body).scaledFont(
+                for: UIFont.systemFont(ofSize: 16), compatibleWith: UITraitCollection(preferredContentSizeCategory: category))
+            for (offset, cell) in [help.contactUs, help.termsOfUse, help.privacyPolicy].enumerated() {
+                let cell = try XCTUnwrap(cell)
+                help.tableView.scrollToRow(at: IndexPath(row: offset + 1, section: 0), at: .middle, animated: false)
+                try until {
+                    navigation.view.layoutIfNeeded(); help.view.layoutIfNeeded(); help.tableView.layoutIfNeeded(); cell.layoutIfNeeded()
+                    return cell.window != nil && cell.bounds.height > 0 &&
+                        help.traitCollection.preferredContentSizeCategory == category &&
+                        abs((cell.textLabel?.font.pointSize ?? 0) - expectedFont.pointSize) < 0.5
+                }
+                let label = try XCTUnwrap(cell.textLabel)
+                XCTAssertEqual(label.text, texts[offset])
+                XCTAssertEqual(cell.accessibilityLabel, texts[offset])
+                XCTAssertTrue(cell.accessibilityTraits.contains(.staticText))
+                XCTAssertFalse(cell.accessibilityTraits.contains(.button))
+                XCTAssertFalse(cell.accessibilityTraits.contains(.link))
+                XCTAssertEqual(cell.selectionStyle, .none)
+                XCTAssertEqual(cell.accessoryType, .none)
+                XCTAssertFalse((cell.gestureRecognizers ?? []).contains { $0 is UITapGestureRecognizer && $0.isEnabled })
+                XCTAssertFalse(allViews(cell).contains { $0 is UIControl })
+                XCTAssertEqual(label.numberOfLines, 0)
+                XCTAssertTrue(label.adjustsFontForContentSizeCategory)
+                let index = IndexPath(row: offset + 1, section: 0)
+                let required = label.sizeThatFits(CGSize(width: label.bounds.width, height: .greatestFiniteMagnitude)).height
+                helpSizingSamples.append(["phase": phase, "row": offset + 1,
+                    "labelWidth": label.bounds.width, "labelHeight": label.bounds.height,
+                    "font": label.font.pointSize, "requiredHeightAtActualLabelWidth": required,
+                    "productionRowHeight": help.tableView(help.tableView, heightForRowAt: index),
+                    "actualRowHeight": cell.bounds.height, "cellWidth": cell.bounds.width])
+                readable(label); contained(label, in: cell.contentView)
+                if offset == 0 {
+                    XCTAssertGreaterThan(cell.bounds.height, 52)
+                    try evidence(phase, view: help.view)
+                }
             }
         }
         let licenses = try XCTUnwrap(help.navigationItem.rightBarButtonItem)
@@ -609,7 +633,8 @@ final class CoreListLayoutTests: XCTestCase {
         let data: [String: Any] = ["scope": "original UIKit/nibs with synthetic in-memory data; no authenticated journey",
             "width": view.bounds.width, "height": view.bounds.height,
             "appearance": view.traitCollection.userInterfaceStyle.rawValue,
-            "contentSize": view.traitCollection.preferredContentSizeCategory.rawValue, "views": rows]
+            "contentSize": view.traitCollection.preferredContentSizeCategory.rawValue, "views": rows,
+            "helpSizingSamples": helpSizingSamples]
         let json = XCTAttachment(data: try JSONSerialization.data(withJSONObject: data, options: [.sortedKeys]),
                                  uniformTypeIdentifier: "public.json")
         json.name = "core-list-\(name)-geometry"; json.lifetime = .keepAlways; add(json)

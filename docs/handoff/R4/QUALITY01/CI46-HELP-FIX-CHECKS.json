@@ -1,0 +1,14 @@
+{
+  "method_count": 6,
+  "six_existing_test_bodies_unchanged": true,
+  "closedHelp_assertions_retained": 13,
+  "original_texts_unchanged": true,
+  "deadline_seconds": 3,
+  "production_files": [
+    "Tinodios/SettingsHelpViewController.swift"
+  ],
+  "test_files": [
+    "TinodiosUITests/CoreListLayoutTests.swift"
+  ],
+  "native": "NOT_RUN"
+}

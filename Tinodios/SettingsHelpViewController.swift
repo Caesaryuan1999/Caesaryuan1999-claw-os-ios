@@ -25,6 +25,8 @@ class SettingsHelpViewController: UITableViewController {
     private var isUsingCustomBranding = false
     private var contentHeight: CGFloat = 0
     private var measuredWidth: CGFloat = 0
+    private var measuredExplanationWidths = [CGFloat]()
+    private var updatingExplanationHeights = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -104,12 +106,29 @@ class SettingsHelpViewController: UITableViewController {
         if indexPath.section == 0 && indexPath.row == 0 { return 230 }
         if indexPath.section == 0, (1...3).contains(indexPath.row) {
             let cells: [UITableViewCell?] = [contactUs, termsOfUse, privacyPolicy]
-            let width = max(1, tableView.bounds.width - tableView.safeAreaInsets.left - tableView.safeAreaInsets.right - 40)
-            let height = cells[indexPath.row - 1]?.textLabel?.sizeThatFits(
+            let cell = cells[indexPath.row - 1]
+            let width = explanationTextWidth(in: cell)
+            let height = cell?.textLabel?.sizeThatFits(
                 CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)).height ?? 0
             return max(SettingsHelpViewController.kDefaultRowHeight, ceil(height) + 24)
         }
         return max(SettingsHelpViewController.kDefaultRowHeight, ceil(ClawTheme.font(16).lineHeight) + 24)
+    }
+
+    private func explanationTextWidth(in cell: UITableViewCell?) -> CGFloat {
+        // Static storyboard cells retain UIKit's actual text inset. A table-wide
+        // estimate cannot substitute for that label width once it is laid out.
+        if let width = cell?.textLabel?.bounds.width, width.isFinite, width > 0 { return width }
+        return max(1, tableView.bounds.width - tableView.safeAreaInsets.left - tableView.safeAreaInsets.right - 40)
+    }
+
+    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell,
+                            forRowAt indexPath: IndexPath) {
+        if indexPath.section == 0, (1...3).contains(indexPath.row) {
+            // An offscreen static cell can receive its real text width later.
+            // Request layout; do not start a nested table update while displaying it.
+            tableView.setNeedsLayout()
+        }
     }
 
     private func updateExplanationFonts() {
@@ -129,9 +148,13 @@ class SettingsHelpViewController: UITableViewController {
         super.viewDidLayoutSubviews()
 
         let width = tableView.bounds.width - tableView.safeAreaInsets.left - tableView.safeAreaInsets.right
-        if width != measuredWidth {
+        let textWidths = [contactUs, termsOfUse, privacyPolicy].map { explanationTextWidth(in: $0) }
+        if !updatingExplanationHeights && (width != measuredWidth || textWidths != measuredExplanationWidths) {
             measuredWidth = width
+            measuredExplanationWidths = textWidths
+            updatingExplanationHeights = true
             tableView.beginUpdates(); tableView.endUpdates()
+            updatingExplanationHeights = false
         }
 
         if isUsingCustomBranding {
