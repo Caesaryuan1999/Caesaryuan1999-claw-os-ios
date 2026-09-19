@@ -412,6 +412,211 @@ final class VoiceLayoutTests: XCTestCase {
     }
 
 
+    func testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry() throws {
+        try main {
+            try withAudioRenderer(width: 320) { controller in
+                for category in [UIContentSizeCategory.large, .accessibilityExtraExtraExtraLarge] {
+                    for style in [UIUserInterfaceStyle.light, .dark] {
+                        let traits = UITraitCollection(traitsFrom: [UITraitCollection(preferredContentSizeCategory: category),
+                            UITraitCollection(userInterfaceStyle: style)])
+                        controller.parent?.setOverrideTraitCollection(traits, forChild: controller)
+                        controller.overrideUserInterfaceStyle = style
+                        try withCurrentTraits(traits) {
+                            for outgoing in [false, true] {
+                                let durations: [Int?] = [nil, 0, -1, 1500, 4000, 30_000, 60_000, 61_000, Int.max]
+                                for duration in durations {
+                                    let message = try audioMessage(duration: duration, outgoing: outgoing)
+                                    let cell = try showAudio(message, on: controller)
+                                    let body = cell.voiceBubble
+                                    body.layoutIfNeeded()
+                                    XCTAssertEqual(cell.compactVoiceEntityKey, 0)
+                                    XCTAssertFalse(body.isHidden)
+                                    XCTAssertTrue(cell.content.isHidden)
+                                    XCTAssertTrue(body.accessibilityTraits.contains(.button))
+                                    XCTAssertEqual(body.durationLabel.text,
+                                        (duration ?? 0) > 0 ? "\(duration! / 1000)″" : "-:--")
+                                    let maximum = controller.calcMaxContentWidth(for: message, avatarsVisible: false) + 28
+                                    let seconds = Double(min(60_000, max(1000, duration ?? 0))) / 1000
+                                    let target = min(maximum, 128 + CGFloat(96 * (seconds - 1) / 59))
+                                    XCTAssertGreaterThanOrEqual(body.bounds.width + 0.51, target)
+                                    XCTAssertLessThanOrEqual(body.bounds.width, maximum + 0.51)
+                                    XCTAssertGreaterThanOrEqual(body.bounds.height, 48)
+                                    if category == .large, duration != Int.max {
+                                        XCTAssertEqual(body.bounds.width, target, accuracy: 0.51)
+                                    }
+                                    let label = body.durationLabel
+                                    XCTAssertTrue(label.adjustsFontForContentSizeCategory)
+                                    let required = label.sizeThatFits(CGSize(width: label.bounds.width, height: .greatestFiniteMagnitude))
+                                    XCTAssertGreaterThanOrEqual(label.bounds.height + 1, required.height)
+                                    XCTAssertGreaterThanOrEqual(label.frame.minX, 0)
+                                    XCTAssertLessThanOrEqual(label.frame.maxX, body.bounds.width + 1)
+                                    XCTAssertGreaterThanOrEqual(label.frame.minY, 0)
+                                    XCTAssertLessThanOrEqual(label.frame.maxY, body.bounds.height + 1)
+                                    XCTAssertNotNil(body.stateImage.image)
+                                    XCTAssertEqual(body.stateImage.bounds.width, 18, accuracy: 0.1)
+                                    XCTAssertEqual(body.stateImage.bounds.height, 22, accuracy: 0.1)
+                                    XCTAssertEqual(cell.voiceTail.bounds.width, 6, accuracy: 0.1)
+                                    XCTAssertEqual(cell.voiceTail.bounds.height, 12, accuracy: 0.1)
+                                    XCTAssertGreaterThanOrEqual(cell.voiceTail.frame.minX, -0.1)
+                                    XCTAssertLessThanOrEqual(cell.voiceTail.frame.maxX, cell.contentView.bounds.width + 0.1)
+                                    XCTAssertEqual(outgoing ? cell.voiceTail.frame.maxX - body.frame.maxX : body.frame.minX - cell.voiceTail.frame.minX,
+                                                   5, accuracy: 0.1)
+                                    if duration == 4000 {
+                                        try captureCompactVoice("layout-\(category.rawValue)-\(style.rawValue)-\(outgoing)",
+                                            controller: controller, cell: cell)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    func testCompactVoiceBodyActionsKeepSelectionLongPressAndMixedFallbackPriority() throws {
+        try main {
+            try withAudioRenderer(width: 320) { controller in
+                let message = try audioMessage(duration: 4000)
+                let cell = try showAudio(message, on: controller)
+                let spy = CompactVoiceActionSpy()
+                cell.delegate = spy
+                let points = [CGPoint(x: cell.containerView.frame.minX + 3, y: cell.containerView.frame.midY),
+                    cell.voiceBubble.convert(cell.voiceBubble.durationLabel.center, to: cell),
+                    cell.voiceBubble.convert(cell.voiceBubble.stateImage.center, to: cell)]
+                for point in points {
+                    let local = cell.contentView.convert(point, from: cell)
+                    XCTAssertTrue(cell.contentView.hitTest(local, with: nil) === cell.voiceBubble)
+                    let tap = CompactVoiceTap(); tap.point = point
+                    cell.handleTapGesture(tap)
+                }
+                XCTAssertEqual(spy.messageTaps, 3)
+                XCTAssertEqual(spy.contentTaps, 0)
+                XCTAssertEqual(spy.cancelTaps, 0) // A hidden upload control cannot steal the body tap.
+                XCTAssertTrue(cell.voiceBubble.accessibilityActivate())
+                XCTAssertEqual(spy.messageTaps, 4)
+                let long = ControlledLongPress(); long.phase = .began; long.point = points[0]
+                cell.handleTapGesture(long)
+                XCTAssertEqual(spy.longTaps, 1)
+                XCTAssertEqual(spy.messageTaps, 4)
+
+                cell.delegate = controller
+                controller.bulkSelectionMode = true
+                controller.collectionView.isBulkSelectionMode = true
+                controller.didTapMessage(in: cell) // Actual selection consumer wins over playback.
+                XCTAssertTrue(controller.selectedBulkMessageSeqIds.contains(message.seqId))
+                XCTAssertNil(controller.currentOrdinaryAudio)
+                controller.collectionView.layoutIfNeeded()
+                let selected = try XCTUnwrap(controller.collectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? MessageCell)
+                XCTAssertTrue(selected.voiceBubble.accessibilityTraits.contains(.selected))
+                XCTAssertEqual(selected.voiceBubble.accessibilityHint, "轻点取消选择")
+                controller.didTapMessage(in: selected)
+                XCTAssertFalse(controller.bulkSelectionMode)
+                XCTAssertNil(controller.currentOrdinaryAudio)
+
+                let mixed = try audioMessage(duration: 4000)
+                mixed.content = Drafty(content: "保留正文 ").append(try XCTUnwrap(mixed.content))
+                let quoted = try audioMessage(duration: 4000)
+                quoted.content = Drafty.quote(quoteHeader: "合成引用", authorUid: "fixture-peer",
+                    quoteContent: Drafty(content: "保留引用")).append(try XCTUnwrap(quoted.content))
+                let multiple = try audioMessage(duration: 4000)
+                let second = try audioMessage(duration: 8000)
+                multiple.content = try XCTUnwrap(multiple.content).append(try XCTUnwrap(second.content))
+                let uploading = try audioMessage(duration: 4000, ref: URL(string: "mid:uploading"))
+                let draft = try audioMessage(duration: 4000); draft.dbStatus = .draft
+                let deleted = try audioMessage(duration: 4000); deleted.dbStatus = .deletedHard
+                for original in [mixed, quoted, multiple, uploading, draft, deleted] {
+                    XCTAssertNil(controller.compactVoiceContent(for: original))
+                    let fallback = try showAudio(original, on: controller)
+                    XCTAssertNil(fallback.compactVoiceEntityKey)
+                    XCTAssertTrue(fallback.voiceBubble.isHidden)
+                    XCTAssertTrue(fallback.voiceTail.isHidden)
+                    XCTAssertFalse(fallback.content.isHidden)
+                }
+                cell.prepareForReuse()
+                XCTAssertNil(cell.compactVoiceEntityKey)
+                XCTAssertFalse(cell.voiceBubble.accessibilityActivate())
+                XCTAssertNil(cell.audioPlayback)
+            }
+        }
+    }
+
+    func testCompactVoiceActualOwnedAVStateAndPositionReachVisibleControl() throws {
+        try main {
+            let owner = try OrdinaryAudioOwner(origin: URL(string: "https://audio-fixture.invalid/")!)
+            defer { owner.retire() }
+            let bytes = try ordinaryAAC()
+            try withOwnedAudioView(context: owner.context()) { controller in
+                let message = try audioMessage(duration: 4000)
+                message.topic = "grpAudioFixture"
+                message.content = try Drafty(plainText: " ").insertAudio(at: 0, mime: "audio/m4a", bits: bytes,
+                    preview: Data(), duration: 4000, fname: "fixture.m4a", refurl: nil, size: bytes.count)
+                controller.messages = [message]; controller.messageSeqIdIndex = [message.seqId: 0]
+                controller.collectionView.reloadData(); controller.view.layoutIfNeeded(); controller.collectionView.layoutIfNeeded()
+                let cell = try XCTUnwrap(controller.collectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? MessageCell)
+                cell.layoutIfNeeded(); cell.voiceBubble.layoutIfNeeded()
+                let originalSize = cell.containerView.bounds.size
+                XCTAssertEqual(cell.voiceBubble.playbackState, .idle)
+                XCTAssertTrue(cell.voiceBubble.accessibilityActivate()) // Original page -> owned AU -> actual AV.
+                let playback = try XCTUnwrap(controller.currentOrdinaryAudio)
+                let engine = try XCTUnwrap(playback.player)
+                try awaitMain("compact actual AV clock", seconds: 3) { engine.currentTime > 0.08 }
+                playback.observe()
+                XCTAssertEqual(cell.voiceBubble.playbackState, .playing)
+                XCTAssertEqual(cell.voiceBubble.playbackPosition, playback.position, accuracy: 0.02)
+                XCTAssertEqual(cell.voiceBubble.accessibilityValue, "正在播放")
+                cell.voiceBubble.layoutIfNeeded()
+                XCTAssertFalse(cell.voiceBubble.progressFill.isHidden)
+                XCTAssertEqual(cell.voiceBubble.progressFill.bounds.width,
+                    cell.voiceBubble.progressTrack.bounds.width * CGFloat(cell.voiceBubble.playbackPosition), accuracy: 0.5)
+                try captureCompactVoice("actual-playing", controller: controller, cell: cell)
+                let tap = CompactVoiceTap()
+                tap.point = CGPoint(x: cell.containerView.frame.minX + 3, y: cell.containerView.frame.midY)
+                cell.handleTapGesture(tap)
+                XCTAssertEqual(playback.state, .paused)
+                XCTAssertFalse(engine.isPlaying)
+                XCTAssertEqual(cell.voiceBubble.playbackState, .paused)
+                XCTAssertEqual(cell.voiceBubble.accessibilityHint, "轻点继续播放")
+                try captureCompactVoice("actual-paused", controller: controller, cell: cell)
+                XCTAssertTrue(cell.voiceBubble.accessibilityActivate())
+                XCTAssertTrue(playback.player === engine)
+                XCTAssertTrue(engine.isPlaying)
+                controller.didTapContent(in: cell, url: URL(string: "tinode:///audio/seek?key=0&pos=0.5"))
+                XCTAssertEqual(cell.voiceBubble.playbackPosition, playback.position, accuracy: 0.02)
+                XCTAssertEqual(cell.containerView.bounds.size, originalSize)
+                controller.appGoingInactive()
+                XCTAssertEqual(playback.state, .retired)
+                XCTAssertEqual(cell.voiceBubble.playbackState, .retired)
+                XCTAssertTrue(cell.voiceBubble.progressFill.isHidden)
+                XCTAssertFalse(engine.isPlaying)
+                XCTAssertEqual(cell.containerView.bounds.size, originalSize)
+            }
+        }
+    }
+
+    private func captureCompactVoice(_ name: String, controller: MessageViewController, cell: MessageCell) throws {
+        controller.view.layoutIfNeeded(); cell.layoutIfNeeded(); cell.voiceBubble.layoutIfNeeded()
+        let view = controller.view!
+        var drawn = false
+        let image = UIGraphicsImageRenderer(bounds: view.bounds).image { _ in
+            drawn = view.drawHierarchy(in: view.bounds, afterScreenUpdates: true)
+        }
+        XCTAssertTrue(drawn)
+        let png = XCTAttachment(image: image); png.name = "compact-voice-" + name; png.lifetime = .keepAlways; add(png)
+        func rect(_ value: UIView) -> [String: CGFloat] {
+            let r = value.convert(value.bounds, to: view)
+            return ["x": r.minX, "y": r.minY, "width": r.width, "height": r.height]
+        }
+        let bubble = cell.voiceBubble
+        try audioPlaybackEvidence("compact-" + name, ["scope": "original MessageCell/MessageViewLayout; synthetic message; no authenticated chat",
+            "body": rect(bubble), "tail": rect(cell.voiceTail), "duration": rect(bubble.durationLabel),
+            "icon": rect(bubble.stateImage), "progress": rect(bubble.progressFill),
+            "text": bubble.durationLabel.text ?? "", "font": bubble.durationLabel.font.pointSize,
+            "state": String(describing: bubble.playbackState), "position": bubble.playbackPosition,
+            "dark": bubble.traitCollection.userInterfaceStyle == .dark,
+            "category": bubble.traitCollection.preferredContentSizeCategory.rawValue])
+    }
+
     func testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek() async throws {
         let owner = try await MainActor.run {
             try OrdinaryAudioOwner(origin: URL(string: "https://audio-fixture.invalid/")!)
@@ -1264,6 +1469,25 @@ private final class ControlledLongPress: UILongPressGestureRecognizer {
         set { phase = newValue }
     }
     override func location(in view: UIView?) -> CGPoint { lastCoordinateView = view; return point }
+}
+
+private final class CompactVoiceTap: UITapGestureRecognizer {
+    var point = CGPoint.zero
+    override func location(in view: UIView?) -> CGPoint { point }
+}
+
+private final class CompactVoiceActionSpy: MessageCellDelegate {
+    var messageTaps = 0
+    var contentTaps = 0
+    var cancelTaps = 0
+    var longTaps = 0
+    func didLongTap(in cell: MessageCell) { longTaps += 1 }
+    func didTapMessage(in cell: MessageCell) { messageTaps += 1 }
+    func didTapContent(in cell: MessageCell, url: URL?) { contentTaps += 1 }
+    func didTapAvatar(in cell: MessageCell) {}
+    func didTapOutsideContent(in cell: MessageCell) {}
+    func didTapCancelUpload(in cell: MessageCell) { cancelTaps += 1 }
+    func didChangeAudio(in cell: MessageCell, playback: ClawAudioPlayback) {}
 }
 
 private final class VoiceDelegateSpy: SendMessageBarDelegate, PendingMessagePreviewDelegate {

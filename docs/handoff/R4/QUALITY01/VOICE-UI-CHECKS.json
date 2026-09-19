@@ -1,0 +1,62 @@
+{
+  "level": "Windows source preservation and original PDF byte comparison; no Swift build",
+  "visual_source": "89ccf1b4d34513defecccec448bf74bfed44ee65",
+  "production_paths": [
+    "Tinodios/MessageCell.swift",
+    "Tinodios/MessageViewController+MessageCellDelegate.swift",
+    "Tinodios/MessageViewController.swift",
+    "Tinodios/Supporting Files/Assets.xcassets/claw-voice-tail.imageset/Contents.json",
+    "Tinodios/Supporting Files/Assets.xcassets/claw-voice-tail.imageset/voice-tail.pdf",
+    "Tinodios/Supporting Files/Assets.xcassets/claw-voice-wave.imageset/Contents.json",
+    "Tinodios/Supporting Files/Assets.xcassets/claw-voice-wave.imageset/voice-wave.pdf"
+  ],
+  "test_path": "TinodiosUITests/VoiceLayoutTests.swift",
+  "test_git_blob": "2846234335bd21ff56f12884f8cd0145ead16e06",
+  "test_raw_sha256": "d30916d2312eb0c94104ec7a2ad366235ed469f0d0536a798ba37148850def7e",
+  "old_methods": [
+    "testOriginalNibLoadsAndResetsWithoutRecording",
+    "testContinuousAudioWidthsReachRealFormatterAndMessageCells",
+    "testAudioAddressAndPlaybackFramesNeverChangeWidthOrExpandHitTarget",
+    "testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout",
+    "testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek",
+    "testOwnedAudioActualCellsBindEntityAndRetireOnReuseAndInactive",
+    "testOwnedAudioRealHTTPRefusalAndExplicitOriginalDownload",
+    "testOwnedAudioPlaylistDataCannotReadSecondaryHTTP",
+    "testOwnedAudioMemoryLimitAndInvalidSourcesPreserveOriginalBytes",
+    "testOwnedAudioRetiredOwnerAndLateAVCallbackCannotAlterNewAttempt",
+    "testLimitFinishAndReleaseOrderingUseOriginalNibAndSubmissionDispatch",
+    "testNormalReleaseAndLockedLimitKeepExplicitSendDistinct",
+    "testRecordingStatesAndOriginalButtonsForwardActions",
+    "testDynamicTypeDarkLightAndScrollableMinimumTargets",
+    "testInputAccessoryKeyboardAppearsAndDismisses",
+    "testResetAfterGestureDoesNotReusePreviousLayout",
+    "testControlledGestureHandlerUsesSameWindowAndThresholds"
+  ],
+  "old_methods_and_helpers_lf_unchanged": true,
+  "added_methods": [
+    "testCompactVoiceOriginalRendererKeepsContinuousBodyAndReadableAXGeometry",
+    "testCompactVoiceBodyActionsKeepSelectionLongPressAndMixedFallbackPriority",
+    "testCompactVoiceActualOwnedAVStateAndPositionReachVisibleControl"
+  ],
+  "method_count": 20,
+  "expected_native_total": 330,
+  "navigation_methods_separate": 3,
+  "static_scripts": {
+    "passed": 44,
+    "failed": 0
+  },
+  "assets": [
+    {
+      "path": "Tinodios/Supporting Files/Assets.xcassets/claw-voice-wave.imageset/voice-wave.pdf",
+      "bytes": 5902,
+      "sha256": "92f2d322fe650aa7e75e3341d01f7d41cb2c188ef2a8cfccbc9dcb3ad575fac6"
+    },
+    {
+      "path": "Tinodios/Supporting Files/Assets.xcassets/claw-voice-tail.imageset/voice-tail.pdf",
+      "bytes": 5390,
+      "sha256": "d15de7730a7cd4bf4aefe750378bbc4f2d5bb24089b124f3e7b9bb798103b443"
+    }
+  ],
+  "swift_uikit_av_execution": "NOT_RUN",
+  "screenshots": "Prepared as XCTest keepAlways PNG/JSON; not yet generated for this candidate"
+}
