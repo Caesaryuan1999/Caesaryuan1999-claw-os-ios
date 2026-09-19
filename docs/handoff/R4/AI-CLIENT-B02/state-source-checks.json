@@ -1,0 +1,66 @@
+{
+  "base": "2e758cfc76e01f99a9a5fef7effd7f7c5f13eeff",
+  "evidence_level": "Windows source comparison; Swift/native NOT_RUN",
+  "old_swift_files_unchanged": 20,
+  "only_one_selector_added": true,
+  "test_target": "TinodiosVoiceLayoutTests",
+  "new_methods": [
+    "testExplicitBServiceRoleByteBoundariesAndMaximumEscapedPage",
+    "testAllPagesStageAtomicallyRejectDuplicatesAndBoundSnapshotRestarts",
+    "testLatestRealRunReusesEarlierQuestionAndHardRejectsAllGenerationEntrypoints",
+    "testAccountGlobalRevisionDoesNotRequireOldTerminalOverlayAndAlignmentIsFinite",
+    "testReaderLeaseHandoverAndStopUnknownSurviveLeavingAndBlockAnotherConversation",
+    "testLateStopCannotOverwriteReplacementRunAndCompletedIsNotStopped",
+    "testDeletionPausesCurrentReaderAndTombstoneOfOtherConversationDoesNotClearIt",
+    "testMissingBindingRereadsOnceInvalidIdentityRejectsAndLegacyStaysHistoryOnly",
+    "testStreamPrefixUpdatesExistingAnswerAndReconnectNeverDoubleAppends",
+    "test401AndSynchronousRetirementHideKnownContentWithoutLogoutOrNewRequest",
+    "testNewHistoryTokenWaitsForUnknownStopThenBindsLatestRealRun",
+    "testCapabilityDowngradePausesReadAndStopButManualNegotiationPreservesUnknown"
+  ],
+  "inherited_native_expected": 295,
+  "candidate_native_expected": 307,
+  "navigation_expected": 3,
+  "paths": [
+    {
+      "path": "Tinodios/ClawAssistantModels.swift",
+      "bytes": 18206,
+      "raw_sha256": "2235da00cba0fc5e72904a111c4e60f3e097b53e937a22f07661593dbf07ae28"
+    },
+    {
+      "path": "Tinodios/ClawAssistantService.swift",
+      "bytes": 19290,
+      "raw_sha256": "b813fb2ce41d547b92f1dd51762151126b93e9b7d5186b50c91a845be37be292"
+    },
+    {
+      "path": "Tinodios/ClawAssistantRun.swift",
+      "bytes": 24998,
+      "raw_sha256": "91ca11e828da2fa6021555df47a9541912ef651e65989e817672dafebe3c4a1a"
+    },
+    {
+      "path": "Tinodios/ClawAssistantSession.swift",
+      "bytes": 16107,
+      "raw_sha256": "6f9d67d6bde802d5e9c574edf52c718e855058fb168b18b76980fe6181f4e422"
+    },
+    {
+      "path": "Tinodios/ClawAssistantHistory.swift",
+      "bytes": 18940,
+      "raw_sha256": "03b6865c710d4afbcef139f2d571ab74a2bfef025f673d7e800cb990c2e86f3c"
+    },
+    {
+      "path": "TinodiosUITests/AssistantKnownRunTests.swift",
+      "bytes": 27170,
+      "raw_sha256": "a31e137f9614bde6febcdc6d564ab29ca28a902956e1842f2e471b047cca73a3"
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "bytes": 134958,
+      "raw_sha256": "02572decc50794f126949339d81495d16574a43aae023dcc7c88b9a78e8925b1"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "bytes": 24567,
+      "raw_sha256": "1fddddf2f26aafd7c95de8675e0042c60148e572119d67c408e452b76b1079cf"
+    }
+  ]
+}

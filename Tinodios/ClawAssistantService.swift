@@ -89,6 +89,29 @@ final class ClawAssistantService {
     }
 
     @discardableResult
+    func messagesB(_ id: String, after: String = "0", revision: String? = nil, capabilities: ClawAssistantCapabilities,
+                   completion: @escaping (Result<ClawAssistantBMessagePage, ClawAssistantError>) -> Void)
+        -> ClawAssistantCancellation? {
+        guard (try? capabilities.validateRuns()) != nil, capabilities.history.available,
+              ClawAssistantWire.uuid(id), ClawAssistantWire.decimal(after),
+              revision.map(ClawAssistantWire.decimal) ?? (after == "0") else {
+            completion(.failure(.invalidResponse)); return nil
+        }
+        var query = [URLQueryItem(name: "limit", value: "10"), URLQueryItem(name: "after_seq", value: after)]
+        if let revision = revision { query.append(URLQueryItem(name: "snapshot_revision", value: revision)) }
+        return request("conversations/\(id)/messages", query: query,
+                       completion: { (result: Result<ClawAssistantBMessagePage, ClawAssistantError>) in
+            completion(result.flatMap { page in
+                guard page.conversation_id == id, revision == nil || revision == page.snapshot_revision,
+                      page.items.first.map({ ClawAssistantWire.less(after, $0.seq) }) ?? page.next_after_seq.isEmpty else {
+                    return .failure(.invalidResponse)
+                }
+                return .success(page)
+            })
+        })
+    }
+
+    @discardableResult
     func delete(_ id: String, completion: @escaping (Result<ClawAssistantDeleteReceipt, ClawAssistantError>) -> Void)
         -> ClawAssistantCancellation? {
         guard ClawAssistantWire.uuid(id) else { completion(.failure(.invalidResponse)); return nil }

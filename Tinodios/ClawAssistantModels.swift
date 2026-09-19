@@ -353,3 +353,65 @@ struct ClawAssistantDeleteReceipt: ClawAssistantValidated {
         }
     }
 }
+
+/// Explicit B history; never broadens the A decoder or its state vocabulary.
+struct ClawAssistantBMessage: Decodable, Equatable {
+    let message_id: String
+    let conversation_id: String
+    let run_id: String
+    let seq: String
+    let role: String
+    let text: String
+    let state: String
+    let created_at: String
+    let updated_at: String
+    func validate() throws {
+        guard ClawAssistantWire.uuid(message_id), ClawAssistantWire.uuid(conversation_id),
+              run_id.isEmpty || ClawAssistantWire.uuid(run_id), ClawAssistantWire.decimal(seq), seq != "0",
+              ClawAssistantWire.date(created_at) != nil, ClawAssistantWire.date(updated_at) != nil else {
+            throw ClawAssistantError.invalidResponse
+        }
+        let states = role == "user" ? ["partial", "interrupted", "completed"] :
+            ["partial", "completed", "stopped", "interrupted", "failed"]
+        guard ["user", "assistant"].contains(role), states.contains(state) else { throw ClawAssistantError.incompatible }
+        guard text.utf8.count <= (role == "user" ? 32000 : 262144) else { throw ClawAssistantError.responseTooLarge }
+    }
+}
+
+struct ClawAssistantBMessagePage: ClawAssistantValidated {
+    let conversation_id: String
+    let items: [ClawAssistantBMessage]
+    let snapshot_revision: String
+    let next_after_seq: String
+    func validate() throws {
+        guard ClawAssistantWire.uuid(conversation_id), ClawAssistantWire.decimal(snapshot_revision), items.count <= 10,
+              next_after_seq.isEmpty || ClawAssistantWire.decimal(next_after_seq) else { throw ClawAssistantError.invalidResponse }
+        var previous = "0"; var ids = Set<String>()
+        for item in items {
+            try item.validate()
+            guard item.conversation_id == conversation_id, ClawAssistantWire.less(previous, item.seq),
+                  ids.insert(item.message_id).inserted else { throw ClawAssistantError.invalidResponse }
+            previous = item.seq
+        }
+        guard next_after_seq.isEmpty || next_after_seq == items.last?.seq else { throw ClawAssistantError.invalidResponse }
+    }
+}
+
+/// Value-only rendering snapshot. It never supplies a wire cursor or invents a message ID.
+struct ClawAssistantMessageViewValue: Equatable {
+    let id: String
+    let role: String
+    let text: String
+    let state: String?
+    static func caption(_ state: String) -> String {
+        switch state {
+        case "queued": return "正在等待回答"
+        case "running": return "正在回答"
+        case "completed": return "回答已完成"
+        case "stopped": return "已停止回答"
+        case "interrupted": return "回答已中断"
+        case "failed": return "回答未完成"
+        default: return "回答尚未完成"
+        }
+    }
+}

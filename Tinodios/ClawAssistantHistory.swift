@@ -22,6 +22,9 @@ final class ClawAssistantHistory {
     private(set) var hasListSnapshot = false
     private(set) var conversations: [ClawAssistantConversation] = []
     private(set) var details: [String: [ClawAssistantMessage]] = [:]
+    private(set) var bDetails: [String: [ClawAssistantBMessage]] = [:]
+    private(set) var bDetailRevisions: [String: String] = [:]
+    private(set) var bSnapshotTokens: [String: UUID] = [:]
     private(set) var detailErrors: [String: ClawAssistantError] = [:]
     private(set) var detailLoading = Set<String>()
     private(set) var deletions: [String: Deletion] = [:]
@@ -53,11 +56,16 @@ final class ClawAssistantHistory {
         let id = UUID(); observers[id] = callback; return id
     }
     func removeObserver(_ id: UUID) { observers.removeValue(forKey: id) }
-    private func changed() { Array(observers.values).forEach { $0() } }
+    private func changed() {
+        // receive has released SDK/Cache/scope locks before this one-way coordination.
+        session?.historyDidChange(self)
+        Array(observers.values).forEach { $0() }
+    }
     private func clear() {
         precondition(Thread.isMainThread)
         capabilityRead = UUID(); listRead = UUID(); detailReads.removeAll(); deleteWrites.removeAll()
         capabilities = nil; conversations.removeAll(); details.removeAll(); tombstones.removeAll()
+        bDetails.removeAll(); bDetailRevisions.removeAll(); bSnapshotTokens.removeAll()
         deletions.removeAll(); detailErrors.removeAll(); detailLoading.removeAll()
         hasListSnapshot = false; capabilityLoading = false; listLoading = false
         capabilityError = .signInRequired; listError = .signInRequired
@@ -96,6 +104,16 @@ final class ClawAssistantHistory {
                 }
             }
         }
+    }
+    /// The known Run's explicit manual negotiation completed on this same scope.
+    func acceptKnownCapabilities(_ capabilities: ClawAssistantCapabilities) {
+        precondition(Thread.isMainThread)
+        guard let session = session, (try? capabilities.validateRuns()) != nil else { return }
+        let applied = session.withCurrent { () -> Bool in
+            self.capabilityRead = UUID(); self.capabilityLoading = false
+            self.capabilities = capabilities; self.capabilityError = nil; return true
+        } ?? false
+        if applied { changed() }
     }
 
     func loadConversations() {
@@ -149,7 +167,12 @@ final class ClawAssistantHistory {
               deletions[conversationID] != .pending else { return }
         let id = UUID(); detailReads[conversationID] = id
         detailErrors[conversationID] = nil; detailLoading.insert(conversationID); changed()
-        messagePage(conversationID, id: id, after: "0", revision: nil, staged: [], restarts: 0, pages: 0, bytes: 0)
+        if let capabilities = capabilities, (try? capabilities.validateRuns()) != nil {
+            bMessagePage(conversationID, capabilities: capabilities, id: id, after: "0", revision: nil,
+                         staged: [], restarts: 0, pages: 0, bytes: 0)
+        } else {
+            messagePage(conversationID, id: id, after: "0", revision: nil, staged: [], restarts: 0, pages: 0, bytes: 0)
+        }
     }
     private func messagePage(_ conversationID: String, id: UUID, after: String, revision: String?,
                              staged: [ClawAssistantMessage], restarts: Int, pages: Int, bytes: Int) {
@@ -185,9 +208,60 @@ final class ClawAssistantHistory {
                     let combined = staged + page.items
                     if page.next_after_seq.isEmpty {
                         self.details[conversationID] = combined
+                        self.bDetails[conversationID] = nil; self.bDetailRevisions[conversationID] = nil
+                        self.bSnapshotTokens[conversationID] = nil
                         self.detailLoading.remove(conversationID); self.detailErrors[conversationID] = nil
                     } else {
                         next = { [weak self] in self?.messagePage(conversationID, id: id, after: page.next_after_seq,
+                            revision: page.snapshot_revision, staged: combined, restarts: restarts,
+                            pages: pages + 1, bytes: total) }
+                    }
+                }
+            }
+            DispatchQueue.main.async { next?() }
+        }
+    }
+
+    private func bMessagePage(_ conversationID: String, capabilities: ClawAssistantCapabilities, id: UUID, after: String, revision: String?,
+                             staged: [ClawAssistantBMessage], restarts: Int, pages: Int, bytes: Int) {
+        guard let session = session, session.isCurrent, detailReads[conversationID] == id else { return }
+        guard pages < 1000 else {
+            detailLoading.remove(conversationID); detailErrors[conversationID] = .responseTooLarge; changed(); return
+        }
+        session.service.messagesB(conversationID, after: after, revision: revision, capabilities: capabilities) { [weak self] result in
+            var next: (() -> Void)?
+            self?.receive(result, operation: { [weak self] in
+                self?.detailReads[conversationID] == id && self?.tombstones.contains(conversationID) == false
+            }) { [weak self] result in
+                guard let self = self else { return }
+                switch result {
+                case .failure(.historyChanged) where restarts < 2:
+                    next = { [weak self] in self?.bMessagePage(conversationID, capabilities: capabilities, id: id, after: "0", revision: nil,
+                        staged: [], restarts: restarts + 1, pages: 0, bytes: 0) }
+                case .failure(.server(410, "conversation_deleted")):
+                    self.confirmDeleted(conversationID)
+                case .failure(let error):
+                    self.detailLoading.remove(conversationID); self.detailErrors[conversationID] = error
+                case .success(let page):
+                    let total = bytes + page.items.reduce(0) { $0 + $1.text.utf8.count + 1024 }
+                    let knownIDs = Set(staged.map { $0.message_id })
+                    guard page.conversation_id == conversationID,
+                          revision == nil || page.snapshot_revision == revision,
+                          page.items.first.map({ ClawAssistantWire.less(after, $0.seq) }) ?? page.next_after_seq.isEmpty,
+                          !page.items.contains(where: { knownIDs.contains($0.message_id) }),
+                          total <= 64 * 1024 * 1024 else {
+                        self.detailLoading.remove(conversationID); self.detailErrors[conversationID] = .invalidResponse
+                        return
+                    }
+                    let combined = staged + page.items
+                    if page.next_after_seq.isEmpty {
+                        self.bDetails[conversationID] = combined
+                        self.bDetailRevisions[conversationID] = page.snapshot_revision
+                        self.bSnapshotTokens[conversationID] = UUID()
+                        self.details[conversationID] = nil
+                        self.detailLoading.remove(conversationID); self.detailErrors[conversationID] = nil
+                    } else {
+                        next = { [weak self] in self?.bMessagePage(conversationID, capabilities: capabilities, id: id, after: page.next_after_seq,
                             revision: page.snapshot_revision, staged: combined, restarts: restarts,
                             pages: pages + 1, bytes: total) }
                     }
@@ -229,6 +303,14 @@ final class ClawAssistantHistory {
         deleteWrites[id] = UUID() // A late uncertain reply cannot undo an authoritative tombstone.
         conversations.removeAll { $0.conversation_id == id }
         details[id] = nil; detailErrors[id] = nil; detailLoading.remove(id); detailReads[id] = UUID()
+        bDetails[id] = nil; bDetailRevisions[id] = nil; bSnapshotTokens[id] = nil
+    }
+    /// Only a validated Run 410 reaches here. Commit the tombstone before notifying Run/UI.
+    func acceptKnownRunTombstone(_ id: String) {
+        precondition(Thread.isMainThread)
+        guard let session = session, !tombstones.contains(id) else { return }
+        let applied = session.withCurrent { self.confirmDeleted(id); return true } ?? false
+        if applied { changed() }
     }
     func reconcileDeletion(_ id: String) {
         precondition(Thread.isMainThread)

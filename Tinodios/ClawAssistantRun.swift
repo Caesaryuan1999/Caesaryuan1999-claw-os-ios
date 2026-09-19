@@ -10,7 +10,7 @@ private final class ClawAssistantReadDelay: ClawAssistantCancellation {
     func cancel() { item.cancel() }
 }
 
-/// B1 is not attached to UI. No disk journal or automatic POST replay exists here.
+/// B1 submission and B02 known-run reading share transport, not generation authority.
 /// All entry points and state observations are on main; SDK/Cache locks only protect state commits.
 final class ClawAssistantRun {
     enum Submission: Equatable { case idle, pending, unknown, accepted, rejected(ClawAssistantError) }
@@ -30,7 +30,10 @@ final class ClawAssistantRun {
         var terminal: Bool { ClawAssistantRunWire.terminal.contains(state) }
     }
     typealias Schedule = (TimeInterval, @escaping () -> Void) -> ClawAssistantCancellation
-    private let session: ClawAssistantSession
+    private weak var session: ClawAssistantSession?
+    private let knownRunsOnly: Bool
+    private let validateBinding: ((ClawAssistantRunSnapshot) -> ClawAssistantError?)?
+    private let capabilitiesChanged: ((ClawAssistantCapabilities) -> Void)?
     private var capabilities: ClawAssistantCapabilities
     private let schedule: Schedule
     private var retirement: NSObjectProtocol?
@@ -46,6 +49,8 @@ final class ClawAssistantRun {
     private var visible = false
     private var retired = false
     private var tombstoned = false
+    private var deletionPaused = false
+    private var capabilityPaused = false
     private var failures = 0
     private var seen: [String: ClawAssistantRunEvent] = [:]
     private var readAddress: (conversationID: String, runID: String)?
@@ -56,12 +61,19 @@ final class ClawAssistantRun {
     private(set) var stopping = Stop.idle
     private(set) var lastError: ClawAssistantError?
     var changed: (() -> Void)?
+    var isDeleted: Bool { tombstoned }
+    var hasUnresolvedStop: Bool { stopping == .pending || stopping == .unknown }
 
     init(session: ClawAssistantSession, capabilities: ClawAssistantCapabilities,
+         knownRunsOnly: Bool = false,
+         validateBinding: ((ClawAssistantRunSnapshot) -> ClawAssistantError?)? = nil,
+         capabilitiesChanged: ((ClawAssistantCapabilities) -> Void)? = nil,
          schedule: @escaping Schedule = { ClawAssistantReadDelay(delay: $0, work: $1) }) throws {
         try capabilities.validateRuns()
         guard session.isCurrent else { throw ClawAssistantError.retired }
         self.session = session; self.capabilities = capabilities; self.schedule = schedule
+        self.knownRunsOnly = knownRunsOnly; self.validateBinding = validateBinding
+        self.capabilitiesChanged = capabilitiesChanged
         retirement = NotificationCenter.default.addObserver(forName: ClawAssistantSession.changed,
             object: nil, queue: .main) { [weak self, weak session] note in
                 guard let session = session, note.object as? ClawAssistantSession === session else { return }
@@ -72,14 +84,14 @@ final class ClawAssistantRun {
         if let retirement = retirement { NotificationCenter.default.removeObserver(retirement) }
         readTask?.cancel(); streamTask?.cancel(); writeTask?.cancel(); stopTask?.cancel(); delayTask?.cancel()
     }
-    private var current: Bool { !retired && !tombstoned && session.isCurrent }
+    private var current: Bool { !retired && !tombstoned && (session?.isCurrent ?? false) }
     private func notify() { changed?() }
 
     /// Explicit user action only. Generation remains disabled in the A UI.
     @discardableResult
     func submit(text: String, conversationID: String? = nil) -> Bool {
         precondition(Thread.isMainThread)
-        guard current, capabilities.generation.available, submission != .pending, submission != .unknown,
+        guard !knownRunsOnly, current, capabilities.generation.available, submission != .pending, submission != .unknown,
               receipt == nil || projection?.terminal == true,
               stopping != .pending, stopping != .unknown else { return false }
         let cid = conversationID ?? UUID().uuidString.lowercased()
@@ -91,7 +103,7 @@ final class ClawAssistantRun {
     @discardableResult
     func retryAnswer(_ original: ClawAssistantRunSnapshot, history: [ClawAssistantMessage]) -> Bool {
         precondition(Thread.isMainThread)
-        guard current, capabilities.generation.available, submission != .pending, submission != .unknown,
+        guard !knownRunsOnly, current, capabilities.generation.available, submission != .pending, submission != .unknown,
               stopping != .pending, stopping != .unknown,
               receipt == nil || projection?.terminal == true,
               !original.receipt.isLegacy, ["interrupted", "failed"].contains(original.receipt.state),
@@ -121,11 +133,11 @@ final class ClawAssistantRun {
     @discardableResult
     func retrySubmission() -> Bool {
         precondition(Thread.isMainThread)
-        guard current, submission == .unknown, ticket != nil, receipt == nil else { return false }
+        guard !knownRunsOnly, current, submission == .unknown, ticket != nil, receipt == nil else { return false }
         dispatchSubmission(retry: true); return true
     }
     private func dispatchSubmission(retry: Bool) {
-        guard current, let ticket = ticket else { return }
+        guard !knownRunsOnly, current, let session = session, let ticket = ticket else { return }
         let op = UUID(); writeOperation = op
         submission = .pending; lastError = nil; notify()
         guard current, writeOperation == op else { return }
@@ -171,31 +183,36 @@ final class ClawAssistantRun {
     @discardableResult
     func recover(conversationID: String, runID: String) -> Bool {
         precondition(Thread.isMainThread)
-        guard current, ClawAssistantWire.uuid(conversationID), ClawAssistantWire.uuid(runID),
+        guard current, !deletionPaused, !capabilityPaused, ClawAssistantWire.uuid(conversationID), ClawAssistantWire.uuid(runID),
               submission != .pending, submission != .unknown,
               receipt.map({ $0.conversation_id == conversationID && $0.run_id == runID }) ?? true else { return false }
         read(conversationID, runID: runID); return true
     }
     func recover() {
         precondition(Thread.isMainThread)
-        guard current else { return }
+        guard current, !deletionPaused, !capabilityPaused else { return }
         if let receipt = receipt { read(receipt.conversation_id, runID: receipt.run_id) }
         else if let address = readAddress { read(address.conversationID, runID: address.runID) }
     }
     /// Explicit manual recovery re-negotiates capabilities; it never retries a POST.
     func renegotiateAndRecover() {
         precondition(Thread.isMainThread)
-        guard current, submission != .pending, submission != .unknown else { return }
+        guard current, !deletionPaused, let session = session,
+              submission != .pending, submission != .unknown else { return }
         cancelReads()
         let op = readOperation
         readTask = session.service.capabilities { [weak self] result in
             self?.receive(result, valid: { $0.readOperation == op }) { model, result in
                 switch result {
                 case .success(let capabilities):
-                    do { try capabilities.validateRuns() }
+                    do { try capabilities.validateRuns(); guard capabilities.history.available else { throw ClawAssistantError.unavailable } }
                     catch { model.lastError = .incompatible; return nil }
-                    model.capabilities = capabilities
-                    return { [weak model] in model?.recover() }
+                    model.capabilities = capabilities; model.capabilityPaused = false
+                    return { [weak model] in
+                        guard let model = model else { return }
+                        model.capabilitiesChanged?(capabilities)
+                        model.recover()
+                    }
                 case .failure(let error): model.lastError = error; return nil
                 }
             }
@@ -208,6 +225,28 @@ final class ClawAssistantRun {
         if !value { cancelReads() }
         else if current, receipt != nil || readAddress != nil { recover() }
     }
+    /// Deletion is independent of an already dispatched stop. Pause readers only.
+    func setDeletionPaused(_ value: Bool) {
+        precondition(Thread.isMainThread)
+        guard deletionPaused != value else { return }
+        deletionPaused = value
+        if value { cancelReads() }
+        else if visible { recover() }
+    }
+    /// Capability loss pauses reads and future stops without erasing an uncertain stop.
+    func updateReadCapabilities(_ value: ClawAssistantCapabilities?) {
+        precondition(Thread.isMainThread)
+        guard let value = value, (try? value.validateRuns()) != nil, value.history.available else {
+            capabilityPaused = true; cancelReads(); lastError = .unavailable; return
+        }
+        let resume = capabilityPaused
+        let streamDisabled = capabilities.stream.available && !value.stream.available
+        capabilityPaused = false; capabilities = value
+        if streamDisabled {
+            cancelReads()
+            if projection?.terminal == false { lastError = .server(503, "history_unavailable") }
+        } else if resume, visible { recover() }
+    }
     private func cancelReads() {
         readOperation = UUID()
         let tasks = [readTask, streamTask, delayTask]
@@ -215,6 +254,7 @@ final class ClawAssistantRun {
         tasks.forEach { $0?.cancel() }
     }
     private func read(_ cid: String, runID: String) {
+        guard current, !deletionPaused, !capabilityPaused, let session = session else { return }
         cancelReads()
         readAddress = (cid, runID)
         let op = readOperation
@@ -222,6 +262,9 @@ final class ClawAssistantRun {
             self?.receive(result, valid: { $0.readOperation == op }) { model, result in
                 switch result {
                 case .success(let snapshot):
+                    if let error = model.validateBinding?(snapshot) {
+                        return { [weak model] in model?.readFailed(error) }
+                    }
                     guard model.install(snapshot, cid: cid, rid: runID) else {
                         return { [weak model] in model?.readFailed(.invalidResponse) }
                     }
@@ -253,7 +296,8 @@ final class ClawAssistantRun {
             a.isLegacy == b.isLegacy
     }
     private func openStream() {
-        guard current, visible, let value = projection, !value.terminal, !value.receipt.isLegacy else { return }
+        guard current, !deletionPaused, !capabilityPaused, visible, let session = session,
+              let value = projection, !value.terminal, !value.receipt.isLegacy else { return }
         guard capabilities.stream.available else {
             lastError = .server(503, "history_unavailable"); notify(); return
         }
@@ -281,7 +325,7 @@ final class ClawAssistantRun {
                     case .deadline: self.recover() // Normal rotation never resets consecutive failures.
                     case .eof: self.readFailed(.transport)
                     case .failure(let error):
-                        if case .server(401, _) = error { self.session.blockAuthorization(); self.retire() }
+                        if case .server(401, _) = error { self.session?.blockAuthorization(); self.retire() }
                         else if case .server(410, _) = error { self.retireDeleted() }
                         else { self.readFailed(error) }
                     }
@@ -311,7 +355,8 @@ final class ClawAssistantRun {
     private func readFailed(_ error: ClawAssistantError) {
         guard current else { return }
         cancelReads(); lastError = error; notify()
-        guard visible, readAddress != nil, projection?.terminal != true else { return }
+        guard current, !deletionPaused, !capabilityPaused, visible, readAddress != nil, projection?.terminal != true else { return }
+        if knownRunsOnly, error == .historyChanged || error == .invalidResponse { return }
         if case .server(let status, _) = error, status == 403 || status == 404 { return }
         guard failures < 3 else { return }
         let delays: [TimeInterval] = [1, 2, 4]
@@ -325,7 +370,8 @@ final class ClawAssistantRun {
     @discardableResult
     func stop() -> Bool {
         precondition(Thread.isMainThread)
-        guard current, let value = projection, !value.terminal, !value.receipt.isLegacy, stopping != .pending else { return false }
+        guard current, !deletionPaused, !capabilityPaused, let session = session,
+              let value = projection, !value.terminal, !value.receipt.isLegacy, stopping != .pending else { return false }
         let wasUnknown = stopping == .unknown
         let op = UUID(); stopOperation = op; stopping = .pending; notify()
         guard current, stopOperation == op else { return false }
@@ -337,6 +383,7 @@ final class ClawAssistantRun {
                 }) { model, result in
                     if case .success(let snapshot) = result, snapshot.receipt.isTerminal,
                        model.sameRunIdentity(snapshot.receipt, value.receipt),
+                       model.validateBinding?(snapshot) == nil,
                        model.install(snapshot, cid: value.receipt.conversation_id, rid: value.receipt.run_id) {
                         model.stopping = .confirmed; model.lastError = nil; model.failures = 0
                         return { [weak model] in model?.cancelReads() }
@@ -375,10 +422,11 @@ final class ClawAssistantRun {
             guard let self = self else { return }
             guard self.current else { self.retire(); return }
             guard valid(self) else { return }
-            if case .failure(.server(401, _)) = result { self.session.blockAuthorization(); self.retire(); return }
+            guard let session = self.session else { self.retire(); return }
+            if case .failure(.server(401, _)) = result { session.blockAuthorization(); self.retire(); return }
             if case .failure(.server(410, _)) = result { self.retireDeleted(); return }
             var next: (() -> Void)?
-            let committed = self.session.withCurrent { () -> Bool in
+            let committed = session.withCurrent { () -> Bool in
                 guard valid(self), !self.retired, !self.tombstoned else { return false }
                 next = apply(self, result); return true
             } ?? false
