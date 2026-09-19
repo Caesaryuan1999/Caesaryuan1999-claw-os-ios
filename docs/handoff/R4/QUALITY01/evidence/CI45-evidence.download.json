@@ -1,0 +1,14 @@
+{
+  "artifact": 10592068258,
+  "sha": "25608fd260ae08a83d60bda192571367b7836ed6",
+  "bytes": 814708,
+  "sha256": "9be4f57715600f197d07bc1c35cf8b9792d3b2056efc3630ccdce3c6b2fe94d9",
+  "output": "docs\\handoff\\R4\\QUALITY01\\evidence\\CI45-evidence.zip",
+  "selected_members": [
+    "ios-01-a-20260919-211837/sdk-summary.err",
+    "ios-01-a-20260919-211837/sdk-summary.json",
+    "ios-01-a-20260919-211837/storage-summary.err",
+    "ios-01-a-20260919-211837/storage-summary.json",
+    "licenses/license-manifest.json"
+  ]
+}

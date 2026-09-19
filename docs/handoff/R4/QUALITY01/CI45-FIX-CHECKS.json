@@ -1,0 +1,31 @@
+{
+  "base": "25608fd260ae08a83d60bda192571367b7836ed6",
+  "source": "TinodiosUITests/AssistantKnownRunTests.swift",
+  "inverse_exact": true,
+  "methods_unchanged": [
+    "testExplicitBServiceRoleByteBoundariesAndMaximumEscapedPage",
+    "testAllPagesStageAtomicallyRejectDuplicatesAndBoundSnapshotRestarts",
+    "testLatestRealRunReusesEarlierQuestionAndHardRejectsAllGenerationEntrypoints",
+    "testAccountGlobalRevisionDoesNotRequireOldTerminalOverlayAndAlignmentIsFinite",
+    "testReaderLeaseHandoverAndStopUnknownSurviveLeavingAndBlockAnotherConversation",
+    "testLateStopCannotOverwriteReplacementRunAndCompletedIsNotStopped",
+    "testDeletionPausesCurrentReaderAndTombstoneOfOtherConversationDoesNotClearIt",
+    "testMissingBindingRereadsOnceInvalidIdentityRejectsAndLegacyStaysHistoryOnly",
+    "testStreamPrefixUpdatesExistingAnswerAndReconnectNeverDoubleAppends",
+    "test401AndSynchronousRetirementHideKnownContentWithoutLogoutOrNewRequest",
+    "testNewHistoryTokenWaitsForUnknownStopThenBindsLatestRealRun",
+    "testCapabilityDowngradePausesReadAndStopButManualNegotiationPreservesUnknown",
+    "testHiddenHistoryCompletionRegistersAddressAndNextLeaseStartsExactlyOneGet"
+  ],
+  "method_count": 13,
+  "assertions_preserved": true,
+  "added_precondition": "XCTUnwrap captured callback result before existing ThrowsError assertion",
+  "complete_compile_log_lines": 17107,
+  "complete_compile_log_errors": [
+    "/Users/runner/work/Caesaryuan1999-claw-os-ios/Caesaryuan1999-claw-os-ios/TinodiosUITests/AssistantKnownRunTests.swift:100:67: error: invalid conversion from throwing function of type '(Result<ClawAssistantBMessagePage, ClawAssistantError>) throws -> Void' to non-throwing function type '(Result<ClawAssistantBMessagePage, ClawAssistantError>) -> Void'"
+  ],
+  "log_sha256": "99615c2c9ae172a6dd95ca43225a6baa7236935acbcae4328c1fcb8d25ef801d",
+  "native_execution": "NOT_RUN on successor; CI45 SDK44 pass, storage0 executed at compile failure",
+  "expected_cumulative_native": 327,
+  "expected_navigation": 3
+}

@@ -97,10 +97,13 @@ final class AssistantKnownRunTests: XCTestCase {
             var called = false
             let a: ClawAssistantCapabilities = try AssistantBFixture.decode(AssistantFixture.capabilities)
             let count = AssistantFixtureProtocol.requests.count
+            var rejection: Result<ClawAssistantBMessagePage, ClawAssistantError>?
             fixture.scope.service.messagesB(cid, capabilities: a) { result in
-                called = true; XCTAssertThrowsError(try result.get())
+                called = true; rejection = result
             }
             XCTAssertTrue(called); XCTAssertEqual(AssistantFixtureProtocol.requests.count, count)
+            let result = try XCTUnwrap(rejection)
+            XCTAssertThrowsError(try result.get())
         }
     }
 
