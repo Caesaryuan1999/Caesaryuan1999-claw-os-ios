@@ -3,9 +3,10 @@
 // no chat route, credentials, microphone, recording, upload, or synthetic login.
 import XCTest
 import AVFoundation
+import Network
 import UIKit
 import UIKit.UIGestureRecognizerSubclass
-import TinodiosDB
+@testable import TinodiosDB
 import TinodeSDK
 @testable import Tinodios
 
@@ -408,6 +409,325 @@ final class VoiceLayoutTests: XCTestCase {
                 }
             }
         }
+    }
+
+
+    func testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek() throws {
+        try main {
+            let owner = try OrdinaryAudioOwner(origin: URL(string: "https://audio-fixture.invalid/")!)
+            let context = try owner.context()
+            let bytes = try ordinaryAAC()
+            let source = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.mpeg-4-audio")
+            source.name = "ordinary-audio-source-aac"; source.lifetime = .keepAlways; add(source)
+            let playback = try XCTUnwrap(ClawAudioPlayback(context: context, key: 0, reference: nil,
+                bytes: bytes, name: "voice.m4a", scopeIsCurrent: { true }))
+            defer { playback.retire(); owner.retire() }
+            playback.toggle()
+            XCTAssertEqual(playback.state, .playing)
+            let engine = try XCTUnwrap(playback.player)
+            try awaitMain("real AAC clock", seconds: 3) { engine.isPlaying && engine.currentTime > 0.08 }
+            let actual = engine.currentTime
+            playback.toggle()
+            XCTAssertEqual(playback.state, .paused)
+            XCTAssertFalse(engine.isPlaying)
+            let paused = engine.currentTime
+            try observeOrdinaryAudio(seconds: 0.25) { XCTAssertEqual(engine.currentTime, paused, accuracy: 0.015) }
+            playback.seek(to: .nan)
+            XCTAssertEqual(engine.currentTime, paused, accuracy: 0.015)
+            playback.seek(to: 0.5)
+            XCTAssertEqual(playback.position, 0.5, accuracy: 0.02)
+            let seeked = engine.currentTime
+            playback.toggle()
+            XCTAssertTrue(playback.player === engine)
+            try awaitMain("same AAC engine resumes", seconds: 3) { engine.currentTime > seeked + 0.08 }
+            playback.seek(to: -1)
+            XCTAssertGreaterThanOrEqual(playback.position, 0)
+            playback.seek(to: 2)
+            XCTAssertLessThanOrEqual(playback.position, 1)
+            let finished = try XCTUnwrap(ClawAudioPlayback(context: context, key: 0, reference: nil,
+                bytes: ordinaryAAC(seconds: 1), name: "finished.m4a", scopeIsCurrent: { true }))
+            defer { finished.retire() }
+            finished.toggle()
+            let finishedEngine = try XCTUnwrap(finished.player)
+            try awaitMain("actual AAC finish delegate", seconds: 3) { finished.state == .ended }
+            finished.seek(to: 0.5)
+            XCTAssertEqual(finished.state, .paused)
+            XCTAssertFalse(finishedEngine.isPlaying)
+            XCTAssertEqual(finished.position, 0.5, accuracy: 0.02)
+            let endedSeek = finishedEngine.currentTime
+            finished.toggle()
+            XCTAssertTrue(finished.player === finishedEngine)
+            XCTAssertGreaterThanOrEqual(finishedEngine.currentTime, endedSeek - 0.02)
+            try awaitMain("ended seek resumes actual engine", seconds: 3) {
+                finishedEngine.currentTime > endedSeek + 0.04
+            }
+            let legacy = try XCTUnwrap(ClawAudioPlayback(context: context, key: 0, reference: nil,
+                bytes: ordinaryAAC(seconds: 61), name: "legacy.m4a", scopeIsCurrent: { true }))
+            defer { legacy.retire() }
+            legacy.seek(to: 0.99)
+            XCTAssertEqual(legacy.state, .paused)
+            XCTAssertGreaterThan(try XCTUnwrap(legacy.player).duration, 60)
+            XCTAssertGreaterThan(try XCTUnwrap(legacy.player).currentTime, 60)
+            try audioPlaybackEvidence("actual-aac", ["encoded_bytes": bytes.count,
+                "observed_current_time": actual, "decoded_duration": engine.duration,
+                "same_engine": playback.player === engine, "scope": "real AVAudioPlayer; no microphone"])
+        }
+    }
+
+    func testOwnedAudioActualCellsBindEntityAndRetireOnReuseAndInactive() throws {
+        try main {
+            let owner = try OrdinaryAudioOwner(origin: URL(string: "https://audio-fixture.invalid/")!)
+            defer { owner.retire() }
+            let bytes = try ordinaryAAC()
+            try withOwnedAudioView(context: owner.context()) { controller in
+                let message = StoredMessage()
+                message.msgId = 31; message.seq = 31; message.topic = "grpAudioFixture"; message.from = "fixture-peer"
+                message.ts = Date(timeIntervalSince1970: 1_700_000_000)
+                let one = try Drafty(plainText: " ").insertAudio(at: 0, mime: "audio/m4a", bits: bytes,
+                    preview: nil, duration: Int.max, fname: "one.m4a", refurl: nil, size: bytes.count)
+                let two = try Drafty(plainText: " ").insertAudio(at: 0, mime: "audio/m4a", bits: bytes,
+                    preview: nil, duration: 0, fname: "two.m4a", refurl: nil, size: bytes.count)
+                message.content = one.append(Drafty(content: " 中间正文 ")).append(two)
+                controller.messages = [message]; controller.messageSeqIdIndex = [31: 0]
+                controller.collectionView.reloadData()
+                controller.view.layoutIfNeeded(); controller.collectionView.layoutIfNeeded()
+                let cell = try XCTUnwrap(controller.collectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? MessageCell)
+                var attachments = [MultiImageTextAttachment]()
+                cell.content.attributedText.enumerateAttribute(.attachment,
+                    in: NSRange(location: 0, length: cell.content.attributedText.length)) { value, _, _ in
+                    if let value = value as? MultiImageTextAttachment, value.type == "audio/toggle-play" { attachments.append(value) }
+                }
+                XCTAssertEqual(attachments.count, 2)
+                let key = try XCTUnwrap(attachments[0].draftyEntityKey)
+                let first = try XCTUnwrap(controller.ordinaryAudio(in: cell, key: key))
+                first.toggle()
+                XCTAssertEqual(first.state, .playing)
+                XCTAssertEqual(attachments[0].index, 1)
+                XCTAssertEqual(attachments[1].index, 0)
+                XCTAssertTrue(controller.ordinaryAudio(in: cell, key: key) === first)
+                XCTAssertNil(controller.ordinaryAudio(in: cell, key: Int.max))
+                let firstEngine = try XCTUnwrap(first.player)
+                controller.appGoingInactive() // Actual page handler; controlled notification delivery.
+                XCTAssertEqual(first.state, .retired)
+                XCTAssertFalse(firstEngine.isPlaying)
+                XCTAssertNil(controller.currentOrdinaryAudio)
+                XCTAssertEqual(attachments[0].index, 0)
+                let second = try XCTUnwrap(controller.ordinaryAudio(in: cell, key: key))
+                second.toggle()
+                let secondEngine = try XCTUnwrap(second.player)
+                cell.prepareForReuse()
+                XCTAssertEqual(second.state, .retired)
+                XCTAssertFalse(secondEngine.isPlaying)
+                XCTAssertNil(cell.audioPlayback)
+                XCTAssertNil(controller.ordinaryAudio(in: cell, key: key))
+                try audioPlaybackEvidence("real-cell-lifetime", ["au_count": attachments.count,
+                    "first_metadata": "Int.max", "second_metadata": "unknown",
+                    "scope": "real renderer/cell/page methods; controlled Cache-slot admission; no server login"])
+            }
+        }
+    }
+
+    func testOwnedAudioRealHTTPRefusalAndExplicitOriginalDownload() throws {
+        let bytes = try ordinaryAAC()
+        let server = try OrdinaryAudioHTTP()
+        addTeardownBlock { server.stop() }
+        server.handler = { request, reply in
+            switch request.path {
+            case "/ok": reply.send(status: 200, bytes: bytes)
+            case "/refused": reply.send(status: 403, bytes: Data([0]))
+            case "/redirect": reply.send(status: 302, bytes: Data([0]), extra: "Location: /secondary\r\n")
+            case "/oversized": reply.send(status: 200, bytes: Data(repeating: 0, count: Int(ClawAudioPlayback.memoryLimit) + 1))
+            default: reply.send(status: 200, bytes: Data("not an audio container".utf8))
+            }
+        }
+        try main {
+            let owner = try OrdinaryAudioOwner(origin: server.origin)
+            defer { owner.retire() }
+            for (path, expected) in [("ok", ClawAudioPlayback.State.playing),
+                                     ("refused", .failed), ("redirect", .failed), ("oversized", .failed), ("unsupported", .failed)] {
+                let context = try owner.context()
+                let playback = try XCTUnwrap(ClawAudioPlayback(context: context, key: 0,
+                    reference: path, bytes: nil, name: "fixture.m4a", scopeIsCurrent: { true }))
+                defer { playback.retire() }
+                playback.toggle()
+                XCTAssertEqual(playback.state, .preparing)
+                try awaitMain("owned HTTP " + path, seconds: 5) { playback.state == expected }
+                if path == "refused" { XCTAssertEqual(playback.failure, .forbidden) }
+                if path == "redirect" { XCTAssertEqual(playback.failure, .network) }
+                if path == "oversized" { XCTAssertEqual(playback.failure, .tooLarge) }
+                if path == "unsupported" {
+                    XCTAssertEqual(playback.failure, .unsupported)
+                    let before = server.requestCount
+                    var downloaded: Result<URL, Error>?
+                    playback.downloadOriginal { downloaded = $0 }
+                    try awaitMain("explicit original file", seconds: 5) { downloaded != nil }
+                    let url = try XCTUnwrap(downloaded).get()
+                    defer { ClawMediaFiles.removeExport(url) }
+                    XCTAssertEqual(try Data(contentsOf: url), Data("not an audio container".utf8))
+                    XCTAssertEqual(server.requestCount, before + 1)
+                    XCTAssertNil(playback.player)
+                }
+            }
+            XCTAssertFalse(server.paths.contains("/secondary"))
+            XCTAssertTrue(server.requestEvidence.allSatisfy { $0["auth"] as? Bool == true })
+            let context = try owner.context()
+            let downloader = ClawOwnedFileDownload(context: context, suggestedName: nil,
+                budget: ClawVideoDownloadBudget(maximumBytes: 1024)) { _ in }
+            let external = try XCTUnwrap(downloader.request(from: URL(string: "https://external-fixture.invalid/file")!))
+            XCTAssertNil(external.value(forHTTPHeaderField: "X-Tinode-Auth"))
+            XCTAssertNil(external.value(forHTTPHeaderField: "X-Tinode-APIKey"))
+            XCTAssertNil(downloader.request(from: URL(string: "http://external-fixture.invalid/file")!))
+            try audioPlaybackEvidence("real-http", ["requests": server.requestEvidence,
+                "secondary_requests": server.paths.filter { $0 == "/secondary" }.count,
+                "external_headers": "actual request factory only; no external connection"])
+        }
+    }
+
+    func testOwnedAudioPlaylistDataCannotReadSecondaryHTTP() throws {
+        let server = try OrdinaryAudioHTTP()
+        addTeardownBlock { server.stop() }
+        server.handler = { _, reply in reply.send(status: 200, bytes: Data([0])) }
+        try main {
+            let owner = try OrdinaryAudioOwner(origin: server.origin)
+            defer { owner.retire() }
+            let target = server.origin.appendingPathComponent("secondary").absoluteString
+            let samples = [
+                Data("#EXTM3U\n#EXTINF:3,fixture\n\(target)\n".utf8),
+                Data("[playlist]\nNumberOfEntries=1\nFile1=\(target)\nLength1=3\nVersion=2\n".utf8)]
+            var players = [ClawAudioPlayback]()
+            defer { players.forEach { $0.retire() } }
+            for (index, bytes) in samples.enumerated() {
+                let source = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.data")
+                source.name = "ordinary-audio-playlist-source-\(index)"; source.lifetime = .keepAlways; add(source)
+                let playback = try XCTUnwrap(ClawAudioPlayback(context: owner.context(), key: 0,
+                    reference: nil, bytes: bytes, name: "mislabeled.m4a", scopeIsCurrent: { true }))
+                players.append(playback)
+                playback.toggle()
+                XCTAssertEqual(playback.state, .failed)
+                XCTAssertEqual(playback.failure, .unsupported)
+                XCTAssertNil(playback.player)
+            }
+            // A finite observation window is evidence for these exact real
+            // decoders/bytes, not a proof about every possible file format.
+            try observeOrdinaryAudio(seconds: 1) { XCTAssertEqual(server.requestCount, 0) }
+            try audioPlaybackEvidence("playlist-data", ["samples": samples.count,
+                "secondary_requests": server.requestCount, "observation_seconds": 1,
+                "engine": "AVAudioPlayer(data:); no VLC or URL input"])
+        }
+    }
+
+    func testOwnedAudioMemoryLimitAndInvalidSourcesPreserveOriginalBytes() throws {
+        try main {
+            let owner = try OrdinaryAudioOwner(origin: URL(string: "https://audio-fixture.invalid/")!)
+            defer { owner.retire() }
+            let oversized = Data(repeating: 0, count: Int(ClawAudioPlayback.memoryLimit) + 1)
+            let large = try XCTUnwrap(ClawAudioPlayback(context: owner.context(), key: 0,
+                reference: nil, bytes: oversized, name: "../voice.m4a", scopeIsCurrent: { true }))
+            defer { large.retire() }
+            large.toggle()
+            XCTAssertEqual(large.failure, .tooLarge)
+            XCTAssertNil(large.player)
+            var outcome: Result<URL, Error>?
+            large.downloadOriginal { outcome = $0 }
+            // Original server default is 8MiB too: this must reject rather than
+            // silently exporting outside its separately supplied file budget.
+            XCTAssertThrowsError(try XCTUnwrap(outcome).get())
+            for ref in ["mid:uploading", "file:///private/fixture", "data:audio/m4a;base64,AA==", ""] {
+                let playback = try XCTUnwrap(ClawAudioPlayback(context: owner.context(), key: 0,
+                    reference: ref, bytes: try ordinaryAAC(), name: nil, scopeIsCurrent: { true }))
+                defer { playback.retire() }
+                playback.toggle()
+                XCTAssertEqual(playback.failure, .unavailable)
+                XCTAssertNil(playback.player) // No fallback to otherwise valid inline AAC.
+            }
+        }
+    }
+
+    func testOwnedAudioRetiredOwnerAndLateAVCallbackCannotAlterNewAttempt() throws {
+        try main {
+            let owner = try OrdinaryAudioOwner(origin: URL(string: "https://audio-fixture.invalid/")!)
+            defer { owner.retire() }
+            let bytes = try ordinaryAAC()
+            let old = try XCTUnwrap(ClawAudioPlayback(context: owner.context(), key: 0,
+                reference: nil, bytes: bytes, name: nil, scopeIsCurrent: { true }))
+            defer { old.retire() }
+            old.toggle()
+            let oldEngine = try XCTUnwrap(old.player)
+            owner.switchAccount()
+            old.observe()
+            XCTAssertEqual(old.state, .retired)
+            XCTAssertFalse(oldEngine.isPlaying)
+            let current = try XCTUnwrap(ClawAudioPlayback(context: owner.context(), key: 0,
+                reference: nil, bytes: bytes, name: nil, scopeIsCurrent: { true }))
+            defer { current.retire() }
+            current.toggle()
+            let currentEngine = try XCTUnwrap(current.player)
+            // Actual AV delegate consumer with the wrong old engine, followed
+            // by a main FIFO barrier; this is not a real late OS callback.
+            current.audioPlayerDidFinishPlaying(oldEngine, successfully: false)
+            old.audioPlayerDidFinishPlaying(oldEngine, successfully: true)
+            var consumed = false
+            DispatchQueue.main.async { consumed = true }
+            try awaitMain("late delegate main drain", seconds: 3) { consumed }
+            XCTAssertEqual(current.state, .playing)
+            XCTAssertTrue(current.player === currentEngine)
+            XCTAssertTrue(currentEngine.isPlaying)
+            XCTAssertEqual(owner.store.myUid, "usrAudioB")
+        }
+    }
+
+    private func ordinaryAAC(seconds: Int = 4) throws -> Data {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 16000, channels: 1))
+        let frames = 16000 * seconds
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)))
+        buffer.frameLength = AVAudioFrameCount(frames)
+        let channel = try XCTUnwrap(buffer.floatChannelData)[0]
+        for index in 0..<frames { channel[index] = Float(sin(Double(index) * 2 * .pi * 440 / 16000)) * 0.03 }
+        try {
+            let file = try AVAudioFile(forWriting: url, settings: [
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC), AVSampleRateKey: 16000,
+                AVNumberOfChannelsKey: 1, AVEncoderBitRateKey: 24000])
+            try file.write(from: buffer)
+        }()
+        return try Data(contentsOf: url)
+    }
+
+    private func observeOrdinaryAudio(seconds: TimeInterval, _ condition: () throws -> Void) throws {
+        let deadline = ProcessInfo.processInfo.systemUptime + seconds
+        repeat {
+            try condition()
+            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
+        } while ProcessInfo.processInfo.systemUptime < deadline
+        try condition()
+    }
+
+    private func audioPlaybackEvidence(_ name: String, _ values: [String: Any]) throws {
+        let data = try JSONSerialization.data(withJSONObject: values, options: [.sortedKeys])
+        let json = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+        json.name = "ordinary-audio-" + name; json.lifetime = .keepAlways; add(json)
+    }
+
+    private func withOwnedAudioView(context: ClawOwnedImageContext,
+                                   _ body: (OrdinaryAudioController) throws -> Void) throws {
+        let f = try current()
+        f.controller.resignFirstResponder()
+        let controller = OrdinaryAudioController(context: context)
+        controller.interactor = nil
+        controller.topicName = "grpAudioFixture"
+        f.root.addChild(controller)
+        controller.loadViewIfNeeded()
+        controller.view.frame = CGRect(x: 0, y: 0, width: 390, height: 640)
+        f.root.view.addSubview(controller.view); controller.didMove(toParent: f.root)
+        controller.voicePageActive = true
+        defer {
+            controller.retireOrdinaryAudio()
+            controller.collectionView.dataSource = nil
+            controller.willMove(toParent: nil); controller.view.removeFromSuperview(); controller.removeFromParent()
+        }
+        controller.view.layoutIfNeeded()
+        try body(controller)
     }
 
     private func withCurrentTraits(_ traits: UITraitCollection, _ body: () throws -> Void) throws {
@@ -1006,4 +1326,154 @@ private final class LimitRecordingEngine: MediaRecordingEngine {
     func pause() { isRecording = false }
     func updateMeters() {}
     func averagePower(forChannel channelNumber: Int) -> Float { -12 }
+}
+
+
+// Isolated real SDK/SQLite. The current-slot callback is controlled; this is
+// not login, a real account, or the global App Cache.
+private final class OrdinaryAudioOwner {
+    let base: BaseDb
+    let store: SqlStore
+    var owner: Tinode
+    let origin: URL
+    var generation: UInt64 = 1
+    private let lock = NSRecursiveLock()
+    private var slot: Tinode?
+    init(origin: URL) throws {
+        self.origin = origin
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("ordinary-au-" + UUID().uuidString + ".sqlite")
+        base = BaseDb(databasePath: url.path)
+        store = try XCTUnwrap(base.sqlStore)
+        XCTAssertTrue(base.isStoreAvailable)
+        store.myUid = "usrAudioA"
+        owner = Tinode(for: "ordinary-au-fixture", authenticateWith: "synthetic-au-key", persistDataIn: store)
+        owner.authToken = "synthetic-au-token"
+        slot = owner
+        // BaseDb/accessors retain their open handles; never unlink a live DB.
+    }
+    func context() throws -> ClawOwnedImageContext {
+        let captured = owner
+        return try XCTUnwrap(ClawOwnedImageContext(owner: captured, serviceURL: origin, generation: generation,
+            currentGeneration: { self.generation }, inCurrentSlot: { body in
+                self.lock.lock(); defer { self.lock.unlock() }
+                guard self.slot === captured else { return false }
+                body(); return true
+            }))
+    }
+    func retire() {
+        owner.logout()
+        lock.lock(); defer { lock.unlock() }
+        slot = nil; generation += 1
+    }
+    func switchAccount() {
+        retire()
+        store.myUid = "usrAudioB"
+        owner = Tinode(for: "ordinary-au-fixture", authenticateWith: "synthetic-au-key", persistDataIn: store)
+        owner.authToken = "synthetic-au-token-B"
+        slot = owner
+    }
+}
+
+private final class OrdinaryAudioController: MessageViewController {
+    let context: ClawOwnedImageContext
+    init(context: ClawOwnedImageContext) { self.context = context; super.init() }
+    required init?(coder: NSCoder) { fatalError("Programmatic fixture only") }
+    override func viewDidLoad() {
+        (collectionView.collectionViewLayout as? MessageViewLayout)?.delegate = self
+        collectionView.dataSource = self
+    }
+    override func viewDidAppear(_ animated: Bool) {}
+    override var inputAccessoryView: UIView? { nil }
+    override func ordinaryAudioContext() -> ClawOwnedImageContext? { context.isCurrent ? context : nil }
+    override func voiceScopeIsCurrent() -> Bool { voicePageActive && context.isCurrent }
+}
+
+/// Real loopback TCP fixture; no URLProtocol or fake download/AV engine.
+private final class OrdinaryAudioHTTP {
+    struct Request {
+        let path: String
+        let hasAuth: Bool
+    }
+    final class Reply {
+        private let connection: NWConnection
+        init(_ connection: NWConnection) { self.connection = connection }
+        func send(status: Int, bytes: Data, extra: String = "") {
+            let header = "HTTP/1.1 \(status) Fixture\r\nContent-Type: audio/mp4\r\nContent-Length: \(bytes.count)\r\n\(extra)Connection: close\r\n\r\n"
+            connection.send(content: Data(header.utf8) + bytes, contentContext: .finalMessage, isComplete: true,
+                            completion: .contentProcessed { [connection] error in
+                if error != nil { connection.cancel() }
+            })
+        }
+    }
+    enum Failure: Error { case listener, request }
+    private let queue = DispatchQueue(label: "ordinary-au-loopback")
+    private let lock = NSLock()
+    private let listener: NWListener
+    private var connections = [NWConnection]()
+    private var requests = [Request]()
+    private var callback: ((Request, Reply) -> Void)?
+    var origin: URL { URL(string: "http://127.0.0.1:\(listener.port!.rawValue)/")! }
+    var handler: ((Request, Reply) -> Void)? {
+        get { lock.lock(); defer { lock.unlock() }; return callback }
+        set { lock.lock(); defer { lock.unlock() }; callback = newValue }
+    }
+    var requestCount: Int { lock.lock(); defer { lock.unlock() }; return requests.count }
+    var paths: [String] { lock.lock(); defer { lock.unlock() }; return requests.map { $0.path } }
+    var requestEvidence: [[String: Any]] {
+        lock.lock(); defer { lock.unlock() }
+        return requests.enumerated().map { ["ordinal": $0.offset + 1, "auth": $0.element.hasAuth] }
+    }
+    init() throws {
+        let parameters = NWParameters.tcp
+        parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
+        listener = try NWListener(using: parameters)
+        let gate = DispatchSemaphore(value: 0)
+        let status = OrdinaryListenerStatus()
+        listener.stateUpdateHandler = { state in
+            switch state {
+            case .ready: status.set(true); gate.signal()
+            case .failed: status.set(false); gate.signal()
+            default: break
+            }
+        }
+        listener.newConnectionHandler = { [weak self] connection in
+            guard let self = self else { connection.cancel(); return }
+            self.lock.lock(); self.connections.append(connection); self.lock.unlock()
+            connection.start(queue: self.queue)
+            self.receive(connection, prefix: Data())
+        }
+        listener.start(queue: queue)
+        guard gate.wait(timeout: .now() + 3) == .success, status.ready, listener.port != nil else {
+            listener.cancel(); throw Failure.listener
+        }
+    }
+    private func receive(_ connection: NWConnection, prefix: Data) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 8192) { [weak self] data, _, ended, error in
+            guard let self = self else { connection.cancel(); return }
+            let bytes = prefix + (data ?? Data())
+            guard bytes.count <= 32768, error == nil else { connection.cancel(); return }
+            if let range = bytes.range(of: Data("\r\n\r\n".utf8)),
+               let header = String(data: bytes[..<range.upperBound], encoding: .utf8) {
+                let path = header.components(separatedBy: "\r\n").first?.split(separator: " ").dropFirst().first.map(String.init) ?? ""
+                let request = Request(path: path, hasAuth: header.lowercased().contains("\r\nx-tinode-auth:"))
+                self.lock.lock(); self.requests.append(request); let callback = self.callback; self.lock.unlock()
+                guard let callback = callback else { connection.cancel(); return }
+                callback(request, Reply(connection))
+            } else if !ended { self.receive(connection, prefix: bytes) }
+            else { connection.cancel() }
+        }
+    }
+    func stop() {
+        listener.cancel()
+        lock.lock(); let live = connections; connections = []; callback = nil; lock.unlock()
+        live.forEach { $0.cancel() }
+    }
+    deinit { stop() }
+}
+
+private final class OrdinaryListenerStatus {
+    private let lock = NSLock()
+    private var value = false
+    var ready: Bool { lock.lock(); defer { lock.unlock() }; return value }
+    func set(_ ready: Bool) { lock.lock(); value = ready; lock.unlock() }
 }

@@ -1,0 +1,35 @@
+{
+  "production_source": "01d34caba9f73353e9fc60e350ae3484e7f5bbdd",
+  "test_path": "TinodiosUITests/VoiceLayoutTests.swift",
+  "test_raw_sha256": "676837354b01ad411765a0f4825d9a83717eb0a84ad657b7bce6b09ddf43b812",
+  "old_test_methods": [
+    "testOriginalNibLoadsAndResetsWithoutRecording",
+    "testContinuousAudioWidthsReachRealFormatterAndMessageCells",
+    "testAudioAddressAndPlaybackFramesNeverChangeWidthOrExpandHitTarget",
+    "testAudioUnknownLegacySmallViewportAndMixedContentPreserveRealLayout",
+    "testLimitFinishAndReleaseOrderingUseOriginalNibAndSubmissionDispatch",
+    "testNormalReleaseAndLockedLimitKeepExplicitSendDistinct",
+    "testRecordingStatesAndOriginalButtonsForwardActions",
+    "testDynamicTypeDarkLightAndScrollableMinimumTargets",
+    "testInputAccessoryKeyboardAppearsAndDismisses",
+    "testResetAfterGestureDoesNotReusePreviousLayout",
+    "testControlledGestureHandlerUsesSameWindowAndThresholds"
+  ],
+  "old_11_methods_and_helpers_exact_after_removing_new_sections": true,
+  "new_test_methods": [
+    "testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek",
+    "testOwnedAudioActualCellsBindEntityAndRetireOnReuseAndInactive",
+    "testOwnedAudioRealHTTPRefusalAndExplicitOriginalDownload",
+    "testOwnedAudioPlaylistDataCannotReadSecondaryHTTP",
+    "testOwnedAudioMemoryLimitAndInvalidSourcesPreserveOriginalBytes",
+    "testOwnedAudioRetiredOwnerAndLateAVCallbackCannotAlterNewAttempt"
+  ],
+  "total_voice_methods": 17,
+  "expected_native_not_run": 327,
+  "expected_navigation_not_run": 3,
+  "new_target_or_selector": false,
+  "socket_handler_before_start": true,
+  "production_unchanged_after_fixed_commit": true,
+  "native_execution": "NOT_RUN",
+  "evidence_level": "source boundary only; not Swift typechecking or network execution"
+}

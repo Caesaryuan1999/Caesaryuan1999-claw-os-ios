@@ -1,0 +1,13 @@
+{
+  "base": "86cf0fa87a28946c56a87e1e3eb67a51e4dbaa84",
+  "path": "Tinodios/MessageCell+VLCMediaPlayerDelegate.swift",
+  "git_sha256": "f395e53aa6a003d70c5cead3257da42e1d419d0a9a420fc6f371f5f89343ee86",
+  "kind": "source counterexamples only, not executed Swift red",
+  "checks": {
+    "dynamic_owner_URL": true,
+    "Int32_metadata": true,
+    "late_pause_new_player": true,
+    "unconditional_after_play_activation": true
+  },
+  "native": "NOT_RUN"
+}
