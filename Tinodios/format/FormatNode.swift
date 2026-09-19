@@ -371,11 +371,10 @@ class FormatNode: CustomStringConvertible {
         }
 
         // Compact voice row: speaker icon and duration on one line.
-        let duration = attachment.duration != nil ? AbstractFormatter.millisToTime(millis: attachment.duration!) : "-:--"
-        let voiceMaxWidth = MessageBubbleLayoutPolicy.voiceWidth(
-            durationMs: attachment.duration,
-            maxWidth: MessageBubbleLayoutPolicy.maxContentWidth(availableWidth: size.width))
-        guard voiceMaxWidth >= Constants.kPlayIconSize else {
+        let duration = attachment.duration.flatMap { $0 > 0 ? AbstractFormatter.millisToTime(millis: $0) : nil } ?? "-:--"
+        // size.width already excludes the outer bubble padding and viewport
+        // ceiling. Do not apply a second viewport fraction here.
+        guard size.width >= Constants.kPlayIconSize else {
             return NSAttributedString(string: duration, attributes: attributes)
         }
         guard let speakerImage = ClawTheme.symbol("speaker.wave.2.fill", pointSize: Constants.kPlayIconSize),
@@ -385,6 +384,7 @@ class FormatNode: CustomStringConvertible {
         let play = MultiImageTextAttachment(images: [speakerImage.withRenderingMode(.alwaysTemplate), mutedSpeakerImage.withRenderingMode(.alwaysTemplate)])
         play.type = "audio/toggle-play"
         play.draftyEntityKey = attachment.draftyEntityKey
+        play.audioDurationMilliseconds = attachment.duration
         play.delegate = PlayTextAttachmentDelegate(parent: play)
         play.bounds = CGRect(origin: CGPoint(x: 0, y: -2), size: CGSize(width: Constants.kPlayIconSize, height: Constants.kPlayIconSize))
 

@@ -15,6 +15,9 @@ public class MultiImageTextAttachment: EntityTextAttachment {
 
     var images: [UIImage]
     var index: Int = 0
+    // AU layout metadata only. The image bounds, hit target and playback state
+    // remain independent; nil means unknown duration, not one second.
+    var audioDurationMilliseconds: Int?
 
     /// Designated initializer
     public init(images: [UIImage]) {

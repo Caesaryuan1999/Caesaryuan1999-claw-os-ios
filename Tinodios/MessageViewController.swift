@@ -64,9 +64,8 @@ enum MessageBubbleLayoutPolicy {
     // This keeps short messages compact and lets Dynamic Type wrap naturally.
     static let maxTextWidth: CGFloat = 360
     static let viewportFraction: CGFloat = 0.76
-    static let baseVoiceWidth: CGFloat = 68
-    static let voiceSecondsIncrement: CGFloat = 2
-    static let maxVoiceWidth: CGFloat = 96
+    static let baseVoiceWidth: CGFloat = 128
+    static let maxVoiceWidth: CGFloat = 224
 
     static func maxContentWidth(availableWidth: CGFloat) -> CGFloat {
         guard availableWidth > 0 else { return maxTextWidth }
@@ -74,10 +73,12 @@ enum MessageBubbleLayoutPolicy {
     }
 
     static func voiceWidth(durationMs: Int?, maxWidth: CGFloat) -> CGFloat {
-        let seconds = CGFloat(max(durationMs ?? 0, 0)) / 1000
-        let desired = min(maxVoiceWidth,
-                          max(baseVoiceWidth, baseVoiceWidth + seconds * voiceSecondsIncrement))
-        return min(desired, max(maxWidth, 0))
+        // Clamp the integer before conversion, so even Int.min/max are safe.
+        // This is a full body width; callers subtract/add actual padding once.
+        let seconds = CGFloat(min(max(durationMs ?? 0, 1_000), 60_000)) / 1000
+        let desired = baseVoiceWidth + (maxVoiceWidth - baseVoiceWidth) * (seconds - 1) / 59
+        guard maxWidth.isFinite, maxWidth > 0 else { return 0 }
+        return min(desired, maxWidth)
     }
 }
 
@@ -1540,7 +1541,11 @@ extension MessageViewController: MessageViewLayoutDelegate {
         size.width += insets.left + insets.right
         if !isVisualMedia {
             size.width = max(size.width,
-                             message.isEdited ? Constants.kMinimumEditedCellWidth : Constants.kMinimumCellWidth)
+                              message.isEdited ? Constants.kMinimumEditedCellWidth : Constants.kMinimumCellWidth)
+            if let content = (message as? StoredMessage)?.cachedContent,
+               audioBodyWidth(in: content, maximum: maxWidth + insets.left + insets.right) != nil {
+                size.width = min(size.width, maxWidth + insets.left + insets.right)
+            }
         }
         size.height += insets.top + insets.bottom
         if progressVisible {
@@ -1571,11 +1576,29 @@ extension MessageViewController: MessageViewLayoutDelegate {
         }
         // FIXME: storedMessage may contain an image surrounded by text. In such cases,
         // size calculations may be wrong. Handle it.
-        return storedMessage.isVisualMedia ?
+        var size = storedMessage.isVisualMedia ?
             attributedText.boundingRect(with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
                                         options: [.usesLineFragmentOrigin, .usesFontLeading],
                                         context: nil).integral.size :
             textSizeHelper.computeSize(for: attributedText, within: maxWidth)
+        let insets = contentInsets(for: message)
+        let padding = insets.left + insets.right
+        if let bodyWidth = audioBodyWidth(in: attributedText, maximum: maxWidth + padding) {
+            // Preserve natural text/mixed-content width and grow only the actual
+            // container. The existing 24pt audio glyph remains the only play hit.
+            size.width = min(maxWidth, max(size.width, max(0, bodyWidth - padding)))
+        }
+        return size
+    }
+
+    private func audioBodyWidth(in content: NSAttributedString, maximum: CGFloat) -> CGFloat? {
+        var desired: CGFloat?
+        content.enumerateAttribute(.attachment, in: NSRange(location: 0, length: content.length)) { value, _, _ in
+            guard let audio = value as? MultiImageTextAttachment, audio.type == "audio/toggle-play" else { return }
+            let width = MessageBubbleLayoutPolicy.voiceWidth(durationMs: audio.audioDurationMilliseconds, maxWidth: maximum)
+            desired = max(desired ?? 0, width)
+        }
+        return desired
     }
 
     private func contentInsets(for message: Message) -> UIEdgeInsets {
