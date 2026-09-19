@@ -20,11 +20,16 @@ enum ClawAssistantUI {
     }
 }
 
-/// Shared only by A pages. Scope ownership is independent of visible controllers.
+/// Scope ownership is independent of controllers; each detail page owns only a reader lease.
 class ClawAssistantPage: UIViewController {
     private(set) var session: ClawAssistantSession?
     private var observation: UUID?
+    private var runObservation: NSObjectProtocol?
     private var lifecycle: [NSObjectProtocol] = []
+    private let readerLease = UUID()
+    private var pageVisible = false
+    private var readerAcquired = false
+    var readerConversationID: String? { nil }
     var model: ClawAssistantHistory? { session?.history }
     var current: Bool { session?.isCurrent ?? false }
     let accountButton = ClawAssistantUI.button("前往账号设置")
@@ -41,27 +46,72 @@ class ClawAssistantPage: UIViewController {
         accountButton.addTarget(self, action: #selector(openAccount), for: .touchUpInside)
         bind(session)
         lifecycle = [
+            NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification,
+                object: nil, queue: .main) { [weak self] _ in self?.releasePageReader() },
             NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification,
                 object: nil, queue: .main) { [weak self] _ in self?.view.isHidden = true },
             NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification,
                 object: nil, queue: .main) { [weak self] _ in
                     self?.view.isHidden = false
                     self?.refreshVisibleScope()
+                    self?.updatePageReader()
                 }
         ]
     }
     deinit {
         if let observation = observation { model?.removeObserver(observation) }
         lifecycle.forEach { NotificationCenter.default.removeObserver($0) }
+        if let runObservation = runObservation { NotificationCenter.default.removeObserver(runObservation) }
+        if let session = session {
+            let lease = readerLease
+            if Thread.isMainThread { session.releaseReader(lease: lease) }
+            else { DispatchQueue.main.async { session.releaseReader(lease: lease) } }
+        }
     }
     func bind(_ session: ClawAssistantSession?) {
+        releasePageReader()
         if let observation = observation { model?.removeObserver(observation) }
+        if let runObservation = runObservation { NotificationCenter.default.removeObserver(runObservation) }
         self.session = session
         observation = session?.history.observe { [weak self] in self?.render() }
+        runObservation = NotificationCenter.default.addObserver(forName: ClawAssistantSession.knownRunChanged,
+            object: nil, queue: .main) { [weak self, weak session] note in
+                guard let self = self, let session = session, self.session === session,
+                      note.object as? ClawAssistantSession === session else { return }
+                self.render()
+            }
     }
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         view.isHidden = false; refreshVisibleScope()
+    }
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        pageVisible = true; updatePageReader()
+    }
+    override func viewWillDisappear(_ animated: Bool) {
+        pageVisible = false; releasePageReader()
+        super.viewWillDisappear(animated)
+    }
+    private var mayRead: Bool {
+        pageVisible && current && viewIfLoaded?.window != nil && viewIfLoaded?.isHidden == false &&
+            UIApplication.shared.applicationState == .active && navigationController?.topViewController === self
+    }
+    private func updatePageReader() {
+        guard mayRead, !readerAcquired, let cid = readerConversationID, let session = session else { return }
+        readerAcquired = session.acquireReader(conversationID: cid, lease: readerLease)
+    }
+    private func releasePageReader() {
+        readerAcquired = false
+        session?.releaseReader(lease: readerLease)
+    }
+    @discardableResult func recoverPageRun() -> Bool {
+        guard mayRead, let cid = readerConversationID else { return false }
+        return session?.recoverKnownRun(conversationID: cid, lease: readerLease) ?? false
+    }
+    @discardableResult func stopPageRun() -> Bool {
+        guard mayRead, let cid = readerConversationID else { return false }
+        return session?.stopKnownRun(conversationID: cid, lease: readerLease) ?? false
     }
     func refreshVisibleScope() { render() }
     func render() { accountButton.isHidden = current }
@@ -98,6 +148,25 @@ class ClawAssistantPage: UIViewController {
         alert.addAction(UIAlertAction(title: "删除对话", style: .destructive) { [weak self, weak original] _ in
             guard let self = self, let original = original, self.session === original, original.isCurrent else { return }
             original.history.deleteConversation(id)
+        })
+        present(alert, animated: true)
+    }
+    func openConversation(_ conversation: ClawAssistantConversation) {
+        guard current, let original = session else { return }
+        guard let blocked = original.blockingStop(for: conversation.conversation_id) else {
+            navigationController?.pushViewController(ClawAssistantConversationViewController(
+                session: original, conversation: conversation), animated: true)
+            return
+        }
+        let alert = UIAlertController(title: "停止结果尚未确认",
+            message: "上一段对话的停止结果尚未确认。请先查看原回答状态。", preferredStyle: .alert)
+        let cancel = UIAlertAction(title: "取消", style: .cancel)
+        alert.addAction(cancel); alert.preferredAction = cancel
+        alert.addAction(UIAlertAction(title: "查看原回答", style: .default) { [weak self, weak original] _ in
+            guard let self = self, let original = original, self.session === original, original.isCurrent,
+                  original.knownAddress == blocked else { return }
+            self.navigationController?.pushViewController(ClawAssistantConversationViewController(
+                session: original, knownAddress: blocked), animated: true)
         })
         present(alert, animated: true)
     }

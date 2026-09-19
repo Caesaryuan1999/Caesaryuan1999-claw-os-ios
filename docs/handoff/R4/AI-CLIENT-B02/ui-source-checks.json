@@ -1,0 +1,78 @@
+{
+  "base": "4c1fecbfc320e85d11e5eb81b8481ed4d1f7e1b2",
+  "inherited_ci_candidate": "2e758cfc76e01f99a9a5fef7effd7f7c5f13eeff",
+  "evidence_level": "Windows source/membership only; Swift/UIKit/native NOT_RUN",
+  "old_swift_files_unchanged": 21,
+  "five_state_sources_unchanged": true,
+  "only_one_selector_added": true,
+  "target": "TinodiosVoiceLayoutTests",
+  "ui_methods": [
+    "testActualKnownAnswerAt320AccessibilityUsesClearControlsAndNeverEnablesGeneration",
+    "testStopUnknownPersistsAcrossRealNavigationAndOtherConversationRequiresOriginalContext",
+    "testRealRowsKeepIdentityAndReadingAnchorAcrossDeltaFontAndKeyboard",
+    "testLegacyAndCompletedHistoryNeverExposeStopOrRetryGeneration",
+    "test401HidesRealPageAndOldPageLeaseCannotReleaseNewScopeReader"
+  ],
+  "known_state_methods": [
+    "testExplicitBServiceRoleByteBoundariesAndMaximumEscapedPage",
+    "testAllPagesStageAtomicallyRejectDuplicatesAndBoundSnapshotRestarts",
+    "testLatestRealRunReusesEarlierQuestionAndHardRejectsAllGenerationEntrypoints",
+    "testAccountGlobalRevisionDoesNotRequireOldTerminalOverlayAndAlignmentIsFinite",
+    "testReaderLeaseHandoverAndStopUnknownSurviveLeavingAndBlockAnotherConversation",
+    "testLateStopCannotOverwriteReplacementRunAndCompletedIsNotStopped",
+    "testDeletionPausesCurrentReaderAndTombstoneOfOtherConversationDoesNotClearIt",
+    "testMissingBindingRereadsOnceInvalidIdentityRejectsAndLegacyStaysHistoryOnly",
+    "testStreamPrefixUpdatesExistingAnswerAndReconnectNeverDoubleAppends",
+    "test401AndSynchronousRetirementHideKnownContentWithoutLogoutOrNewRequest",
+    "testNewHistoryTokenWaitsForUnknownStopThenBindsLatestRealRun",
+    "testCapabilityDowngradePausesReadAndStopButManualNegotiationPreservesUnknown",
+    "testHiddenHistoryCompletionRegistersAddressAndNextLeaseStartsExactlyOneGet"
+  ],
+  "inherited_native_expected": 295,
+  "candidate_native_expected": 313,
+  "navigation_expected": 3,
+  "paths": [
+    {
+      "path": "Tinodios/ClawAssistantViewController.swift",
+      "bytes": 13301,
+      "raw_sha256": "e65c1c86d0eae7666b49183885edc859216d2fcb443d9e55df4bf0648c3aa4e0",
+      "lf_sha256": "e65c1c86d0eae7666b49183885edc859216d2fcb443d9e55df4bf0648c3aa4e0",
+      "git_clean_blob": "e16dfd94b52968af5efa0add807c45bbf260cd7b"
+    },
+    {
+      "path": "Tinodios/ClawAssistantHistoryViewController.swift",
+      "bytes": 9595,
+      "raw_sha256": "eec4d6ae2d706c9657178cce73f3ae8c5adf8740f6658379006190eaf92c6575",
+      "lf_sha256": "eec4d6ae2d706c9657178cce73f3ae8c5adf8740f6658379006190eaf92c6575",
+      "git_clean_blob": "dff90c44a942f6eda8bffbfe7b0a8de02e10e2c6"
+    },
+    {
+      "path": "Tinodios/ClawAssistantConversationViewController.swift",
+      "bytes": 18197,
+      "raw_sha256": "c8daa219de1429ff4b1ee9f275243cc3d26e32e44a5592eabf39648b8f5738fc",
+      "lf_sha256": "c8daa219de1429ff4b1ee9f275243cc3d26e32e44a5592eabf39648b8f5738fc",
+      "git_clean_blob": "08c368b26303c776f145eed03b37158f1a4a734b"
+    },
+    {
+      "path": "TinodiosUITests/AssistantKnownRunLayoutTests.swift",
+      "bytes": 22561,
+      "raw_sha256": "2a8616e557fcd25160fee162c596aaf95b7ab3c037450ad94333c92f15f021d0",
+      "lf_sha256": "2a8616e557fcd25160fee162c596aaf95b7ab3c037450ad94333c92f15f021d0",
+      "git_clean_blob": "71e808ec08c098897e1434a8192ef2ed5b44fc3e"
+    },
+    {
+      "path": "Tinodios.xcodeproj/project.pbxproj",
+      "bytes": 135399,
+      "raw_sha256": "b82ee60c6ebd65cc9ceff5355a88a3e050242e9970abae140f6efc3893cc0b6c",
+      "lf_sha256": "b82ee60c6ebd65cc9ceff5355a88a3e050242e9970abae140f6efc3893cc0b6c",
+      "git_clean_blob": "87eeb2972b5ab119cb13579bd5e7750fc749d38a"
+    },
+    {
+      "path": "Scripts/ci/verify_publish_outcomes_macos.sh",
+      "bytes": 24639,
+      "raw_sha256": "30f14e87d387c245556a5e5bd5cd87e4524eef2a96a1da61112fdb6a49f75bf9",
+      "lf_sha256": "30f14e87d387c245556a5e5bd5cd87e4524eef2a96a1da61112fdb6a49f75bf9",
+      "git_clean_blob": "cc0724723a796cd6135bad167111b0209ed45098"
+    }
+  ]
+}

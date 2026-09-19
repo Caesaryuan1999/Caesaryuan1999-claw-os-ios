@@ -90,9 +90,8 @@ final class ClawAssistantHistoryViewController: ClawAssistantPage, UITableViewDa
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        guard current, let session = session, indexPath.row < rows.count else { return }
-        navigationController?.pushViewController(ClawAssistantConversationViewController(
-            session: session, conversation: rows[indexPath.row]), animated: true)
+        guard current, indexPath.row < rows.count else { return }
+        openConversation(rows[indexPath.row])
     }
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath)
         -> UISwipeActionsConfiguration? {
