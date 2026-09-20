@@ -1,0 +1,37 @@
+{
+  "production_source": "1aea86fb87f42a7d2d6215635c7c744262c8943e",
+  "test_candidate": "0877d9a8411b0835a1076b426a92da64e0ab9468",
+  "non_docs_delta": [
+    "TinodiosUITests/ImageMessageLayoutTests.swift",
+    "TinodiosUITests/VoiceLayoutTests.swift"
+  ],
+  "worktrees": [
+    {
+      "worktree": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios",
+      "branch": "codex/r3-20260918-ios",
+      "head": "b940db445f0d34e6ba8b0c29edefb309fa32d036",
+      "origin": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios.git",
+      "tracked_dirty": 0,
+      "untracked_files": 23538
+    },
+    {
+      "worktree": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r4-quality01-ios-image",
+      "branch": "codex/r4-quality01-ios-image",
+      "head": "86c775318eb9d8819e08c4c52377140de4be1489",
+      "origin": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios.git",
+      "tracked_dirty": 0,
+      "untracked_files": 2
+    },
+    {
+      "worktree": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r4-quality01-ios-voice",
+      "branch": "codex/r4-quality01-ios-voice",
+      "head": "f208ca58f8fac644d40cfb4c3c3666e4053226d5",
+      "origin": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios.git",
+      "tracked_dirty": 0,
+      "untracked_files": 0
+    }
+  ],
+  "native_successor_execution": "NOT_RUN",
+  "new_network_check": false,
+  "automatic_retry": false
+}
