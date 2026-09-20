@@ -13,6 +13,7 @@ final class ImageMessageLayoutTests: XCTestCase {
     private var window: UIWindow?
     private var previousWindow: UIWindow?
     private var root: UIViewController?
+    private var imageStageSnapshot: (() -> [String: Any])?
 
     private func main<T>(_ body: () throws -> T) rethrows -> T {
         if Thread.isMainThread { return try body() }
@@ -44,6 +45,7 @@ final class ImageMessageLayoutTests: XCTestCase {
 
     override func tearDownWithError() throws {
         main {
+            imageStageSnapshot = nil
             window?.isHidden = true; window = nil; root = nil
             previousWindow?.makeKey(); previousWindow = nil
         }
@@ -143,8 +145,20 @@ final class ImageMessageLayoutTests: XCTestCase {
         let owner = try ImageOwner(origin: URL(string: "http://127.0.0.1:9/")!)
         defer { owner.retire() }
         var completions = [ClawOwnedImageLoader.Completion]()
-        let loader = ClawOwnedImageLoader { _, _, callback in completions.append(callback); return nil }
+        var delivered = 0
+        let loader = ClawOwnedImageLoader { _, _, callback in
+            completions.append { result in delivered += 1; callback(result) }
+            return nil
+        }
         let value = try main { try asyncAttachment(owner: owner, loader: loader) }
+        let context = try owner.context()
+        main {
+            imageStageSnapshot = {
+                self.imageFields(value, context: context).merging([
+                    "transport_requests": completions.count, "controlled_callbacks": delivered
+                ]) { _, right in right }
+            }
+        }
         let consumer = UUID()
         main {
             value.bindImageConsumer(consumer, isCurrent: { true }, changed: {})
@@ -183,10 +197,23 @@ final class ImageMessageLayoutTests: XCTestCase {
         let owner = try ImageOwner(origin: URL(string: "http://127.0.0.1:9/")!)
         defer { owner.retire() }
         var callbacks = [ClawOwnedImageLoader.Completion]()
-        let loader = ClawOwnedImageLoader { _, _, callback in callbacks.append(callback); return nil }
+        var delivered = 0
+        let loader = ClawOwnedImageLoader { _, _, callback in
+            callbacks.append { result in delivered += 1; callback(result) }
+            return nil
+        }
         let controller = try main { try mount(width: 320, context: owner.context()) }
         defer { main { unmount(controller) } }
         let value = try main { try asyncAttachment(owner: owner, loader: loader) }
+        let context = try XCTUnwrap(controller.context)
+        main {
+            imageStageSnapshot = {
+                self.imageFields(value, context: context).merging([
+                    "transport_requests": callbacks.count, "controlled_callbacks": delivered,
+                    "page_current": controller.voiceScopeIsCurrent()
+                ]) { _, right in right }
+            }
+        }
         let model = try main { try message(width: 0, height: 0, bits: Data([1]), ref: value.url) }
         let cell = try main { () -> MessageCell in
             model.cachedContent = NSAttributedString(attachment: value)
@@ -253,6 +280,15 @@ final class ImageMessageLayoutTests: XCTestCase {
         let controller = try main { try mount(width: 320, context: owner.context(), category: .accessibilityExtraExtraExtraLarge, dark: true) }
         defer { main { unmount(controller) } }
         let value = try main { try asyncAttachment(owner: owner, loader: .shared) }
+        let context = try XCTUnwrap(controller.context)
+        main {
+            imageStageSnapshot = {
+                self.imageFields(value, context: context).merging([
+                    "http_requests": server.requestCount,
+                    "page_current": controller.voiceScopeIsCurrent()
+                ]) { _, right in right }
+            }
+        }
         let cell = try main { () -> MessageCell in
             let item = try message(width: 0, height: 0, bits: Data([1]), ref: value.url)
             item.cachedContent = NSAttributedString(attachment: value)
@@ -287,10 +323,49 @@ final class ImageMessageLayoutTests: XCTestCase {
     }
 
     private func until(_ stage: String, _ condition: @escaping () -> Bool) throws {
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in self.main(condition) }, object: nil)
-        guard XCTWaiter.wait(for: [expectation], timeout: 3) == .completed else {
+        let started = ProcessInfo.processInfo.systemUptime
+        var evaluations = 0
+        var lastPredicate: Bool?
+        var mainQueueTailSeen = false
+        DispatchQueue.main.async { mainQueueTailSeen = true }
+        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in self.main {
+            evaluations += 1
+            let result = condition()
+            lastPredicate = result
+            return result
+        } }, object: nil)
+        let result = XCTWaiter.wait(for: [expectation], timeout: 3)
+        try main {
+            var fields = imageStageSnapshot?() ?? [:]
+            fields["stage"] = stage
+            fields["elapsed"] = ProcessInfo.processInfo.systemUptime - started
+            fields["predicate_evaluations"] = evaluations
+            if let lastPredicate = lastPredicate { fields["predicate_last"] = lastPredicate }
+            else { fields["predicate_last"] = NSNull() }
+            fields["post_wait_start_main_queue_tail_seen"] = mainQueueTailSeen
+            fields["wait_result"] = String(describing: result)
+            fields["snapshot_main_thread"] = Thread.isMainThread
+            let attachment = XCTAttachment(data: try JSONSerialization.data(withJSONObject: fields, options: [.sortedKeys]),
+                                           uniformTypeIdentifier: "public.json")
+            attachment.name = "image-v1-stage-" + stage.replacingOccurrences(of: " ", with: "-")
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        guard result == .completed else {
             XCTFail("Bounded image stage: " + stage); throw Failure.deadline
         }
+    }
+    private func imageFields(_ value: AsyncImageTextAttachment, context: ClawOwnedImageContext) -> [String: Any] {
+        precondition(Thread.isMainThread)
+        // Each owner gate finishes before any subsequent UIKit/consumer read.
+        let ownerCurrent = context.isCurrent
+        let sourceMatches: Bool
+        if let reference = value.imageSourceEntity?.data?["ref"]?.asString() {
+            sourceMatches = context.resourceURL(from: reference) == value.url
+        } else { sourceMatches = false }
+        return ["state": String(describing: value.imageState), "owner_current": ownerCurrent,
+                "source_matches": sourceMatches, "consumer_current": value.imageConsumerIsCurrent,
+                "can_retry": value.canRetryImage]
     }
     private func drainMain() throws {
         let done = expectation(description: "owned completion FIFO")
