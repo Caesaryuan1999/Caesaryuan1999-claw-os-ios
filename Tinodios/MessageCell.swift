@@ -190,14 +190,14 @@ final class ClawImageStateView: UIView {
         retryButton.setTitle("重新加载", for: .normal)
         retryButton.accessibilityLabel = "重新加载"
         retryButton.accessibilityHint = "图片未加载"
-        let natural = retryButton.titleLabel?.sizeThatFits(CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)) ?? .zero
+        let natural = retryButton.titleLabel?.sizeThatFits(CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)) ?? .zero
         var buttonWidth = min(width, max(112, ceil(natural.width) + 24))
         var buttonHeight = max(48, ceil(retryButton.titleLabel?.sizeThatFits(CGSize(width: max(1, buttonWidth - 24), height: .greatestFiniteMagnitude)).height ?? 0) + 16)
         // Preserve the system font and a readable action in the fixed canvas.
         // Accessibility retains the complete action and reason.
         if buttonHeight + 16 > bounds.height {
             retryButton.setTitle("重试", for: .normal)
-            let short = retryButton.titleLabel?.sizeThatFits(CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)) ?? .zero
+            let short = retryButton.titleLabel?.sizeThatFits(CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)) ?? .zero
             buttonWidth = min(width, max(112, ceil(short.width) + 24))
             buttonHeight = max(48, ceil(retryButton.titleLabel?.sizeThatFits(CGSize(width: max(1, buttonWidth - 24), height: .greatestFiniteMagnitude)).height ?? 0) + 16)
         }
