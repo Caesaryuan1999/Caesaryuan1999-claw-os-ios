@@ -1,0 +1,19 @@
+{
+  "base": "8c3c7515ab49a98fa46c0b6bebf03665ee97a976",
+  "code_file": "Tinodios/MessageCell.swift",
+  "inverse_exact_LF": true,
+  "two_initializers_only": true,
+  "scanned_new_source_and_test_paths": [
+    "Tinodios/MessageCell.swift",
+    "Tinodios/MessageViewController+MessageCellDelegate.swift",
+    "Tinodios/format/AsyncImageTextAttachment.swift",
+    "Tinodios/format/EntityTextAttachment.swift",
+    "Tinodios/format/FormatNode.swift",
+    "Tinodios/format/FullFormatter.swift",
+    "Tinodios/widgets/RichTextView.swift",
+    "TinodiosUITests/ImageMessageLayoutTests.swift"
+  ],
+  "remaining_double_untyped_CGSize": [],
+  "native": "NOT_RUN; line212 diagnostic remains open pending actual compile",
+  "file_sha256": "43524cde6055696430a1e1692df5c5e3a7e885a72a1e8f229bc47d0170b0769d"
+}

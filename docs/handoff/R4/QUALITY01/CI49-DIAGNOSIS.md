@@ -1,0 +1,9 @@
+# CI49 — image text-measurement compilation failure
+
+Exact source `8c3c7515ab49a98fa46c0b6bebf03665ee97a976`, run `35477080415`, job `105988063949`, attempt 1 naturally failed. SDK44 passed. App compilation stopped before any storage, Image or AAC method executed; navigation, package and cold launch did not run. No getter-free AAC callback evidence exists from this run.
+
+Original artifact `10595225349`: 762580 bytes, SHA-256 `dd2cc674e6501afc7c8bf2991feee4e9b1c9a295e62162246ece0d89474c7bec`, preserved as `evidence/CI49-evidence.zip`, fully extracted at `evidence/CI49-original/ios-01-a-20260919-234905`. The complete original `storage.log` contains exactly three Swift error diagnostics: MessageCell.swift lines 193 and 200 report ambiguous `.greatestFiniteMagnitude` in two `CGSize` initializers whose axes were both unqualified; line 212 reports a resulting CGFloat/String type diagnostic in that same measurement chain.
+
+Narrow successor **`1aea86fb87f42a7d2d6215635c7c744262c8943e`** changes only those two lines to explicitly use `CGFloat.greatestFiniteMagnitude` for both axes. Inverse replacement reproduces the complete original MessageCell file exactly after LF normalization. No layout values, text, font, state, test, assertion, timeout, dependency or workflow changed. A read-only scan of the eight new/changed Swift production/test paths found no remaining same-form `CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude)` initializer.
+
+Windows diff and inverse checks passed (`evidence/CI49-compile-checks.json`). This is not Swift verification: the line 212 diagnostic remains open until the real compiler processes the successor. The source was handed to root/backend before further CI. No successor push, dispatch or rerun was performed in this report. All earlier AAC failures and Image/Observer fixed-source evidence remain preserved; expected 336 native + 3 navigation is not a passed count.
