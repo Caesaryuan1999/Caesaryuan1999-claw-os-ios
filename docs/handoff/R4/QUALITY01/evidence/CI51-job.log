@@ -1,0 +1,495 @@
+﻿2026-09-20T07:49:06.5397560Z Current runner version: '2.337.0'
+2026-09-20T07:49:06.5435050Z ##[group]Runner Image Provisioner
+2026-09-20T07:49:06.5436630Z Hosted Compute Agent
+2026-09-20T07:49:06.5437670Z Version: 20260828.587
+2026-09-20T07:49:06.5438850Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-20T07:49:06.5440140Z Build Date: 2026-08-28T16:44:25Z
+2026-09-20T07:49:06.5441410Z Worker ID: {972fbed2-0e38-473b-8c81-098c1e48bbf6}
+2026-09-20T07:49:06.5442700Z Azure Region: westus
+2026-09-20T07:49:06.5443720Z ##[endgroup]
+2026-09-20T07:49:06.5446190Z ##[group]Operating System
+2026-09-20T07:49:06.5447270Z macOS
+2026-09-20T07:49:06.5448160Z 15.7.9
+2026-09-20T07:49:06.5449640Z 24G830
+2026-09-20T07:49:06.5450580Z ##[endgroup]
+2026-09-20T07:49:06.5451560Z ##[group]Runner Image
+2026-09-20T07:49:06.5452630Z Image: macos-15-arm64
+2026-09-20T07:49:06.5453650Z Version: 20260907.0337.1
+2026-09-20T07:49:06.5456100Z Included Software: https://github.com/actions/runner-images/blob/macos-15-arm64/20260907.0337/images/macos/macos-15-arm64-Readme.md
+2026-09-20T07:49:06.5459060Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-15-arm64%2F20260907.0337
+2026-09-20T07:49:06.5460940Z ##[endgroup]
+2026-09-20T07:49:06.5462980Z ##[group]GITHUB_TOKEN Permissions
+2026-09-20T07:49:06.5467350Z Contents: read
+2026-09-20T07:49:06.5468370Z Metadata: read
+2026-09-20T07:49:06.5469370Z ##[endgroup]
+2026-09-20T07:49:06.5475990Z Secret source: Actions
+2026-09-20T07:49:06.5477930Z Cache mode: write
+2026-09-20T07:49:06.5479230Z Prepare workflow directory
+2026-09-20T07:49:06.5822300Z Prepare all required actions
+2026-09-20T07:49:06.5861420Z Getting action download info
+2026-09-20T07:49:06.7425080Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-09-20T07:49:07.1935380Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-09-20T07:49:07.4028290Z Complete job name: simulator
+2026-09-20T07:49:07.4560890Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-20T07:49:07.4570390Z ##[group]Run actions/checkout@v4
+2026-09-20T07:49:07.4572150Z with:
+2026-09-20T07:49:07.4572700Z   persist-credentials: false
+2026-09-20T07:49:07.4573240Z   repository: Caesaryuan1999/Caesaryuan1999-claw-os-ios
+2026-09-20T07:49:07.4576160Z   token: ***
+2026-09-20T07:49:07.4576580Z   ssh-strict: true
+2026-09-20T07:49:07.4577000Z   ssh-user: git
+2026-09-20T07:49:07.4577420Z   clean: true
+2026-09-20T07:49:07.4577850Z   sparse-checkout-cone-mode: true
+2026-09-20T07:49:07.4578340Z   fetch-depth: 1
+2026-09-20T07:49:07.4578760Z   fetch-tags: false
+2026-09-20T07:49:07.4579190Z   show-progress: true
+2026-09-20T07:49:07.4579620Z   lfs: false
+2026-09-20T07:49:07.4580080Z   submodules: false
+2026-09-20T07:49:07.4580520Z   set-safe-directory: true
+2026-09-20T07:49:07.4581000Z   allow-unsafe-pr-checkout: false
+2026-09-20T07:49:07.4581900Z ##[endgroup]
+2026-09-20T07:49:07.9142760Z Syncing repository: Caesaryuan1999/Caesaryuan1999-claw-os-ios
+2026-09-20T07:49:07.9144520Z ##[group]Getting Git version info
+2026-09-20T07:49:07.9145450Z Working directory is '/Users/runner/work/Caesaryuan1999-claw-os-ios/Caesaryuan1999-claw-os-ios'
+2026-09-20T07:49:07.9152950Z [command]/opt/homebrew/bin/git version
+2026-09-20T07:49:07.9825280Z git version 2.55.0
+2026-09-20T07:49:07.9891040Z ##[endgroup]
+2026-09-20T07:49:07.9901850Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/ff60bbed-4c8a-45c1-bec5-bb85c5400cc1/.gitconfig'
+2026-09-20T07:49:07.9903270Z Temporarily overriding HOME='/Users/runner/work/_temp/ff60bbed-4c8a-45c1-bec5-bb85c5400cc1' before making global git config changes
+2026-09-20T07:49:07.9904490Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-20T07:49:07.9905680Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Caesaryuan1999-claw-os-ios/Caesaryuan1999-claw-os-ios
+2026-09-20T07:49:08.0048640Z Deleting the contents of '/Users/runner/work/Caesaryuan1999-claw-os-ios/Caesaryuan1999-claw-os-ios'
+2026-09-20T07:49:08.0051690Z ##[group]Initializing the repository
+2026-09-20T07:49:08.0054230Z [command]/opt/homebrew/bin/git init /Users/runner/work/Caesaryuan1999-claw-os-ios/Caesaryuan1999-claw-os-ios
+2026-09-20T07:49:08.0401980Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-20T07:49:08.0406970Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-20T07:49:08.0407980Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-20T07:49:08.0409540Z hint: call:
+2026-09-20T07:49:08.0409970Z hint:
+2026-09-20T07:49:08.0410490Z hint: 	git config --global init.defaultBranch <name>
+2026-09-20T07:49:08.0411070Z hint:
+2026-09-20T07:49:08.0411580Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-20T07:49:08.0412350Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-20T07:49:08.0412970Z hint:
+2026-09-20T07:49:08.0413380Z hint: 	git branch -m <name>
+2026-09-20T07:49:08.0413890Z hint:
+2026-09-20T07:49:08.0414460Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-20T07:49:08.0418660Z Initialized empty Git repository in /Users/runner/work/Caesaryuan1999-claw-os-ios/Caesaryuan1999-claw-os-ios/.git/
+2026-09-20T07:49:08.0426640Z [command]/opt/homebrew/bin/git remote add origin https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios
+2026-09-20T07:49:08.0533340Z ##[endgroup]
+2026-09-20T07:49:08.0534410Z ##[group]Disabling automatic garbage collection
+2026-09-20T07:49:08.0536320Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-09-20T07:49:08.0659960Z ##[endgroup]
+2026-09-20T07:49:08.0665550Z ##[group]Setting up auth
+2026-09-20T07:49:08.0670500Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-20T07:49:08.0753710Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-20T07:49:08.2211370Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-20T07:49:08.2299350Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-20T07:49:08.3369670Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-20T07:49:08.3687950Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-20T07:49:08.5211960Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-20T07:49:08.5413850Z ##[endgroup]
+2026-09-20T07:49:08.5415450Z ##[group]Fetching the repository
+2026-09-20T07:49:08.5416980Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +0877d9a8411b0835a1076b426a92da64e0ab9468:refs/remotes/origin/codex/verify-r2-ios02-20260918
+2026-09-20T07:49:10.0675580Z From https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios
+2026-09-20T07:49:10.0677040Z  * [new ref]         0877d9a8411b0835a1076b426a92da64e0ab9468 -> origin/codex/verify-r2-ios02-20260918
+2026-09-20T07:49:10.0680040Z ##[endgroup]
+2026-09-20T07:49:10.0681060Z ##[group]Determining the checkout info
+2026-09-20T07:49:10.0685060Z ##[endgroup]
+2026-09-20T07:49:10.0687620Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-09-20T07:49:10.0772560Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-20T07:49:10.0845410Z ##[group]Checking out the ref
+2026-09-20T07:49:10.0847570Z [command]/opt/homebrew/bin/git checkout --progress --force -B codex/verify-r2-ios02-20260918 refs/remotes/origin/codex/verify-r2-ios02-20260918
+2026-09-20T07:49:10.4436380Z Switched to a new branch 'codex/verify-r2-ios02-20260918'
+2026-09-20T07:49:10.4443780Z branch 'codex/verify-r2-ios02-20260918' set up to track 'origin/codex/verify-r2-ios02-20260918'.
+2026-09-20T07:49:10.4452410Z ##[endgroup]
+2026-09-20T07:49:10.4578830Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-09-20T07:49:10.4657270Z 0877d9a8411b0835a1076b426a92da64e0ab9468
+2026-09-20T07:49:10.4664050Z ##[group]Removing auth
+2026-09-20T07:49:10.4667810Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-20T07:49:10.4767380Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-20T07:49:10.5902130Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-20T07:49:10.5904070Z http.https://github.com/.extraheader
+2026-09-20T07:49:10.5906990Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-09-20T07:49:10.5910880Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-20T07:49:10.6943580Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-20T07:49:10.7018840Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-20T07:49:10.7987510Z ##[endgroup]
+2026-09-20T07:49:10.8265950Z ##[group]Run xcodebuild -version
+2026-09-20T07:49:10.8266900Z [36;1mxcodebuild -version[0m
+2026-09-20T07:49:10.8267760Z [36;1mxcrun simctl list devices available[0m
+2026-09-20T07:49:10.8321880Z shell: /bin/bash -e {0}
+2026-09-20T07:49:10.8322840Z ##[endgroup]
+2026-09-20T07:49:11.1750970Z Xcode 16.4
+2026-09-20T07:49:11.1766920Z Build version 16F6
+2026-09-20T07:49:31.4141940Z == Devices ==
+2026-09-20T07:49:31.4160520Z -- iOS 18.5 --
+2026-09-20T07:49:31.4171810Z     iPhone 16 Pro (DC4CD8B3-4457-4153-9087-A0D7A2F9BFD9) (Shutdown) 
+2026-09-20T07:49:31.4175020Z     iPhone 16 Pro Max (F1218AE5-3D29-4CE5-9D0F-6F21CEAA502C) (Shutdown) 
+2026-09-20T07:49:31.4187510Z     iPhone 16e (51F5467F-16A9-4296-9C05-A74F91234967) (Shutdown) 
+2026-09-20T07:49:31.4193610Z     iPhone 16 (F0E646EF-4792-4F36-B48B-EC89B3A6B73B) (Shutdown) 
+2026-09-20T07:49:31.4194550Z     iPhone 16 Plus (183F93DA-9B72-40B1-AD0E-287526E4E9D5) (Shutdown) 
+2026-09-20T07:49:31.4196020Z     iPhone SE (3rd generation) (22A3039C-6A45-47F4-82D4-80C58CA94379) (Shutdown) 
+2026-09-20T07:49:31.4206390Z     iPad Pro 11-inch (M4) (2EDB2671-090C-4988-822E-421879ECE84C) (Shutdown) 
+2026-09-20T07:49:31.4210020Z     iPad Pro 13-inch (M4) (AFBB202F-0F39-4DD8-8C47-DAB97D7D9DF2) (Shutdown) 
+2026-09-20T07:49:31.4232980Z     iPad mini (A17 Pro) (773C1AA1-17A9-4EC1-8BE5-D4BB00DF3AC1) (Shutdown) 
+2026-09-20T07:49:31.4264120Z     iPad (A16) (7222C0FB-7BCD-457A-AD32-76C948D2602F) (Shutdown) 
+2026-09-20T07:49:31.4272540Z     iPad Air 13-inch (M3) (9747906A-4708-4563-B8B9-1FE571CEA8C5) (Shutdown) 
+2026-09-20T07:49:31.4278260Z     iPad Air 11-inch (M3) (238ABD15-A231-49EB-9A8E-2A18835D05E4) (Shutdown) 
+2026-09-20T07:49:31.4287280Z     iPad Air 11-inch (M2) (FB985C96-A632-42FC-A064-57F80EA1A0AF) (Shutdown) 
+2026-09-20T07:49:31.4290920Z     iPad Air 13-inch (M2) (DEC44A2A-1119-4A2D-89C9-0A7E48485C1E) (Shutdown) 
+2026-09-20T07:49:31.4292940Z     iPad (10th generation) (B7718686-AA2A-4157-8E04-7FA4AE6F7BD0) (Shutdown) 
+2026-09-20T07:49:31.4293770Z -- iOS 18.6 --
+2026-09-20T07:49:31.4295720Z     iPhone 16 Pro (7FF9581C-A82C-472C-B005-492B077D1038) (Shutdown) 
+2026-09-20T07:49:31.4306360Z     iPhone 16 Pro Max (BAE7F30B-6707-4BF4-8375-FE75C94DD2FA) (Shutdown) 
+2026-09-20T07:49:31.4307020Z     iPhone 16e (8CBC396B-9510-42FF-AC70-614F5BD0FC86) (Shutdown) 
+2026-09-20T07:49:31.4307540Z     iPhone 16 (02010C24-263D-445A-8934-74FE019F15CA) (Shutdown) 
+2026-09-20T07:49:31.4308270Z     iPhone 16 Plus (102FCD1A-4F6B-4B15-ABA9-774BC75ADB11) (Shutdown) 
+2026-09-20T07:49:31.4308850Z     iPhone SE (3rd generation) (8938AAA2-76B5-4D49-A228-383499B04C02) (Shutdown) 
+2026-09-20T07:49:31.4309510Z     iPad Pro 11-inch (M4) (41C766F4-A950-4049-81B8-1B578B5804D8) (Shutdown) 
+2026-09-20T07:49:31.4310200Z     iPad Pro 13-inch (M4) (DD335931-190E-4075-B666-91C698C0CDEC) (Shutdown) 
+2026-09-20T07:49:31.4310740Z     iPad (A16) (458323E3-9E85-4764-B868-F02CE9C4ADF0) (Shutdown) 
+2026-09-20T07:49:31.4311450Z     iPad Air 13-inch (M3) (24D6FA4F-CB44-41E0-B6E8-91374A95E4CA) (Shutdown) 
+2026-09-20T07:49:31.4312470Z     iPad Air 11-inch (M3) (A1F6F219-8660-4BC0-B7E9-17BEE98456F5) (Shutdown) 
+2026-09-20T07:49:31.4313230Z     iPad Air 11-inch (M2) (6CE4BAD1-E547-4D95-B130-FBCDCE49282B) (Shutdown) 
+2026-09-20T07:49:31.4313760Z     iPad Air 13-inch (M2) (6AF871A0-5FC9-4DA0-92D3-D60A3F3986E0) (Shutdown) 
+2026-09-20T07:49:31.4314250Z     iPad mini (A17 Pro) (417FB14E-FFC0-4FB1-B6D6-BA85C2FFC3D5) (Shutdown) 
+2026-09-20T07:49:31.4314780Z     iPad (10th generation) (FF8C8404-A040-4C69-BE4F-258FA2571EA2) (Shutdown) 
+2026-09-20T07:49:31.4315270Z -- iOS 26.0 --
+2026-09-20T07:49:31.4315610Z     iPhone 17 Pro (517BAAA1-7BAB-4B50-8B25-04EF0238019B) (Shutdown) 
+2026-09-20T07:49:31.4316130Z     iPhone 17 Pro Max (CA359E70-5E9C-400C-A7E1-34013F7B088A) (Shutdown) 
+2026-09-20T07:49:31.4316600Z     iPhone Air (AB0FB058-2DF8-4824-A382-91FE8566B342) (Shutdown) 
+2026-09-20T07:49:31.4317040Z     iPhone 17 (003F24D4-BA1A-4D48-A26E-C14D511E7472) (Shutdown) 
+2026-09-20T07:49:31.4318140Z     iPhone 16 Pro (3C00406B-9DB5-4106-B5FD-132C84BF188A) (Shutdown) 
+2026-09-20T07:49:31.4318690Z     iPhone 16 Pro Max (E1605B84-CF5A-4193-878D-3623BD8B90AE) (Shutdown) 
+2026-09-20T07:49:31.4319180Z     iPhone 16e (4118C2C1-7E78-41EB-B816-3C75C7076F1E) (Shutdown) 
+2026-09-20T07:49:31.4319630Z     iPhone 16 (2D9C6CF6-FA7D-4D87-84C4-D5FA503F22B9) (Shutdown) 
+2026-09-20T07:49:31.4320060Z     iPhone 16 Plus (2EE15100-41A2-4790-893A-050FC5FE5AA8) (Shutdown) 
+2026-09-20T07:49:31.4320630Z     iPhone SE (3rd generation) (F3967A6C-63E1-4323-9EA7-6C26D42F77A3) (Shutdown) 
+2026-09-20T07:49:31.4322370Z     iPad Pro 13-inch (M5) (7EBB23D5-64E2-4DDB-B24F-86C16A07ED26) (Shutdown) 
+2026-09-20T07:49:31.4324040Z     iPad Pro 11-inch (M5) (07E2DE8A-D138-4013-A250-9EDE31AAB9DE) (Shutdown) 
+2026-09-20T07:49:31.4325680Z     iPad Pro 11-inch (M4) (CE25E477-AAC4-469F-9343-301D5ABCD9BC) (Shutdown) 
+2026-09-20T07:49:31.4384710Z     iPad Pro 13-inch (M4) (1A4FA0DD-F5CE-49FF-A6E2-1CAC22BE4C80) (Shutdown) 
+2026-09-20T07:49:31.4385780Z     iPad mini (A17 Pro) (B12E6DD0-E867-4D26-BFBA-2BD9C3D55DBD) (Shutdown) 
+2026-09-20T07:49:31.4386380Z     iPad (A16) (3869DFDE-0197-4B91-915D-90B3D279FE15) (Shutdown) 
+2026-09-20T07:49:31.4387120Z     iPad Air 13-inch (M3) (1262447B-91B2-4C0C-90E8-36537D183683) (Shutdown) 
+2026-09-20T07:49:31.4387800Z     iPad Air 11-inch (M3) (244E1618-3993-4A44-B213-FA496A601843) (Shutdown) 
+2026-09-20T07:49:31.4388370Z     iPad Air 11-inch (M2) (5DCA7372-1294-4245-AADE-E9938CC9119F) (Shutdown) 
+2026-09-20T07:49:31.4389020Z     iPad Air 13-inch (M2) (DC7ED953-B711-4AC8-A414-A7008BA50DAD) (Shutdown) 
+2026-09-20T07:49:31.4389580Z     iPad (10th generation) (5A7C2682-DC41-42B4-A065-6477314C6107) (Shutdown) 
+2026-09-20T07:49:31.4390110Z -- iOS 26.1 --
+2026-09-20T07:49:31.4390520Z     iPhone 17 Pro (DBAE96AF-90B5-4387-B859-66348EF015C7) (Shutdown) 
+2026-09-20T07:49:31.4391190Z     iPhone 17 Pro Max (1BF1F2D9-05B4-4B31-BE19-1031B4A0EA80) (Shutdown) 
+2026-09-20T07:49:31.4391760Z     iPhone Air (55DF797C-6847-4575-ABFA-4E2A08520774) (Shutdown) 
+2026-09-20T07:49:31.4392270Z     iPhone 17 (3D025AD9-C9BB-46A3-BCB4-B84F592C53A0) (Shutdown) 
+2026-09-20T07:49:31.4393310Z     iPhone 16 Pro (3F7F71D8-9EE4-4B63-84A8-6EBD0C5017BE) (Shutdown) 
+2026-09-20T07:49:31.4393850Z     iPhone 16 Pro Max (920BDAA4-BD69-4998-9337-3B06B2C584F4) (Shutdown) 
+2026-09-20T07:49:31.4394420Z     iPhone 16e (A1D6E20D-5C3F-46E8-88C8-9A88DB2C1D0E) (Shutdown) 
+2026-09-20T07:49:31.4394920Z     iPhone 16 (6D9FD9BD-F027-4EE5-83A6-BC98ED2603B0) (Shutdown) 
+2026-09-20T07:49:31.4395500Z     iPhone 16 Plus (C1337AE6-D82D-4C09-B0BA-4437460B306E) (Shutdown) 
+2026-09-20T07:49:31.4396130Z     iPhone SE (3rd generation) (3EF44343-CDF7-4757-BAE2-47B813D8FF60) (Shutdown) 
+2026-09-20T07:49:31.4396930Z     iPad Pro 13-inch (M5) (B673CC61-F30B-479A-9672-FA680127EE1F) (Shutdown) 
+2026-09-20T07:49:31.4397550Z     iPad Pro 11-inch (M5) (165A6108-1D5C-4AFB-94C8-64E25DA3E7B5) (Shutdown) 
+2026-09-20T07:49:31.4398120Z     iPad Pro 11-inch (M4) (38A0995A-759F-417D-ACED-70D43D6DBB82) (Shutdown) 
+2026-09-20T07:49:31.4398760Z     iPad Pro 13-inch (M4) (380AF256-AA90-49F1-BC8E-618736C734CB) (Shutdown) 
+2026-09-20T07:49:31.4399280Z     iPad (A16) (BAD1706E-E13F-444D-B19F-C7A451E7774A) (Shutdown) 
+2026-09-20T07:49:31.4399900Z     iPad Air 13-inch (M3) (40C16C1A-5BA0-41C6-99A5-355F9CBACD9F) (Shutdown) 
+2026-09-20T07:49:31.4400560Z     iPad Air 11-inch (M3) (5DE60B78-C540-4CAE-BF3B-D31601C7ABBB) (Shutdown) 
+2026-09-20T07:49:31.4401120Z     iPad Air 11-inch (M2) (B5D41CE2-3444-4312-8351-5A2B58E90C26) (Shutdown) 
+2026-09-20T07:49:31.4401740Z     iPad Air 13-inch (M2) (D3B307C6-3981-42AF-9708-E15A72BECF2D) (Shutdown) 
+2026-09-20T07:49:31.4402270Z     iPad mini (A17 Pro) (CFF66741-12D5-44BF-BABB-29622D014BE2) (Shutdown) 
+2026-09-20T07:49:31.4402910Z     iPad (10th generation) (388BAFD3-DA76-4ACF-AB96-CB8111ABF99E) (Shutdown) 
+2026-09-20T07:49:31.4403380Z -- iOS 26.2 --
+2026-09-20T07:49:31.4403800Z     iPhone 17 Pro (E952A9B0-CC78-435C-BF08-06AD47FE1076) (Shutdown) 
+2026-09-20T07:49:31.4404730Z     iPhone 17 Pro Max (4C675116-265D-488F-BFFA-836A4545674C) (Shutdown) 
+2026-09-20T07:49:31.4405450Z     iPhone Air (1CE1A334-F45C-4216-823B-EE5E6389838F) (Shutdown) 
+2026-09-20T07:49:31.4406240Z     iPhone 17 (22970779-4A47-463E-8B6D-CC012359B320) (Shutdown) 
+2026-09-20T07:49:31.4407100Z     iPhone 16 Pro (291E4B86-C951-41A7-8327-84BF0304D0A9) (Shutdown) 
+2026-09-20T07:49:31.4408050Z     iPhone 16 Pro Max (9F3D563E-AF8A-4089-B32E-3ADADEB067F0) (Shutdown) 
+2026-09-20T07:49:31.4408660Z     iPhone 16e (1ECD563C-BBBB-42E5-9A9F-648809113BF6) (Shutdown) 
+2026-09-20T07:49:31.4409230Z     iPhone 16 (2911FD29-A09E-4A81-BEA7-99A616FB7FC8) (Shutdown) 
+2026-09-20T07:49:31.4409740Z     iPhone 16 Plus (CFF67BF1-533D-480D-9A76-F1EADAD339C7) (Shutdown) 
+2026-09-20T07:49:31.4410300Z     iPhone SE (3rd generation) (48B2DA2E-AF18-4E36-BB25-B25969A4EBCF) (Shutdown) 
+2026-09-20T07:49:31.4410900Z     iPad Pro 13-inch (M5) (0DE52589-6E0B-47D4-B4A7-7E4E3D9C1049) (Shutdown) 
+2026-09-20T07:49:31.4411510Z     iPad Pro 11-inch (M5) (93F8D73D-86A4-455D-8E33-EFA55B5760E4) (Shutdown) 
+2026-09-20T07:49:31.4412140Z     iPad Pro 11-inch (M4) (FABE5896-BAF4-4220-8AFE-C1E31625D4DC) (Shutdown) 
+2026-09-20T07:49:31.4412670Z     iPad Pro 13-inch (M4) (5A602664-A209-462C-9B02-6E51FACDFED6) (Shutdown) 
+2026-09-20T07:49:31.4413360Z     iPad mini (A17 Pro) (9D9BF050-F6F5-4D32-84C0-4B7AC57F63EF) (Shutdown) 
+2026-09-20T07:49:31.4413870Z     iPad (A16) (E1D34F4A-69A6-4E07-8C9F-D5E775E2A416) (Shutdown) 
+2026-09-20T07:49:31.4414450Z     iPad Air 13-inch (M3) (8C025F3C-2545-40A5-AC87-FF534DB84D42) (Shutdown) 
+2026-09-20T07:49:31.4415000Z     iPad Air 11-inch (M3) (EF008AE9-B743-4A49-A8AD-A27FD9CCAE52) (Shutdown) 
+2026-09-20T07:49:31.4415610Z     iPad Air 11-inch (M2) (28EB6DDD-01F7-42F7-B1FF-56CC398818EB) (Shutdown) 
+2026-09-20T07:49:31.4416210Z     iPad Air 13-inch (M2) (6235A74F-E996-4A4A-B5B9-91A8A87F50EE) (Shutdown) 
+2026-09-20T07:49:31.4416760Z     iPad (10th generation) (AC7BF8FD-BAB0-4374-A4F7-52ABA082B92E) (Shutdown) 
+2026-09-20T07:49:31.4417290Z -- tvOS 18.5 --
+2026-09-20T07:49:31.4417660Z     Apple TV 4K (3rd generation) (ED2B3594-DA8E-4DC7-B32C-88299CB58F68) (Shutdown) 
+2026-09-20T07:49:31.4418770Z     Apple TV 4K (3rd generation) (at 1080p) (BBD101F3-B853-452F-9D66-2BCD6CE40DF1) (Shutdown) 
+2026-09-20T07:49:31.4419330Z     Apple TV (9D321901-4874-4778-9381-C8CB9585A5DE) (Shutdown) 
+2026-09-20T07:49:31.4419850Z -- tvOS 26.1 --
+2026-09-20T07:49:31.4420270Z     Apple TV 4K (3rd generation) (E4B678D1-F901-4F97-8FFA-6ECA9A4A31DE) (Shutdown) 
+2026-09-20T07:49:31.4420960Z     Apple TV 4K (3rd generation) (at 1080p) (235F618C-8B57-45F8-932D-2288D2254EC9) (Shutdown) 
+2026-09-20T07:49:31.4421600Z     Apple TV (8C823284-2216-40F6-A00A-F56D1078A8E9) (Shutdown) 
+2026-09-20T07:49:31.4422030Z -- tvOS 26.2 --
+2026-09-20T07:49:31.4422520Z     Apple TV 4K (3rd generation) (A4C43FCF-105F-4952-9BA7-C092B7CF467A) (Shutdown) 
+2026-09-20T07:49:31.4423110Z     Apple TV 4K (3rd generation) (at 1080p) (311DFCE0-B221-4FF6-A9D8-B35E399D430F) (Shutdown) 
+2026-09-20T07:49:31.4423770Z     Apple TV (6E303F13-1DA2-4A93-8ED9-187C6036E716) (Shutdown) 
+2026-09-20T07:49:31.4424240Z -- watchOS 11.5 --
+2026-09-20T07:49:31.4425650Z     Apple Watch Series 10 (46mm) (5CEB5B40-D06C-4798-9C06-C4D074009A67) (Shutdown) 
+2026-09-20T07:49:31.4427690Z     Apple Watch Series 10 (42mm) (8B7C128D-3DC1-4113-9C6B-27BEBCD7276F) (Shutdown) 
+2026-09-20T07:49:31.4429140Z     Apple Watch Ultra 2 (49mm) (D985DDDE-F756-466C-AE4F-F3A329F69FB5) (Shutdown) 
+2026-09-20T07:49:31.4430630Z     Apple Watch SE (44mm) (2nd generation) (0BCC5361-3077-41E5-92A6-B96E4C803CEC) (Shutdown) 
+2026-09-20T07:49:31.4432290Z     Apple Watch SE (40mm) (2nd generation) (E906BAA9-1AD0-45F1-A534-A215A3C5AE6C) (Shutdown) 
+2026-09-20T07:49:31.4433390Z -- watchOS 26.1 --
+2026-09-20T07:49:31.4434830Z     Apple Watch Series 11 (46mm) (A696AF57-89D8-49CC-A667-3590CA06E95E) (Shutdown) 
+2026-09-20T07:49:31.4436590Z     Apple Watch Series 11 (42mm) (8B0834CD-5430-4A24-856E-AEB91CABBCC2) (Shutdown) 
+2026-09-20T07:49:31.4439240Z     Apple Watch Series 10 (46mm) (A51534E7-EB72-465D-BE86-629AC2A8B5CB) (Shutdown) 
+2026-09-20T07:49:31.4441400Z     Apple Watch Series 10 (42mm) (C4ADA140-FEB3-4432-AB72-4AD48E0DF7D2) (Shutdown) 
+2026-09-20T07:49:31.4443110Z     Apple Watch Ultra 3 (49mm) (6F25CED5-77F5-4E06-ABD6-3934BB5F9A55) (Shutdown) 
+2026-09-20T07:49:31.4444740Z     Apple Watch Ultra 2 (49mm) (3003DCCD-789A-47AB-8CDC-E0EA2ADEC99A) (Shutdown) 
+2026-09-20T07:49:31.4446100Z     Apple Watch SE 3 (44mm) (E6F5CD49-3D63-4463-BF4F-30A09D15631C) (Shutdown) 
+2026-09-20T07:49:31.4447900Z     Apple Watch SE 3 (40mm) (5B96F8C0-2268-46AD-9290-BAFC7E94A298) (Shutdown) 
+2026-09-20T07:49:31.4449590Z     Apple Watch SE (44mm) (2nd generation) (950AFA9C-E0CA-4532-B229-3EDF0A09276C) (Shutdown) 
+2026-09-20T07:49:31.4451440Z     Apple Watch SE (40mm) (2nd generation) (DA0E3B7D-DFAC-49E6-A33D-170B661892E7) (Shutdown) 
+2026-09-20T07:49:31.4453090Z -- watchOS 26.2 --
+2026-09-20T07:49:31.4454220Z     Apple Watch Series 11 (46mm) (F9625BA5-83D5-445D-A5C0-0767BE5CDBD5) (Shutdown) 
+2026-09-20T07:49:31.4455810Z     Apple Watch Series 11 (42mm) (4244F97E-CC09-4E7C-A7D9-3869305998DC) (Shutdown) 
+2026-09-20T07:49:31.4457680Z     Apple Watch Series 10 (46mm) (597EB14A-3CFE-4718-8961-8FAB6474710C) (Shutdown) 
+2026-09-20T07:49:31.4459090Z     Apple Watch Series 10 (42mm) (21BF5784-CC85-4DEC-93D9-27D928BA1835) (Shutdown) 
+2026-09-20T07:49:31.4460600Z     Apple Watch Ultra 3 (49mm) (417A7017-FD6A-4A50-9C62-54F34DF86C43) (Shutdown) 
+2026-09-20T07:49:31.4462270Z     Apple Watch Ultra 2 (49mm) (8942A10A-00F3-4120-A054-24DD1A111165) (Shutdown) 
+2026-09-20T07:49:31.4463680Z     Apple Watch SE 3 (44mm) (D67E2B20-D2ED-40CC-952B-622F115FD82A) (Shutdown) 
+2026-09-20T07:49:31.4465140Z     Apple Watch SE 3 (40mm) (B6363017-FC03-439C-965A-CCF7B08000F7) (Shutdown) 
+2026-09-20T07:49:31.4466770Z     Apple Watch SE (44mm) (2nd generation) (8B1C887A-ECE4-4D6A-9670-BEEDA4976C43) (Shutdown) 
+2026-09-20T07:49:31.4468690Z     Apple Watch SE (40mm) (2nd generation) (3C75AC5A-ED4F-4408-8A7B-730768DB1CBF) (Shutdown) 
+2026-09-20T07:49:31.4470040Z -- visionOS 2.3 --
+2026-09-20T07:49:31.4471360Z     Apple Vision Pro (EFC27B51-A1AC-4C44-A0CE-43F84B5F0B68) (Shutdown) 
+2026-09-20T07:49:31.4474300Z -- visionOS 2.4 --
+2026-09-20T07:49:31.4475370Z     Apple Vision Pro (136F9422-A9E1-4C19-88AF-45BB818E37BB) (Shutdown) 
+2026-09-20T07:49:31.4476510Z -- visionOS 2.5 --
+2026-09-20T07:49:31.4477370Z     Apple Vision Pro (0C5BF083-23A9-419B-9CBD-8E2AA7E26265) (Shutdown) 
+2026-09-20T07:49:31.4478440Z -- visionOS 26.1 --
+2026-09-20T07:49:31.4479270Z     Apple Vision Pro (EB17C5F7-7C10-47FF-9344-F550DB0D244F) (Shutdown) 
+2026-09-20T07:49:31.4480220Z -- visionOS 26.2 --
+2026-09-20T07:49:31.4481040Z     Apple Vision Pro (62E72748-B3EC-4F87-AAD9-DE47D54B7B63) (Shutdown) 
+2026-09-20T07:49:31.4676980Z ##[group]Run if ! command -v pod >/dev/null; then
+2026-09-20T07:49:31.4679480Z [36;1mif ! command -v pod >/dev/null; then[0m
+2026-09-20T07:49:31.4680730Z [36;1m  gem install cocoapods --no-document[0m
+2026-09-20T07:49:31.4681620Z [36;1mfi[0m
+2026-09-20T07:49:31.5118780Z shell: /bin/bash -e {0}
+2026-09-20T07:49:31.5119450Z env:
+2026-09-20T07:49:31.5120190Z   COCOAPODS_DISABLE_STATS: true
+2026-09-20T07:49:31.5120660Z ##[endgroup]
+2026-09-20T07:49:31.6501270Z ##[group]Run bash Scripts/ci/verify_publish_outcomes_macos.sh
+2026-09-20T07:49:31.6501930Z [36;1mbash Scripts/ci/verify_publish_outcomes_macos.sh[0m
+2026-09-20T07:49:31.6547970Z shell: /bin/bash -e {0}
+2026-09-20T07:49:31.6548380Z env:
+2026-09-20T07:49:31.6548710Z   COCOAPODS_DISABLE_STATS: true
+2026-09-20T07:49:31.6549090Z ##[endgroup]
+2026-09-20T07:49:35.5007300Z PASS: Scripts/ci/test_active_contacts_layout_policy.py
+2026-09-20T07:49:35.5008240Z PASS: Scripts/ci/test_add_by_id_layout_policy.py
+2026-09-20T07:49:35.5008760Z PASS: Scripts/ci/test_auth_ui_policy.py
+2026-09-20T07:49:35.5010150Z PASS: Scripts/ci/test_brand_ui_policy.py
+2026-09-20T07:49:35.5022830Z PASS: Scripts/ci/test_c3_sqlite.py
+2026-09-20T07:49:35.5025120Z PASS: Scripts/ci/test_call_lifecycle_policy.py
+2026-09-20T07:49:35.5025530Z PASS: Scripts/ci/test_chat_list_branding_policy.py
+2026-09-20T07:49:35.5026120Z PASS: Scripts/ci/test_compact_message_layout_policy.py
+2026-09-20T07:49:35.5026680Z PASS: Scripts/ci/test_contacts_session_policy.py
+2026-09-20T07:49:35.5074260Z PASS: Scripts/ci/test_db_initialization_gate_policy.py
+2026-09-20T07:49:35.5074800Z PASS: Scripts/ci/test_db_live_diagnostics_policy.py
+2026-09-20T07:49:35.5075230Z PASS: Scripts/ci/test_delete_account_ack_policy.py
+2026-09-20T07:49:35.5075630Z PASS: Scripts/ci/test_device_info_policy.py
+2026-09-20T07:49:35.5076030Z PASS: Scripts/ci/test_figma_visual_contract_policy.py
+2026-09-20T07:49:35.5076440Z PASS: Scripts/ci/test_group_creation_flow_policy.py
+2026-09-20T07:49:35.5076810Z PASS: Scripts/ci/test_group_flow_policy.py
+2026-09-20T07:49:35.5077180Z PASS: Scripts/ci/test_group_note_policy.py
+2026-09-20T07:49:35.5077550Z PASS: Scripts/ci/test_ios_release_identity.py
+2026-09-20T07:49:35.5077890Z PASS: Scripts/ci/test_license_plist.py
+2026-09-20T07:49:35.5078270Z PASS: Scripts/ci/test_local_account_delete_policy.py
+2026-09-20T07:49:35.5078670Z PASS: Scripts/ci/test_local_migration_sqlite.py
+2026-09-20T07:49:35.5079120Z PASS: Scripts/ci/test_logout_owner_policy.py
+2026-09-20T07:49:35.5079540Z PASS: Scripts/ci/test_media_attachment_policy.py
+2026-09-20T07:49:35.5079990Z PASS: Scripts/ci/test_message_background_policy.py
+2026-09-20T07:49:35.5080380Z PASS: Scripts/ci/test_message_delete_policy.py
+2026-09-20T07:49:35.5081580Z PASS: Scripts/ci/test_message_selection_policy.py
+2026-09-20T07:49:35.5083960Z PASS: Scripts/ci/test_notification_navigation_policy.py
+2026-09-20T07:49:35.5085450Z PASS: Scripts/ci/test_notification_settings_policy.py
+2026-09-20T07:49:35.5085860Z PASS: Scripts/ci/test_owned_image_policy.py
+2026-09-20T07:49:35.5086240Z PASS: Scripts/ci/test_premium_secondary_ui_policy.py
+2026-09-20T07:49:35.5086650Z PASS: Scripts/ci/test_public_directory_policy.py
+2026-09-20T07:49:35.5087050Z PASS: Scripts/ci/test_publish_outcome_policy.py
+2026-09-20T07:49:35.5087420Z PASS: Scripts/ci/test_push_notification_policy.py
+2026-09-20T07:49:35.5090550Z PASS: Scripts/ci/test_sdk_inbound_log_policy.py
+2026-09-20T07:49:35.5091560Z PASS: Scripts/ci/test_secondary_ui_policy.py
+2026-09-20T07:49:35.5093800Z PASS: Scripts/ci/test_security_layout_policy.py
+2026-09-20T07:49:35.5094700Z PASS: Scripts/ci/test_session_sqlite.py
+2026-09-20T07:49:35.5095710Z PASS: Scripts/ci/test_signup_registration_policy.py
+2026-09-20T07:49:35.5096710Z PASS: Scripts/ci/test_subscription_cache_policy.py
+2026-09-20T07:49:35.5097680Z PASS: Scripts/ci/test_topic_info_layout_policy.py
+2026-09-20T07:49:35.5098700Z PASS: Scripts/ci/test_topic_security_layout_policy.py
+2026-09-20T07:49:35.5099920Z PASS: Scripts/ci/test_video_call_policy.py
+2026-09-20T07:49:35.5100960Z PASS: Scripts/ci/test_video_media_policy.py
+2026-09-20T07:49:35.5101850Z PASS: Scripts/ci/test_websocket_tls_policy.py
+2026-09-20T07:49:35.5102730Z Static scripts: 44; passed: 44; failed: 0
+2026-09-20T07:49:35.5103770Z Evidence level: source policy only; no Swift build or device validation.
+2026-09-20T07:49:48.8424020Z Analyzing dependencies
+2026-09-20T07:49:48.8438850Z Adding spec repo `trunk` with CDN `https://cdn.cocoapods.org/`
+2026-09-20T07:49:48.8450090Z Downloading dependencies
+2026-09-20T07:49:48.8458360Z Installing Firebase (11.15.0)
+2026-09-20T07:49:55.2415410Z Installing FirebaseAnalytics (11.15.0)
+2026-09-20T07:49:56.2534960Z Installing FirebaseCore (11.15.0)
+2026-09-20T07:50:01.0391120Z Installing FirebaseCoreExtension (11.15.0)
+2026-09-20T07:50:06.4974050Z Installing FirebaseCoreInternal (11.15.0)
+2026-09-20T07:50:11.1012750Z Installing FirebaseCrashlytics (11.15.0)
+2026-09-20T07:50:16.8507830Z Installing FirebaseInstallations (11.15.0)
+2026-09-20T07:50:22.7762750Z Installing FirebaseMessaging (11.15.0)
+2026-09-20T07:50:28.2482320Z Installing FirebaseRemoteConfigInterop (11.15.0)
+2026-09-20T07:50:33.7913110Z Installing FirebaseSessions (11.15.0)
+2026-09-20T07:50:39.7341900Z Installing GoogleAdsOnDeviceConversion (2.1.0)
+2026-09-20T07:50:44.2250860Z Installing GoogleAppMeasurement (11.15.0)
+2026-09-20T07:50:45.6462910Z Installing GoogleDataTransport (10.1.0)
+2026-09-20T07:50:47.0930890Z Installing GoogleUtilities (8.1.0)
+2026-09-20T07:50:48.1677640Z Installing Kingfisher (5.15.8)
+2026-09-20T07:50:49.3992730Z Installing MobileVLCKit (3.6.0)
+2026-09-20T07:52:04.5055420Z 
+2026-09-20T07:52:04.5055430Z 
+2026-09-20T07:52:04.5056240Z [!] Error installing MobileVLCKit
+2026-09-20T07:52:04.5057840Z [!] /usr/bin/curl -f -L -o /var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/d20260920-8914-1kg386/file.txz https://download.videolan.org/pub/cocoapods/prod/MobileVLCKit-3.6.0-c73b779f-dd8bfdba.tar.xz --create-dirs --netrc-optional --retry 2 -A 'CocoaPods/1.17.0 cocoapods-downloader/2.1'
+2026-09-20T07:52:04.5063570Z 
+2026-09-20T07:52:04.5063750Z   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+2026-09-20T07:52:04.5064320Z                                  Dload  Upload   Total   Spent    Left  Speed
+2026-09-20T07:52:04.5064630Z 
+2026-09-20T07:52:04.5064760Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+2026-09-20T07:52:04.5065530Z   0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
+2026-09-20T07:52:04.5066020Z   0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0
+2026-09-20T07:52:04.5066580Z   0     0    0     0    0     0      0      0 --:--:--  0:00:03 --:--:--     0
+2026-09-20T07:52:04.5066990Z   0     0    0     0    0     0      0      0 --:--:--  0:00:04 --:--:--     0
+2026-09-20T07:52:04.5067430Z   0     0    0     0    0     0      0      0 --:--:--  0:00:05 --:--:--     0
+2026-09-20T07:52:04.5067850Z   0     0    0     0    0     0      0      0 --:--:--  0:00:06 --:--:--     0
+2026-09-20T07:52:04.5068340Z   0     0    0     0    0     0      0      0 --:--:--  0:00:07 --:--:--     0
+2026-09-20T07:52:04.5068750Z   0     0    0     0    0     0      0      0 --:--:--  0:00:08 --:--:--     0
+2026-09-20T07:52:04.5069250Z   0     0    0     0    0     0      0      0 --:--:--  0:00:09 --:--:--     0
+2026-09-20T07:52:04.5069720Z   0     0    0     0    0     0      0      0 --:--:--  0:00:10 --:--:--     0
+2026-09-20T07:52:04.5079280Z   0     0    0     0    0     0      0      0 --:--:--  0:00:11 --:--:--     0
+2026-09-20T07:52:04.5079760Z   0     0    0     0    0     0      0      0 --:--:--  0:00:12 --:--:--     0
+2026-09-20T07:52:04.5080230Z   0     0    0     0    0     0      0      0 --:--:--  0:00:13 --:--:--     0
+2026-09-20T07:52:04.5080980Z   0     0    0     0    0     0      0      0 --:--:--  0:00:14 --:--:--     0
+2026-09-20T07:52:04.5081610Z   0     0    0     0    0     0      0      0 --:--:--  0:00:16 --:--:--     0
+2026-09-20T07:52:04.5082180Z   0     0    0     0    0     0      0      0 --:--:--  0:00:17 --:--:--     0
+2026-09-20T07:52:04.5082790Z   0     0    0     0    0     0      0      0 --:--:--  0:00:18 --:--:--     0
+2026-09-20T07:52:04.5083240Z   0     0    0     0    0     0      0      0 --:--:--  0:00:19 --:--:--     0
+2026-09-20T07:52:04.5084080Z   0     0    0     0    0     0      0      0 --:--:--  0:00:20 --:--:--     0
+2026-09-20T07:52:04.5096190Z   0     0    0     0    0     0      0      0 --:--:--  0:00:21 --:--:--     0
+2026-09-20T07:52:04.5096830Z   0     0    0     0    0     0      0      0 --:--:--  0:00:22 --:--:--     0
+2026-09-20T07:52:04.5097200Z   0     0    0     0    0     0      0      0 --:--:--  0:00:23 --:--:--     0
+2026-09-20T07:52:04.5097680Z   0     0    0     0    0     0      0      0 --:--:--  0:00:24 --:--:--     0
+2026-09-20T07:52:04.5098160Z   0     0    0     0    0     0      0      0 --:--:--  0:00:25 --:--:--     0
+2026-09-20T07:52:04.5098560Z   0     0    0     0    0     0      0      0 --:--:--  0:00:26 --:--:--     0
+2026-09-20T07:52:04.5099040Z   0     0    0     0    0     0      0      0 --:--:--  0:00:27 --:--:--     0
+2026-09-20T07:52:04.5099440Z   0     0    0     0    0     0      0      0 --:--:--  0:00:29 --:--:--     0
+2026-09-20T07:52:04.5099950Z   0     0    0     0    0     0      0      0 --:--:--  0:00:30 --:--:--     0
+2026-09-20T07:52:04.5100350Z   0     0    0     0    0     0      0      0 --:--:--  0:00:31 --:--:--     0
+2026-09-20T07:52:04.5100810Z   0     0    0     0    0     0      0      0 --:--:--  0:00:32 --:--:--     0
+2026-09-20T07:52:04.5101210Z   0     0    0     0    0     0      0      0 --:--:--  0:00:33 --:--:--     0
+2026-09-20T07:52:04.5101660Z   0     0    0     0    0     0      0      0 --:--:--  0:00:34 --:--:--     0
+2026-09-20T07:52:04.5102140Z   0     0    0     0    0     0      0      0 --:--:--  0:00:35 --:--:--     0
+2026-09-20T07:52:04.5102560Z   0     0    0     0    0     0      0      0 --:--:--  0:00:36 --:--:--     0
+2026-09-20T07:52:04.5103050Z   0     0    0     0    0     0      0      0 --:--:--  0:00:37 --:--:--     0
+2026-09-20T07:52:04.5103460Z   0     0    0     0    0     0      0      0 --:--:--  0:00:38 --:--:--     0
+2026-09-20T07:52:04.5103950Z   0     0    0     0    0     0      0      0 --:--:--  0:00:39 --:--:--     0
+2026-09-20T07:52:04.5104350Z   0     0    0     0    0     0      0      0 --:--:--  0:00:40 --:--:--     0
+2026-09-20T07:52:04.5104800Z   0     0    0     0    0     0      0      0 --:--:--  0:00:41 --:--:--     0
+2026-09-20T07:52:04.5105310Z   0     0    0     0    0     0      0      0 --:--:--  0:00:42 --:--:--     0
+2026-09-20T07:52:04.5105670Z   0     0    0     0    0     0      0      0 --:--:--  0:00:43 --:--:--     0
+2026-09-20T07:52:04.5106160Z   0     0    0     0    0     0      0      0 --:--:--  0:00:44 --:--:--     0
+2026-09-20T07:52:04.5106530Z   0     0    0     0    0     0      0      0 --:--:--  0:00:46 --:--:--     0
+2026-09-20T07:52:04.5106930Z   0     0    0     0    0     0      0      0 --:--:--  0:00:47 --:--:--     0
+2026-09-20T07:52:04.5107360Z   0     0    0     0    0     0      0      0 --:--:--  0:00:48 --:--:--     0
+2026-09-20T07:52:04.5107780Z   0     0    0     0    0     0      0      0 --:--:--  0:00:49 --:--:--     0
+2026-09-20T07:52:04.5108160Z   0     0    0     0    0     0      0      0 --:--:--  0:00:50 --:--:--     0
+2026-09-20T07:52:04.5108660Z   0     0    0     0    0     0      0      0 --:--:--  0:00:51 --:--:--     0
+2026-09-20T07:52:04.5109550Z   0     0    0     0    0     0      0      0 --:--:--  0:00:52 --:--:--     0
+2026-09-20T07:52:04.5109980Z   0     0    0     0    0     0      0      0 --:--:--  0:00:53 --:--:--     0
+2026-09-20T07:52:04.5110450Z   0     0    0     0    0     0      0      0 --:--:--  0:00:54 --:--:--     0
+2026-09-20T07:52:04.5110850Z   0     0    0     0    0     0      0      0 --:--:--  0:00:55 --:--:--     0
+2026-09-20T07:52:04.5111300Z   0     0    0     0    0     0      0      0 --:--:--  0:00:56 --:--:--     0
+2026-09-20T07:52:04.5111730Z   0     0    0     0    0     0      0      0 --:--:--  0:00:57 --:--:--     0
+2026-09-20T07:52:04.5112160Z   0     0    0     0    0     0      0      0 --:--:--  0:00:59 --:--:--     0
+2026-09-20T07:52:04.5112640Z   0     0    0     0    0     0      0      0 --:--:--  0:01:00 --:--:--     0
+2026-09-20T07:52:04.5113050Z   0     0    0     0    0     0      0      0 --:--:--  0:01:01 --:--:--     0
+2026-09-20T07:52:04.5113730Z   0     0    0     0    0     0      0      0 --:--:--  0:01:02 --:--:--     0
+2026-09-20T07:52:04.5114130Z   0     0    0     0    0     0      0      0 --:--:--  0:01:03 --:--:--     0
+2026-09-20T07:52:04.5114600Z   0     0    0     0    0     0      0      0 --:--:--  0:01:04 --:--:--     0
+2026-09-20T07:52:04.5115000Z   0     0    0     0    0     0      0      0 --:--:--  0:01:05 --:--:--     0
+2026-09-20T07:52:04.5115450Z   0     0    0     0    0     0      0      0 --:--:--  0:01:06 --:--:--     0
+2026-09-20T07:52:04.5115830Z   0     0    0     0    0     0      0      0 --:--:--  0:01:07 --:--:--     0
+2026-09-20T07:52:04.5116280Z   0     0    0     0    0     0      0      0 --:--:--  0:01:08 --:--:--     0
+2026-09-20T07:52:04.5116720Z   0     0    0     0    0     0      0      0 --:--:--  0:01:09 --:--:--     0
+2026-09-20T07:52:04.5117120Z   0     0    0     0    0     0      0      0 --:--:--  0:01:10 --:--:--     0
+2026-09-20T07:52:04.5117560Z   0     0    0     0    0     0      0      0 --:--:--  0:01:11 --:--:--     0
+2026-09-20T07:52:04.5118070Z   0     0    0     0    0     0      0      0 --:--:--  0:01:12 --:--:--     0
+2026-09-20T07:52:04.5118550Z   0     0    0     0    0     0      0      0 --:--:--  0:01:14 --:--:--     0
+2026-09-20T07:52:04.5118940Z   0     0    0     0    0     0      0      0 --:--:--  0:01:15 --:--:--     0
+2026-09-20T07:52:04.5119490Z curl: (7) Failed to connect to download.videolan.org port 443 after 75011 ms: Couldn't connect to server
+2026-09-20T07:52:04.5121380Z [!] The Podfile contains framework or static library targets (TinodiosDB), for which the Podfile does not contain host targets (targets which embed the framework).
+2026-09-20T07:52:04.5122530Z If this project is for doing framework development, you can ignore this message. Otherwise, add a target to the Podfile that embeds these frameworks to make this message go away (e.g. a test target).
+2026-09-20T07:52:04.5699390Z ##[error]Process completed with exit code 1.
+2026-09-20T07:52:04.6065160Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-20T07:52:04.6068890Z ##[group]Run actions/upload-artifact@v4
+2026-09-20T07:52:04.6069500Z with:
+2026-09-20T07:52:04.6070150Z   name: ios-local-store-0877d9a8411b0835a1076b426a92da64e0ab9468
+2026-09-20T07:52:04.6075350Z   path: build/licenses/*.json
+build/licenses/*.plist
+build/ios-01-a-*/static.json
+build/ios-01-a-*/*-summary.json
+build/ios-01-a-*/*-summary.err
+build/ios-01-a-*/sdk.log
+build/ios-01-a-*/storage.log
+build/ios-01-a-*/navigation.log
+build/ios-01-a-*/sdk.xcresult
+build/ios-01-a-*/storage.xcresult
+build/ios-01-a-*/navigation.xcresult
+build/ios-01-a-*/navigation-export*
+build/ios-01-a-*/navigation-attachments/**
+build/ios-01-a-*/storage-export*
+build/ios-01-a-*/storage-attachments/**
+build/ios-01-a-*/CLAW-OS-unsigned-simulator.zip
+build/ios-01-a-*/simulator-manifest.json
+build/ios-01-a-*/simulator-id.txt
+build/ios-01-a-*/launch-smoke/**
+
+2026-09-20T07:52:04.6082240Z   if-no-files-found: warn
+2026-09-20T07:52:04.6082860Z   retention-days: 7
+2026-09-20T07:52:04.6083400Z   compression-level: 6
+2026-09-20T07:52:04.6083920Z   overwrite: false
+2026-09-20T07:52:04.6084540Z   include-hidden-files: false
+2026-09-20T07:52:04.6085200Z ##[endgroup]
+2026-09-20T07:52:05.2396550Z (node:13746) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-20T07:52:05.2397770Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-20T07:52:05.2493020Z With the provided path, there will be 2 files uploaded
+2026-09-20T07:52:05.2500580Z Artifact name is valid!
+2026-09-20T07:52:05.2501740Z Root directory input is valid!
+2026-09-20T07:52:05.4904520Z Beginning upload of artifact content to blob storage
+2026-09-20T07:52:05.5081340Z (node:13746) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-09-20T07:52:05.5553970Z Uploaded bytes 5065
+2026-09-20T07:52:05.5721460Z Finished uploading artifact content to blob storage!
+2026-09-20T07:52:05.5723410Z SHA256 digest of uploaded artifact zip is cf9c4c4b9e3bdc090da06aa9aaa086e97373c49ee2910ef33b9598082e1db475
+2026-09-20T07:52:05.5724240Z Finalizing artifact upload
+2026-09-20T07:52:05.7912450Z Artifact ios-local-store-0877d9a8411b0835a1076b426a92da64e0ab9468.zip successfully finalized. Artifact ID 10600947207
+2026-09-20T07:52:05.7915160Z Artifact ios-local-store-0877d9a8411b0835a1076b426a92da64e0ab9468 has been successfully uploaded! Final size is 5065 bytes. Artifact ID is 10600947207
+2026-09-20T07:52:05.7943180Z Artifact download URL: https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios/actions/runs/35497878843/artifacts/10600947207
+2026-09-20T07:52:05.8255490Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-09-20T07:52:05.8256610Z Post job cleanup.
+2026-09-20T07:52:06.0835160Z [command]/opt/homebrew/bin/git version
+2026-09-20T07:52:06.1168540Z git version 2.55.0
+2026-09-20T07:52:06.1215040Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/511a2062-92cb-4e52-b28c-7d01230ac064/.gitconfig'
+2026-09-20T07:52:06.1227190Z Temporarily overriding HOME='/Users/runner/work/_temp/511a2062-92cb-4e52-b28c-7d01230ac064' before making global git config changes
+2026-09-20T07:52:06.1228890Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-20T07:52:06.1230510Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Caesaryuan1999-claw-os-ios/Caesaryuan1999-claw-os-ios
+2026-09-20T07:52:06.1538170Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-20T07:52:06.1575960Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-20T07:52:06.2969640Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-20T07:52:06.3040110Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-20T07:52:06.4348450Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-20T07:52:06.4452760Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-20T07:52:06.5573780Z Cleaning up orphan processes
+2026-09-20T07:52:07.2570610Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

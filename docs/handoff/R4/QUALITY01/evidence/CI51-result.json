@@ -1,0 +1,55 @@
+{
+  "source": "0877d9a8411b0835a1076b426a92da64e0ab9468",
+  "run": 35497878843,
+  "job": 106044188211,
+  "attempt": 1,
+  "created_utc": "2026-09-20T07:48:56Z",
+  "dependency_failed_utc": "2026-09-20T07:52:04Z",
+  "last_job_log_utc": "2026-09-20T07:52:07.2570610Z",
+  "result": "DEPENDENCY_CONNECTION_FAILED_BEFORE_NATIVE",
+  "static": {
+    "scripts": 44,
+    "failed": 0
+  },
+  "native": "NOT_RUN",
+  "navigation": "NOT_RUN",
+  "package": "NOT_RUN",
+  "cold": "NOT_RUN",
+  "expected_native": 337,
+  "expected_navigation": 3,
+  "artifact": 10600947207,
+  "artifact_bytes": 5065,
+  "artifact_sha256": "cf9c4c4b9e3bdc090da06aa9aaa086e97373c49ee2910ef33b9598082e1db475",
+  "artifact_entities": [
+    {
+      "path": "ios-01-a-20260920-074932/simulator-id.txt",
+      "bytes": 37,
+      "sha256": "51c2d6ed087e0230be0d2d477c54ab09c7878eae6864c2397c660e5736877cbb"
+    },
+    {
+      "path": "ios-01-a-20260920-074932/static.json",
+      "bytes": 17289,
+      "sha256": "ec4a6084dc68506ef6db7a030e13f18e85c172586109e5dff900284d862042be"
+    }
+  ],
+  "decoded_job_log_sha256": "af721f1d2590f45971857b6d8292f90baadddbd9990e8a55435cd2d7bc5d10bf",
+  "dependency": {
+    "name": "MobileVLCKit",
+    "locked_version": "3.6.0",
+    "spec_checksum": "8fe98ae53b7464f32e4bdf527cc7d53053e4d3a5",
+    "source_url": "https://download.videolan.org/pub/cocoapods/prod/MobileVLCKit-3.6.0-c73b779f-dd8bfdba.tar.xz",
+    "curl_code": 7,
+    "connect_elapsed_ms": 75011,
+    "archive_hash_verified": false
+  },
+  "ci_cache": {
+    "workflow": ".github/workflows/ios-smoke.yml",
+    "explicit_restore_or_save": false,
+    "Pods_in_artifact_upload": false,
+    "local_Pods_exists": false,
+    "local_CocoaPods_home_exists": false,
+    "local_CocoaPods_library_cache_exists": false
+  },
+  "retry_dispatched": false,
+  "source_modified_for_dependency": false
+}
