@@ -967,6 +967,75 @@ final class VoiceLayoutTests: XCTestCase {
         }
     }
 
+    func testOwnedAudioIndependentPCMControlUsesRealFinishDelegate() async throws {
+        let ended = expectation(description: "independent PCM finish delegate")
+        let control = try await MainActor.run { () -> (AVAudioPlayer, OrdinaryAudioFinishObserver, Timer) in
+            // Canonical RIFF/WAVE PCM: mono, 16-bit little endian, 16000 samples.
+            // This independent source does not change ordinaryAAC or its test.
+            var bytes = Data()
+            func append16(_ value: UInt16) {
+                bytes.append(contentsOf: [UInt8(truncatingIfNeeded: value), UInt8(truncatingIfNeeded: value >> 8)])
+            }
+            func append32(_ value: UInt32) {
+                bytes.append(contentsOf: [UInt8(truncatingIfNeeded: value), UInt8(truncatingIfNeeded: value >> 8),
+                                          UInt8(truncatingIfNeeded: value >> 16), UInt8(truncatingIfNeeded: value >> 24)])
+            }
+            bytes.append(contentsOf: "RIFF".utf8); append32(36 + 32000)
+            bytes.append(contentsOf: "WAVEfmt ".utf8); append32(16)
+            append16(1); append16(1); append32(16000); append32(32000); append16(2); append16(16)
+            bytes.append(contentsOf: "data".utf8); append32(32000)
+            for index in 0..<16000 {
+                let sample = Int16(sin(Double(index) * 2 * .pi * 440 / 16000) * 900)
+                append16(UInt16(bitPattern: sample))
+            }
+            XCTAssertEqual(bytes.count, 32044)
+            let source = XCTAttachment(data: bytes, uniformTypeIdentifier: "com.microsoft.waveform-audio")
+            source.name = "ordinary-audio-one-second-pcm-control-source"
+            source.lifetime = .keepAlways; add(source)
+            let engine = try AVAudioPlayer(data: bytes)
+            let observer = OrdinaryAudioFinishObserver(receiver: nil)
+            observer.engine = engine
+            observer.finished = { ended.fulfill() }
+            engine.delegate = observer
+            let timer = Timer(timeInterval: 0.25, repeats: true) { _ in observer.recordEngine("pcm_sample") }
+            RunLoop.main.add(timer, forMode: .common)
+            addTeardownBlock {
+                try self.main {
+                    defer { timer.invalidate(); engine.delegate = nil; engine.stop() }
+                    try self.audioPlaybackEvidence("pcm-finish-callback", observer.evidence())
+                }
+            }
+            XCTAssertTrue(engine.prepareToPlay())
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback)
+            try session.setActive(true)
+            let accepted = engine.play()
+            observer.recordEngine(accepted ? "pcm_play_accepted" : "pcm_play_rejected")
+            XCTAssertTrue(accepted)
+            XCTAssertTrue(engine.isPlaying)
+            XCTAssertEqual(engine.duration, 1, accuracy: 1.0 / 16000)
+            return (engine, observer, timer)
+        }
+        // Await outside MainActor. Neither the clock nor a synthetic delegate call
+        // can satisfy this control; only the actual same-engine finish does so.
+        let result = await XCTWaiter.fulfillment(of: [ended], timeout: 3)
+        try await MainActor.run {
+            let (engine, observer, timer) = control
+            defer { timer.invalidate(); engine.delegate = nil; engine.stop() }
+            observer.recordEngine("pcm_wait_" + String(describing: result))
+            var fields = observer.evidence()
+            fields["source_format"] = "RIFF/WAVE PCM signed 16-bit little endian mono"
+            fields["source_sample_rate"] = 16000
+            fields["source_samples"] = 16000
+            fields["observed_at_unix_seconds"] = Date().timeIntervalSince1970
+            try audioPlaybackEvidence("pcm-finish-at-deadline", fields)
+            XCTAssertEqual(result, .completed, "independent PCM finish delegate within 3 seconds")
+            XCTAssertEqual(observer.successfulSameEngineFinishes, 1)
+            XCTAssertTrue(observer.engine === engine)
+            XCTAssertFalse(engine.isPlaying)
+        }
+    }
+
     private func ordinaryAAC(seconds: Int = 4) throws -> Data {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
         defer { try? FileManager.default.removeItem(at: url) }
