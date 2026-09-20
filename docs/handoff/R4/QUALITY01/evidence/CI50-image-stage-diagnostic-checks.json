@@ -1,0 +1,18 @@
+{
+  "base": "45bc5cdab4da2e28b8486ac2aecff0dbf12cf018",
+  "path": "TinodiosUITests\\ImageMessageLayoutTests.swift",
+  "methods": [
+    "testFullFormatterPreservesOrdinaryGeometryAndUsesDecodedBeforeUnknown",
+    "testLongTopAndUnknownFitRenderActualPixelsWithoutChangingCanvas",
+    "testActualMessageCellLongImageInBothDirectionsAndAccessibilityAppearances",
+    "testOwnedAttachmentRetryKeepsCanvasAndRejectsCancelledAndRetiredCallbacks",
+    "testActualRetryConsumerRechecksEntityPageBulkSelectionAndReuse",
+    "testRealHTTPFailureRetryUsesOriginalOwnerAndShowsClearTextAction"
+  ],
+  "all_existing_assertion_lines_equal": true,
+  "wait_seconds": 3,
+  "failed_attachment_before_XCTFail": true,
+  "production_changed": false,
+  "native_execution": "NOT_RUN",
+  "observations": "state/current scope/source match/retrieve and callback counts/main queue tail/predicate evaluations; no URL, credentials or new drain"
+}

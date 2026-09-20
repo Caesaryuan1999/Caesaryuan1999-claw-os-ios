@@ -1,0 +1,12 @@
+{
+  "base": "1aea86fb87f42a7d2d6215635c7c744262c8943e",
+  "path": "TinodiosUITests/ImageMessageLayoutTests.swift",
+  "method_count": 6,
+  "inverse_entire_file_equal": true,
+  "raw_sha256": "ab506f3965217f227ee2d76c56ae9b36e1bf073fb87e88dcf92d25d346a89f24",
+  "clean_lf_sha256": "50b52cf4cd09c3183da89b3c2a47dd999d82bb6e6dfab796ffaf039e956b51c2",
+  "production_changed": false,
+  "three_wait_methods_changed": false,
+  "deadline_changed": false,
+  "native_execution": "NOT_RUN"
+}

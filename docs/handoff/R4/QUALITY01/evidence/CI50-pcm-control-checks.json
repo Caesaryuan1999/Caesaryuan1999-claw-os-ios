@@ -1,0 +1,23 @@
+{
+  "base": "dfb7bc04be8491bad9b461132b003a3995c220fc",
+  "path": "TinodiosUITests/VoiceLayoutTests.swift",
+  "new_method": "testOwnedAudioIndependentPCMControlUsesRealFinishDelegate",
+  "method_count_before": 20,
+  "method_count_after": 21,
+  "inverse_remove_new_method_entire_file_equal": true,
+  "old_AAC_and_observer_unchanged": true,
+  "new_control_seconds": 3,
+  "new_control_PCM": {
+    "container": "RIFF/WAVE",
+    "format_code": 1,
+    "channels": 1,
+    "sample_rate": 16000,
+    "bits": 16,
+    "samples": 16000,
+    "payload_bytes": 32000,
+    "total_bytes": 32044
+  },
+  "native_execution": "NOT_RUN",
+  "expected_all_native": 337,
+  "expected_navigation": 3
+}
