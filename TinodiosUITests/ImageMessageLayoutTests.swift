@@ -53,12 +53,13 @@ final class ImageMessageLayoutTests: XCTestCase {
         try main {
             let decoded = pattern(width: 80, height: 40)
             let bytes = try XCTUnwrap(decoded.pngData())
+            let decodedBytes = try XCTUnwrap(UIImage(data: bytes))
             let formatter = FullFormatter(defaultAttributes: [.font: UIFont.systemFont(ofSize: 16)])
             let maximum = CGSize(width: 400, height: 500)
             for (w, h) in [(800, 400), (32, 64), (0, 0)] {
                 let draft = try self.draft(width: w, height: h, bits: bytes)
                 let actual = try attachment(formatter.toAttributed(draft, fitIn: maximum))
-                let original = w > 0 ? CGSize(width: w, height: h) : decoded.size
+                let original = w > 0 ? CGSize(width: w, height: h) : decodedBytes.size
                 XCTAssertNil(actual.imageCanvas)
                 XCTAssertEqual(actual.bounds.size, UiUtils.sizeUnder(original: original, fitUnder: maximum, scale: 1, clip: false).dst)
             }
@@ -124,7 +125,8 @@ final class ImageMessageLayoutTests: XCTestCase {
                         XCTAssertEqual(image.imageCanvas?.mode, .longTop)
                         XCTAssertLessThanOrEqual(image.bounds.width, 240)
                         XCTAssertEqual(image.bounds.height / image.bounds.width, 4.0 / 3.0, accuracy: 0.001)
-                        XCTAssertEqual(overlay.bounds.size, image.bounds.size)
+                        XCTAssertEqual(overlay.bounds.width, image.bounds.width, accuracy: 1e-9)
+                        XCTAssertEqual(overlay.bounds.height, image.bounds.height, accuracy: 1e-9)
                         XCTAssertEqual(overlay.badge.text, "长图"); XCTAssertFalse(overlay.badge.isHidden)
                         XCTAssertTrue(overlay.retryButton.isHidden)
                         XCTAssertNil(overlay.hitTest(CGPoint(x: 20, y: 20), with: nil))
