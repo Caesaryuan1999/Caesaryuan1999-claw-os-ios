@@ -1,0 +1,83 @@
+{
+  "created_at": "2026-09-27T07:57:48.238332+08:00",
+  "run": 35497878843,
+  "job": 108508510112,
+  "attempt": 2,
+  "source_sha": "0877d9a8411b0835a1076b426a92da64e0ab9468",
+  "verified_original_count": 312,
+  "files": [
+    {
+      "file": "CI51-ATTEMPT2.md",
+      "bytes": 9229,
+      "sha256": "2506629fe1b826d8b8658c3b83ec3afdcb7b58999d5b9f9355fbf9a173fe0b34"
+    },
+    {
+      "file": "CI51-ATTEMPT2-DIAGNOSIS.json",
+      "bytes": 11448,
+      "sha256": "04e7da45e3048cfb131450e21f8ce0500298ee91733708f59f146f04822f5bd8"
+    },
+    {
+      "file": "CI51-attempt2-result.json",
+      "bytes": 79619,
+      "sha256": "35879edc90be0ba5458ffd42c11b7d708357247b131ab7bcc2951e36abb11260"
+    },
+    {
+      "file": "CI51-preflight.json",
+      "bytes": 3714,
+      "sha256": "1c7f4035536bce331bad4ba3086a5adbcf0272e8f2ca919041bf09b033e0d52c"
+    },
+    {
+      "file": "CI51-RERUN-ONCE.json",
+      "bytes": 3714,
+      "sha256": "6051cbb693b3a16ebd85e07b9fb790b5dea20b5463555c8b4bf7e86ce218cd7a"
+    },
+    {
+      "file": "CI51-rerun-request.json",
+      "bytes": 3750,
+      "sha256": "d2019dfc463417c28e5e0ad024493346d6ee0ed9f95130053788bc9e6aaa8924"
+    },
+    {
+      "file": "CI51-attempt2-start.json",
+      "bytes": 3159,
+      "sha256": "c1d85d23ac1d3d421323164f61b760bce8e9837c17e3f2a0539b36ffa0bded72"
+    },
+    {
+      "file": "CI51-attempt2-progress8.json",
+      "bytes": 3714,
+      "sha256": "44c883f10602c91d0415278bf7de7dea41bd58fabbeed9b0039b01d82025569c"
+    },
+    {
+      "file": "ci51_recovery.py",
+      "bytes": 4471,
+      "sha256": "26269a2f07f4f8651a59cd36df9945eb4183b43b967f3a68efd298822736ece9"
+    },
+    {
+      "file": "collect_ci51_attempt2.py",
+      "bytes": 6165,
+      "sha256": "a774bdeb7d77f9ed5c05b4ea74ec576f90abc1801a3ae15f94f0bd4510b9c37e"
+    },
+    {
+      "file": "seal_ci51_attempt2.py",
+      "bytes": 4964,
+      "sha256": "b67d2da00fda8f4f277a62647662016624123e8d221130bf4b74cbf9df7a087b"
+    }
+  ],
+  "upstream_originals": [
+    {
+      "file": "CI51-attempt2-job.log",
+      "bytes": 7090354,
+      "sha256": "ed283979b7f1166e2922f7a95b4439a5f9cecb9151054de583a622d383fd268c"
+    },
+    {
+      "file": "CI51-attempt2-evidence.zip",
+      "bytes": 115985717,
+      "sha256": "ff06a6e14a73f2ded31e7f2026997878df1d00ef99bf4fe054ff574cdca34fce"
+    }
+  ],
+  "separate_local_source_seal": {
+    "file": "SOURCE-SEAL.json",
+    "bytes": 2993,
+    "sha256": "67c6bc7642a497749ebbe50b56580a91131f2d8aaa05084cbae5487ca75b6750"
+  },
+  "policy": "Original archive/log/312 extracted files remain local and byte-identical; no new CI action."
+}

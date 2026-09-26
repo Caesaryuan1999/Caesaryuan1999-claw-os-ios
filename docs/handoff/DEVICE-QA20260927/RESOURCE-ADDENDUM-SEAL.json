@@ -1,0 +1,12 @@
+{
+  "created_at": "2026-09-27T07:58:43.096339+08:00",
+  "file": "IOS-PAGE-REVIEW.md",
+  "original_commit": "a09eab354d17a9da296a0c5dbce9fe9d036c3518",
+  "original_git_blob_sha256": "62890a43f9806e4613d0a132a02f4f1a189c153049e936e63d62faba161f441b",
+  "current_bytes": 11356,
+  "current_sha256": "6bf1bbaa482f417227a03b3e9847a5e323b16161fbd5803bc131018b5731c601",
+  "scope": "Append-only parent-provided resource timing update and link to CI51 attempt2 original evidence; no source or old evidence change",
+  "android_evidence_source": "Parent controller report; iOS collaborator did not operate devices",
+  "ios_device": "NOT_RUN",
+  "cross_platform": "NOT_RUN"
+}

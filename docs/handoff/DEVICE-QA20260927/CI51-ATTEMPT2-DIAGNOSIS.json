@@ -1,0 +1,303 @@
+{
+  "evidence_level": "remote_ios_simulator_native_tests_and_original_attachments",
+  "source_sha": "0877d9a8411b0835a1076b426a92da64e0ab9468",
+  "run": 35497878843,
+  "job": 108508510112,
+  "attempt": 2,
+  "conclusion": "failure",
+  "counts": {
+    "sdk": {
+      "totalTestCount": 44,
+      "passedTests": 44,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "app_sqlite": {
+      "totalTestCount": 293,
+      "passedTests": 288,
+      "failedTests": 5,
+      "skippedTests": 0
+    },
+    "total_native": {
+      "totalTestCount": 337,
+      "passedTests": 332,
+      "failedTests": 5,
+      "skippedTests": 0
+    }
+  },
+  "static_scripts": 44,
+  "static_failed": 0,
+  "failures": [
+    {
+      "failureText": "failed - Bounded image stage: retry available",
+      "targetName": "TinodiosVoiceLayoutTests",
+      "testIdentifier": 268,
+      "testIdentifierString": "ImageMessageLayoutTests/testActualRetryConsumerRechecksEntityPageBulkSelectionAndReuse()",
+      "testIdentifierURL": "test://com.apple.xcode/Tinodios/TinodiosVoiceLayoutTests/ImageMessageLayoutTests/testActualRetryConsumerRechecksEntityPageBulkSelectionAndReuse",
+      "testName": "testActualRetryConsumerRechecksEntityPageBulkSelectionAndReuse()"
+    },
+    {
+      "failureText": "failed - Bounded image stage: first failure",
+      "targetName": "TinodiosVoiceLayoutTests",
+      "testIdentifier": 271,
+      "testIdentifierString": "ImageMessageLayoutTests/testOwnedAttachmentRetryKeepsCanvasAndRejectsCancelledAndRetiredCallbacks()",
+      "testIdentifierURL": "test://com.apple.xcode/Tinodios/TinodiosVoiceLayoutTests/ImageMessageLayoutTests/testOwnedAttachmentRetryKeepsCanvasAndRejectsCancelledAndRetiredCallbacks",
+      "testName": "testOwnedAttachmentRetryKeepsCanvasAndRejectsCancelledAndRetiredCallbacks()"
+    },
+    {
+      "failureText": "XCTAssertEqual failed: (\"XCTWaiterResult(rawValue: 2)\") is not equal to (\"XCTWaiterResult(rawValue: 1)\") - actual AAC finish delegate within 3 seconds",
+      "targetName": "TinodiosVoiceLayoutTests",
+      "testIdentifier": 285,
+      "testIdentifierString": "VoiceLayoutTests/testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek()",
+      "testIdentifierURL": "test://com.apple.xcode/Tinodios/TinodiosVoiceLayoutTests/VoiceLayoutTests/testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek",
+      "testName": "testOwnedAudioActualAACPlaybackPauseResumeAndFiniteSeek()"
+    },
+    {
+      "failureText": "XCTAssertEqual failed: (\"XCTWaiterResult(rawValue: 2)\") is not equal to (\"XCTWaiterResult(rawValue: 1)\") - independent PCM finish delegate within 3 seconds",
+      "targetName": "TinodiosVoiceLayoutTests",
+      "testIdentifier": 287,
+      "testIdentifierString": "VoiceLayoutTests/testOwnedAudioIndependentPCMControlUsesRealFinishDelegate()",
+      "testIdentifierURL": "test://com.apple.xcode/Tinodios/TinodiosVoiceLayoutTests/VoiceLayoutTests/testOwnedAudioIndependentPCMControlUsesRealFinishDelegate",
+      "testName": "testOwnedAudioIndependentPCMControlUsesRealFinishDelegate()"
+    },
+    {
+      "failureText": "failed - Bounded image stage: real HTTP 403",
+      "targetName": "TinodiosVoiceLayoutTests",
+      "testIdentifier": 272,
+      "testIdentifierString": "ImageMessageLayoutTests/testRealHTTPFailureRetryUsesOriginalOwnerAndShowsClearTextAction()",
+      "testIdentifierURL": "test://com.apple.xcode/Tinodios/TinodiosVoiceLayoutTests/ImageMessageLayoutTests/testRealHTTPFailureRetryUsesOriginalOwnerAndShowsClearTextAction",
+      "testName": "testRealHTTPFailureRetryUsesOriginalOwnerAndShowsClearTextAction()"
+    }
+  ],
+  "images_post_wait": [
+    {
+      "original": {
+        "file": "CI51-attempt2-original/ios-01-a-20260926-232942/storage-attachments/46F6EFE3-784C-4383-9F14-558C011F7B73.json",
+        "bytes": 390,
+        "sha256": "16bd3637c2764bb8f11c336392f8a5e55145e98938cb86a0db8ca6ac815a83c0"
+      },
+      "snapshot": {
+        "can_retry": true,
+        "consumer_current": true,
+        "controlled_callbacks": 1,
+        "elapsed": 3.0062049583334556,
+        "owner_current": true,
+        "page_current": true,
+        "post_wait_start_main_queue_tail_seen": true,
+        "predicate_evaluations": 1,
+        "predicate_last": true,
+        "snapshot_main_thread": true,
+        "source_matches": true,
+        "stage": "retry available",
+        "state": "failed",
+        "transport_requests": 1,
+        "wait_result": "XCTWaiterResult(rawValue: 2)"
+      }
+    },
+    {
+      "original": {
+        "file": "CI51-attempt2-original/ios-01-a-20260926-232942/storage-attachments/5D4D09FB-CE32-4146-B742-8CF514C8F64C.json",
+        "bytes": 368,
+        "sha256": "84211b795f69bc4343f52ccd30d840d7abf1c97b8ba5c63c4cf55b464645e8a8"
+      },
+      "snapshot": {
+        "can_retry": true,
+        "consumer_current": true,
+        "controlled_callbacks": 1,
+        "elapsed": 3.0082771666668577,
+        "owner_current": true,
+        "post_wait_start_main_queue_tail_seen": true,
+        "predicate_evaluations": 1,
+        "predicate_last": true,
+        "snapshot_main_thread": true,
+        "source_matches": true,
+        "stage": "first failure",
+        "state": "failed",
+        "transport_requests": 1,
+        "wait_result": "XCTWaiterResult(rawValue: 2)"
+      }
+    },
+    {
+      "original": {
+        "file": "CI51-attempt2-original/ios-01-a-20260926-232942/storage-attachments/6808C4DE-6597-4384-96B3-CCC2F7B86AAE.json",
+        "bytes": 358,
+        "sha256": "978f8aa5f3b2435030390291ca7fe567b2fa6f22ad0e26c7f4303e6cd3c45f57"
+      },
+      "snapshot": {
+        "can_retry": true,
+        "consumer_current": true,
+        "elapsed": 3.0041853749999063,
+        "http_requests": 1,
+        "owner_current": true,
+        "page_current": true,
+        "post_wait_start_main_queue_tail_seen": true,
+        "predicate_evaluations": 1,
+        "predicate_last": true,
+        "snapshot_main_thread": true,
+        "source_matches": true,
+        "stage": "real HTTP 403",
+        "state": "failed",
+        "wait_result": "XCTWaiterResult(rawValue: 2)"
+      }
+    }
+  ],
+  "audio_at_deadline": [
+    {
+      "case": "production_aac",
+      "original": {
+        "file": "CI51-attempt2-original/ios-01-a-20260926-232942/storage-attachments/38E487D7-63BB-4B9C-8A72-D75D337080C1.json",
+        "bytes": 3507,
+        "sha256": "3132f158627bb30c791c9c68c856eeec791833fd1d9eaac8f6f341db3088754b"
+      },
+      "metadata": {
+        "output_channels": 2,
+        "output_port_types": [
+          "Speaker"
+        ],
+        "production_scope_current": true,
+        "sample_rate": 48000,
+        "scope": "real AV delegate forwarding and production state; no synthetic callback",
+        "session_category": "AVAudioSessionCategoryPlayback",
+        "session_mode": "AVAudioSessionModeDefault",
+        "successful_same_engine_finishes": 0
+      },
+      "event_count": 17,
+      "last_events": [
+        {
+          "current_time": 1,
+          "delegate_is_observer": true,
+          "duration": 1,
+          "elapsed": 3.118278291666684,
+          "event": "production_wait_XCTWaiterResult(rawValue: 2)",
+          "is_playing": true,
+          "loops": 0,
+          "main_thread": true,
+          "same_engine": true
+        },
+        {
+          "current_time": 1,
+          "delegate_is_observer": true,
+          "duration": 1,
+          "elapsed": 3.11829237500001,
+          "event": "state_playing",
+          "is_playing": true,
+          "loops": 0,
+          "main_thread": true,
+          "same_engine": true
+        }
+      ]
+    },
+    {
+      "case": "bare_aac_control",
+      "original": {
+        "file": "CI51-attempt2-original/ios-01-a-20260926-232942/storage-attachments/DAF2F21E-6205-4834-9BB9-14492366B4A9.json",
+        "bytes": 2891,
+        "sha256": "c8fb32e1887d15f9072edcc5013a1277bc0d040bf1f72ed294192a63d6a4e72b"
+      },
+      "metadata": {
+        "output_channels": 2,
+        "output_port_types": [
+          "Speaker"
+        ],
+        "production_scope_current": false,
+        "sample_rate": 48000,
+        "scope": "real AV delegate forwarding and production state; no synthetic callback",
+        "session_category": "AVAudioSessionCategoryPlayback",
+        "session_mode": "AVAudioSessionModeDefault",
+        "successful_same_engine_finishes": 0
+      },
+      "event_count": 14,
+      "last_events": [
+        {
+          "current_time": 1,
+          "delegate_is_observer": true,
+          "duration": 1,
+          "elapsed": 3.0020763749998878,
+          "event": "bare_sample",
+          "is_playing": true,
+          "loops": 0,
+          "main_thread": true,
+          "same_engine": true
+        },
+        {
+          "current_time": 1,
+          "delegate_is_observer": true,
+          "duration": 1,
+          "elapsed": 3.1352735416664927,
+          "event": "bare_wait_XCTWaiterResult(rawValue: 2)",
+          "is_playing": true,
+          "loops": 0,
+          "main_thread": true,
+          "same_engine": true
+        }
+      ]
+    },
+    {
+      "case": "independent_pcm_control",
+      "original": {
+        "file": "CI51-attempt2-original/ios-01-a-20260926-232942/storage-attachments/96604974-5B23-4757-AA1B-7C8725B27FD0.json",
+        "bytes": 3231,
+        "sha256": "c6aa147efb8fd06c511c38491026013dac64aefcba7cea455c345e7a1a54182d"
+      },
+      "metadata": {
+        "observed_at_unix_seconds": 1790466316.350862,
+        "output_channels": 2,
+        "output_port_types": [
+          "Speaker"
+        ],
+        "production_scope_current": false,
+        "sample_rate": 48000,
+        "scope": "real AV delegate forwarding and production state; no synthetic callback",
+        "session_category": "AVAudioSessionCategoryPlayback",
+        "session_mode": "AVAudioSessionModeDefault",
+        "source_format": "RIFF/WAVE PCM signed 16-bit little endian mono",
+        "source_sample_rate": 16000,
+        "source_samples": 16000,
+        "successful_same_engine_finishes": 0
+      },
+      "event_count": 15,
+      "last_events": [
+        {
+          "current_time": 1,
+          "delegate_is_observer": true,
+          "duration": 1,
+          "elapsed": 3.2521384166668668,
+          "event": "pcm_sample",
+          "is_playing": true,
+          "loops": 0,
+          "main_thread": true,
+          "same_engine": true
+        },
+        {
+          "current_time": 1,
+          "delegate_is_observer": true,
+          "duration": 1,
+          "elapsed": 3.258807125000203,
+          "event": "pcm_wait_XCTWaiterResult(rawValue: 2)",
+          "is_playing": true,
+          "loops": 0,
+          "main_thread": true,
+          "same_engine": true
+        }
+      ]
+    }
+  ],
+  "navigation": {
+    "status": "NOT_RUN",
+    "source": "navigation.xcresult",
+    "scope": "Original XCTest attachments only; no image conversion or reconstruction",
+    "safety": "NOT_ASSESSED_BY_EXPORT",
+    "commands": [],
+    "screenshots": [],
+    "json_attachments": [],
+    "files": [],
+    "reason": "Navigation result bundle was not produced"
+  },
+  "limits": [
+    "Does not include auth fixes 92208c6 or 3d94981.",
+    "Image predicate true was recorded after wait; no exact predicate timestamp proves it met deadline.",
+    "Independent PCM and AAC finish failures do not establish an AAC-only or platform root cause.",
+    "No synthetic finish or deadline extension was used.",
+    "Packaging, cold launch, real iPhone and Android/iOS integration were not verified."
+  ]
+}
