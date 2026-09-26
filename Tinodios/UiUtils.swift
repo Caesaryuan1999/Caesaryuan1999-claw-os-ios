@@ -306,6 +306,12 @@ class UiUtils {
         } else {
             me!.listener = meListener
         }
+        // A message page may already have attached this same session's me topic.
+        // Adopt that topic after installing the listener; a nonempty get would
+        // make Topic.subscribe reject locally as alreadySubscribed.
+        if me!.attached {
+            return PromisedReply<ServerMessage>(value: ServerMessage())
+        }
         let get = me!.metaGetBuilder().withCred().withDesc().withSub().withTags().build()
         return me!.subscribe(set: nil, get: get)
             .thenCatch({ err in

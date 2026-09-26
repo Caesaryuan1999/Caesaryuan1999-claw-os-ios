@@ -38,6 +38,9 @@ def main():
         'retry_uses_captured_owner_under_current_gate': 'Cache.ifCurrent(tinode)' in catch and 'tinode.reconnectNow' in catch and 'Cache.tinode' not in catch,
         'caller_passes_its_same_owner_to_subscribe': 'meListener: self.meListener, for: tinode' in caller,
         'success_does_not_update_replacement_session': 'Cache.ifCurrent(tinode)' in success,
+        'already_attached_original_me_is_idempotent': 'if me!.attached {' in helper and
+            'return PromisedReply<ServerMessage>(value: ServerMessage())' in helper and
+            helper.index('if me!.attached {') < helper.index('let get ='),
         'failure_does_not_route_replacement_session': 'logoutAndRouteToLoginVC(ifCurrent: tinode)' in failure and 'router?.routeToLogin()' not in failure,
         'store_logout_retains_messages': 'UPDATE accounts SET last_active=0,device_id=NULL WHERE id=? AND uid=?' in sources['TinodiosDB/BaseDb.swift']
             and 'DELETE' not in method(sources['TinodiosDB/BaseDb.swift'], 'public func logout()'),
