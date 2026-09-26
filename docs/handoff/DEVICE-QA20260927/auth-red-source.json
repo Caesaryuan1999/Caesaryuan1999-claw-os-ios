@@ -1,0 +1,22 @@
+{
+  "level": "source_wiring_only_not_Swift_or_UIKit",
+  "source": "working-tree",
+  "passed": 2,
+  "total": 8,
+  "checks": {
+    "subscription_failure_stays_rejected": false,
+    "all_auth_failures_route_with_request_owner": false,
+    "retry_uses_captured_owner_under_current_gate": false,
+    "caller_passes_its_same_owner_to_subscribe": false,
+    "success_does_not_update_replacement_session": false,
+    "failure_does_not_route_replacement_session": false,
+    "store_logout_retains_messages": true,
+    "promise_nil_failure_handler_is_recovery": true
+  },
+  "inputs_lf_sha256": {
+    "Tinodios/UiUtils.swift": "9ab72967d2fb8e9e1a7e6122563f6f01e9f126f0a1506461a4acbfe95e1bfb00",
+    "Tinodios/ChatListInteractor.swift": "736b16faeb1c89e24208d8acbc4fa2ddce11a14e07561f9c4623292e64c8b93d",
+    "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30",
+    "TinodiosDB/BaseDb.swift": "1009f4f93ab9d1ff5cd34e690133fc9a77ba4fc41354f1a148efdbaa092e1d52"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "baseline": "79f015f47b15fd7124f81d52205de5c5508f370e",
+  "code_commits": [
+    "92208c6a5078ab4d8c92e9e84d069a17ee20e19d",
+    "3d9498144a8ea95a5d581d777e6b78a246128ebc"
+  ],
+  "source_policy": {
+    "scripts": 45,
+    "passed": 45,
+    "failed": 0
+  },
+  "swift_fixture": "NOT_RUN",
+  "iOS_device": "NOT_RUN",
+  "cross_platform": "NOT_RUN",
+  "ci51_attempt2_source": "0877d9a8411b0835a1076b426a92da64e0ab9468",
+  "ci51_does_not_test_new_patch": true,
+  "files": [
+    {
+      "file": "IOS-PAGE-REVIEW.md",
+      "bytes": 9929,
+      "sha256": "62890a43f9806e4613d0a132a02f4f1a189c153049e936e63d62faba161f441b"
+    },
+    {
+      "file": "AUTH-RECOVERY-REVIEW.md",
+      "bytes": 6224,
+      "sha256": "57262d36ac4baf23c02182322679d251fd7467106bafbcf0925f50735c578875"
+    },
+    {
+      "file": "auth-red-source.json",
+      "bytes": 1022,
+      "sha256": "11d145343ad84b8c7cdbf3ae31e17b8798a7a981b5a0ad343a7c58da1a8bab17"
+    },
+    {
+      "file": "auth-green-source.json",
+      "bytes": 1016,
+      "sha256": "d876a19f1e3e5d0c1769ba38478ee92cf325909679e02bd00ce9507de7753abb"
+    },
+    {
+      "file": "auth-attached-red-source.json",
+      "bytes": 1074,
+      "sha256": "39d77dc1e18467f4cb59ff023b66f1a1586aa15f3b892a94e2f7ee5d789bed0d"
+    },
+    {
+      "file": "auth-attached-green-source.json",
+      "bytes": 1073,
+      "sha256": "191d4b4e1d64e8745bfa80fdacb014289bd840a584b73a624450dba83d2d127b"
+    },
+    {
+      "file": "static-after-auth.json",
+      "bytes": 18972,
+      "sha256": "4bc578b0ba773f3309635bb83817feef65e519a8b24b7f81359ab033ba74d4c5"
+    },
+    {
+      "file": "static-final-after-attached.json",
+      "bytes": 19031,
+      "sha256": "d54f4bd636aefc6c967a42d45290fbcd1150b370dd3afd36e158f880dff9271a"
+    },
+    {
+      "file": "source-inventory.json",
+      "bytes": 27860,
+      "sha256": "89681bf37c82679cd70f6fd7d95a0ed09fccc302a757bbb04c8c7aa9d5b3e91f"
+    },
+    {
+      "file": "source-final-inventory.json",
+      "bytes": 27860,
+      "sha256": "f60e6ae2c425294f42756d80fe52516ea2a7ecce32780a43f6a7ca660019b6b0"
+    },
+    {
+      "file": "run_me_subscription_fixture.py",
+      "bytes": 3535,
+      "sha256": "dfa99db5db306bebce91dc8fe4b35c4bb357f77b2a88a5e906fe8746fb4c64bc"
+    },
+    {
+      "file": "me_subscription_fixture.swift",
+      "bytes": 7043,
+      "sha256": "33e6a7a2ed144caead02358b383fc55eff66b9d615b3536a27ea0d264c384b61"
+    },
+    {
+      "file": "native-fixture-final-prepared/main.swift",
+      "bytes": 18542,
+      "sha256": "145922b9d6720a6238491465583ec01f3f64c7023967e6b15251a9edb1f33b7b"
+    },
+    {
+      "file": "native-fixture-final-prepared/result.json",
+      "bytes": 703,
+      "sha256": "486b75a0cfcaa896586d63eb582b46b3481f972d37a12cae1f09bce7d2b4ea9d"
+    },
+    {
+      "file": "source.patch",
+      "bytes": 7798,
+      "sha256": "21e1a36cc5ad30a0622121328fccdfb30e060b85b05e031f7f11882cd037d8b2"
+    }
+  ]
+}

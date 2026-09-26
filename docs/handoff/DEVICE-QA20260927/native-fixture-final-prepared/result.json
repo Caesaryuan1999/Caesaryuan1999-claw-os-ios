@@ -1,0 +1,12 @@
+{
+  "source": "working-tree",
+  "native_status": "NOT_RUN",
+  "inputs_lf_sha256": {
+    "Tinodios/UiUtils.swift": "60a98dfdecca47b8730871a41986f01318f63fac0c9c93ac86cc38028219e1c3",
+    "Tinodios/ChatListInteractor.swift": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363",
+    "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+  },
+  "generated_sha256": "9a00605afe58c67c7f03340db214d1f76d2e66b39a157194f7c5f9a8a2535a4b",
+  "scope": "Actual Promise and verbatim helper/caller; Cache, transport, UI are controlled fixtures; no iOS build/device proof",
+  "reason": "swiftc is unavailable; fixture prepared without execution"
+}

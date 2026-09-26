@@ -1,0 +1,148 @@
+diff --git a/Scripts/ci/test_me_subscription_owner_policy.py b/Scripts/ci/test_me_subscription_owner_policy.py
+new file mode 100644
+index 0000000..ecbccd4
+--- /dev/null
++++ b/Scripts/ci/test_me_subscription_owner_policy.py
+@@ -0,0 +1,60 @@
++#!/usr/bin/env python3
++"""Narrow source-wiring regression; not Swift execution or device acceptance."""
++import argparse
++import hashlib
++import json
++from pathlib import Path
++import subprocess
++
++ROOT = Path(__file__).resolve().parents[2]
++
++def method(source, marker):
++    start = source.index(marker)
++    brace = source.index('{', start)
++    depth, end = 1, brace + 1
++    while depth:
++        depth += (source[end] == '{') - (source[end] == '}')
++        end += 1
++    return source[start:end]
++
++def main():
++    parser = argparse.ArgumentParser()
++    parser.add_argument('--source-ref')
++    parser.add_argument('--report', type=Path)
++    args = parser.parse_args()
++    def read(path):
++        return (subprocess.check_output(['git', 'show', f'{args.source_ref}:{path}'], cwd=ROOT).decode('utf-8')
++                if args.source_ref else (ROOT / path).read_text(encoding='utf-8'))
++    sources = {p: read(p) for p in ['Tinodios/UiUtils.swift', 'Tinodios/ChatListInteractor.swift',
++                                   'TinodeSDK/PromisedReply.swift', 'TinodiosDB/BaseDb.swift']}
++    helper = method(sources['Tinodios/UiUtils.swift'], 'public static func attachToMeTopic(')
++    caller = method(sources['Tinodios/ChatListInteractor.swift'], '    func attachToMeTopic() {')
++    catch = helper.split('.thenCatch', 1)[1]
++    success = caller.split('onSuccess:', 1)[1].split('onFailure:', 1)[0]
++    failure = caller.split('onFailure:', 1)[1]
++    checks = {
++        'subscription_failure_stays_rejected': 'return PromisedReply<ServerMessage>(error: err)' in catch and 'return nil' not in catch,
++        'all_auth_failures_route_with_request_owner': 'case 401, 403, 404:' in catch and 'logoutAndRouteToLoginVC(ifCurrent: tinode)' in catch,
++        'retry_uses_captured_owner_under_current_gate': 'Cache.ifCurrent(tinode)' in catch and 'tinode.reconnectNow' in catch and 'Cache.tinode' not in catch,
++        'caller_passes_its_same_owner_to_subscribe': 'meListener: self.meListener, for: tinode' in caller,
++        'success_does_not_update_replacement_session': 'Cache.ifCurrent(tinode)' in success,
++        'already_attached_original_me_is_idempotent': 'if me!.attached {' in helper and
++            'return PromisedReply<ServerMessage>(value: ServerMessage())' in helper and
++            helper.index('if me!.attached {') < helper.index('let get ='),
++        'failure_does_not_route_replacement_session': 'logoutAndRouteToLoginVC(ifCurrent: tinode)' in failure and 'router?.routeToLogin()' not in failure,
++        'store_logout_retains_messages': 'UPDATE accounts SET last_active=0,device_id=NULL WHERE id=? AND uid=?' in sources['TinodiosDB/BaseDb.swift']
++            and 'DELETE' not in method(sources['TinodiosDB/BaseDb.swift'], 'public func logout()'),
++        'promise_nil_failure_handler_is_recovery': 'try handleSuccess(ret: fh(err))' in sources['TinodeSDK/PromisedReply.swift']
++            and 'try np.resolve(result: value)' in sources['TinodeSDK/PromisedReply.swift'],
++    }
++    report = {'level':'source_wiring_only_not_Swift_or_UIKit', 'source':args.source_ref or 'working-tree',
++              'passed':sum(checks.values()), 'total':len(checks), 'checks':checks,
++              'inputs_lf_sha256':{p:hashlib.sha256(s.encode()).hexdigest() for p,s in sources.items()}}
++    if args.report:
++        with args.report.open('x', encoding='utf-8') as stream:
++            json.dump(report, stream, indent=2)
++    print(json.dumps(report, indent=2))
++    return 0 if all(checks.values()) else 1
++
++if __name__ == '__main__':
++    raise SystemExit(main())
+diff --git a/Tinodios/ChatListInteractor.swift b/Tinodios/ChatListInteractor.swift
+index 252985a..3e192d7 100644
+--- a/Tinodios/ChatListInteractor.swift
++++ b/Tinodios/ChatListInteractor.swift
+@@ -100,15 +100,17 @@ class ChatListInteractor: ChatListBusinessLogic, ChatListDataStore {
+             return
+         }
+ 
+-        UiUtils.attachToMeTopic(meListener: self.meListener)?.then(
++        UiUtils.attachToMeTopic(meListener: self.meListener, for: tinode)?.then(
+             onSuccess: { [weak self] _ in
+-                self?.loadAndPresentTopics()
+-                self?.meTopic = tinode.getMeTopic()
++                Cache.ifCurrent(tinode) {
++                    self?.loadAndPresentTopics()
++                    self?.meTopic = tinode.getMeTopic()
++                }
+                 return nil
+-            }, onFailure: { [weak self] err in
++            }, onFailure: { err in
+                 if let e = err as? TinodeError, case .serverResponseError(let code, _, _) = e {
+                     if code == 401 || code==403 || code == 404 {
+-                        self?.router?.routeToLogin()
++                        UiUtils.logoutAndRouteToLoginVC(ifCurrent: tinode)
+                     }
+                 }
+                 return nil
+diff --git a/Tinodios/UiUtils.swift b/Tinodios/UiUtils.swift
+index 039e509..71283dd 100644
+--- a/Tinodios/UiUtils.swift
++++ b/Tinodios/UiUtils.swift
+@@ -297,14 +297,21 @@ class UiUtils {
+         return configuration
+     }
+ 
+-    public static func attachToMeTopic(meListener: DefaultMeTopic.Listener?) -> PromisedReply<ServerMessage>? {
+-        let tinode = Cache.tinode
++    public static func attachToMeTopic(meListener: DefaultMeTopic.Listener?, for owner: Tinode? = nil) -> PromisedReply<ServerMessage>? {
++        let tinode = owner ?? Cache.tinode
++        guard Cache.isCurrent(tinode) else { return nil }
+         var me = tinode.getMeTopic()
+         if me == nil {
+             me = DefaultMeTopic(tinode: tinode, l: meListener)
+         } else {
+             me!.listener = meListener
+         }
++        // A message page may already have attached this same session's me topic.
++        // Adopt that topic after installing the listener; a nonempty get would
++        // make Topic.subscribe reject locally as alreadySubscribed.
++        if me!.attached {
++            return PromisedReply<ServerMessage>(value: ServerMessage())
++        }
+         let get = me!.metaGetBuilder().withCred().withDesc().withSub().withTags().build()
+         return me!.subscribe(set: nil, get: get)
+             .thenCatch({ err in
+@@ -312,18 +319,22 @@ class UiUtils {
+                 if let e = err as? TinodeError {
+                     if case TinodeError.serverResponseError(let code, let text, _) = e {
+                         switch code {
+-                        case 404:
+-                            UiUtils.logoutAndRouteToLoginVC()
++                        case 401, 403, 404:
++                            UiUtils.logoutAndRouteToLoginVC(ifCurrent: tinode)
+                         case 502:
+                             if text == "cluster unreachable" {
+-                                Cache.tinode.reconnectNow(interactively: false, reset: true)
++                                Cache.ifCurrent(tinode) {
++                                    tinode.reconnectNow(interactively: false, reset: true)
++                                }
+                             }
+                         default:
+                             break
+                         }
+                     }
+                 }
+-                return nil
++                // A nil failure result recovers PromisedReply as success. Keep
++                // the original rejection so callers cannot present a false sync.
++                return PromisedReply<ServerMessage>(error: err)
+             })
+     }
+     public static func attachToFndTopic(fndListener: DefaultFndTopic.Listener?) -> PromisedReply<ServerMessage>? {

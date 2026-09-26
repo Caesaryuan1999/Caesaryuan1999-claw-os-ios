@@ -1,0 +1,799 @@
+{
+  "time": "2026-09-27T07:37:34.515892+08:00",
+  "workspace": "C:\\Users\\12287\\Documents\\Codex\\2026-07-08\\tinode-app\\work\\r3-20260918-ios",
+  "branch": "codex/r3-20260918-ios",
+  "head": "92208c6a5078ab4d8c92e9e84d069a17ee20e19d",
+  "origin": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios.git",
+  "initial_baseline": "79f015f47b15fd7124f81d52205de5c5508f370e",
+  "initial_tracked_dirty": 0,
+  "initial_untracked_count": 23538,
+  "current_tracked_dirty": "",
+  "level": "file_identity_and_static_route_inventory_not_runtime",
+  "inputs": [
+    {
+      "path": "Tinodios/Base.lproj/Main.storyboard",
+      "bytes": 541112,
+      "sha256": "d638fe4118a87709ec6c4aa434b9f6efc92248aeccc9591b202a729952c2b18b",
+      "lf_sha256": "a65df60a2eed35ca4440fc98f855ec9ff646c2292d70c16fa795ffa52ea14eb1"
+    },
+    {
+      "path": "Tinodios/AppDelegate.swift",
+      "bytes": 33777,
+      "sha256": "f81b5faba2887f6890ced54cbfcb60a9aa21c138028ea617b78f68b8c6a19f54",
+      "lf_sha256": "04f1c5ddc4de1cebbcb1af5b30e42e2273f0a57b320cfec57de3c30298ffa776"
+    },
+    {
+      "path": "Tinodios/Cache.swift",
+      "bytes": 13997,
+      "sha256": "a859399d09b2985bb51ddee775e0c7c631feeb988271806db895208515de047a",
+      "lf_sha256": "a859399d09b2985bb51ddee775e0c7c631feeb988271806db895208515de047a"
+    },
+    {
+      "path": "Tinodios/UiUtils.swift",
+      "bytes": 62008,
+      "sha256": "1d082a3b4ecda055a284ca0ffa401b1859722869409fe48e7845d076e0b64e6c",
+      "lf_sha256": "bca3195b38a88d52e1f27131acc0bbd6e573bc09a3006def9ad1ef25985ccb13"
+    },
+    {
+      "path": "Tinodios/ChatListInteractor.swift",
+      "bytes": 7543,
+      "sha256": "e6d130b5ef57699ae9aab86b5328200075131dd25281ef4e83820031c95f995d",
+      "lf_sha256": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363"
+    },
+    {
+      "path": "Tinodios/ChatListRouter.swift",
+      "bytes": 653,
+      "sha256": "a0ba1ad5f61acbae5d713ea031787b3d8a5c85eb22e8623f3bacd04ab2194815",
+      "lf_sha256": "2554dcf7ad95156fe6a0fd0f190f9612c1742ca967ef83b546c90ac20b2477e9"
+    },
+    {
+      "path": "Tinodios/ChatListViewController.swift",
+      "bytes": 24834,
+      "sha256": "08bde8fb0efc6811e9f1ed2ff896a8dac0bc456cb6e9cda32a3f77d6d9e33d45",
+      "lf_sha256": "80edabf4262f0c8d15abae8697bf061f1659ad02a6e709f50a943b00114037e3"
+    },
+    {
+      "path": "Tinodios/NewChatTabController.swift",
+      "bytes": 22001,
+      "sha256": "4a91adc2c80e9a18ec550cced5279b235c6f1a874124a5d2075dbe2e604f1bec",
+      "lf_sha256": "b8e481645f07f052dc1d0141ab22825b5f0e9c979f290121d29f16f6a7f1cd14"
+    },
+    {
+      "path": "Tinodios/LoginViewController.swift",
+      "bytes": 10096,
+      "sha256": "4f72bc9d0116783d1cc5cd463849f8947247ff2e66a5c0c09c842c244bd2d29e",
+      "lf_sha256": "c06d514533e7777af2c8956206f63c3d9ed420eeae8f5172b3f710a937fd81cf"
+    },
+    {
+      "path": "Tinodios/SignupViewController.swift",
+      "bytes": 862,
+      "sha256": "0080b9ffab1ca4563552412fe46021eba6943479460497bfb448a28187b3f2e0",
+      "lf_sha256": "a2bb654b191b7c791a6189680a7e2c4af09714f60d8aa7bbc316508100168ef8"
+    },
+    {
+      "path": "Tinodios/ResetPasswordViewController.swift",
+      "bytes": 695,
+      "sha256": "473e1b6bac319cf9a51cddf2e9b7245a6578381ef46c09cd470799ab4e4fbcb8",
+      "lf_sha256": "c8d6fa438b080c52233229626d5d5ef3e2a67b611093dd6af71920a404578e89"
+    },
+    {
+      "path": "Tinodios/CredentialsViewController.swift",
+      "bytes": 8026,
+      "sha256": "1da899cc68ff4053357d35a43dbacf3f7490c9158947a4ac4843319823b97f83",
+      "lf_sha256": "49ee2435cfb4dc9d8902f46b8b3e0741a968bc776e9abdaab58ba6fd21688c68"
+    },
+    {
+      "path": "Tinodios/CredentialsChangeViewController.swift",
+      "bytes": 3408,
+      "sha256": "5551c6ab9ebae4081f53b737bc205551128fb81484fa65c34d6b41201b7466c1",
+      "lf_sha256": "f781056f74f10c771fd411a9952fa06edcf9bc8d8eb42a5f609953fffb29ce1f"
+    },
+    {
+      "path": "Tinodios/ClawIdentityFlow.swift",
+      "bytes": 20986,
+      "sha256": "b51cef572cbfa74740a2115de962e31cdfa97711feada8c03ff067a10286577a",
+      "lf_sha256": "f678e42acd6b782fb9802fcf01944f949f20c6e4c2211ef2e751cf7634626b53"
+    },
+    {
+      "path": "Tinodios/ClawIdentityService.swift",
+      "bytes": 13852,
+      "sha256": "b0402c16e068e786ef1811c1ec5b883d84c2e5ceeaa00404acc485e840b4973c",
+      "lf_sha256": "9f07198d8cbdf29cc27474a6ac5e3c4623d99cc330a96e9fc70e8be15a2077cb"
+    },
+    {
+      "path": "Tinodios/BrandingViewController.swift",
+      "bytes": 2297,
+      "sha256": "760e05c5f31bc9382fe6ac01604b88dc670c3c697aba4952e14c2c77968fbc5d",
+      "lf_sha256": "53aa2537701867e77e9c686234ce8baaca0ccbbccc2b5b8c63e0f0211c122112"
+    },
+    {
+      "path": "Tinodios/MessageViewController.swift",
+      "bytes": 91821,
+      "sha256": "2db48ae5dd8bef9a53b873e912e01508f2768204e65924921cc61e4a9b08966f",
+      "lf_sha256": "a756c2c4577da098af06c02adc51105cc8d41bbbbcfdda09c0bd6f788358b519"
+    },
+    {
+      "path": "Tinodios/MessageViewController+Keyboard.swift",
+      "bytes": 2462,
+      "sha256": "de5154153383f7c5df8607d382309163cbca75048e4e9ffb8b0e5436eef1c599",
+      "lf_sha256": "ebf0368ad24cedfe785bc2a72fce910391a977176f5d34fdc2c7a2ae147f409c"
+    },
+    {
+      "path": "Tinodios/MessagePresenter.swift",
+      "bytes": 4266,
+      "sha256": "937cdca5ee208230ce712cf531c38cf00a1f64688b7e5200e32d5411869a5d50",
+      "lf_sha256": "2205ced0b67b7aadcbd5d26280f87eb2a54529f22107c08615ab79217c675b64"
+    },
+    {
+      "path": "Tinodios/MessageInteractor.swift",
+      "bytes": 55803,
+      "sha256": "041cc693bae25d2b511f1ecad4e34c28ead59c0646f52aa68e1f9183b27b4ee2",
+      "lf_sha256": "812985deb810ebd6890c399d71f0fd14a4a5ff8cc3a961bc09a1e825f6499789"
+    },
+    {
+      "path": "Tinodios/ForwardToViewController.swift",
+      "bytes": 1889,
+      "sha256": "1638b08e6bbd6e96b75217db5e66d48cab50e4be6e35089f614e4a00ff8b71bc",
+      "lf_sha256": "e6e33863a1e20567de123cb8f227ad4d11fdcd449f5710ffa81ddd224dd5d27d"
+    },
+    {
+      "path": "Tinodios/widgets/SendMessageBar.swift",
+      "bytes": 40294,
+      "sha256": "dc8e241bfc4eb257b9baa06375004cd8d91662481b2c47388b149b0801c24298",
+      "lf_sha256": "dc8e241bfc4eb257b9baa06375004cd8d91662481b2c47388b149b0801c24298"
+    },
+    {
+      "path": "Tinodios/widgets/ImagePicker.swift",
+      "bytes": 8744,
+      "sha256": "8f7d72b0cd3356639046e0ada96ce5a7c417c18cdbae427a8c5d0f5b869e3517",
+      "lf_sha256": "8d2e9ba61c4127b0b22ae5608b9a4510759159beeef2cd5010c38c99be704eda"
+    },
+    {
+      "path": "Tinodios/MediaRecorder.swift",
+      "bytes": 21301,
+      "sha256": "30e81e44ed8c52d55a053fe324bebb1c4c157b18374b12cdb247baf399bddee7",
+      "lf_sha256": "30e81e44ed8c52d55a053fe324bebb1c4c157b18374b12cdb247baf399bddee7"
+    },
+    {
+      "path": "Tinodios/format/FullFormatter.swift",
+      "bytes": 11831,
+      "sha256": "f4966f57b4444338244609bb6cf970fa53e3df1b2ada465c10b0f96237afbba4",
+      "lf_sha256": "39431f2236c40aeb690a4f3828e1767185acf2ea456e020b67f58e26f653afb5"
+    },
+    {
+      "path": "Tinodios/format/AsyncImageTextAttachment.swift",
+      "bytes": 6754,
+      "sha256": "8e128d84a7ddb5e86136793cfd4594d40c05746599d6ab1d45d01016359186a4",
+      "lf_sha256": "d568d514f7378d425f7943d966358f00d82a944e244d51206bc3b93becb38654"
+    },
+    {
+      "path": "Tinodios/ImagePreviewController.swift",
+      "bytes": 13993,
+      "sha256": "f362c12f903a800811849c7745e4cc8e1433f9c0d89fc40f04c9830cbfd38ac1",
+      "lf_sha256": "2f185adf7d24f501e222d9af476cf80c61acc37603ffdb933206a2cf79d1e078"
+    },
+    {
+      "path": "Tinodios/VideoPreviewController.swift",
+      "bytes": 34339,
+      "sha256": "b65bfdacdd34f45f42edd7402b2faa188f07bab51fe0f770484d7ade5738982f",
+      "lf_sha256": "a4d6ebd927dce41b130891f7d5f77262d4b06126023bc4d6fbfa362aa279d058"
+    },
+    {
+      "path": "Tinodios/FilePreviewController.swift",
+      "bytes": 6558,
+      "sha256": "fb6831a53255b5da84cd04a602d3f074968ac7d75b99dd2fd1d11ba943110168",
+      "lf_sha256": "3462a0c8d1177615858dcbed62e60a23ab5daa5ccc3747f8b22b66cc0fd6dcdf"
+    },
+    {
+      "path": "Tinodios/LargeFileHelper.swift",
+      "bytes": 20428,
+      "sha256": "3dddfe67997dec588090fa2e094607a807b3232fcc81c1826506ee063b8b46a8",
+      "lf_sha256": "b156c553db3c722c4006050e2ad89fc6f17d33c104f3fa3c4b2d320b09b4cd41"
+    },
+    {
+      "path": "Tinodios/FindViewController.swift",
+      "bytes": 27688,
+      "sha256": "33788eff611e408f43e30623b73f48f453f6bf5577f2d2475741f4f433c20399",
+      "lf_sha256": "7fcc118cbb0f87133e62c188ff15db442433368e8b47a2e684c5d8890e8ea4b5"
+    },
+    {
+      "path": "Tinodios/AddByIDViewController.swift",
+      "bytes": 11544,
+      "sha256": "caa2506a302f0a41167ced8f484cda6fb60c09f0f15bfc7066eb39d8380ba8f2",
+      "lf_sha256": "f00ddcefc688f7d3a26b75c3e25fd9326c0fc72c8978a8ee3396bf329d4ef924"
+    },
+    {
+      "path": "Tinodios/account/ContactsSynchronizer.swift",
+      "bytes": 8615,
+      "sha256": "dadedfa991c2b054a3fab00c977b3543644eba5c8b755993016110214fe51494",
+      "lf_sha256": "357aa8f5c58581c7419c5e52435cf6fbdf07354872ac0131bae371f27919debd"
+    },
+    {
+      "path": "Tinodios/account/ContactsManager.swift",
+      "bytes": 4045,
+      "sha256": "0be3c2710a2e39391de9e9e4e6bdc77ac863052adafc681a69ffc98618e4d0c2",
+      "lf_sha256": "da0454406167a8a99877fd36cbf1606fb5996ccf4a30262b495861bac973b9f6"
+    },
+    {
+      "path": "Tinodios/NewGroupViewController.swift",
+      "bytes": 28960,
+      "sha256": "4ae0ff90bc3b19fb5abba2d61dba49bf97bd8297cc4b2fc59b37b5f03e61f26e",
+      "lf_sha256": "fade7253124f34f9daa706b23c8cebceb7a6d7092c201250ab34bfe5f434b182"
+    },
+    {
+      "path": "Tinodios/EditMembersViewController.swift",
+      "bytes": 21724,
+      "sha256": "e7f735722aa3cf7c011df169f8839eca6385a3575c390e3e3c6f1151467e30e6",
+      "lf_sha256": "0b7be1dc46089738c208c2b5403b3e753024bd4b912370223ad4338ee7d20762"
+    },
+    {
+      "path": "Tinodios/TopicInfoViewController.swift",
+      "bytes": 28999,
+      "sha256": "6dbfa590dce055ef50e123a60a3c981ca2541deead4fe52497c742c729774e38",
+      "lf_sha256": "027fd5422de33f98021bac3e9b6ba3203fad441a85acca1d5bb68f0867277aae"
+    },
+    {
+      "path": "Tinodios/TopicSecurityViewController.swift",
+      "bytes": 34645,
+      "sha256": "a86d02876898379d7495055a844c7f2e5add625458e7d348245eae78458a8105",
+      "lf_sha256": "005f54dbfe2a9d93b76128c8affa8486d13d11d6d68d6e36a2a6b8e9bace9e95"
+    },
+    {
+      "path": "Tinodios/ArchivedChatsTableViewController.swift",
+      "bytes": 3657,
+      "sha256": "4feedd77512874c99006b87748a1dd3cae0ad3e965c8b269146bbf530f3b3eeb",
+      "lf_sha256": "cb3c4d32d03b4eedbc0b93694bbb9ba15660d4ba9a5ab41a65db792aecc7f400"
+    },
+    {
+      "path": "Tinodios/BlockedContactsTableViewController.swift",
+      "bytes": 3814,
+      "sha256": "098861c7cd714689a6e7a2b4e5942d5d1907cd82d89d6ea8cbe2affc7eb5948d",
+      "lf_sha256": "180bf51e1af7d7f71586b50f46f299748ce2243a6ea471d92aa5988489f858a9"
+    },
+    {
+      "path": "Tinodios/AccountSettingsViewController.swift",
+      "bytes": 19155,
+      "sha256": "ac29fd38d32690b075aa936e657cdd14d6d32ff4cccf161c20dddd5e15f34e29",
+      "lf_sha256": "ac29fd38d32690b075aa936e657cdd14d6d32ff4cccf161c20dddd5e15f34e29"
+    },
+    {
+      "path": "Tinodios/AccountGeneralSettingsViewController.swift",
+      "bytes": 15660,
+      "sha256": "71ae82b1752a4b1a3669622848cdbea95680b12194995b6bb5f10456eae15710",
+      "lf_sha256": "9f84c8bc2a37b77cc5e9590a5bff8be25f12371787701e72f480d2bf30f8dd93"
+    },
+    {
+      "path": "Tinodios/SettingsNotificationsViewController.swift",
+      "bytes": 16362,
+      "sha256": "4d84950bf3183b57adb9278eea4aaae45ba4f81aab55e1584db64fabed4ce9ae",
+      "lf_sha256": "a2e5c2067047e7a378eea2b228ba13641a898fccbb0d364edb18e3da1148f1f9"
+    },
+    {
+      "path": "Tinodios/SettingsSecurityViewController.swift",
+      "bytes": 30514,
+      "sha256": "71ac5454d77636f161b495505a3e952c3a430cb15a3cdd0257d97e410b4793e1",
+      "lf_sha256": "9bc2a34312424293778e763e20940f819fca6e61c127cf77d515e1d9f128838d"
+    },
+    {
+      "path": "Tinodios/SettingsHelpViewController.swift",
+      "bytes": 11334,
+      "sha256": "e44ffb7a61ab2d120cbf18f5e76c03aa429c52646fe89bff716ff610ea8d9131",
+      "lf_sha256": "e44ffb7a61ab2d120cbf18f5e76c03aa429c52646fe89bff716ff610ea8d9131"
+    },
+    {
+      "path": "Tinodios/Utils.swift",
+      "bytes": 81892,
+      "sha256": "262c8e6ffe3e1396265986300d7ab91cd9f89e868e9c2552361f525ad19ae5de",
+      "lf_sha256": "f5ec2c8823f035023bcb37f5d081e81ed4f2b66a92451ca3e3594fdc35ae4853"
+    },
+    {
+      "path": "Tinodios/ClawAssistantViewController.swift",
+      "bytes": 13301,
+      "sha256": "e65c1c86d0eae7666b49183885edc859216d2fcb443d9e55df4bf0648c3aa4e0",
+      "lf_sha256": "e65c1c86d0eae7666b49183885edc859216d2fcb443d9e55df4bf0648c3aa4e0"
+    },
+    {
+      "path": "Tinodios/ClawAssistantHistoryViewController.swift",
+      "bytes": 9595,
+      "sha256": "eec4d6ae2d706c9657178cce73f3ae8c5adf8740f6658379006190eaf92c6575",
+      "lf_sha256": "eec4d6ae2d706c9657178cce73f3ae8c5adf8740f6658379006190eaf92c6575"
+    },
+    {
+      "path": "Tinodios/ClawAssistantConversationViewController.swift",
+      "bytes": 18197,
+      "sha256": "c8daa219de1429ff4b1ee9f275243cc3d26e32e44a5592eabf39648b8f5738fc",
+      "lf_sha256": "c8daa219de1429ff4b1ee9f275243cc3d26e32e44a5592eabf39648b8f5738fc"
+    },
+    {
+      "path": "Tinodios/ClawAssistantHistory.swift",
+      "bytes": 18940,
+      "sha256": "03b6865c710d4afbcef139f2d571ab74a2bfef025f673d7e800cb990c2e86f3c",
+      "lf_sha256": "03b6865c710d4afbcef139f2d571ab74a2bfef025f673d7e800cb990c2e86f3c"
+    },
+    {
+      "path": "Tinodios/ClawAssistantRun.swift",
+      "bytes": 25771,
+      "sha256": "136695e977394e85fe9cefbfd3d193128e596135f950b39c5d19151d6ec60710",
+      "lf_sha256": "136695e977394e85fe9cefbfd3d193128e596135f950b39c5d19151d6ec60710"
+    },
+    {
+      "path": "Tinodios/ClawAssistantStream.swift",
+      "bytes": 13016,
+      "sha256": "4c472e1f166918fa3a9ed628a524071bc3d63c3532286e8c5db7e8b955d323d4",
+      "lf_sha256": "4c472e1f166918fa3a9ed628a524071bc3d63c3532286e8c5db7e8b955d323d4"
+    },
+    {
+      "path": "Tinodios/ClawAssistantSession.swift",
+      "bytes": 16162,
+      "sha256": "fffdb46c4f6eab0fe6b11294f5310c793f3ea5a7af3efeb270bebe18d37b8f20",
+      "lf_sha256": "fffdb46c4f6eab0fe6b11294f5310c793f3ea5a7af3efeb270bebe18d37b8f20"
+    },
+    {
+      "path": "Tinodios/CallViewController.swift",
+      "bytes": 59889,
+      "sha256": "f792c2b7779c6a31710d154c41baff4ee8c0d95c5d9c9cf798542b8355597ead",
+      "lf_sha256": "e440cd25e296c05e0132314d1452e76291c12a5f2b2fb453cbec186cb0d5da0f"
+    },
+    {
+      "path": "TinodiosDB/SharedUtils.swift",
+      "bytes": 22655,
+      "sha256": "17ca359cc73dc9309931d5357ef6a120eecb3cddc39b6f18c3b2b374021fc145",
+      "lf_sha256": "5984414e3b15696ff4e83e512778894d1d040b35da36e39cd3601436ae4f9340"
+    },
+    {
+      "path": "TinodiosDB/SqlStore.swift",
+      "bytes": 28963,
+      "sha256": "aafcb2fb394318c56fcb47ccd097a4b399f0f016ba92c64bd2cd8724e6f36ae9",
+      "lf_sha256": "677df91ad1e36ffd90f3d88a631c92058ab0f2b2014ac584bfd193b5954b5d30"
+    },
+    {
+      "path": "TinodiosDB/BaseDb.swift",
+      "bytes": 31689,
+      "sha256": "48e66680f4da56b8c9460c2e489c939304a31bff805f360cb2e9d3b938c9d4b3",
+      "lf_sha256": "1009f4f93ab9d1ff5cd34e690133fc9a77ba4fc41354f1a148efdbaa092e1d52"
+    },
+    {
+      "path": "TinodiosDB/AccountDb.swift",
+      "bytes": 5822,
+      "sha256": "863ada6135452970f1d87467493201b36575d3df868ae99120d2ed8fd210d8a7",
+      "lf_sha256": "07ac0d5c842a33f284f976b0edcffe2a242827e8d8c4de0a3b6b1278b17f196f"
+    },
+    {
+      "path": "TinodiosDB/MessageDb.swift",
+      "bytes": 41013,
+      "sha256": "a59c5487d1b7cf1523b0f83b29b879fd75313ae81f0b09eefb1ab6d638a756ca",
+      "lf_sha256": "74a8784529a1237de620f95d629f9ae39995096f1befe8d08a161c7e0b70f168"
+    },
+    {
+      "path": "TinodeSDK/Tinode.swift",
+      "bytes": 74878,
+      "sha256": "1dc7f5322d1f8e357a7d4fc1598603e2ede7b0c9b1be6b030e1537d5a8fc2236",
+      "lf_sha256": "3df82aae42260e219d3bbb57380dab34a4440f094cbd5090f1750956977127ef"
+    },
+    {
+      "path": "TinodeSDK/PromisedReply.swift",
+      "bytes": 8506,
+      "sha256": "d21aff254f83258cd49e3d9d065907c1ad1b4b5cb2ea6ed9822597dfe5e07f69",
+      "lf_sha256": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+    },
+    {
+      "path": "Podfile.lock",
+      "bytes": 7626,
+      "sha256": "8fa1543054fb3c9b9827176fca30c915717ae4a82e184b981ea41d0dbaa8e2f5",
+      "lf_sha256": "8fa1543054fb3c9b9827176fca30c915717ae4a82e184b981ea41d0dbaa8e2f5"
+    },
+    {
+      "path": ".github/workflows/ios-smoke.yml",
+      "bytes": 3683,
+      "sha256": "3f2675a850612a460b52b136d243a85d41c35a1acd325d956bdaba0fbc7f2736",
+      "lf_sha256": "f6e0f98173186cdf86389910e01d8332952c6827ef4c68ecbb2240ae1383c61b"
+    },
+    {
+      "path": "docs/handoff/R4/QUALITY01/CI50-RESULT.md",
+      "bytes": 6893,
+      "sha256": "aa8fc049611996c47479e6892e27215d34946ba3e74ab5982ce92e6b7ace5b7c",
+      "lf_sha256": "aa8fc049611996c47479e6892e27215d34946ba3e74ab5982ce92e6b7ace5b7c"
+    },
+    {
+      "path": "docs/handoff/R4/QUALITY01/CI51-RESULT.md",
+      "bytes": 2740,
+      "sha256": "65c2b64cbdef012442fa5bb6d4bc855dd13f7e69e7e923d98e0960cf2799ac79",
+      "lf_sha256": "65c2b64cbdef012442fa5bb6d4bc855dd13f7e69e7e923d98e0960cf2799ac79"
+    },
+    {
+      "path": "docs/handoff/R4/QUALITY01/FINAL-CI51-HANDOFF.md",
+      "bytes": 5379,
+      "sha256": "6cd14a1a99ebc2889cc774983cc1bd1b319a7d581679b1da2c707f18e47975fd",
+      "lf_sha256": "6cd14a1a99ebc2889cc774983cc1bd1b319a7d581679b1da2c707f18e47975fd"
+    }
+  ],
+  "routes": [
+    {
+      "element": "tableViewController",
+      "id": "4dd-0I-UFm",
+      "storyboardIdentifier": "General Settings",
+      "customClass": "AccountGeneralSettingsViewController"
+    },
+    {
+      "element": "segue",
+      "id": "Ays-As-EDW",
+      "destination": "4ur-p6-jff",
+      "identifier": "Settings2CredChange",
+      "kind": "show"
+    },
+    {
+      "element": "tableViewController",
+      "id": "Pnk-9m-ZVg",
+      "storyboardIdentifier": "Account Settings",
+      "customClass": "AccountSettingsViewController"
+    },
+    {
+      "element": "segue",
+      "id": "2du-4U-OJl",
+      "destination": "u14-GR-sSc",
+      "identifier": "AccountSettings2Security",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "yED-oF-VNG",
+      "destination": "1x2-fx-TIm",
+      "identifier": "AccountSettings2Notifications",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "OVe-uQ-msv",
+      "destination": "7UE-Do-egL",
+      "identifier": "AccountSettings2Help",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "6zR-3W-Y8z",
+      "destination": "4dd-0I-UFm",
+      "identifier": "AccountSettings2General",
+      "kind": "show"
+    },
+    {
+      "element": "tableViewController",
+      "id": "B0l-J0-jm9",
+      "customClass": "ArchivedChatsTableViewController"
+    },
+    {
+      "element": "segue",
+      "id": "Fnn-wi-PrS",
+      "destination": "l6T-LK-IbJ",
+      "identifier": "ArchivedChats2Messages",
+      "kind": "show"
+    },
+    {
+      "element": "tableViewController",
+      "id": "1lo-eH-gcA",
+      "customClass": "BlockedContactsTableViewController"
+    },
+    {
+      "element": "viewController",
+      "id": "Uy7-tG-NGm",
+      "customClass": "BrandingViewController"
+    },
+    {
+      "element": "viewController",
+      "id": "6na-ed-mpJ",
+      "customClass": "AddByIDViewController"
+    },
+    {
+      "element": "viewController",
+      "id": "Cib-aE-hH5",
+      "storyboardIdentifier": "CallViewController",
+      "customClass": "CallViewController"
+    },
+    {
+      "element": "viewController",
+      "id": "n9d-hv-55K",
+      "storyboardIdentifier": "ChatListViewController",
+      "customClass": "ChatListViewController"
+    },
+    {
+      "element": "segue",
+      "id": "fsg-RJ-g97",
+      "destination": "Pnk-9m-ZVg",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "PRK-dk-KAe",
+      "destination": "qBo-ye-avT",
+      "identifier": "Chats2NewChat",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "11u-RR-BAc",
+      "destination": "l6T-LK-IbJ",
+      "identifier": "Chats2Messages",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "c7r-o7-8Aw",
+      "destination": "B0l-J0-jm9",
+      "identifier": "Chats2Archive",
+      "kind": "show"
+    },
+    {
+      "element": "navigationController",
+      "id": "oDj-ht-EO8",
+      "storyboardIdentifier": "ChatsNavigator"
+    },
+    {
+      "element": "segue",
+      "id": "VPg-gx-wIb",
+      "destination": "n9d-hv-55K",
+      "kind": "relationship"
+    },
+    {
+      "element": "viewController",
+      "id": "1NU-b8-NVe",
+      "storyboardIdentifier": "CredentialsViewController",
+      "customClass": "CredentialsViewController"
+    },
+    {
+      "element": "tableViewController",
+      "id": "4ur-p6-jff",
+      "customClass": "CredentialsChangeViewController"
+    },
+    {
+      "element": "navigationController",
+      "id": "qoO-YR-5K2"
+    },
+    {
+      "element": "segue",
+      "id": "fpL-jj-aKk",
+      "destination": "buX-Ye-w3b",
+      "kind": "relationship"
+    },
+    {
+      "element": "viewController",
+      "id": "buX-Ye-w3b",
+      "customClass": "EditMembersViewController"
+    },
+    {
+      "element": "viewController",
+      "id": "ZTN-Oj-COh",
+      "storyboardIdentifier": "FilePreviewController",
+      "customClass": "FilePreviewController"
+    },
+    {
+      "element": "tableViewController",
+      "id": "UgX-En-K1m",
+      "storyboardIdentifier": "Find",
+      "customClass": "FindViewController"
+    },
+    {
+      "element": "navigationController",
+      "id": "goO-Va-Eyu",
+      "storyboardIdentifier": "ForwardToNavController"
+    },
+    {
+      "element": "segue",
+      "id": "MLm-BM-SgK",
+      "destination": "af7-97-1pu",
+      "kind": "relationship"
+    },
+    {
+      "element": "tableViewController",
+      "id": "af7-97-1pu",
+      "storyboardIdentifier": "ForwardToViewController",
+      "customClass": "ForwardToViewController"
+    },
+    {
+      "element": "tableViewController",
+      "id": "7UE-Do-egL",
+      "customClass": "SettingsHelpViewController"
+    },
+    {
+      "element": "viewController",
+      "id": "a2m-CR-0Zc",
+      "storyboardIdentifier": "ImagePreviewController",
+      "customClass": "ImagePreviewController"
+    },
+    {
+      "element": "viewController",
+      "id": "Lui-0V-oqF",
+      "customClass": "LoginViewController"
+    },
+    {
+      "element": "segue",
+      "id": "9xG-ju-Q8O",
+      "destination": "IMk-1F-WiZ",
+      "identifier": "Login2ResetPassword",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "4U7-tt-Fa7",
+      "destination": "YmQ-cB-rjH",
+      "identifier": "Login2Signup",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "ADS-7E-vxL",
+      "destination": "Uy7-tG-NGm",
+      "identifier": "Login2Branding",
+      "kind": "show"
+    },
+    {
+      "element": "viewController",
+      "id": "l6T-LK-IbJ",
+      "storyboardIdentifier": "MessageViewController",
+      "customClass": "MessageViewController"
+    },
+    {
+      "element": "segue",
+      "id": "IuA-m3-U07",
+      "destination": "ZxW-bT-ZdQ",
+      "identifier": "Messages2TopicInfo",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "je5-0n-CJ3",
+      "destination": "a2m-CR-0Zc",
+      "identifier": "ShowImagePreview",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "9mM-mX-cFC",
+      "destination": "ZTN-Oj-COh",
+      "identifier": "ShowFilePreview",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "IVW-H4-90m",
+      "destination": "Cib-aE-hH5",
+      "identifier": "Messages2Call",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "Sf1-B5-1DJ",
+      "destination": "gfT-SI-43h",
+      "identifier": "ShowVideoPreview",
+      "kind": "show"
+    },
+    {
+      "element": "tabBarController",
+      "id": "qBo-ye-avT",
+      "customClass": "NewChatTabController"
+    },
+    {
+      "element": "segue",
+      "id": "wTY-U1-Zpb",
+      "destination": "UgX-En-K1m",
+      "kind": "relationship"
+    },
+    {
+      "element": "segue",
+      "id": "HZm-mW-ka2",
+      "destination": "54g-fF-w5D",
+      "kind": "relationship"
+    },
+    {
+      "element": "segue",
+      "id": "c5G-ZL-su1",
+      "destination": "6na-ed-mpJ",
+      "kind": "relationship"
+    },
+    {
+      "element": "tableViewController",
+      "id": "54g-fF-w5D",
+      "storyboardIdentifier": "NewGroup",
+      "customClass": "NewGroupViewController"
+    },
+    {
+      "element": "segue",
+      "id": "qx3-Cj-zCP",
+      "destination": "qoO-YR-5K2",
+      "identifier": "NewGroupToEditMembers",
+      "kind": "presentation"
+    },
+    {
+      "element": "tableViewController",
+      "id": "1x2-fx-TIm",
+      "customClass": "SettingsNotificationsViewController"
+    },
+    {
+      "element": "tableViewController",
+      "id": "IMk-1F-WiZ",
+      "customClass": "ResetPasswordViewController"
+    },
+    {
+      "element": "tableViewController",
+      "id": "u14-GR-sSc",
+      "customClass": "SettingsSecurityViewController"
+    },
+    {
+      "element": "segue",
+      "id": "Z8z-o5-yLt",
+      "destination": "1lo-eH-gcA",
+      "kind": "show"
+    },
+    {
+      "element": "tableViewController",
+      "id": "YmQ-cB-rjH",
+      "customClass": "SignupViewController"
+    },
+    {
+      "element": "navigationController",
+      "id": "oPa-Qr-HlP",
+      "storyboardIdentifier": "StartNavigator"
+    },
+    {
+      "element": "segue",
+      "id": "cS9-W1-N0U",
+      "destination": "Lui-0V-oqF",
+      "kind": "relationship"
+    },
+    {
+      "element": "tableViewController",
+      "id": "awR-up-0dD",
+      "customClass": "TopicGeneralViewController"
+    },
+    {
+      "element": "tableViewController",
+      "id": "ZxW-bT-ZdQ",
+      "customClass": "TopicInfoViewController"
+    },
+    {
+      "element": "segue",
+      "id": "6hy-uF-tfL",
+      "destination": "4vC-jn-jWQ",
+      "identifier": "TopicInfo2TopicSecurity",
+      "kind": "show"
+    },
+    {
+      "element": "segue",
+      "id": "Qbx-cO-rju",
+      "destination": "qoO-YR-5K2",
+      "identifier": "TopicInfo2EditMembers",
+      "kind": "presentation"
+    },
+    {
+      "element": "segue",
+      "id": "5oD-2I-kFb",
+      "destination": "awR-up-0dD",
+      "identifier": "TopicInfo2TopicGeneral",
+      "kind": "show"
+    },
+    {
+      "element": "tableViewController",
+      "id": "4vC-jn-jWQ",
+      "customClass": "TopicSecurityViewController"
+    },
+    {
+      "element": "segue",
+      "id": "e5j-df-mav",
+      "destination": "n9d-hv-55K",
+      "identifier": "TopicSecurity2Chats",
+      "kind": "show"
+    },
+    {
+      "element": "viewController",
+      "id": "gfT-SI-43h",
+      "customClass": "VideoPreviewController"
+    },
+    {
+      "element": "segue"
+    },
+    {
+      "element": "segue"
+    },
+    {
+      "element": "segue"
+    }
+  ]
+}
