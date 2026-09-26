@@ -100,15 +100,17 @@ class ChatListInteractor: ChatListBusinessLogic, ChatListDataStore {
             return
         }
 
-        UiUtils.attachToMeTopic(meListener: self.meListener)?.then(
+        UiUtils.attachToMeTopic(meListener: self.meListener, for: tinode)?.then(
             onSuccess: { [weak self] _ in
-                self?.loadAndPresentTopics()
-                self?.meTopic = tinode.getMeTopic()
+                Cache.ifCurrent(tinode) {
+                    self?.loadAndPresentTopics()
+                    self?.meTopic = tinode.getMeTopic()
+                }
                 return nil
-            }, onFailure: { [weak self] err in
+            }, onFailure: { err in
                 if let e = err as? TinodeError, case .serverResponseError(let code, _, _) = e {
                     if code == 401 || code==403 || code == 404 {
-                        self?.router?.routeToLogin()
+                        UiUtils.logoutAndRouteToLoginVC(ifCurrent: tinode)
                     }
                 }
                 return nil

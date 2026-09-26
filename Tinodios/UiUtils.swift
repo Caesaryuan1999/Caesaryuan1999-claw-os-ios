@@ -297,8 +297,9 @@ class UiUtils {
         return configuration
     }
 
-    public static func attachToMeTopic(meListener: DefaultMeTopic.Listener?) -> PromisedReply<ServerMessage>? {
-        let tinode = Cache.tinode
+    public static func attachToMeTopic(meListener: DefaultMeTopic.Listener?, for owner: Tinode? = nil) -> PromisedReply<ServerMessage>? {
+        let tinode = owner ?? Cache.tinode
+        guard Cache.isCurrent(tinode) else { return nil }
         var me = tinode.getMeTopic()
         if me == nil {
             me = DefaultMeTopic(tinode: tinode, l: meListener)
@@ -312,18 +313,22 @@ class UiUtils {
                 if let e = err as? TinodeError {
                     if case TinodeError.serverResponseError(let code, let text, _) = e {
                         switch code {
-                        case 404:
-                            UiUtils.logoutAndRouteToLoginVC()
+                        case 401, 403, 404:
+                            UiUtils.logoutAndRouteToLoginVC(ifCurrent: tinode)
                         case 502:
                             if text == "cluster unreachable" {
-                                Cache.tinode.reconnectNow(interactively: false, reset: true)
+                                Cache.ifCurrent(tinode) {
+                                    tinode.reconnectNow(interactively: false, reset: true)
+                                }
                             }
                         default:
                             break
                         }
                     }
                 }
-                return nil
+                // A nil failure result recovers PromisedReply as success. Keep
+                // the original rejection so callers cannot present a false sync.
+                return PromisedReply<ServerMessage>(error: err)
             })
     }
     public static func attachToFndTopic(fndListener: DefaultFndTopic.Listener?) -> PromisedReply<ServerMessage>? {
