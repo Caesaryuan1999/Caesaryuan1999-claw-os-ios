@@ -33,7 +33,9 @@ def main():
     success = caller.split('onSuccess:', 1)[1].split('onFailure:', 1)[0]
     failure = caller.split('onFailure:', 1)[1]
     checks = {
-        'subscription_failure_stays_rejected': 'return PromisedReply<ServerMessage>(error: err)' in catch and 'return nil' not in catch,
+        'subscription_failure_stays_rejected': 'throw err' in catch and 'return nil' not in catch and
+            'return PromisedReply<ServerMessage>(error: err)' not in catch and
+            'public typealias FailureHandler = ((Error) throws -> PromisedReply<Value>?)?' in sources['TinodeSDK/PromisedReply.swift'],
         'all_auth_failures_route_with_request_owner': 'case 401, 403, 404:' in catch and 'logoutAndRouteToLoginVC(ifCurrent: tinode)' in catch,
         'retry_uses_captured_owner_under_current_gate': 'Cache.ifCurrent(tinode)' in catch and 'tinode.reconnectNow' in catch and 'Cache.tinode' not in catch,
         'caller_passes_its_same_owner_to_subscribe': 'meListener: self.meListener, for: tinode' in caller,

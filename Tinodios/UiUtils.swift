@@ -332,9 +332,9 @@ class UiUtils {
                         }
                     }
                 }
-                // A nil failure result recovers PromisedReply as success. Keep
-                // the original rejection so callers cannot present a false sync.
-                return PromisedReply<ServerMessage>(error: err)
+                // Throw the original error: returning a rejected Promise can
+                // reject the SDK's terminal nextPromise twice and replace it.
+                throw err
             })
     }
     public static func attachToFndTopic(fndListener: DefaultFndTopic.Listener?) -> PromisedReply<ServerMessage>? {
