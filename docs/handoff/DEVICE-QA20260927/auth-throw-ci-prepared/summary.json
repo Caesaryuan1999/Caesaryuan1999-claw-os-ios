@@ -1,0 +1,81 @@
+{
+  "status": "NOT_RUN",
+  "evidence_level": "Swift_functions_with_controlled_boundaries",
+  "baseline": "79f015f47b15fd7124f81d52205de5c5508f370e",
+  "candidate": "a29f141b00c6adec2c316a27c39f365ff3e285e0",
+  "phases": {
+    "red": {
+      "adapter_exit": 0,
+      "result": {
+        "source": "79f015f47b15fd7124f81d52205de5c5508f370e",
+        "native_status": "NOT_RUN",
+        "inputs_lf_sha256": {
+          "Tinodios/UiUtils.swift": "9ab72967d2fb8e9e1a7e6122563f6f01e9f126f0a1506461a4acbfe95e1bfb00",
+          "Tinodios/ChatListInteractor.swift": "736b16faeb1c89e24208d8acbc4fa2ddce11a14e07561f9c4623292e64c8b93d",
+          "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+        },
+        "generated_sha256": "ac3ac9840c2422331da1cfa40aee0f19aca21b209ee35134d048d21073962ab5",
+        "scope": "Actual Promise and verbatim helper/caller; Cache, transport, UI are controlled fixtures; no iOS build/device proof"
+      }
+    },
+    "green": {
+      "adapter_exit": 0,
+      "result": {
+        "source": "a29f141b00c6adec2c316a27c39f365ff3e285e0",
+        "native_status": "NOT_RUN",
+        "inputs_lf_sha256": {
+          "Tinodios/UiUtils.swift": "49a1ca6d0f0ffaa3360cc4b8eb579682e16faf50dce6412bec9f1d0ed6ebb321",
+          "Tinodios/ChatListInteractor.swift": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363",
+          "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+        },
+        "generated_sha256": "7418d2021310b5ddaeedc3366f377415838955487c0f1b57356fca23105eb180",
+        "scope": "Actual Promise and verbatim helper/caller; Cache, transport, UI are controlled fixtures; no iOS build/device proof"
+      }
+    },
+    "pending_red": {
+      "result": {
+        "source": "3d9498144a8ea95a5d581d777e6b78a246128ebc",
+        "native_status": "NOT_RUN",
+        "generated_sha256": "e3cce38fe51f61cc28a5d90f8d164dd3d36aef44bc4d84aff0168a8db9647083",
+        "inputs_lf_sha256": {
+          "Tinodios/UiUtils.swift": "60a98dfdecca47b8730871a41986f01318f63fac0c9c93ac86cc38028219e1c3",
+          "Tinodios/ChatListInteractor.swift": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363",
+          "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+        },
+        "scope": "Additional diagnostics; actual Promise/functions, controlled Cache/Topic/UI; no real locks or network"
+      }
+    },
+    "pending_green": {
+      "result": {
+        "source": "a29f141b00c6adec2c316a27c39f365ff3e285e0",
+        "native_status": "NOT_RUN",
+        "generated_sha256": "9e2eee03e8e8408d61e2705ab6c80e0ef69411bd6467f409f97cec13012051b1",
+        "inputs_lf_sha256": {
+          "Tinodios/UiUtils.swift": "49a1ca6d0f0ffaa3360cc4b8eb579682e16faf50dce6412bec9f1d0ed6ebb321",
+          "Tinodios/ChatListInteractor.swift": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363",
+          "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+        },
+        "scope": "Additional diagnostics; actual Promise/functions, controlled Cache/Topic/UI; no real locks or network"
+      }
+    }
+  },
+  "limits": "Not UIKit, full App build, Store/Keychain/locks, iPhone or cross-platform acceptance",
+  "checkout_sha": "a29f141b00c6adec2c316a27c39f365ff3e285e0",
+  "inputs_sha256": {
+    "79f015f47b15fd7124f81d52205de5c5508f370e": {
+      "Tinodios/UiUtils.swift": "9ab72967d2fb8e9e1a7e6122563f6f01e9f126f0a1506461a4acbfe95e1bfb00",
+      "Tinodios/ChatListInteractor.swift": "736b16faeb1c89e24208d8acbc4fa2ddce11a14e07561f9c4623292e64c8b93d",
+      "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+    },
+    "3d9498144a8ea95a5d581d777e6b78a246128ebc": {
+      "Tinodios/UiUtils.swift": "60a98dfdecca47b8730871a41986f01318f63fac0c9c93ac86cc38028219e1c3",
+      "Tinodios/ChatListInteractor.swift": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363",
+      "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+    },
+    "a29f141b00c6adec2c316a27c39f365ff3e285e0": {
+      "Tinodios/UiUtils.swift": "49a1ca6d0f0ffaa3360cc4b8eb579682e16faf50dce6412bec9f1d0ed6ebb321",
+      "Tinodios/ChatListInteractor.swift": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363",
+      "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+    }
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "created_at": "2026-09-27T08:29:13.863153+08:00",
+  "production_commit": "a29f141b00c6adec2c316a27c39f365ff3e285e0",
+  "diagnostics_commit": "2a712a8f24e754bb7a2cb9187ed9b5aee62620ae",
+  "native_candidate_status": "NOT_RUN",
+  "files": [
+    {
+      "file": "Tinodios/UiUtils.swift",
+      "raw_sha256": "d79908f97ccd4795380b2750aa336a4a7dea26ebb0497bd935a1139b76d4aca4",
+      "lf_sha256": "49a1ca6d0f0ffaa3360cc4b8eb579682e16faf50dce6412bec9f1d0ed6ebb321"
+    },
+    {
+      "file": "Scripts/ci/test_me_subscription_owner_policy.py",
+      "raw_sha256": "20c90101fe566bc5b51280c89c8f7bd80ea9da9da825a6c03c97b82d40008e1b",
+      "lf_sha256": "20c90101fe566bc5b51280c89c8f7bd80ea9da9da825a6c03c97b82d40008e1b"
+    },
+    {
+      "file": "Scripts/ci/verify_me_subscription_macos.py",
+      "raw_sha256": "8a9fac2664e3d3fc65c0644584473087f2de8171c7d66148b6275fe667871465",
+      "lf_sha256": "8a9fac2664e3d3fc65c0644584473087f2de8171c7d66148b6275fe667871465"
+    },
+    {
+      "file": ".github/workflows/ios-smoke.yml",
+      "raw_sha256": "4a8e91c1d34abf0e7619221a49893098b84fb627bcd01d93d9c48435a4fd654b",
+      "lf_sha256": "3e067dd821fded13e8677d7b1ecea85bdfa4fbe9e02557c4c4983bbbed2d4e38"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/AUTH-THROW-REVIEW.md",
+      "raw_sha256": "9e075c53451401f7cbaf1d789f6b77b30e3042d6e8f8bdf5f22b05e569a4085c",
+      "lf_sha256": "9e075c53451401f7cbaf1d789f6b77b30e3042d6e8f8bdf5f22b05e569a4085c"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/me_subscription_pending_fixture.swift",
+      "raw_sha256": "48b02eed1a86db1dc5d43079d3116aa5b8384ed3a3e830b1d35ce1d76870aacd",
+      "lf_sha256": "48b02eed1a86db1dc5d43079d3116aa5b8384ed3a3e830b1d35ce1d76870aacd"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/me_subscription_fixture.swift",
+      "raw_sha256": "33e6a7a2ed144caead02358b383fc55eff66b9d615b3536a27ea0d264c384b61",
+      "lf_sha256": "33e6a7a2ed144caead02358b383fc55eff66b9d615b3536a27ea0d264c384b61"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/run_me_subscription_fixture.py",
+      "raw_sha256": "dfa99db5db306bebce91dc8fe4b35c4bb357f77b2a88a5e906fe8746fb4c64bc",
+      "lf_sha256": "dfa99db5db306bebce91dc8fe4b35c4bb357f77b2a88a5e906fe8746fb4c64bc"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/auth-throw-red-source.json",
+      "raw_sha256": "f48dcefc7bb431d0cc3fc79af1d6929d2f338804d9fa9d7aedd3262319c49b14",
+      "lf_sha256": "6a94de765bb3cc5ff91df4a318062860806eadd2afec0af6221be4a08014addd"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/auth-throw-green-source.json",
+      "raw_sha256": "e77427a5e956438f07dff33593dae4207cad5ed4cc537d0d54c413d59e62d1f7",
+      "lf_sha256": "97d681afdd93311660a1022a7b510704045e9d61ea29898fe77fe17b4966affa"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/static-after-auth-throw.json",
+      "raw_sha256": "7ce042d755ff1719c3a7215031745a81ef99fc6e835f9c4c543166713aa47476",
+      "lf_sha256": "780912f5b489ff6a7ab60f0b760c5c37060ccd523e4e5a790db9ae245fbdf163"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/auth-throw-ci-prepared/summary.json",
+      "raw_sha256": "7e24b9487cd2f461ebd6810867bdde6c5e92acc6a99d166ccd2042b33cf14105",
+      "lf_sha256": "7e412582e24849deb38781687691430c92aa8aabb296006758ee939e6a85ba65"
+    }
+  ]
+}
