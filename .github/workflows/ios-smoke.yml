@@ -2,6 +2,12 @@ name: iOS Smoke Test
 
 on:
   workflow_dispatch:
+    inputs:
+      auth_only:
+        description: Run only the fixed me-subscription Swift regression fixture
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -12,6 +18,7 @@ concurrency:
 
 jobs:
   simulator:
+    if: ${{ inputs.auth_only != true }}
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -81,4 +88,29 @@ jobs:
             build/ios-01-a-*/simulator-id.txt
             build/ios-01-a-*/launch-smoke/**
           if-no-files-found: warn
+          retention-days: 7
+  auth-only:
+    if: ${{ inputs.auth_only == true }}
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Run fixed production Promise and me-subscription functions
+        run: python3 Scripts/ci/verify_me_subscription_macos.py --output build/me-subscription-auth
+      - name: Preserve bounded Swift fixture evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-auth-functions-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            build/me-subscription-auth/summary.json
+            build/me-subscription-auth/*/main.swift
+            build/me-subscription-auth/*/result.json
+            build/me-subscription-auth/*/compile.log
+            build/me-subscription-auth/*/runtime.log
+            build/me-subscription-auth/*-adapter.log
+          if-no-files-found: error
           retention-days: 7
