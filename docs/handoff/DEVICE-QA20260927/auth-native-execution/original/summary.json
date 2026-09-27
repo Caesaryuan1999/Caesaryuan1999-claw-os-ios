@@ -1,0 +1,106 @@
+{
+  "status": "FAIL",
+  "evidence_level": "Swift_functions_with_controlled_boundaries",
+  "baseline": "79f015f47b15fd7124f81d52205de5c5508f370e",
+  "candidate": "3d9498144a8ea95a5d581d777e6b78a246128ebc",
+  "phases": {
+    "red": {
+      "adapter_exit": 1,
+      "result": {
+        "source": "79f015f47b15fd7124f81d52205de5c5508f370e",
+        "native_status": "FAIL",
+        "inputs_lf_sha256": {
+          "Tinodios/UiUtils.swift": "9ab72967d2fb8e9e1a7e6122563f6f01e9f126f0a1506461a4acbfe95e1bfb00",
+          "Tinodios/ChatListInteractor.swift": "736b16faeb1c89e24208d8acbc4fa2ddce11a14e07561f9c4623292e64c8b93d",
+          "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+        },
+        "generated_sha256": "ac3ac9840c2422331da1cfa40aee0f19aca21b209ee35134d048d21073962ab5",
+        "scope": "Actual Promise and verbatim helper/caller; Cache, transport, UI are controlled fixtures; no iOS build/device proof",
+        "compile_exit": 0,
+        "runtime_exit": 1
+      },
+      "runtime": {
+        "checks": {
+          "already_attached_installs_listener_without_subscribe": false,
+          "already_attached_uses_original_me_and_presents": true,
+          "current_401_rejects_and_routes_once": false,
+          "current_403_rejects_and_routes_once": false,
+          "current_404_rejects_and_routes_once": false,
+          "current_502_reconnects_original_and_rejects": false,
+          "current_failure_does_not_present_success": false,
+          "current_success_presents_topics": true,
+          "other_502_does_not_request_reconnect": false,
+          "repeated_attach_is_idempotent": false,
+          "server_failure_is_not_sync_success_or_logout": false,
+          "stale_401_cannot_logout_replacement": false,
+          "stale_403_cannot_logout_replacement": false,
+          "stale_404_cannot_logout_replacement": false,
+          "stale_502_does_not_reconnect_any_session": false,
+          "stale_caller_failure_has_no_new_account_effect": false,
+          "stale_success_does_not_present_new_account": false
+        },
+        "level": "actual_Production_Promise_and_extracted_functions_with_controlled_Cache_transport_UI",
+        "passed": 2,
+        "total": 17
+      }
+    },
+    "green": {
+      "adapter_exit": 1,
+      "result": {
+        "source": "3d9498144a8ea95a5d581d777e6b78a246128ebc",
+        "native_status": "FAIL",
+        "inputs_lf_sha256": {
+          "Tinodios/UiUtils.swift": "60a98dfdecca47b8730871a41986f01318f63fac0c9c93ac86cc38028219e1c3",
+          "Tinodios/ChatListInteractor.swift": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363",
+          "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+        },
+        "generated_sha256": "9a00605afe58c67c7f03340db214d1f76d2e66b39a157194f7c5f9a8a2535a4b",
+        "scope": "Actual Promise and verbatim helper/caller; Cache, transport, UI are controlled fixtures; no iOS build/device proof",
+        "compile_exit": 0,
+        "runtime_exit": 1
+      },
+      "runtime": {
+        "checks": {
+          "already_attached_installs_listener_without_subscribe": true,
+          "already_attached_uses_original_me_and_presents": true,
+          "current_401_rejects_and_routes_once": false,
+          "current_403_rejects_and_routes_once": false,
+          "current_404_rejects_and_routes_once": false,
+          "current_502_reconnects_original_and_rejects": false,
+          "current_failure_does_not_present_success": true,
+          "current_success_presents_topics": true,
+          "other_502_does_not_request_reconnect": false,
+          "repeated_attach_is_idempotent": true,
+          "server_failure_is_not_sync_success_or_logout": false,
+          "stale_401_cannot_logout_replacement": false,
+          "stale_403_cannot_logout_replacement": false,
+          "stale_404_cannot_logout_replacement": false,
+          "stale_502_does_not_reconnect_any_session": false,
+          "stale_caller_failure_has_no_new_account_effect": true,
+          "stale_success_does_not_present_new_account": true
+        },
+        "level": "actual_Production_Promise_and_extracted_functions_with_controlled_Cache_transport_UI",
+        "passed": 7,
+        "total": 17
+      }
+    }
+  },
+  "limits": "Not UIKit, full App build, Store/Keychain/locks, iPhone or cross-platform acceptance",
+  "checkout_sha": "fe66b7f3e80fc3a521c40e046f362829f884a27a",
+  "inputs_sha256": {
+    "79f015f47b15fd7124f81d52205de5c5508f370e": {
+      "Tinodios/UiUtils.swift": "9ab72967d2fb8e9e1a7e6122563f6f01e9f126f0a1506461a4acbfe95e1bfb00",
+      "Tinodios/ChatListInteractor.swift": "736b16faeb1c89e24208d8acbc4fa2ddce11a14e07561f9c4623292e64c8b93d",
+      "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+    },
+    "3d9498144a8ea95a5d581d777e6b78a246128ebc": {
+      "Tinodios/UiUtils.swift": "60a98dfdecca47b8730871a41986f01318f63fac0c9c93ac86cc38028219e1c3",
+      "Tinodios/ChatListInteractor.swift": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363",
+      "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+    }
+  },
+  "platform": "macOS-15.7.9-arm64-arm-64bit-Mach-O",
+  "swift_version": "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)\nTarget: arm64-apple-macosx15.0",
+  "xcode_version": "Xcode 16.4\nBuild version 16F6",
+  "error": "RuntimeError: Candidate must pass all 17 Swift runtime cases"
+}

@@ -1,0 +1,122 @@
+{
+  "created_at": "2026-09-27T08:20:24.277057+08:00",
+  "run": 36281964469,
+  "attempt": 1,
+  "source_sha": "fe66b7f3e80fc3a521c40e046f362829f884a27a",
+  "conclusion": "failure",
+  "red_passed": 2,
+  "green_passed": 7,
+  "total_each": 17,
+  "files": [
+    {
+      "file": "AUTH-NATIVE-FIRST-RUN.md",
+      "bytes": 4098,
+      "sha256": "52345a5fd2f449e79bb3acf0f22e851228bcd67f04589ff32a7e61ae8535ef91"
+    },
+    {
+      "file": "auth-native-execution/auth-native-job.log",
+      "bytes": 24112,
+      "sha256": "8a8b68cd5b7ed203802186124be1f87b089ea9526378a954487d1d58467dcc9d"
+    },
+    {
+      "file": "auth-native-execution/auth-native-original.zip",
+      "bytes": 14235,
+      "sha256": "f3f39edff02d1b2ed45811286c7478396c37a802082ad04bff77e50dd44305a6"
+    },
+    {
+      "file": "auth-native-execution/auth_ci_remote.py",
+      "bytes": 4994,
+      "sha256": "52f378d0a194517eb33b6dbe776c626696c5f6d0d19dde6ee6184475edef824e"
+    },
+    {
+      "file": "auth-native-execution/collect_auth_ci.py",
+      "bytes": 5408,
+      "sha256": "692f753fe6e795fe65f140eedfca79b5547175c5b166b4a19a9bcaf4dacdf204"
+    },
+    {
+      "file": "auth-native-execution/collection.json",
+      "bytes": 4716,
+      "sha256": "265f59cb2091ba85dac12aa19a9259f2cefabaa1b7ec26bb526c86eabb25b22d"
+    },
+    {
+      "file": "auth-native-execution/DISPATCH-ONCE.json",
+      "bytes": 548,
+      "sha256": "8abc57c6f2412cba55f57b746d4fc401882d56ce0ed83dbc857a6e6a941acd6d"
+    },
+    {
+      "file": "auth-native-execution/dispatch-result.json",
+      "bytes": 580,
+      "sha256": "9d07f1381cd3b6b20878dd6d5044f2d9ab80cbe3923d66529e2b901784adbb5e"
+    },
+    {
+      "file": "auth-native-execution/original/green/compile.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "auth-native-execution/original/green/main.swift",
+      "bytes": 18057,
+      "sha256": "9a00605afe58c67c7f03340db214d1f76d2e66b39a157194f7c5f9a8a2535a4b"
+    },
+    {
+      "file": "auth-native-execution/original/green/result.json",
+      "bytes": 686,
+      "sha256": "517e3930304d0b35ad63dfa74bb466966a13d853abf1d7cf0a904fc708ff4bf4"
+    },
+    {
+      "file": "auth-native-execution/original/green/runtime.log",
+      "bytes": 935,
+      "sha256": "493accec6a3880197b0d4fae159f49dcaf631e4b128a2202d65035ccd03e5ddc"
+    },
+    {
+      "file": "auth-native-execution/original/green-adapter.log",
+      "bytes": 687,
+      "sha256": "40be59ff3e343ac2a47adb939fc5ec6d478b88fd0244ffe344fd629570f2fcdd"
+    },
+    {
+      "file": "auth-native-execution/original/red/compile.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "auth-native-execution/original/red/main.swift",
+      "bytes": 17218,
+      "sha256": "ac3ac9840c2422331da1cfa40aee0f19aca21b209ee35134d048d21073962ab5"
+    },
+    {
+      "file": "auth-native-execution/original/red/result.json",
+      "bytes": 686,
+      "sha256": "fad855beffe1fd8b287b5f039e375449f6f571c47ad853175480f3ab6ec3f819"
+    },
+    {
+      "file": "auth-native-execution/original/red/runtime.log",
+      "bytes": 940,
+      "sha256": "c63e51dc8724cb15101cb0e77579c61a6a21823c6a06e456ac86e7dcbfee8f40"
+    },
+    {
+      "file": "auth-native-execution/original/red-adapter.log",
+      "bytes": 687,
+      "sha256": "726d675dfb902a4ab665ce298a25f1ce7449715e7a92a15c18ef7a1ba90db408"
+    },
+    {
+      "file": "auth-native-execution/original/summary.json",
+      "bytes": 5533,
+      "sha256": "443d57e243fed0ec3795d58488a8b969bfe9cdca2efded3621a4cfc1ef1ec45d"
+    },
+    {
+      "file": "auth-native-execution/prepush.json",
+      "bytes": 297,
+      "sha256": "d3c8ab56542047c46ce0f3904ef9987dfad3e579ee5cc4f1900257b3a009e8e1"
+    },
+    {
+      "file": "auth-native-execution/status-20260927T001558Z.json",
+      "bytes": 2636,
+      "sha256": "9c4431564a283cd496b1fa4a8ce86ae74f9e313fdce7d9969c682300b5aca250"
+    },
+    {
+      "file": "auth-native-execution/status-20260927T001709Z.json",
+      "bytes": 3018,
+      "sha256": "b3cfc6b9f765a112c6bace5bd735ca70f643efa1cd94b2af81a3ce95a22ec674"
+    }
+  ]
+}

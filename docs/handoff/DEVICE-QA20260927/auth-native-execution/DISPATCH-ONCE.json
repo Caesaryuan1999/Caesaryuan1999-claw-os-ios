@@ -1,0 +1,17 @@
+{
+  "time": "2026-09-27T00:15:40.787395+00:00",
+  "repository": "Caesaryuan1999/Caesaryuan1999-claw-os-ios",
+  "branch": "codex/verify-ios-auth-20260927",
+  "source_sha": "fe66b7f3e80fc3a521c40e046f362829f884a27a",
+  "workflow_id": 310211684,
+  "signed": false,
+  "full_app_build": false,
+  "remote_sha_verified": true,
+  "workflow_lf_sha256": "3e067dd821fded13e8677d7b1ecea85bdfa4fbe9e02557c4c4983bbbed2d4e38",
+  "dispatch_payload": {
+    "ref": "codex/verify-ios-auth-20260927",
+    "inputs": {
+      "auth_only": true
+    }
+  }
+}

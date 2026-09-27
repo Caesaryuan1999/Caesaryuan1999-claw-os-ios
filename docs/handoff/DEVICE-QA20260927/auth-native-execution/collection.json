@@ -1,0 +1,148 @@
+{
+  "captured_at": "2026-09-27T08:17:28.976164+08:00",
+  "repository": "Caesaryuan1999/Caesaryuan1999-claw-os-ios",
+  "source_sha": "fe66b7f3e80fc3a521c40e046f362829f884a27a",
+  "run": 36281964469,
+  "attempt": 1,
+  "job": 108515388746,
+  "conclusion": "failure",
+  "started_at": "2026-09-27T00:15:54Z",
+  "completed_at": "2026-09-27T00:16:15Z",
+  "jobs": [
+    {
+      "id": 108515388746,
+      "name": "auth-only",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-27T00:15:55Z",
+          "completed_at": "2026-09-27T00:15:56Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-27T00:15:56Z",
+          "completed_at": "2026-09-27T00:15:59Z"
+        },
+        {
+          "name": "Run fixed production Promise and me-subscription functions",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 3,
+          "started_at": "2026-09-27T00:15:59Z",
+          "completed_at": "2026-09-27T00:16:10Z"
+        },
+        {
+          "name": "Preserve bounded Swift fixture evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-27T00:16:10Z",
+          "completed_at": "2026-09-27T00:16:12Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-09-27T00:16:12Z",
+          "completed_at": "2026-09-27T00:16:13Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-09-27T00:16:13Z",
+          "completed_at": "2026-09-27T00:16:13Z"
+        }
+      ]
+    },
+    {
+      "id": 108515389571,
+      "name": "simulator",
+      "status": "completed",
+      "conclusion": "skipped",
+      "steps": []
+    }
+  ],
+  "job_log": {
+    "file": "auth-native-job.log",
+    "bytes": 24112,
+    "sha256": "8a8b68cd5b7ed203802186124be1f87b089ea9526378a954487d1d58467dcc9d"
+  },
+  "artifact": {
+    "id": 10918339134,
+    "name": "ios-auth-functions-fe66b7f3e80fc3a521c40e046f362829f884a27a-1",
+    "size_in_bytes": 14235,
+    "digest": "sha256:f3f39edff02d1b2ed45811286c7478396c37a802082ad04bff77e50dd44305a6",
+    "created_at": "2026-09-27T00:16:12Z",
+    "file": "auth-native-original.zip",
+    "bytes": 14235,
+    "sha256": "f3f39edff02d1b2ed45811286c7478396c37a802082ad04bff77e50dd44305a6",
+    "originals": [
+      {
+        "file": "green/compile.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "file": "green/main.swift",
+        "bytes": 18057,
+        "sha256": "9a00605afe58c67c7f03340db214d1f76d2e66b39a157194f7c5f9a8a2535a4b"
+      },
+      {
+        "file": "green/runtime.log",
+        "bytes": 935,
+        "sha256": "493accec6a3880197b0d4fae159f49dcaf631e4b128a2202d65035ccd03e5ddc"
+      },
+      {
+        "file": "green/result.json",
+        "bytes": 686,
+        "sha256": "517e3930304d0b35ad63dfa74bb466966a13d853abf1d7cf0a904fc708ff4bf4"
+      },
+      {
+        "file": "green-adapter.log",
+        "bytes": 687,
+        "sha256": "40be59ff3e343ac2a47adb939fc5ec6d478b88fd0244ffe344fd629570f2fcdd"
+      },
+      {
+        "file": "red/compile.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "file": "red/main.swift",
+        "bytes": 17218,
+        "sha256": "ac3ac9840c2422331da1cfa40aee0f19aca21b209ee35134d048d21073962ab5"
+      },
+      {
+        "file": "red/result.json",
+        "bytes": 686,
+        "sha256": "fad855beffe1fd8b287b5f039e375449f6f571c47ad853175480f3ab6ec3f819"
+      },
+      {
+        "file": "red/runtime.log",
+        "bytes": 940,
+        "sha256": "c63e51dc8724cb15101cb0e77579c61a6a21823c6a06e456ac86e7dcbfee8f40"
+      },
+      {
+        "file": "red-adapter.log",
+        "bytes": 687,
+        "sha256": "726d675dfb902a4ab665ce298a25f1ce7449715e7a92a15c18ef7a1ba90db408"
+      },
+      {
+        "file": "summary.json",
+        "bytes": 5533,
+        "sha256": "443d57e243fed0ec3795d58488a8b969bfe9cdca2efded3621a4cfc1ef1ec45d"
+      }
+    ]
+  }
+}

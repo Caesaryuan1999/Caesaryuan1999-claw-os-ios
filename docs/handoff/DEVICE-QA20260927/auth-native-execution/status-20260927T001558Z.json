@@ -1,0 +1,85 @@
+{
+  "time": "2026-09-27T00:15:58.502825+00:00",
+  "repository": "Caesaryuan1999/Caesaryuan1999-claw-os-ios",
+  "branch": "codex/verify-ios-auth-20260927",
+  "source_sha": "fe66b7f3e80fc3a521c40e046f362829f884a27a",
+  "workflow_id": 310211684,
+  "signed": false,
+  "full_app_build": false,
+  "remote_sha_verified": true,
+  "workflow_lf_sha256": "3e067dd821fded13e8677d7b1ecea85bdfa4fbe9e02557c4c4983bbbed2d4e38",
+  "matches": 1,
+  "run": {
+    "id": 36281964469,
+    "html_url": "https://github.com/Caesaryuan1999/Caesaryuan1999-claw-os-ios/actions/runs/36281964469",
+    "head_sha": "fe66b7f3e80fc3a521c40e046f362829f884a27a",
+    "head_branch": "codex/verify-ios-auth-20260927",
+    "event": "workflow_dispatch",
+    "status": "in_progress",
+    "conclusion": null,
+    "run_attempt": 1,
+    "created_at": "2026-09-27T00:15:44Z",
+    "updated_at": "2026-09-27T00:15:54Z"
+  },
+  "jobs": [
+    {
+      "id": 108515388746,
+      "name": "auth-only",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at": "2026-09-27T00:15:54Z",
+      "completed_at": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-27T00:15:55Z",
+          "completed_at": "2026-09-27T00:15:56Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-27T00:15:56Z",
+          "completed_at": "2026-09-27T00:15:59Z"
+        },
+        {
+          "name": "Run fixed production Promise and me-subscription functions",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 3,
+          "started_at": "2026-09-27T00:15:59Z",
+          "completed_at": null
+        },
+        {
+          "name": "Preserve bounded Swift fixture evidence",
+          "status": "pending",
+          "conclusion": null,
+          "number": 4,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "pending",
+          "conclusion": null,
+          "number": 8,
+          "started_at": null,
+          "completed_at": null
+        }
+      ]
+    },
+    {
+      "id": 108515389571,
+      "name": "simulator",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-09-27T00:15:46Z",
+      "completed_at": "2026-09-27T00:15:45Z",
+      "steps": []
+    }
+  ]
+}
