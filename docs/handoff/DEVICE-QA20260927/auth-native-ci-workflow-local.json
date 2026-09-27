@@ -1,0 +1,11 @@
+{
+  "level": "local_YAML_structure_only",
+  "default_full_suite_unchanged": true,
+  "manual_only": true,
+  "auth_only_boolean_default": false,
+  "jobs_mutually_exclusive": true,
+  "read_permissions_no_persisted_credentials": true,
+  "macos_runner": "macos-15",
+  "auth_command": "python3 Scripts/ci/verify_me_subscription_macos.py --output build/me-subscription-auth",
+  "remote_dispatch": "NOT_RUN"
+}

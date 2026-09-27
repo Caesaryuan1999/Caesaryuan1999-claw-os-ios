@@ -1,0 +1,59 @@
+{
+  "created_at": "2026-09-27T08:09:17.950594+08:00",
+  "workflow_commit": "ed9d974cb85ab04f1c190fa81c69dce6603fd215",
+  "candidate_source": "3d9498144a8ea95a5d581d777e6b78a246128ebc",
+  "baseline_source": "79f015f47b15fd7124f81d52205de5c5508f370e",
+  "native_status": "NOT_RUN",
+  "remote_push": "NOT_RUN",
+  "dispatch": "NOT_RUN",
+  "files": [
+    {
+      "file": ".github/workflows/ios-smoke.yml",
+      "bytes": 4933,
+      "raw_sha256": "4a8e91c1d34abf0e7619221a49893098b84fb627bcd01d93d9c48435a4fd654b",
+      "lf_sha256": "3e067dd821fded13e8677d7b1ecea85bdfa4fbe9e02557c4c4983bbbed2d4e38"
+    },
+    {
+      "file": "Scripts/ci/verify_me_subscription_macos.py",
+      "bytes": 7325,
+      "raw_sha256": "c212621b0591d7f602e741e603343fca171684724655b51f3ff05881e824849b",
+      "lf_sha256": "c212621b0591d7f602e741e603343fca171684724655b51f3ff05881e824849b"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/AUTH-NATIVE-CI-PREP.md",
+      "bytes": 6818,
+      "raw_sha256": "f72281157c951b3d1f920171656c63621a3cb8a920bd5bb9896bbc782e3e189e",
+      "lf_sha256": "f72281157c951b3d1f920171656c63621a3cb8a920bd5bb9896bbc782e3e189e"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/auth-native-ci-workflow-local.json",
+      "bytes": 413,
+      "raw_sha256": "4e1123a0629e53ac4b0304e152000ac38bcfd077850b403a1c2141a9477e4ae1",
+      "lf_sha256": "424c2f998f56951e6564ba4a49c7a0f5b8cc6934f3da552baf1ddc13dcc6785f"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/auth-native-ci-prepared/summary.json",
+      "bytes": 2752,
+      "raw_sha256": "4f3f33b7e72b40a5686233ae438f543b7dac75f3e27815f819e88a9f73eb3f14",
+      "lf_sha256": "09e9e34818c6331f6603ba7620f96739e04404f70e9b4d545869ea87a56b0758"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/auth-native-ci-windows-rejection/summary.json",
+      "bytes": 1261,
+      "raw_sha256": "183b24f3abddd6434b17f8b8cf117424341feffc8a2a57d8fb8251c95aab03ad",
+      "lf_sha256": "1ee85bf7e146feccb7070215bb86154abdb9374585be8d8c6718cb43c3a00cc8"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/me_subscription_fixture.swift",
+      "bytes": 7043,
+      "raw_sha256": "33e6a7a2ed144caead02358b383fc55eff66b9d615b3536a27ea0d264c384b61",
+      "lf_sha256": "33e6a7a2ed144caead02358b383fc55eff66b9d615b3536a27ea0d264c384b61"
+    },
+    {
+      "file": "docs/handoff/DEVICE-QA20260927/run_me_subscription_fixture.py",
+      "bytes": 3535,
+      "raw_sha256": "dfa99db5db306bebce91dc8fe4b35c4bb357f77b2a88a5e906fe8746fb4c64bc",
+      "lf_sha256": "dfa99db5db306bebce91dc8fe4b35c4bb357f77b2a88a5e906fe8746fb4c64bc"
+    }
+  ]
+}

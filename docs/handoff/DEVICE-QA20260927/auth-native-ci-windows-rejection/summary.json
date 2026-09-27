@@ -1,0 +1,22 @@
+{
+  "status": "FAIL",
+  "evidence_level": "Swift_functions_with_controlled_boundaries",
+  "baseline": "79f015f47b15fd7124f81d52205de5c5508f370e",
+  "candidate": "3d9498144a8ea95a5d581d777e6b78a246128ebc",
+  "phases": {},
+  "limits": "Not UIKit, full App build, Store/Keychain/locks, iPhone or cross-platform acceptance",
+  "checkout_sha": "f79ea7f0d3412ac3fa809d63117db9a3cff1a318",
+  "inputs_sha256": {
+    "79f015f47b15fd7124f81d52205de5c5508f370e": {
+      "Tinodios/UiUtils.swift": "9ab72967d2fb8e9e1a7e6122563f6f01e9f126f0a1506461a4acbfe95e1bfb00",
+      "Tinodios/ChatListInteractor.swift": "736b16faeb1c89e24208d8acbc4fa2ddce11a14e07561f9c4623292e64c8b93d",
+      "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+    },
+    "3d9498144a8ea95a5d581d777e6b78a246128ebc": {
+      "Tinodios/UiUtils.swift": "60a98dfdecca47b8730871a41986f01318f63fac0c9c93ac86cc38028219e1c3",
+      "Tinodios/ChatListInteractor.swift": "5074d3b224fdd8b777c094628e4025166f0d032ea4a5af34e1c744441ba40363",
+      "TinodeSDK/PromisedReply.swift": "358e36aff8107208a5254d7ad1933cbb8228f6c02e716eec8df9886f5068aa30"
+    }
+  },
+  "error": "RuntimeError: Native execution requires macOS; no substitute runner"
+}
